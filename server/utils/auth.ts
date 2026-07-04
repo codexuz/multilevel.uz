@@ -6,11 +6,16 @@ export function serviceClient(event: H3Event) {
   return serverSupabaseServiceRole<Database>(event)
 }
 
-/** Ensure a signed-in user; returns the auth user. */
+/**
+ * Ensure a signed-in user. In @nuxtjs/supabase v2, serverSupabaseUser returns the
+ * decoded JWT claims, where the user id is `sub` (not `id`). We normalise it so
+ * callers can rely on `user.id`.
+ */
 export async function requireUser(event: H3Event) {
-  const user = await serverSupabaseUser(event)
-  if (!user) throw createError({ statusCode: 401, message: 'Unauthorized' })
-  return user
+  const claims = await serverSupabaseUser(event) as (Record<string, unknown> & { sub?: string, id?: string }) | null
+  const id = claims?.id ?? claims?.sub
+  if (!claims || !id) throw createError({ statusCode: 401, message: 'Unauthorized' })
+  return { ...claims, id } as typeof claims & { id: string }
 }
 
 /** Fetch a user's role using the service-role client (bypasses RLS). */
