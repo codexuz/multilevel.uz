@@ -11,7 +11,8 @@ export function useProfile() {
   const pending = useState<boolean>('profile-pending', () => false)
 
   async function refresh() {
-    if (!user.value) {
+    const uid = user.value?.id
+    if (!uid) {
       profile.value = null
       return
     }
@@ -19,7 +20,7 @@ export function useProfile() {
     const { data } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', user.value.id)
+      .eq('id', uid)
       .single()
     profile.value = data ?? null
     pending.value = false
@@ -28,7 +29,7 @@ export function useProfile() {
   // Auto-load once when a user is present and profile not yet fetched.
   if (import.meta.client) {
     watch(user, (u) => {
-      if (u && !profile.value) refresh()
+      if (u?.id && !profile.value) refresh()
       if (!u) profile.value = null
     }, { immediate: true })
   }

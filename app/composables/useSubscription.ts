@@ -8,11 +8,12 @@ export function useSubscription() {
   const { data: subscription, refresh, pending } = useAsyncData<Subscription | null>(
     'subscription',
     async () => {
-      if (!user.value) return null
+      const uid = user.value?.id
+      if (!uid) return null
       const { data } = await supabase
         .from('subscriptions')
         .select('*')
-        .eq('user_id', user.value.id)
+        .eq('user_id', uid)
         .eq('plan', 'premium')
         .eq('status', 'active')
         .order('created_at', { ascending: false })

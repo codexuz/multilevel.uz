@@ -18,11 +18,12 @@ const { data: tests } = await useAsyncData('dashboard-tests', async () => {
 })
 
 const { data: attempts } = await useAsyncData('dashboard-attempts', async () => {
-  if (!user.value) return []
+  const uid = user.value?.id
+  if (!uid) return []
   const { data } = await supabase
     .from('attempts')
     .select('*, sections(type, title), tests(title)')
-    .eq('user_id', user.value.id)
+    .eq('user_id', uid)
     .order('created_at', { ascending: false })
     .limit(5)
   return (data as unknown as (Attempt & { sections: { type: string, title: string }, tests: { title: string } })[]) ?? []

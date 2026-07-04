@@ -13,7 +13,7 @@ const { data } = await useAsyncData(`test-${testId}`, async () => {
   const { data: test } = await supabase.from('tests').select('*').eq('id', testId).single()
   const { data: sections } = await supabase
     .from('sections').select('*').eq('test_id', testId).order('order_index')
-  const { data: attempts } = user.value
+  const { data: attempts } = user.value?.id
     ? await supabase.from('attempts').select('*').eq('user_id', user.value.id).eq('test_id', testId)
     : { data: [] }
   return {

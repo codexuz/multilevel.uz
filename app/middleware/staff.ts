@@ -1,7 +1,7 @@
 // Route middleware: gate admin/examiner pages.
 export default defineNuxtRouteMiddleware(async () => {
   const user = useSupabaseUser()
-  if (!user.value) return navigateTo('/login')
+  if (!user.value?.id) return navigateTo('/login')
 
   const supabase = useSupabaseClient()
   const { data } = await supabase

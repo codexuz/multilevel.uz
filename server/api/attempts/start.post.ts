@@ -8,11 +8,12 @@ export default defineEventHandler(async (event) => {
   const supabase = serviceClient(event)
 
   // Section + test
-  const { data: section } = await supabase
+  const { data: section, error: sectionError } = await supabase
     .from('sections')
     .select('id, test_id, tests(id, status, is_premium)')
     .eq('id', sectionId)
     .single()
+  if (sectionError) throw createError({ statusCode: 500, message: `Section lookup failed: ${sectionError.message}` })
   if (!section) throw createError({ statusCode: 404, message: 'Section not found' })
 
   const test = (section as unknown as { test_id: string, tests: { status: string, is_premium: boolean } }).tests

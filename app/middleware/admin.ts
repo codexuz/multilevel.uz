@@ -1,7 +1,7 @@
 // Route middleware: admin-only pages (user role management, subscriptions).
 export default defineNuxtRouteMiddleware(async () => {
   const user = useSupabaseUser()
-  if (!user.value) return navigateTo('/login')
+  if (!user.value?.id) return navigateTo('/login')
 
   const supabase = useSupabaseClient()
   const { data } = await supabase
