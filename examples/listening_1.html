@@ -1,0 +1,1083 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Multilevel Mock Test 1 listening - Multi-Level</title>
+<link href="./public/dist/css/tabler.css" rel="stylesheet"/>
+<link href="./public/dist/css/tabler-flags.css" rel="stylesheet"/>
+<link href="./public/dist/css/tabler-payments.css" rel="stylesheet"/>
+<link href="./public/dist/css/tabler-vendors.css" rel="stylesheet"/>
+<link href="./public/dist/css/demo.css" rel="stylesheet"/>
+<script src="./public/vuescripts/axios.min.js"></script>
+<script src="./public/vuescripts/vue.min.js"></script>
+<script src="./public/dist/js/jquery.min.js"></script>
+<link rel="icon" type="image/x-icon" href="./public/favicon.ico">
+        <script src="./public/vuescripts/buyash.js"></script>
+</head>
+
+<body id="article" class="tanla">
+    <div class="context-menu" id="contextMenu" hidden>
+        <button class="cm-item cm-pink" id="btnPink"></button>
+        <button class="cm-item cm-blue" id="btnBlue"></button>
+        <button class="cm-item cm-green" id="btnGreen"></button>
+        <button class="cm-item cm-delete" id="btnYellow"></button>
+    </div>
+
+    <div class="wrapper">
+        <div class="page-body m-0">
+            <div id="mllistening" class="container-xl">
+                
+                <form >
+                    <div class="row row-cards">
+                        <div class="col-8 p-0">
+                            <div class="card">
+                                <div class="navbar-expand-md sticky-top">
+                                    <div class="collapse navbar-collapse" id="navbar-menu">
+                                        <div class="navbar navbar-light">
+                                            <div class="container-xl">
+
+                                                <ul class="navbar-nav">
+                                                    <li class="nav-item">
+                                                        <a class="nav-link" href="/home">
+                                                            <img src="./public/static/logo.svg" width="110" height="32"
+                                                                alt="Tabler" class="">
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                                <ol class="breadcrumb " aria-label="breadcrumbs">
+                                                    <li class="breadcrumb-item"><a href="/home">Bosh sahifa</a></li>
+                                                    <li class="breadcrumb-item"><a href="/multilevel">MultiLevel
+                                                            Test</a></li>
+                                                    <li class="breadcrumb-item"><a href="/multilevel">Mock Tests 1</a>
+                                                    </li>
+                                                    <li class="breadcrumb-item active" aria-current="page"><a
+                                                            href="#">Listening Practice Test 1</a></li>
+                                                </ol>
+                                                <!-- <a href="#" ><img src="./public/static/photos/audio_plaer.jpg"></a> -->
+                                                <audio class="w-100 audio-pler" controls
+                                                    controlsList="nodownload noplaybackrate" autoplay>
+                                                    <source src="../../public/static/audio/ml_01_listening.mp3"
+                                                        type="audio/ogg">
+                                                    Your browser does not support the audio element.
+                                                </audio>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="card-header">
+                                        <h3 class="card-title">Part 1: Questions 1-8</h3>
+                                    </div>
+                                    <div id="section-1" class="card-body">
+                                        <div>
+                                            <strong>You will hear some sentences. You will hear each sentence twice.
+                                                Choose the correct reply to each sentence (A, B, or C). <br> Mark your
+                                                answers on the answer sheet. </strong><br> Example:
+                                            <div class="row g-3">
+                                                <div class="col-auto">
+                                                    <span class="form-check-label btn4">0</span>
+                                                </div>
+                                                <div class="col-5">
+                                                    <input-checkbox class="m-1" name="listening-0"
+                                                        label="A) She often does." value="A" v-model="l_j00">
+                                                    </input-checkbox> <br>
+                                                    <input-checkbox class="m-1" name="listening-0"
+                                                        label="B) I can’t remember it." value="B" v-model="l_j00">
+                                                    </input-checkbox> <br>
+                                                    <input-checkbox class="m-1" name="listening-0"
+                                                        label="C) Everyone knows her." value="C" v-model="l_j00">
+                                                    </input-checkbox>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <hr class="mb-0">
+                                        <a class="btn btn-outline-blue" data-bs-toggle="collapse"
+                                            data-bs-target="#collapse-1">Blaknot ochish</a>
+                                        <div id="collapse-1" class="collapse m-0">
+                                            <textarea class="col-12" rows="5"></textarea>
+                                        </div>
+
+                                        <div class="row g-3 mt-3">
+                                            <div class="col-auto">
+                                                <span class="form-check-label btn4">1</span>
+                                            </div>
+                                            <div class="col-5">
+                                                <input-checkbox class="m-1" name="listening-1" label="A) What a pity!"
+                                                    value="A" v-model="l_j01"></input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-1"
+                                                    label="B) I’m afraid not." value="B" v-model="l_j01">
+                                                </input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-1"
+                                                    label="C) Not bad, thank you." value="C" v-model="l_j01">
+                                                </input-checkbox>
+                                            </div>
+
+                                            <div class="col-auto">
+                                                <span class="form-check-label btn4">2</span>
+                                            </div>
+                                            <div class="col-5">
+                                                <input-checkbox class="m-1" name="listening-2" label="A) I’d love to."
+                                                    value="A" v-model="l_j02"></input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-2"
+                                                    label="B) It’s usually Ok." value="B" v-model="l_j02">
+                                                </input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-2"
+                                                    label="C) We’ve got purple walls." value="C" v-model="l_j02">
+                                                </input-checkbox>
+                                            </div>
+
+                                        </div>
+                                        <div class="row g-3 mt-3">
+                                            <div class="col-auto">
+                                                <span class="form-check-label btn4">3</span>
+                                            </div>
+                                            <div class="col-5">
+                                                <input-checkbox class="m-1" name="listening-3"
+                                                    label="A) About two months." value="A" v-model="l_j03">
+                                                </input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-3"
+                                                    label="B) It’s quite long." value="B" v-model="l_j03">
+                                                </input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-3"
+                                                    label="C) Almost 30 kilometres." value="C" v-model="l_j03">
+                                                </input-checkbox>
+                                            </div>
+
+                                            <div class="col-auto">
+                                                <span class="form-check-label btn4">4</span>
+                                            </div>
+                                            <div class="col-5">
+                                                <input-checkbox class="m-1" name="listening-4"
+                                                    label="I hope you’ll feel better soon." value="A" v-model="l_j04">
+                                                </input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-4"
+                                                    label="B) It hurts a lot." value="B" v-model="l_j04">
+                                                </input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-4"
+                                                    label="C) Have you got an appointment?" value="C" v-model="l_j04">
+                                                </input-checkbox>
+                                            </div>
+                                        </div>
+                                        <div class="row g-3 mt-3">
+                                            <div class="col-auto">
+                                                <span class="form-check-label btn4">5</span>
+                                            </div>
+                                            <div class="col-5">
+                                                <input-checkbox class="m-1" name="listening-5"
+                                                    label="A) How does he feel?" value="A" v-model="l_j05">
+                                                </input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-5"
+                                                    label="B) What’s the matter with you?" value="B" v-model="l_j05">
+                                                </input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-5"
+                                                    label="C) Who do you want?" value="C" v-model="l_j05">
+                                                </input-checkbox>
+                                            </div>
+
+                                            <div class="col-auto">
+                                                <span class="form-check-label btn4">6</span>
+                                            </div>
+                                            <div class="col-5">
+                                                <input-checkbox class="m-1" name="listening-6"
+                                                    label="A) Sorry, can you say that again?" value="A" v-model="l_j06">
+                                                </input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-6"
+                                                    label="B) I’m sorry. I’ll call again later." value="B"
+                                                    v-model="l_j06"></input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-6"
+                                                    label="C) I’m afraid I don’t know." value="C" v-model="l_j06">
+                                                </input-checkbox>
+                                            </div>
+                                        </div>
+                                        <div class="row g-3 mt-3">
+                                            <div class="col-auto">
+                                                <span id="section-2" class="form-check-label btn4">7</span>
+                                            </div>
+                                            <div class="col-5">
+                                                <input-checkbox class="m-1" name="listening-7"
+                                                    label="A) He’s my brother." value="A" v-model="l_j07">
+                                                </input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-7" label="B) It’s John’s."
+                                                    value="B" v-model="l_j07"></input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-7"
+                                                    label="C) I don’t know it." value="C" v-model="l_j07">
+                                                </input-checkbox>
+                                            </div>
+
+                                            <div class="col-auto">
+                                                <span class="form-check-label btn4">8</span>
+                                            </div>
+                                            <div class="col-5">
+                                                <input-checkbox class="m-1" name="listening-8"
+                                                    label="A) I stayed there  a month" value="A" v-model="l_j08">
+                                                </input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-8" label="B) For two weeks"
+                                                    value="B" v-model="l_j08"></input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-8"
+                                                    label="C) At my friend’s." value="C" v-model="l_j08">
+                                                </input-checkbox>
+                                            </div>
+                                        </div>
+                                    </div>
+
+
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h3 class="card-title">Part 2: Questions 9-14</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div>
+                                            <strong>You will hear someone giving a talk. For each question, fill in the
+                                                missing information in the numbered space. Write ONE WORD and / or A
+                                                NUMBER for each answer. <br> The name of the program is <span
+                                                    class="btn5">0</span> <span class="text-indigo">love online</span>
+                                                <br>
+                                                <hr class="mb-0">
+                                            </strong>
+                                            <a class="btn btn-outline-blue" data-bs-toggle="collapse"
+                                                data-bs-target="#collapse-2">Blaknot ochish</a>
+                                            <div id="collapse-2" class="collapse m-0">
+                                                <textarea class="col-12" rows="5"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="row g-3 mt-3">
+                                            <label class="form">
+                                                <span>The main topic of the radio conversations is love stores that
+                                                    people had </span><span class="btn5">9</span>
+                                                <input type="text" class="form-controlclear" v-model="l_j09"
+                                                    placeholder="_______________________">
+                                            </label>
+                                            <label class="form">
+                                                <span>Alan feel himself </span><span class="btn5">10</span>
+                                                <input type="text" class="form-controlclear" v-model="l_j10"
+                                                    placeholder="_______________________">
+                                                <span>when talking to others.</span>
+                                            </label>
+                                            <label class="form">
+                                                <span>Alan and Susan had a new </span><span class="btn5">11</span>
+                                                <input type="text" class="form-controlclear" v-model="l_j11"
+                                                    placeholder="_______________________">
+                                                <span>when they had 4-month relationship.</span>
+                                            </label>
+                                            <label class="form">
+                                                <span>The reason why Kate used loveonline.com is the lack of
+                                                </span><span class="btn5">12</span>
+                                                <input type="text" class="form-controlclear" v-model="l_j12"
+                                                    placeholder="_______________________">
+                                            </label>
+                                            <label class="form">
+                                                <span>The name of the third caller to the radio is </span><span
+                                                    class="btn5">13</span>
+                                                <input type="text" class="form-controlclear" v-model="l_j13"
+                                                    placeholder="_______________________">
+                                            </label>
+                                            <label class="form">
+                                                <span id="section-3">Paulo had unhappy marriage with the girl he met
+                                                    online.</span>
+                                            </label>
+                                            <label class="form">
+                                                <span>Paulo saw the photo of his </span><span class="btn5">14</span>
+                                                <input type="text" class="form-controlclear" v-model="l_j14"
+                                                    placeholder="_______________________">
+                                                <span>on the newspaper.</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h3 class="card-title">Part 3: Questions 15-18</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div>
+                                            <strong>You will hear people speaking about different wild animals. Match
+                                                each speaker (15-18) to the animals (A-F). There are TWO EXTRA animals
+                                                which you do not need to use.
+                                                <hr class="mb-0">
+                                            </strong>
+                                            <a class="btn btn-outline-blue" data-bs-toggle="collapse"
+                                                data-bs-target="#collapse-3">Blaknot ochish</a>
+                                            <div id="collapse-3" class="collapse m-0">
+                                                <textarea class="col-12" rows="5"></textarea>
+                                            </div>
+                                        </div>
+
+                                        <div class="card mt-2">
+                                            <div class="table-responsive">
+                                                <table class="table table-vcenter card-table">
+                                                    <tbody>
+                                                        <tr>
+                                                            <td> <span class="btn5">15</span> Speaker 1 ....</td>
+                                                            <td>
+                                                                <select v-model="l_j15" class="form-select">
+                                                                    <option value="">Tanlang</option>
+                                                                    <option value="A">A) Leopard</option>
+                                                                    <option value="B">B) Gorilla</option>
+                                                                    <option value="C">C) Bee</option>
+                                                                    <option value="D">D) Deer</option>
+                                                                    <option value="E">E) Eagle</option>
+                                                                    <option value="F">F) octopus </option>
+                                                                </select>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td> <span class="btn5">16</span> Speaker 2 ....</td>
+                                                            <td>
+                                                                <select v-model="l_j16" class="form-select">
+                                                                    <option value="">Tanlang</option>
+                                                                    <option value="A">A) Leopard</option>
+                                                                    <option value="B">B) Gorilla</option>
+                                                                    <option value="C">C) Bee</option>
+                                                                    <option value="D">D) Deer</option>
+                                                                    <option value="E">E) Eagle</option>
+                                                                    <option value="F">F) octopus </option>
+                                                                </select>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td id="section-4"> <span class="btn5">17</span> Speaker 3
+                                                                ....</td>
+                                                            <td>
+                                                                <select v-model="l_j17" class="form-select">
+                                                                    <option value="">Tanlang</option>
+                                                                    <option value="A">A) Leopard</option>
+                                                                    <option value="B">B) Gorilla</option>
+                                                                    <option value="C">C) Bee</option>
+                                                                    <option value="D">D) Deer</option>
+                                                                    <option value="E">E) Eagle</option>
+                                                                    <option value="F">F) octopus </option>
+                                                                </select>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td> <span class="btn5">18</span> Speaker 4 ....</td>
+                                                            <td>
+                                                                <select v-model="l_j18" class="form-select">
+                                                                    <option value="">Tanlang</option>
+                                                                    <option value="A">A) Leopard</option>
+                                                                    <option value="B">B) Gorilla</option>
+                                                                    <option value="C">C) Bee</option>
+                                                                    <option value="D">D) Deer</option>
+                                                                    <option value="E">E) Eagle</option>
+                                                                    <option value="F">F) octopus </option>
+                                                                </select>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h3 class="card-title">Part 4: Questions 19-23</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div>
+                                            <strong>You will hear someone giving a talk. Label the places (19-23) on the
+                                                map (A-H). There are THREE extra options which you do not need to use.
+                                                <br>
+                                                Mark your answers on the answer sheet.
+                                                <hr class="mb-0">
+                                            </strong>
+                                            <a class="btn btn-outline-blue" data-bs-toggle="collapse"
+                                                data-bs-target="#collapse-4">Blaknot ochish</a>
+                                            <div id="collapse-4" class="collapse m-0">
+                                                <textarea class="col-12" rows="5"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="row g-3 mt-3">
+                                            <div class="col-6">
+                                                <img src="./public/static/ml-test-1/l_1.jpg" alt="">
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="table-responsive">
+                                                    <table class="table table-vcenter card-table">
+                                                        <tbody>
+                                                            <tr>
+                                                                <td> <span class="btn5">19</span> Recreation center ....
+                                                                </td>
+                                                                <td>
+                                                                    <select v-model="l_j19" class="form-select">
+                                                                        <option value="">Tanlang</option>
+                                                                        <option value="A">A</option>
+                                                                        <option value="B">B</option>
+                                                                        <option value="C">C</option>
+                                                                        <option value="D">D</option>
+                                                                        <option value="E">E</option>
+                                                                        <option value="F">F</option>
+                                                                        <option value="G">G</option>
+                                                                        <option value="H">H</option>
+                                                                    </select>
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td> <span class="btn5">20</span> Health center ....
+                                                                </td>
+                                                                <td>
+                                                                    <select v-model="l_j20" class="form-select">
+                                                                        <option value="">Tanlang</option>
+                                                                        <option value="A">A</option>
+                                                                        <option value="B">B</option>
+                                                                        <option value="C">C</option>
+                                                                        <option value="D">D</option>
+                                                                        <option value="E">E</option>
+                                                                        <option value="F">F</option>
+                                                                        <option value="G">G</option>
+                                                                        <option value="H">H</option>
+                                                                    </select>
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td> <span class="btn5">21</span> Swimming pool and
+                                                                    sauna ....</td>
+                                                                <td>
+                                                                    <select v-model="l_j21" class="form-select">
+                                                                        <option value="">Tanlang</option>
+                                                                        <option value="A">A</option>
+                                                                        <option value="B">B</option>
+                                                                        <option value="C">C</option>
+                                                                        <option value="D">D</option>
+                                                                        <option value="E">E</option>
+                                                                        <option value="F">F</option>
+                                                                        <option value="G">G</option>
+                                                                        <option value="H">H</option>
+                                                                    </select>
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td> <span class="btn5">22</span> Health-food store ....
+                                                                </td>
+                                                                <td>
+                                                                    <select v-model="l_j22" class="form-select">
+                                                                        <option value="">Tanlang</option>
+                                                                        <option value="A">A</option>
+                                                                        <option value="B">B</option>
+                                                                        <option value="C">C</option>
+                                                                        <option value="D">D</option>
+                                                                        <option value="E">E</option>
+                                                                        <option value="F">F</option>
+                                                                        <option value="G">G</option>
+                                                                        <option value="H">H</option>
+                                                                    </select>
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td id="section-5"> <span class="btn5">23</span> Jenny’s
+                                                                    Restaurant ....</td>
+                                                                <td>
+                                                                    <select v-model="l_j23" class="form-select">
+                                                                        <option value="">Tanlang</option>
+                                                                        <option value="A">A</option>
+                                                                        <option value="B">B</option>
+                                                                        <option value="C">C</option>
+                                                                        <option value="D">D</option>
+                                                                        <option value="E">E</option>
+                                                                        <option value="F">F</option>
+                                                                        <option value="G">G</option>
+                                                                        <option value="H">H</option>
+                                                                    </select>
+                                                                </td>
+                                                            </tr>
+
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h3 class="card-title">Part 5: Questions 24-29</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div>
+                                            <strong>You will hear three extracts. Choose the correct answer (A, B or C)
+                                                for each question (24-29). There are TWO questions for each extract.
+                                                <br>
+                                                Mark your answers on the answer sheet.
+                                                <hr class="mb-0">
+                                            </strong>
+                                            <a class="btn btn-outline-blue" data-bs-toggle="collapse"
+                                                data-bs-target="#collapse-5">Blaknot ochish</a>
+                                            <div id="collapse-5" class="collapse m-0">
+                                                <textarea class="col-12" rows="5"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="hr-text text-blue">Extract one</div>
+                                        <div class="row g-3">
+                                            <h3><span class="btn5">24</span> One thing that attracted Emma to Malta was
+                                                ... </h3>
+                                            <div class="col-auto">
+                                            </div>
+                                            <div class="col-12">
+                                                <input-checkbox class="m-1" name="listening-24"
+                                                    label="A) the size of the island." value="A" v-model="l_j24">
+                                                </input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-24"
+                                                    label="B) the chance to learn a new language." value="B"
+                                                    v-model="l_j24"></input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-24"
+                                                    label="C) the centuries-old buildings." value="C" v-model="l_j24">
+                                                </input-checkbox>
+                                            </div>
+                                        </div>
+                                        <div class="row g-3 mt-3">
+                                            <h3><span class="btn5">25</span> Studying in Malta reminded Emma of ...
+                                            </h3>
+                                            <div class="col-auto">
+                                            </div>
+                                            <div id="section-6" class="col-12">
+                                                <input-checkbox class="m-1" name="listening-25"
+                                                    label="A) her earlier education" value="A" v-model="l_j25">
+                                                </input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-25"
+                                                    label="B) playing a game" value="B" v-model="l_j25">
+                                                </input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-25"
+                                                    label="C) her usual university" value="C" v-model="l_j25">
+                                                </input-checkbox>
+                                            </div>
+                                        </div>
+                                        <div class="hr-text text-blue">Extract two</div>
+
+                                        <div class="row g-8">
+                                            <h3><span class="btn5">26</span> What does Ahmed say about last week’s
+                                                seminar?</h3>
+                                            <div class="col-auto">
+                                            </div>
+                                            <div class="col-12">
+                                                <input-checkbox class="m-1" name="listening-26"
+                                                    label="A) He wasn’t able to get there on time." value="A"
+                                                    v-model="l_j26"></input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-26"
+                                                    label="B) He didn’t know all the students." value="B"
+                                                    v-model="l_j26"></input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-26"
+                                                    label="C) He couldn’t understand everything." value="C"
+                                                    v-model="l_j26"></input-checkbox>
+                                            </div>
+                                        </div>
+                                        <div class="row g-3 mt-3">
+                                            <h3><span class="btn5">27</span> What does the tutor say about Ahmed’s
+                                                preparation for the seminar?</h3>
+                                            <div class="col-auto">
+                                            </div>
+                                            <div id="section-7" class="col-12">
+                                                <input-checkbox class="m-1" name="listening-27"
+                                                    label="A) He was better prepared than some students." value="A"
+                                                    v-model="l_j27"></input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-27"
+                                                    label="B) He completed some useful work." value="B" v-model="l_j27">
+                                                </input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-27"
+                                                    label="C) He read some useful articles." value="C" v-model="l_j27">
+                                                </input-checkbox>
+                                            </div>
+                                        </div>
+
+                                        <div class="hr-text text-blue">Extract three</div>
+
+                                        <div class="row g-12">
+                                            <h3><span class="btn5">28</span> How do people with positive idea about time
+                                                try to remember good moments?</h3>
+                                            <div class="col-auto">
+                                            </div>
+                                            <div class="col-12">
+                                                <input-checkbox class="m-1" name="listening-28"
+                                                    label="A) focusing on bad moments" value="A" v-model="l_j28">
+                                                </input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-28"
+                                                    label="B) save items with sweet memories" value="B" v-model="l_j28">
+                                                </input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-28"
+                                                    label="C) go to birthdays" value="C" v-model="l_j28">
+                                                </input-checkbox>
+                                            </div>
+                                        </div>
+                                        <div class="row g-3 mt-3">
+                                            <h3><span class="btn5">29</span> What kind of people think that their fate
+                                                cannot be changed?</h3>
+                                            <div class="col-auto">
+                                            </div>
+                                            <div id="section-8" class="col-12">
+                                                <input-checkbox class="m-1" name="listening-29" label="A) hedonistic"
+                                                    value="A" v-model="l_j29"></input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-29"
+                                                    label="B) negative thinker" value="B" v-model="l_j29">
+                                                </input-checkbox> <br>
+                                                <input-checkbox class="m-1" name="listening-29" label="C) fatalistic"
+                                                    value="C" v-model="l_j29"></input-checkbox>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h3 class="card-title">Part 6: Questions 30-35</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div>
+                                            <strong>You will hear a part of a lecture. For each question, fill in the
+                                                missing information in the numbered space. <br>
+                                                Write no more than ONE WORD for each answer.
+                                                <hr class="mb-0">
+                                            </strong>
+                                            <a class="btn btn-outline-blue" data-bs-toggle="collapse"
+                                                data-bs-target="#collapse-6">Blaknot ochish</a>
+                                            <div id="collapse-6" class="collapse m-0">
+                                                <textarea class="col-12" rows="5"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="row g-3 mt-3">
+                                            <label class="form">
+                                                <span>The gorilla come from Central </span><span class="btn5">30</span>
+                                                <input type="text" class="form-controlclear" v-model="l_j30"
+                                                    placeholder="_______________________">
+                                            </label>
+                                            <label class="form">
+                                                <span>It lives in mountain forests. </span>
+                                            </label>
+                                            <label class="form">
+                                                <span>This animal builds a nest on the </span><span
+                                                    class="btn5">31</span>
+                                                <input type="text" class="form-controlclear" v-model="l_j31"
+                                                    placeholder="_______________________">
+                                            </label>
+                                            <label class="form">
+                                                <span>The mountain gorilla has a thick coat of fur. </span>
+                                            </label>
+                                            <label class="form">
+                                                <span>Older males have </span><span class="btn5">32</span>
+                                                <input type="text" class="form-controlclear" v-model="l_j32"
+                                                    placeholder="_______________________">
+                                            </label>
+                                            <label class="form">
+                                                <span>Younger males are called black </span><span class="btn5">33</span>
+                                                <input type="text" class="form-controlclear" v-model="l_j33"
+                                                    placeholder="_______________________">
+                                            </label>
+                                            <label class="form">
+                                                <span>It eats plants, including leaves, fruit and flowers. </span>
+                                            </label>
+                                            <label class="form">
+                                                <span>Plants provide the </span><span class="btn5">34</span>
+                                                <input type="text" class="form-controlclear" v-model="l_j34"
+                                                    placeholder="_______________________">
+                                                <span>they require.</span>
+                                            </label>
+                                            <label class="form">
+                                                <span>People are destroying the environment where the gorillas live.
+                                                </span>
+                                            </label>
+                                            <label class="form">
+                                                <span>The gorillas are also suffering from unlawful </span><span
+                                                    class="btn5">35</span>
+                                                <input type="text" class="form-controlclear" v-model="l_j35"
+                                                    placeholder="_______________________">
+                                            </label>
+                                        </div>
+                                        <div class="text-center">
+                                            <hr>
+                                            <div class="card-title mb-3">
+                                                <h2>LISTENING Test yakuni</h2>
+                                            </div>
+                                            <a class="btn btn-green mb-3 col-6" data-bs-toggle="modal"
+                                                data-bs-target="#modal-topshirish">
+                                                <svg xmlns="http://www.w3.org/2000/svg"
+                                                    class="icon icon-tabler icon-tabler-circle-check" width="24"
+                                                    height="24" viewBox="0 0 24 24" stroke-width="2"
+                                                    stroke="currentColor" fill="none" stroke-linecap="round"
+                                                    stroke-linejoin="round">
+                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                                    <circle cx="12" cy="12" r="9"></circle>
+                                                    <path d="M9 12l2 2l4 -4"></path>
+                                                </svg> Topshirish
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="modal modal-blur fade" id="modal-chiqish" tabindex="-1" role="dialog"
+                                aria-hidden="true">
+                                <div class="modal-dialog modal-sm2 modal-dialog-centered " role="document">
+                                    <div class="modal-content">
+                                        <div class="modal-body ">
+                                            <div class="modal-title ">Siz testdan chiqasizmi?</div>
+                                            <div>Belgilagan javoblaringiz yo'qotiladi. </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <a type="button" class="btn btn-link link-secondary me-auto"
+                                                data-bs-dismiss="modal">Bekor qilish</a>
+                                            <a href="/multilevel" class="btn btn-danger">Chiqish</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="modal modal-blur fade" id="modal-topshirish" tabindex="-1" role="dialog"
+                                aria-hidden="true">
+                                <div class="modal-dialog modal-sm2 modal-dialog-centered " role="document">
+                                    <div class="modal-content">
+                                        <div class="modal-body ">
+                                            <div class="modal-title ">Siz testni topshirasizmi?</div>
+                                            <div>Hamma savollarga javob berganingizga ishonch hosil qiling. <br> Javob
+                                                berilmagan savollar uchun 0 ball hioblanadi.</div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <a type="button" class="btn btn-link link-secondary me-auto"
+                                                data-bs-dismiss="modal">Bekor qilish</a>
+                                            <a @click="putMlListening"
+                                                class="btn btn-green">Topshirish</a>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                        </div>
+
+
+                        <div class="col-4 p-0">
+                            <div class="sticky-top">
+                                <div class="card">
+
+                                    <header class="navbar navbar-expand-md navbar-light sticky-top d-print-none">
+                                        <div class="container-xl">
+                                            <a class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                                                data-bs-target="#navbar-menu">
+                                                <span class="navbar-toggler-icon"></span>
+                                            </a>
+                                            <div class="navbar-nav flex-row order-md-last">
+                                                <div v-if="userdoc.activ == 11" class="nav-item dropdown d-none d-md-flex me-3">
+  <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" tabindex="-1" aria-label="Show notifications">
+    <!-- Download SVG icon from http://tabler-icons.io/i/bell -->
+    <svg xmlns="http://www.w3.org/2000/svg" class="text-blue" width="25" height="25" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 5a2 2 0 0 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" /><path d="M9 17v1a3 3 0 0 0 6 0v-1" /></svg>
+    <span class="badge bg-green">1</span>
+  </a>
+  <div class="dropdown-menu dropdown-menu-end dropdown-menu-card">
+    <div class="card">
+      <div class="card-body">
+        <a href="/statistika" class="text-green">Sizda tekshirilgan test mavjud</a>
+      </div>
+    </div>
+  </div>
+</div>
+<div v-if="userdoc.xabar_a == 10" class="nav-item dropdown d-none d-md-flex me-3">
+  <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" tabindex="-1" aria-label="Show notifications">
+    <!-- Download SVG icon from http://tabler-icons.io/i/bell -->
+    <svg xmlns="http://www.w3.org/2000/svg" class="text" width="25" height="25" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+      <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+      <polyline points="3 7 12 13 21 7"></polyline>
+   </svg>
+    <span class="badge bg-orange">1</span>
+  </a>
+  <div class="dropdown-menu dropdown-menu-end dropdown-menu-card">
+    <div class="card">
+      <div class="card-body bgorangelt pb-2">
+        <span class="text-green">SPEAKING</span> bo'limidagi fayl yuklash nosozliklari <span class="text-green">tuzatildi</span>.
+        <div class="text-end pt-1">
+          <a @click="Oqidim()" class="btn btn-orange p-2 pt-1 pb-1">O'qidim</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="nav-item dropdown">
+  <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" aria-label="Open user menu">
+    <img v-bind:src="userfoto"  class="avatar avatar-sm">
+    <div class="d-none d-xl-block ps-2">
+      <div>{{userdoc.ism}}</div>
+      <div class="mt-1 small text-muted">{{userdoc.phone}}</div>
+    </div>
+  </a>
+  <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+    <a href="/statistika" class="dropdown-item">
+      <svg xmlns="http://www.w3.org/2000/svg" class="icon dropdown-item-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+        <path d="M4 18v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z"></path>
+        <path d="M7 14l3 -3l2 2l3 -3l2 2"></path>
+     </svg>
+      Statistika</a>
+    <a href="/xamyon" class="dropdown-item">
+      <svg xmlns="http://www.w3.org/2000/svg" class="icon dropdown-item-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+        <path d="M17 8v-3a1 1 0 0 0 -1 -1h-10a2 2 0 0 0 0 4h12a1 1 0 0 1 1 1v3m0 4v3a1 1 0 0 1 -1 1h-12a2 2 0 0 1 -2 -2v-12"></path>
+        <path d="M20 12v4h-4a2 2 0 0 1 0 -4h4"></path>
+     </svg>
+      Xamyon &nbsp <strong class="text-blue"> {{userdoc.summa}} so'm</strong></a>
+    <a href="/sozlamalar" class="dropdown-item">
+      <svg xmlns="http://www.w3.org/2000/svg" class="icon dropdown-item-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+        <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+     </svg>
+      Sozlamalar</a>
+    <div class="dropdown-divider"></div>
+      <a href="https://t.me/sizlidersizadmin2" target="_blank" class="dropdown-item text-blue">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon dropdown-item-icon text-blue" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path d="M15 10l-4 4l6 6l4 -16l-18 7l4 2l2 6l3 -4" />
+        </svg>
+        <strong>Xabar jo'natish</strong>
+      </a>
+    <div class="dropdown-divider"></div>
+    <a href="/logout" class="dropdown-item text-red">
+      <svg xmlns="http://www.w3.org/2000/svg" class="icon dropdown-item-icon text-red" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+        <path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2"></path>
+        <path d="M7 12h14l-3 -3m0 6l3 -3"></path>
+     </svg>
+      Chiqish</a>
+      <span id="chiqish" hidden >13016</span>
+  </div>
+</div>
+                                            </div>
+                                        </div>
+                                    </header>
+
+                                </div>
+                                <div class="card">
+                                    <div class="page-body mb-0">
+                                        <div class="card-body text-center p-2">
+                                            <div class="card-title mb-3">
+                                                <h2>Question Palette</h2>
+                                            </div>
+                                            <div class="card-title mt-3">
+                                                <a class="disabled btn btn-blue">*</a> Answered
+                                                <a class=" btn btn-blue">*</a> Unanswered
+                                            </div>
+                                            <table>
+                                                <tr>
+                                                    <td><a href="#section-1" :class="{disabled : l_j01 }"
+                                                            class="btn btn-blue">1</a></td>
+                                                    <td><a href="#section-1" :class="{disabled : l_j02 }"
+                                                            class="btn btn-blue">2</a></td>
+                                                    <td><a href="#section-1" :class="{disabled : l_j03 }"
+                                                            class="btn btn-blue">3</a></td>
+                                                    <td><a href="#section-1" :class="{disabled : l_j04 }"
+                                                            class="btn btn-blue">4</a></td>
+                                                    <td><a href="#section-1" :class="{disabled : l_j05 }"
+                                                            class="btn btn-blue">5</a></td>
+                                                    <td><a href="#section-1" :class="{disabled : l_j06 }"
+                                                            class="btn btn-blue">6</a></td>
+                                                    <td><a href="#section-1" :class="{disabled : l_j07 }"
+                                                            class="btn btn-blue">7</a></td>
+                                                    <td><a href="#section-1" :class="{disabled : l_j08 }"
+                                                            class="btn btn-blue">8</a></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><a href="#section-2" :class="{disabled : l_j09 }"
+                                                            class="btn btn-blue">9</a></td>
+                                                    <td><a href="#section-2" :class="{disabled : l_j10 }"
+                                                            class="btn btn-blue">10</a></td>
+                                                    <td><a href="#section-2" :class="{disabled : l_j11 }"
+                                                            class="btn btn-blue">11</a></td>
+                                                    <td><a href="#section-2" :class="{disabled : l_j12 }"
+                                                            class="btn btn-blue">12</a></td>
+                                                    <td><a href="#section-2" :class="{disabled : l_j13 }"
+                                                            class="btn btn-blue">13</a></td>
+                                                    <td><a href="#section-2" :class="{disabled : l_j14 }"
+                                                            class="btn btn-blue">14</a></td>
+                                                    <td><a href="#section-3" :class="{disabled : l_j15 }"
+                                                            class="btn btn-blue">15</a></td>
+                                                    <td><a href="#section-3" :class="{disabled : l_j16 }"
+                                                            class="btn btn-blue">16</a></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><a href="#section-3" :class="{disabled : l_j17 }"
+                                                            class="btn btn-blue">17</a></td>
+                                                    <td><a href="#section-3" :class="{disabled : l_j18 }"
+                                                            class="btn btn-blue">18</a></td>
+                                                    <td><a href="#section-4" :class="{disabled : l_j19 }"
+                                                            class="btn btn-blue">19</a></td>
+                                                    <td><a href="#section-4" :class="{disabled : l_j20 }"
+                                                            class="btn btn-blue">20</a></td>
+                                                    <td><a href="#section-4" :class="{disabled : l_j21 }"
+                                                            class="btn btn-blue">21</a></td>
+                                                    <td><a href="#section-4" :class="{disabled : l_j22 }"
+                                                            class="btn btn-blue">22</a></td>
+                                                    <td><a href="#section-4" :class="{disabled : l_j23 }"
+                                                            class="btn btn-blue">23</a></td>
+                                                    <td><a href="#section-5" :class="{disabled : l_j24 }"
+                                                            class="btn btn-blue">24</a></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><a href="#section-5" :class="{disabled : l_j25 }"
+                                                            class="btn btn-blue">25</a></td>
+                                                    <td><a href="#section-6" :class="{disabled : l_j26 }"
+                                                            class="btn btn-blue">26</a></td>
+                                                    <td><a href="#section-6" :class="{disabled : l_j27 }"
+                                                            class="btn btn-blue">27</a></td>
+                                                    <td><a href="#section-7" :class="{disabled : l_j28 }"
+                                                            class="btn btn-blue">28</a></td>
+                                                    <td><a href="#section-7" :class="{disabled : l_j29 }"
+                                                            class="btn btn-blue">29</a></td>
+                                                    <td><a href="#section-8" :class="{disabled : l_j30 }"
+                                                            class="btn btn-blue">30</a></td>
+                                                    <td><a href="#section-8" :class="{disabled : l_j31 }"
+                                                            class="btn btn-blue">31</a></td>
+                                                    <td><a href="#section-8" :class="{disabled : l_j32 }"
+                                                            class="btn btn-blue">32</a></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><a href="#section-8" :class="{disabled : l_j33 }"
+                                                            class="btn btn-blue">33</a></td>
+                                                    <td><a href="#section-8" :class="{disabled : l_j34 }"
+                                                            class="btn btn-blue">34</a></td>
+                                                    <td><a href="#section-8" :class="{disabled : l_j35 }"
+                                                            class="btn btn-blue">35</a></td>
+                                                </tr>
+                                            </table>
+
+
+
+                                        </div>
+                                    </div>
+
+
+                                    <div class="page-body m-0">
+                                        <div class="container-xl">
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <div class="card-body text-center" :class="{qizil: showModal}">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"
+                                                            viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+                                                            fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                                            <circle cx="12" cy="13" r="7"></circle>
+                                                            <polyline points="12 10 12 13 14 13"></polyline>
+                                                            <line x1="7" y1="4" x2="4.25" y2="6"></line>
+                                                            <line x1="17" y1="4" x2="19.75" y2="6"></line>
+                                                        </svg>
+                                                        <!-- <h1 style="font-size: 33px;"><timer :minutes="0" :seconds="5" /></h1> -->
+                                                        <h1 style="font-size: 33px;" class="">{{ minutes }}:{{ seconds }}</h1>
+                                                        <div v-if="showModal" class="progress">
+                                                            <div class="progress-bar progress-bar-indeterminate bg-danger"></div>
+                                                          </div>
+                                                    </div>
+                                                </div>
+                                                <a class="btn btn-green mb-2 col-12" data-bs-toggle="modal"
+                                                    data-bs-target="#modal-topshirish">
+                                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                                        class="icon icon-tabler icon-tabler-circle-check" width="24"
+                                                        height="24" viewBox="0 0 24 24" stroke-width="2"
+                                                        stroke="currentColor" fill="none" stroke-linecap="round"
+                                                        stroke-linejoin="round">
+                                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                                        <circle cx="12" cy="12" r="9"></circle>
+                                                        <path d="M9 12l2 2l4 -4"></path>
+                                                    </svg> Topshirish
+                                                </a>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card  col-md-12">
+                                        <div class="card-body text-center">
+                                            <a class="btn btn-outline-orange col-12" data-bs-toggle="modal"
+                                                data-bs-target="#modal-chiqish">
+                                                <svg xmlns="http://www.w3.org/2000/svg"
+                                                    class="icon icon-tabler icon-tabler-logout" width="24" height="24"
+                                                    viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+                                                    fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                                    <path
+                                                        d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2">
+                                                    </path>
+                                                    <path d="M7 12h14l-3 -3m0 6l3 -3"></path>
+                                                </svg> Chiqish
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <footer class="footer footer-transparent d-print-none">
+    <div class="container-xl">
+      <div class="row text-center align-items-center flex-row-reverse">
+        <div class="col-lg-auto ms-lg-auto">
+          <ul class="list-inline list-inline-dots mb-0">
+            <li class="list-inline-item">
+              <strong>
+                Malumot uchun: <a href="https://t.me/sizlidersizadmin2" target="_blank">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-telegram" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M15 10l-4 4l6 6l4 -16l-18 7l4 2l2 6l3 -4" />
+                  </svg>
+                  +998 90 725 20 40
+                </a>
+              </strong>
+            </li>
+          </ul>
+        </div>
+        <div class="col-12 col-lg-auto mt-3 mt-lg-0">
+          <ul class="list-inline list-inline-dots mb-0">
+            <li class="list-inline-item">
+              Copyright &copy; 2023-2026
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+
+    </div>
+    <!-- Libs JS -->
+    
+<div class="loader-wrapper">
+    <span class="loader"><span class="loader-inner"></span></span>
+  </div>
+<script src="./public/dist/libs/apexcharts/dist/apexcharts.min.js"></script>
+<script src="./public/dist/js/itc-slider.js" defer ></script>
+<!-- Tabler Core -->
+<script src="./public/dist/js/tabler.min.js"></script>
+<script src="./public/dist/js/demo.min.js"></script>
+<script>
+    $(window).on("load",function(){
+  $(".loader-wrapper").fadeOut("slow");
+});
+</script>
+
+        <script src="../../public/vueuser/ml_test_full/01-listening.js"></script>
+        <script>
+            $('.js-anchor-link').click(function (e) {
+                e.preventDefault();
+                var target = $($(this).attr('href'));
+                if (target.length) {
+                    var scrollTo = target.offset().top;
+                    $('body, html').animate({
+                        scrollTop: scrollTo + 'px'
+                    }, 800);
+                }
+            });
+        </script>
+</body>
+
+</html>

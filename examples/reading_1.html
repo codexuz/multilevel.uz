@@ -1,0 +1,1362 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Multilevel Mock Test 1 reading - Multi-Level</title>
+<link href="./public/dist/css/tabler.css" rel="stylesheet"/>
+<link href="./public/dist/css/tabler-flags.css" rel="stylesheet"/>
+<link href="./public/dist/css/tabler-payments.css" rel="stylesheet"/>
+<link href="./public/dist/css/tabler-vendors.css" rel="stylesheet"/>
+<link href="./public/dist/css/demo.css" rel="stylesheet"/>
+<script src="./public/vuescripts/axios.min.js"></script>
+<script src="./public/vuescripts/vue.min.js"></script>
+<script src="./public/dist/js/jquery.min.js"></script>
+<link rel="icon" type="image/x-icon" href="./public/favicon.ico">
+        <script src="./public/vuescripts/buyash.js"></script>
+        <script src="./public/dist/js/bootstrap.min.js"></script>
+        <style>
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+            }
+            
+            .slider__wrapper {
+                overflow: hidden;
+            }
+            
+            .slider__item {
+                flex: 0 0 20%;
+                max-width: 20%;
+            }
+        </style>
+
+</head>
+
+<body id="article" class="tanla">
+    <div id="mlreading">
+        <div class="context-menu" id="contextMenu" hidden>
+            <button class="cm-item cm-pink" id="btnPink"></button>
+            <button class="cm-item cm-blue" id="btnBlue"></button>
+            <button class="cm-item cm-green" id="btnGreen"></button>
+            <button class="cm-item cm-delete" id="btnYellow"></button>
+        </div>
+        <div class="wrapper">
+            <div class="sticky-top">
+                <header class="navbar navbar-expand-md navbar-light sticky-top d-print-none">
+                    <div class="container-xl">
+                        <a class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu">
+                            <span class="navbar-toggler-icon"></span>
+                        </a>
+                        <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+                            <a href="/home">
+                                <img src="./public/static/logo.svg" width="110" height="32" alt="Tabler" class="navbar-brand-image">
+                            </a>
+                        </h1>
+                        <ol class="breadcrumb " aria-label="breadcrumbs">
+                            <li class="breadcrumb-item"><a href="/home">Bosh sahifa</a></li>
+                            <li class="breadcrumb-item"><a href="/multilevel">MultiLevel Test</a></li>
+                            <li class="breadcrumb-item"><a href="/multilevel">Mock Tests 1</a></li>
+                            <li class="breadcrumb-item active" aria-current="page"><a href="#">Reading Practice Test 1</a></li>
+                        </ol>
+                        <div class="navbar-nav flex-row order-md-last">
+                            <div class="nav-item dropdown d-none d-md-flex me-3">
+                                <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" tabindex="-1" aria-label="Show notifications">
+                                    <!-- Download SVG icon from http://tabler-icons.io/i/bell -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 5a2 2 0 0 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" /><path d="M9 17v1a3 3 0 0 0 6 0v-1" /></svg>
+                                    <span class="badge bg-green"></span>
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-end dropdown-menu-card">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            Yangi xabar yo'q
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div v-if="userdoc.activ == 11" class="nav-item dropdown d-none d-md-flex me-3">
+  <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" tabindex="-1" aria-label="Show notifications">
+    <!-- Download SVG icon from http://tabler-icons.io/i/bell -->
+    <svg xmlns="http://www.w3.org/2000/svg" class="text-blue" width="25" height="25" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 5a2 2 0 0 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" /><path d="M9 17v1a3 3 0 0 0 6 0v-1" /></svg>
+    <span class="badge bg-green">1</span>
+  </a>
+  <div class="dropdown-menu dropdown-menu-end dropdown-menu-card">
+    <div class="card">
+      <div class="card-body">
+        <a href="/statistika" class="text-green">Sizda tekshirilgan test mavjud</a>
+      </div>
+    </div>
+  </div>
+</div>
+<div v-if="userdoc.xabar_a == 10" class="nav-item dropdown d-none d-md-flex me-3">
+  <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" tabindex="-1" aria-label="Show notifications">
+    <!-- Download SVG icon from http://tabler-icons.io/i/bell -->
+    <svg xmlns="http://www.w3.org/2000/svg" class="text" width="25" height="25" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+      <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+      <polyline points="3 7 12 13 21 7"></polyline>
+   </svg>
+    <span class="badge bg-orange">1</span>
+  </a>
+  <div class="dropdown-menu dropdown-menu-end dropdown-menu-card">
+    <div class="card">
+      <div class="card-body bgorangelt pb-2">
+        <span class="text-green">SPEAKING</span> bo'limidagi fayl yuklash nosozliklari <span class="text-green">tuzatildi</span>.
+        <div class="text-end pt-1">
+          <a @click="Oqidim()" class="btn btn-orange p-2 pt-1 pb-1">O'qidim</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="nav-item dropdown">
+  <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" aria-label="Open user menu">
+    <img v-bind:src="userfoto"  class="avatar avatar-sm">
+    <div class="d-none d-xl-block ps-2">
+      <div>{{userdoc.ism}}</div>
+      <div class="mt-1 small text-muted">{{userdoc.phone}}</div>
+    </div>
+  </a>
+  <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+    <a href="/statistika" class="dropdown-item">
+      <svg xmlns="http://www.w3.org/2000/svg" class="icon dropdown-item-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+        <path d="M4 18v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z"></path>
+        <path d="M7 14l3 -3l2 2l3 -3l2 2"></path>
+     </svg>
+      Statistika</a>
+    <a href="/xamyon" class="dropdown-item">
+      <svg xmlns="http://www.w3.org/2000/svg" class="icon dropdown-item-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+        <path d="M17 8v-3a1 1 0 0 0 -1 -1h-10a2 2 0 0 0 0 4h12a1 1 0 0 1 1 1v3m0 4v3a1 1 0 0 1 -1 1h-12a2 2 0 0 1 -2 -2v-12"></path>
+        <path d="M20 12v4h-4a2 2 0 0 1 0 -4h4"></path>
+     </svg>
+      Xamyon &nbsp <strong class="text-blue"> {{userdoc.summa}} so'm</strong></a>
+    <a href="/sozlamalar" class="dropdown-item">
+      <svg xmlns="http://www.w3.org/2000/svg" class="icon dropdown-item-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+        <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+     </svg>
+      Sozlamalar</a>
+    <div class="dropdown-divider"></div>
+      <a href="https://t.me/sizlidersizadmin2" target="_blank" class="dropdown-item text-blue">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon dropdown-item-icon text-blue" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path d="M15 10l-4 4l6 6l4 -16l-18 7l4 2l2 6l3 -4" />
+        </svg>
+        <strong>Xabar jo'natish</strong>
+      </a>
+    <div class="dropdown-divider"></div>
+    <a href="/logout" class="dropdown-item text-red">
+      <svg xmlns="http://www.w3.org/2000/svg" class="icon dropdown-item-icon text-red" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+        <path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2"></path>
+        <path d="M7 12h14l-3 -3m0 6l3 -3"></path>
+     </svg>
+      Chiqish</a>
+      <span id="chiqish" hidden >13016</span>
+  </div>
+</div>
+                        </div>
+                    </div>
+                </header>
+            </div>
+
+
+            <div class="page-body mt-0">
+                <div class="container-x">
+                    <form >
+                        <div class="col-md-12">
+                            <ul class="nav nav-tabs nav-fill">
+                                <li class="active">
+                                    <a href="#tab1" data-toggle="tab"></a>
+                                </li>
+                                <li>
+                                    <a href="#tab2" data-toggle="tab"></a>
+                                </li>
+                                <li>
+                                    <a href="#tab3" data-toggle="tab"></a>
+                                </li>
+                                <li>
+                                    <a href="#tab4" data-toggle="tab"></a>
+                                </li>
+                                <li>
+                                    <a href="#tab5" data-toggle="tab"></a>
+                                </li>
+                            </ul>
+                            <div id="resizediv" class="tab-content m-3" style="width: 98%;">
+                                <div class="tab-pane active" id="tab1">
+                                    <div class="row row-cards">
+                                        <div class="resizable-x">
+                                            <div style="flex: 50%;">
+                                                <div class="col-md-12">
+                                                    <div class="card card-sm">
+                                                        <div class="list-group list-group-flush overflow-auto" style="height: calc(50rem + 20px);">
+                                                            <div class="list-group-item">
+                                                                <div class="row m-3">
+                                                                    <h2>PART 1</h2>
+                                                                    <span>Read the text. Fill in each gap with ONE word. You must use a word which is somewhere in the rest of the text.</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="resizer-x"></div>
+                                            <div style="flex: 50%;">
+                                                <div class="col-md-12">
+                                                    <div class="card card-sm">
+                                                        <div class="list-group list-group-flush overflow-auto" style="height: calc(50rem + 20px);">
+                                                            <div class="list-group-item">
+                                                                <div class="row">
+                                                                    <div class="card-body">
+                                                                        <div class="mb-3">
+                                                                            <a class="btn btn-outline-blue" data-bs-toggle="collapse" data-bs-target="#collapse-5">Blaknot ochish</a>
+                                                                            <div id="collapse-5" class="collapse m-0">
+                                                                                <textarea class="col-12" rows="5"></textarea>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="row g-3 mt-3">
+                                                                            <label class="form">
+                                                        <span >Want your child to be good at sport, make the school team and maybe one day even <span class="btn5">1</span></span>
+                                                        <input type="text" class="form-controlclear" v-model="r_j01" placeholder="_______________________">
+                                                        <span >on theworld stage? Well, try to ensure that your would-be Olympian or World Cup winner is born in Novemberor, failing that, in October. A <span class="btn5">2</span></span>
+                                                        <input type="text" class="form-controlclear" v-model="r_j02" placeholder="_______________________">
+                                                        <span >led by one of the country's leading experts on children's physicalactivity has found that school pupils <span class="btn5">3</span></span>
+                                                        <input type="text" class="form-controlclear" v-model="r_j03" placeholder="_______________________">
+                                                        <span >in those months were fitter <span class="btn5">4</span></span>
+                                                        <input type="text" class="form-controlclear" v-model="r_j04" placeholder="_______________________">
+                                                        <span >everyone else in their class.</span>
+                                                    </label>
+                                                                            <label class="form">
+                                                        <span >November- and October-born children emerged as fitter, stronger and more powerful than their <span class="btn5">5</span></span>
+                                                        <input type="text" class="form-controlclear" v-model="r_j05" placeholder="_______________________">
+                                                        <span >born in the other 10 months of the year, especially those whose birthdays fell in April or June. Dr GavinSandercock, from the Centre for Sports and Exercise Science at Essex University, and colleagues <span class="btn5">6</span></span>
+                                                        <input type="text" class="form-controlclear" v-model="r_j06" placeholder="_______________________">
+                                                        <span >that autumn-born children enjoyed "a clear physical advantage" over their peers.</span>
+                                                    </label>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+
+                                    </div>
+                                </div>
+                                <div class="tab-pane" id="tab2">
+                                    <div class="row row-cards">
+                                        <div class="resizable-x2">
+                                            <div style="flex: 50%;">
+                                                <div class="col-md-12">
+                                                    <div class="card card-sm">
+                                                        <div class="list-group list-group-flush overflow-auto" style="height: calc(50rem + 20px);">
+                                                            <div class="list-group-item">
+                                                                <div class="row m-3">
+                                                                    <h2>PART 2</h2>
+                                                                    <img src="./public/static/ml-test-1/r_1.jpg" alt="">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="resizer-x2"></div>
+                                            <div style="flex: 50%;">
+                                                <div class="col-md-12">
+                                                    <div class="card card-sm">
+                                                        <div class="list-group list-group-flush overflow-auto" style="height: calc(50rem + 20px);">
+                                                            <div class="list-group-item">
+                                                                <div class="row">
+                                                                    <div class="card-body">
+                                                                        <div class="mb-3">
+                                                                            <a class="btn btn-outline-blue" data-bs-toggle="collapse" data-bs-target="#collapse-5">Blaknot ochish</a>
+                                                                            <div id="collapse-5" class="collapse m-0">
+                                                                                <textarea class="col-12" rows="5"></textarea>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="row g-3 mt-3">
+                                                                            <span>Read the texts 7-14 and the statements A-J. Decide which text matches with the situation described in the statements. <br>
+                                                        Each statement can be used ONCE only. There are TWO extra statements which you do not need to use. <br>
+                                                        Mark your answers on the answer sheet. Questions 7-14. <br>
+                                                        Look at the seven job advertisements, A-K, and read the descriptions of people below. <br>
+                                                        Which is the most suitable job for each person? <br>
+                                                        Write the correct letter, A-K. 
+                                                        </span>
+                                                                            <span>
+                                                        <strong>A.</strong>  A person with two small children wants a few hours a week of unskilled work in early mornings <br>
+                                                        <strong>B.</strong> A person with no experience or qualifications who is looking for a short term full-time job, Monday to Friday<br>
+                                                        <strong>C.</strong> A lively student with no experience, who cannot work on weekdays<br>
+                                                        <strong>D.</strong> A person with more than 20 years’ experience in catering who would like to run a business<br>
+                                                        <strong>E.</strong> A catering college graduate who is now looking for his first full time job<br>
+                                                        <strong>F.</strong> A person with many years’ experience working in hotels who is now looking for well-paid part-time employment in a hotel<br>
+                                                        <strong>G.</strong> A person with an international experience and at least bachelor’s degree at an international university<br>
+                                                        <strong>H.</strong> A university graduate with at least two language speaking skills <br>
+                                                        <strong>I.</strong> A person who worked in a village farm should apply.<br>
+                                                        <strong>J.</strong> A person who is over 35 and wish to work in only afternoon hours.
+                                                        </span>
+                                                                            <div class="card">
+                                                                                <div class="table-responsive text-center">
+                                                                                    <table class="table table-vcenter card-table">
+                                                                                        <tbody>
+                                                                                            <tr>
+                                                                                                <td class="w-1"><span class="btn5">7</span></td>
+                                                                                                <td>
+                                                                                                    <select v-model="r_j07" class="form-select">
+                                                                        <option value="">Tanlang</option>
+                                                                        <option value="A">A</option>
+                                                                        <option value="B">B</option>
+                                                                        <option value="C">C</option>
+                                                                        <option value="D">D</option>
+                                                                        <option value="E">E</option>
+                                                                        <option value="F">F </option>
+                                                                        <option value="G">G </option>
+                                                                        <option value="H">H </option>
+                                                                        <option value="I">I </option>
+                                                                        <option value="J">J </option>
+                                                                    </select>
+                                                                                                </td>
+                                                                                                <td></td>
+                                                                                                <td class="w-1"><span class="btn5">8</span></td>
+                                                                                                <td>
+                                                                                                    <select v-model="r_j08" class="form-select">
+                                                                        <option value="">Tanlang</option>
+                                                                        <option value="A">A</option>
+                                                                        <option value="B">B</option>
+                                                                        <option value="C">C</option>
+                                                                        <option value="D">D</option>
+                                                                        <option value="E">E</option>
+                                                                        <option value="F">F </option>
+                                                                        <option value="G">G </option>
+                                                                        <option value="H">H </option>
+                                                                        <option value="I">I </option>
+                                                                        <option value="J">J </option>
+                                                                    </select>
+                                                                                                </td>
+                                                                                            </tr>
+                                                                                            <tr>
+                                                                                                <td class="w-1"><span class="btn5">9</span></td>
+                                                                                                <td>
+                                                                                                    <select v-model="r_j09" class="form-select">
+                                                                        <option value="">Tanlang</option>
+                                                                        <option value="A">A</option>
+                                                                        <option value="B">B</option>
+                                                                        <option value="C">C</option>
+                                                                        <option value="D">D</option>
+                                                                        <option value="E">E</option>
+                                                                        <option value="F">F </option>
+                                                                        <option value="G">G </option>
+                                                                        <option value="H">H </option>
+                                                                        <option value="I">I </option>
+                                                                        <option value="J">J </option>
+                                                                    </select>
+                                                                                                </td>
+                                                                                                <td></td>
+                                                                                                <td class="w-1"><span class="btn5">10</span></td>
+                                                                                                <td>
+                                                                                                    <select v-model="r_j10" class="form-select">
+                                                                        <option value="">Tanlang</option>
+                                                                        <option value="A">A</option>
+                                                                        <option value="B">B</option>
+                                                                        <option value="C">C</option>
+                                                                        <option value="D">D</option>
+                                                                        <option value="E">E</option>
+                                                                        <option value="F">F </option>
+                                                                        <option value="G">G </option>
+                                                                        <option value="H">H </option>
+                                                                        <option value="I">I </option>
+                                                                        <option value="J">J </option>
+                                                                    </select>
+                                                                                                </td>
+                                                                                            </tr>
+                                                                                            <tr>
+                                                                                                <td class="w-1"><span class="btn5">11</span></td>
+                                                                                                <td>
+                                                                                                    <select v-model="r_j11" class="form-select">
+                                                                        <option value="">Tanlang</option>
+                                                                        <option value="A">A</option>
+                                                                        <option value="B">B</option>
+                                                                        <option value="C">C</option>
+                                                                        <option value="D">D</option>
+                                                                        <option value="E">E</option>
+                                                                        <option value="F">F </option>
+                                                                        <option value="G">G </option>
+                                                                        <option value="H">H </option>
+                                                                        <option value="I">I </option>
+                                                                        <option value="J">J </option>
+                                                                    </select>
+                                                                                                </td>
+                                                                                                <td></td>
+                                                                                                <td class="w-1"><span class="btn5">12</span></td>
+                                                                                                <td>
+                                                                                                    <select v-model="r_j12" class="form-select">
+                                                                        <option value="">Tanlang</option>
+                                                                        <option value="A">A</option>
+                                                                        <option value="B">B</option>
+                                                                        <option value="C">C</option>
+                                                                        <option value="D">D</option>
+                                                                        <option value="E">E</option>
+                                                                        <option value="F">F </option>
+                                                                        <option value="G">G </option>
+                                                                        <option value="H">H </option>
+                                                                        <option value="I">I </option>
+                                                                        <option value="J">J </option>
+                                                                    </select>
+                                                                                                </td>
+                                                                                            </tr>
+                                                                                            <tr>
+                                                                                                <td class="w-1"><span class="btn5">13</span></td>
+                                                                                                <td>
+                                                                                                    <select v-model="r_j13" class="form-select">
+                                                                        <option value="">Tanlang</option>
+                                                                        <option value="A">A</option>
+                                                                        <option value="B">B</option>
+                                                                        <option value="C">C</option>
+                                                                        <option value="D">D</option>
+                                                                        <option value="E">E</option>
+                                                                        <option value="F">F </option>
+                                                                        <option value="G">G </option>
+                                                                        <option value="H">H </option>
+                                                                        <option value="I">I </option>
+                                                                        <option value="J">J </option>
+                                                                    </select>
+                                                                                                </td>
+                                                                                                <td></td>
+                                                                                                <td class="w-1"><span class="btn5">14</span></td>
+                                                                                                <td>
+                                                                                                    <select v-model="r_j14" class="form-select">
+                                                                        <option value="">Tanlang</option>
+                                                                        <option value="A">A</option>
+                                                                        <option value="B">B</option>
+                                                                        <option value="C">C</option>
+                                                                        <option value="D">D</option>
+                                                                        <option value="E">E</option>
+                                                                        <option value="F">F </option>
+                                                                        <option value="G">G </option>
+                                                                        <option value="H">H </option>
+                                                                        <option value="I">I </option>
+                                                                        <option value="J">J </option>
+                                                                    </select>
+                                                                                                </td>
+                                                                                            </tr>
+                                                                                        </tbody>
+                                                                                    </table>
+                                                                                    <div class="mt-6"></div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+
+                                    </div>
+                                </div>
+                                <div class="tab-pane" id="tab3">
+                                    <div class="row row-cards">
+                                        <div class="resizable-x3">
+                                            <div style="flex: 50%;">
+                                                <div class="col-md-12">
+                                                    <div class="card card-sm">
+                                                        <div class="list-group list-group-flush overflow-auto" style="height: calc(50rem + 20px);">
+                                                            <div class="list-group-item">
+                                                                <div class="row m-3">
+                                                                    <h2>PART 3</h2>
+                                                                    <span><strong>I</strong>	Gifted children’s behaviour differs from that of their age- mates. Many gifted children learn to read early, with better comprehension of the nuances of language. As much as half of the gifted and talented population has learned to read before entering school. They can work independently at an earlier age and can concentrate for longer periods. They like to learn new things, are willing to examine the unusual, and are highly inquisitive.
+                                                    </span>
+                                                                    <span class="mt-3"><strong>II</strong>	Gifted children’s behaviour differs from that of their age- mates. Many gifted children learn to read early, with better comprehension of the nuances of language. As much as half of the gifted and talented population has learned to read before entering school. They can work independently at an earlier age and can concentrate for longer periods. They like to learn new things, are willing to examine the unusual, and are highly inquisitive.
+                                                    </span>
+                                                                    <span class="mt-3"><strong>III</strong>	Social and emotional difficulties are not directly linked to giftedness. Rather, they result from a lack of understanding by the child of the nature of their intellectual difference. Par¬ents and teachers don’t usually discuss this difference with them because of the concern that they may get a ‘swelled head’. The risk is that gifted children may view their differ¬ences as ‘weinf or ‘bad’ or try to ignore or deny them.
+                                                    </span>
+                                                                    <span class="mt-3"><strong>IV</strong>	Most of the athletes are allowed to develop their special skills at whatever rate best suits them. No one tries to stop them from becoming much better baseball players or swim¬mers than their classmates. Yet if an academically gifted child tries to do two years of work in one, that’s viewed as potentially harmful. Much of the concern focuses on the non-academic areas of these gifted children’s development.
+                                                    </span>
+                                                                    <span class="mt-3"><strong>V</strong>	Researchers emphasize that for the vast majority of aca¬demically gifted children those concerns are groundless. In fact, these children are more likely to develop social and even academic problems if they don’t feel intellectually challenged. If gifted children don’t go to challenging pro¬grams, they may not learn how to learn. Eventually, in col¬lege or graduate school, they feel emotionally overwhelmed when they can’t just coast through their courses anymore.
+                                                    </span>
+                                                                    <span class="mt-3"><strong>VI</strong>	Gifted children represent both a challenge and a resource for schools. Educators have a responsibility to provide pro¬grams to meet the educational needs of gifted students who are capable of learning at advanced levels. Ideally, schools should have specifically trained teachers for gifted students to create a challenging and supportive learning environment for these children.
+                                                    </span>
+                                                                </div>
+                                                                <div class="mt-6"></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="resizer-x3"></div>
+                                            <div style="flex: 50%;">
+                                                <div class="col-md-12">
+                                                    <div class="card card-sm">
+                                                        <div class="list-group list-group-flush overflow-auto" style="height: calc(50rem + 20px);">
+                                                            <div class="list-group-item">
+                                                                <div class="row">
+                                                                    <div class="card-body">
+                                                                        <div class="mb-3">
+                                                                            <a class="btn btn-outline-blue" data-bs-toggle="collapse" data-bs-target="#collapse-5">Blaknot ochish</a>
+                                                                            <div id="collapse-5" class="collapse m-0">
+                                                                                <textarea class="col-12" rows="5"></textarea>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="row g-3 mt-3">
+                                                                            <span>Read the text and choose the correct heading for each paragraph from the list of headings below. <br>
+                                                        There are more headings than paragraphs, so you will not use all of them. You cannot use any heading more than once.<br>
+                                                        Mark your answers on the answer sheet. 
+                                                        </span>
+                                                                            <span>
+                                                        <strong>A)</strong>  Gifted children have no support.<br>
+                                                        <strong>B)</strong> Being gifted is not always easy.<br>
+                                                        <strong>C)</strong> Special attitude is required.<br>
+                                                        <strong>D)</strong> Lack of challenge may cause problems.<br>
+                                                        <strong>E)</strong> Identifying the gifted child.<br>
+                                                        <strong>F)</strong> Gifted children always become Famous.<br>
+                                                        <strong>G)</strong> Awareness of giftedness.<br>
+                                                        <strong>H)</strong> Studying from home.
+                                                        </span>
+                                                                            <div class="card">
+                                                                                <div class="table-responsive text-center">
+                                                                                    <table class="table table-vcenter card-table">
+                                                                                        <tbody>
+                                                                                            <tr>
+                                                                                                <td class="w-25"><strong><span class="btn5">15</span> Paragraph I</strong></td>
+                                                                                                <td class="w-25">
+                                                                                                    <select v-model="r_j15" class="form-select">
+                                                                        <option value="">Tanlang</option>
+                                                                        <option value="A">A</option>
+                                                                        <option value="B">B</option>
+                                                                        <option value="C">C</option>
+                                                                        <option value="D">D</option>
+                                                                        <option value="E">E</option>
+                                                                        <option value="F">F </option>
+                                                                        <option value="G">G </option>
+                                                                        <option value="H">H </option>
+                                                                    </select>
+                                                                                                </td>
+                                                                                                <td></td>
+                                                                                                <td class="w-25"><strong><span class="btn5">16</span> Paragraph II</strong></td>
+                                                                                                <td class="w-25">
+                                                                                                    <select v-model="r_j16" class="form-select">
+                                                                        <option value="">Tanlang</option>
+                                                                        <option value="A">A</option>
+                                                                        <option value="B">B</option>
+                                                                        <option value="C">C</option>
+                                                                        <option value="D">D</option>
+                                                                        <option value="E">E</option>
+                                                                        <option value="F">F </option>
+                                                                        <option value="G">G </option>
+                                                                        <option value="H">H </option>
+                                                                    </select>
+                                                                                                </td>
+                                                                                            </tr>
+                                                                                            <tr>
+                                                                                                <td class="w-25"><strong><span class="btn5">17</span> Paragraph III</strong></td>
+                                                                                                <td class="w-25">
+                                                                                                    <select v-model="r_j17" class="form-select">
+                                                                        <option value="">Tanlang</option>
+                                                                        <option value="A">A</option>
+                                                                        <option value="B">B</option>
+                                                                        <option value="C">C</option>
+                                                                        <option value="D">D</option>
+                                                                        <option value="E">E</option>
+                                                                        <option value="F">F </option>
+                                                                        <option value="G">G </option>
+                                                                        <option value="H">H </option>
+                                                                    </select>
+                                                                                                </td>
+                                                                                                <td></td>
+                                                                                                <td class="w-25"><strong><span class="btn5">18</span> Paragraph IV</strong></td>
+                                                                                                <td class="w-25">
+                                                                                                    <select v-model="r_j18" class="form-select">
+                                                                        <option value="">Tanlang</option>
+                                                                        <option value="A">A</option>
+                                                                        <option value="B">B</option>
+                                                                        <option value="C">C</option>
+                                                                        <option value="D">D</option>
+                                                                        <option value="E">E</option>
+                                                                        <option value="F">F </option>
+                                                                        <option value="G">G </option>
+                                                                        <option value="H">H </option>
+                                                                    </select>
+                                                                                                </td>
+                                                                                            </tr>
+                                                                                            <tr>
+                                                                                                <td class="w-25"><strong><span class="btn5">19</span> Paragraph V</strong></td>
+                                                                                                <td class="w-25">
+                                                                                                    <select v-model="r_j19" class="form-select">
+                                                                        <option value="">Tanlang</option>
+                                                                        <option value="A">A</option>
+                                                                        <option value="B">B</option>
+                                                                        <option value="C">C</option>
+                                                                        <option value="D">D</option>
+                                                                        <option value="E">E</option>
+                                                                        <option value="F">F </option>
+                                                                        <option value="G">G </option>
+                                                                        <option value="H">H </option>
+                                                                    </select>
+                                                                                                </td>
+                                                                                                <td></td>
+                                                                                                <td class="w-25"><strong><span class="btn5">20</span> Paragraph VI</strong></td>
+                                                                                                <td class="w-25">
+                                                                                                    <select v-model="r_j20" class="form-select">
+                                                                        <option value="">Tanlang</option>
+                                                                        <option value="A">A</option>
+                                                                        <option value="B">B</option>
+                                                                        <option value="C">C</option>
+                                                                        <option value="D">D</option>
+                                                                        <option value="E">E</option>
+                                                                        <option value="F">F </option>
+                                                                        <option value="G">G </option>
+                                                                        <option value="H">H </option>
+                                                                    </select>
+                                                                                                </td>
+                                                                                            </tr>
+                                                                                        </tbody>
+                                                                                    </table>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+
+                                    </div>
+                                </div>
+                                <div class="tab-pane" id="tab4">
+                                    <div class="row row-cards">
+                                        <div class="resizable-x4">
+                                            <div style="flex: 50%;">
+                                                <div class="col-md-12">
+                                                    <div class="card card-sm">
+                                                        <div class="list-group list-group-flush overflow-auto" style="height: calc(50rem + 20px);">
+                                                            <div class="list-group-item">
+                                                                <div class="row m-3">
+                                                                    <h2>PART 4</h2>
+                                                                    <strong class="mb-3">Read the following text for questions 21-29. </strong>
+                                                                    <h1 class="text-center">GOING TO THE LIBRARY IN THE PAST</h1>
+                                                                    <p>When I go into our local library, I often watch children looking at the shelves filled with a variety of brightlycoloured books. They pick a book, glance through a few of the pages and then
+                                                                        almost immediately reject it before beginning to look at another book. I smile to myself for when I was a child in the 1910s, we were never allowed anywhere near the books. They were
+                                                                        kept in some remote corner of the building to which only the librarian had access.</p>
+                                                                    <p>How, you may ask, did we manage to choose the book which we wanted to borrow? Well,immediately to the right of the entrance was a room which served two purposes: it was a reading room for
+                                                                        the older members of the community and it contained catalogues in alphabetical order of the titles and authors of the books kept in the library. Using these, all one had to do was to
+                                                                        write out a list of the books required. However, since most of us knew very few authors by name, and even fewer book titles, the whole process of borrowing a book was based upon guesses.
+                                                                        There was no possibility of looking through the first few pages to help us form an opinion, no looking atillustrations to discover if a book might arouse our interest.</p>
+                                                                    <p>Even now I recall almost with pain some of the selections my friends and I made. We learnedwith dismay that titles often gave little guidance as to what the book was about. If we could have
+                                                                        returned the book the next day, our irritation would have been considerably reduced, but this was not possible. The librarian did not allow us to bring back any book until we had kept
+                                                                        it for at least a week.</p>
+                                                                    <p>Having written out your list, you presented it to the librarian. lf you thought your troubles werefinished, you were sadly mistaken. Your hands were inspected to make sure they were clean.
+                                                                        More than once, one or other of us was sent out of the library and told to return when we had washed our hands.</p>
+                                                                    <p>Once the librarian was satisfied that we were clean enough, she would disappear into anotherroom and return with the first book on our list which was available. When a book was returned,
+                                                                        she would make a thorough inspection of the pages to make sure that it had not been damaged in any way. At least that way we never got blamed for something we had not done.</p>
+                                                                    <p>Although the librarian appeared very strict and frightening to a small boy, I owe her and the manwho gave the library to the town an immense debt of gratitude. They led me into the land of
+                                                                        story, romance and adventure, which in years to come brightened many a dull day.</p>
+                                                                </div>
+                                                                <div class="mt-6"></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="resizer-x4"></div>
+                                            <div style="flex: 50%;">
+                                                <div class="col-md-12">
+                                                    <div class="card card-sm">
+                                                        <div class="list-group list-group-flush overflow-auto" style="height: calc(50rem + 20px);">
+                                                            <div class="list-group-item">
+                                                                <div class="row">
+                                                                    <div class="card-body">
+                                                                        <div class="mb-3">
+                                                                            <a class="btn btn-outline-blue" data-bs-toggle="collapse" data-bs-target="#collapse-5">Blaknot ochish</a>
+                                                                            <div id="collapse-5" class="collapse m-0">
+                                                                                <textarea class="col-12" rows="5"></textarea>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <strong>For questions 21-24, choose the correct answer A, B, C, or D. Mark your answers on the answer sheet.</strong>
+                                                                        <div class="row g-3 mt-3">
+                                                                            <span><span class="btn5">21</span> According to the first paragraph, how is life different for children today from life for children in the '1910s?</span>
+                                                                            <div class="col-12">
+                                                                                <input-checkbox class="m-1" name="listening-21" label="A) They always get what they want." value="A" v-model="r_j21"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-21" label="B) They have a wider choice of books." value="B" v-model="r_j21"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-21" label="C) They are allowed to behave badly." value="C" v-model="r_j21"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-21" label="D) They spend more time reading books." value="D" v-model="r_j21"></input-checkbox>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="row g-3 mt-3">
+                                                                            <span><span class="btn5">22</span> It was difficult for children to know which books to choose because</span>
+                                                                            <div class="col-12">
+                                                                                <input-checkbox class="m-1" name="listening-22" label="A) there was no list of authors." value="A" v-model="r_j22"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-22" label="B) the illustrations did not interest them." value="B" v-model="r_j22"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-22" label="C) there were only a few book titles." value="C" v-model="r_j22"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-22" label="D) they could not see the books in advance." value="D" v-model="r_j22"></input-checkbox>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="row g-3 mt-3">
+                                                                            <span><span class="btn5">23</span> How did children find out which books were available in the library?</span>
+                                                                            <div class="col-12">
+                                                                                <input-checkbox class="m-1" name="listening-23" label="A) They had to write out a list." value="A" v-model="r_j23"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-23" label="B) They had to ask the librarian." value="B" v-model="r_j23"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-23" label="C) They had to look through the catalogues." value="C" v-model="r_j23"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-23" label="D) They had to order them." value="D" v-model="r_j23"></input-checkbox>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="row g-3 mt-3">
+                                                                            <span><span class="btn5">24</span> What does the writer say about book titles?</span>
+                                                                            <div class="col-12">
+                                                                                <input-checkbox class="m-1" name="listening-24" label="A) Nobody knew any of them." value="A" v-model="r_j24"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-24" label="B) They told us what books were about." value="B" v-model="r_j24"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-24" label="C) There were not very many of them." value="C" v-model="r_j24"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-24" label="D) They were not very helpful" value="D" v-model="r_j24"></input-checkbox>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="row g-3 mt-3">
+                                                                            <strong>For questions 25-29, decide if the following statements agree with the information given in the text. <br>
+                                                        Mark your answers on the answer sheet
+                                                        </strong>
+                                                                            <span><span class="btn5">25</span> Anyone who wants to take a book in a library should appear with washed hands. </span>
+                                                                            <div class="col-12">
+                                                                                <input-checkbox class="m-1" name="listening-25" label="A) True" value="A" v-model="r_j25"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-25" label="B) False" value="B" v-model="r_j25"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-25" label="C) No Information" value="C" v-model="r_j25"></input-checkbox>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="row g-3 mt-3">
+                                                                            <span><span class="btn5">26</span> Librarian provide the requested book in the list without any order. </span>
+                                                                            <div class="col-12">
+                                                                                <input-checkbox class="m-1" name="listening-26" label="A) True" value="A" v-model="r_j26"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-26" label="B) False" value="B" v-model="r_j26"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-26" label="C) No Information" value="C" v-model="r_j26"></input-checkbox>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="row g-3 mt-3">
+                                                                            <span><span class="btn5">27</span> When we are returning the rented book, a Liberian asks what we have read.</span>
+                                                                            <div class="col-12">
+                                                                                <input-checkbox class="m-1" name="listening-27" label="A) True" value="A" v-model="r_j27"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-27" label="B) False" value="B" v-model="r_j27"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-27" label="C) No Information" value="C" v-model="r_j27"></input-checkbox>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="row g-3 mt-3">
+                                                                            <span><span class="btn5">28</span> The author had some fear of librarian in his childhood. </span>
+                                                                            <div class="col-12">
+                                                                                <input-checkbox class="m-1" name="listening-28" label="A) True" value="A" v-model="r_j28"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-28" label="B) False" value="B" v-model="r_j28"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-28" label="C) No Information" value="C" v-model="r_j28"></input-checkbox>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="row g-3 mt-3">
+                                                                            <span><span class="btn5">29</span> The author is grateful to the librarian for all his life</span>
+                                                                            <div class="col-12">
+                                                                                <input-checkbox class="m-1" name="listening-29" label="A) True" value="A" v-model="r_j29"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-29" label="B) False" value="B" v-model="r_j29"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-29" label="C) No Information" value="C" v-model="r_j29"></input-checkbox>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="mt-6"></div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+
+                                    </div>
+                                </div>
+                                <div class="tab-pane" id="tab5">
+                                    <div class="row row-cards">
+                                        <div class="resizable-x5">
+                                            <div style="flex: 50%;">
+                                                <div class="col-md-12">
+                                                    <div class="card card-sm">
+                                                        <div class="list-group list-group-flush overflow-auto" style="height: calc(50rem + 20px);">
+                                                            <div class="list-group-item">
+                                                                <div class="row m-3">
+                                                                    <h2>PART 5</h2>
+                                                                    <strong class="mb-3">Read the following text for questions 30-35.</strong>
+                                                                    <h2>Location is everything</h2>
+                                                                    <strong class="mb-2">The estate agent's advice dates back to 3500вс when the first city of trade took off</strong>
+                                                                    <p>Our distant ancestors led pretty simple lives. Until around 10,000 BC, all humans were hunter-gatherers and lived as nomadic life, searching endlessly for food. It was the development of
+                                                                        agriculture that enabled humans to settle down and live, first as farmers and then as villagers. Around 3500вс, small towns began appearing in Mesopotamia, surrounded by defensive high
+                                                                        walls and irrigated fields that fed the town's population.</p>
+                                                                    <p>In the thousand years that followed, when agriculture had become more of a science and crop yields had risen, fewer people were needed to produce food. People took other jobs, became wealthier
+                                                                        and more and more chose to a live in towns close to shops and markets. This worked well for centuries. Towns flourished and eventually one of the grandest, Rome, became the world's first
+                                                                        city of more than one million s people around 100 AD.</p>
+                                                                    <p>Although the fertile lands surrounding Rome could have adequately fed the city, the Roman people began importing food and a became reliant on long supply chains. When Gaiseric the Vandal
+                                                                        began withholding vital North African grain supplies from Rome in 455AD, the city's went into steep decline. The Dark that ensued saw people deserting cities across Europe and returning
+                                                                        to the countryside.</p>
+                                                                    <strong class="mb-2">Make it accessible</strong>
+                                                                    <p>It was not until 1200AD that people began flocking back to the cities, a trend encouraged by the growth of iron technology and further improvements in agriculture. Cities and towns began
+                                                                        to spring up across Europe and Asia.</p>
+                                                                    <p>The main factor which determined where a city was founded, according to Derek Keene, Director of the Centre for Metropolitan History at the University of London's Institute of Historical
+                                                                        Research, was simple geography. "Was it accessible to people who wished to trade there or bring in supplies?"</p>
+                                                                    <p>However, there were other important considerations. "A city might be successfully founded in a desert if there was a need for a staging post or an interchange on a trade route," he says.
+                                                                        Then there were the simple demands of a ruler's ego, or a need to defend people against invaders. Finally, there was one other major motivating force: religion. "A sacred site attracts
+                                                                        many visitors who require service," Keene says.</p>
+                                                                    <p>In medieval times, cities grew to exploit trade routes. Bruges in Belgium became rich by weaving wool from Britain. Florence, too, prospered from its wool industry until banking came to dominate
+                                                                        its economy.</p>
+                                                                    <p>Constantinople became by far Europe's largest city and premiere trading centre, the true heir to the Roman legacy during the Middle Ages. The gateway between the Eastern Mediterranean, India
+                                                                        and Africa on one side and Europe on the other, Constantinople played a crucial role in the trade of Eastern riches for Western wool and heavy iron products.</p>
+                                                                    <p>At the same time, Venice was prospering thanks to trade, its proximity to the sea, Africa and the treasures of Persia The city-state traded luxury goods such as precious stones, spices, silks
+                                                                        and ivory.</p>
+                                                                    <strong class="mb-2">Cities that broke the rules</strong>
+                                                                    <p>The lure of trading riches has encouraged the growth of cities in unlikely locations. When the East India Trading Company needed a base with so good access to the Ganges Valley, it founded
+                                                                        Calcutta on swamp land. The site was the furthest inland point that could be reached by ocean-going ships. and the city has grown to a population of 15.5 million today.The most ludicrously
+                                                                        located city has to be St Petersburg, built as the capital of a vast empire by Peter the Great.</p>
+                                                                </div>
+                                                                <div class="mt-6"></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="resizer-x5"></div>
+                                            <div style="flex: 50%;">
+                                                <div class="col-md-12">
+                                                    <div class="card card-sm">
+                                                        <div class="list-group list-group-flush overflow-auto" style="height: calc(50rem + 20px);">
+                                                            <div class="list-group-item">
+                                                                <div class="row">
+                                                                    <div class="card-body">
+                                                                        <div class="mb-3">
+                                                                            <a class="btn btn-outline-blue" data-bs-toggle="collapse" data-bs-target="#collapse-5">Blaknot ochish</a>
+                                                                            <div id="collapse-5" class="collapse m-0">
+                                                                                <textarea class="col-12" rows="5"></textarea>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="row g-3 mt-3">
+                                                                            <strong class="mb-2">For questions 30-33, fill in the missing information in the numbered spaces. <br>
+                                                    Write no more than ONE WORD and / or A NUMBER for each question. 
+                                                    </strong>
+                                                                            <label class="form">
+                                                    <span >Our ancestors who lived 100 centuries ago had a challenging task of looking for <span class="btn5">30</span></span>
+                                                    <input type="text" class="form-controlclear" v-model="r_j30" placeholder="_______________________">
+                                                    </label>
+                                                                            <label class="form">
+                                                    <span >Thanks to <span class="btn5">31</span></span>
+                                                    <input type="text" class="form-controlclear" v-model="r_j31" placeholder="_______________________">
+                                                    <span >,ancient people started living in a certain place.</span>
+                                                    </label>
+                                                                            <label class="form">
+                                                    <span >Agriculture began to be not very popular job as time passed by, and people took other jobs which made them even <span class="btn5">32</span></span>
+                                                    <input type="text" class="form-controlclear" v-model="r_j32" placeholder="_______________________">
+                                                    </label>
+                                                                            <label class="form">
+                                                    <span class="btn5">33</span>
+                                                    <input type="text" class="form-controlclear" v-model="r_j33" placeholder="_______________________">
+                                                    <span>was the center where over million residents lived. </span>
+                                                    </label>
+                                                                            <strong class="mb-2">For questions 34-35, choose the correct answer A, B, C, or D. Mark your answers on the answer sheet.</strong>
+
+                                                                            <span><span class="btn5">34</span> Which city was built on unsuitable land but has developed into a major world city?</span>
+                                                                            <div class="col-12">
+                                                                                <input-checkbox class="m-1" name="listening-34" label="A) Bruges" value="A" v-model="r_j34"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-34" label="B) St Petersburg" value="B" v-model="r_j34"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-34" label="C) Calcutta" value="C" v-model="r_j34"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-34" label="D) Venice" value="D" v-model="r_j34"></input-checkbox>
+                                                                            </div>
+                                                                            <span><span class="btn5">35</span> Which city lost its power and influence rapidly when it suffered food shortages?</span>
+                                                                            <div class="col-12">
+                                                                                <input-checkbox class="m-1" name="listening-35" label="A) New York" value="A" v-model="r_j35"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-35" label="B) Florence" value="B" v-model="r_j35"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-35" label="C) Constantinople" value="C" v-model="r_j35"></input-checkbox> <br>
+                                                                                <input-checkbox class="m-1" name="listening-35" label="D) Rome" value="D" v-model="r_j35"></input-checkbox>
+                                                                            </div>
+
+                                                                            <div class="mt-6"></div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+
+
+
+                        </div>
+                </div>
+                <div class="modal modal-blur fade" id="modal-qayta" tabindex="-1" role="dialog" aria-hidden="true">
+                    <div class="modal-dialog modal-sm2 modal-dialog-centered " role="document">
+                        <div class="modal-content">
+                            <div class="modal-body ">
+                                <div class="modal-title ">Testni qayta topshirasizmi?</div>
+                                <div>Belgilagan javoblaringiz bekor qilinadi. <br> Javob varaqasi tozalanadi va test boshidan boshlanadi.
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <a type="button" class="btn btn-link link-secondary me-auto" data-bs-dismiss="modal">Bekor qilish</a>
+                                <a href="" class="btn btn-blue">Qayta topshirish</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal modal-blur fade" id="modal-chiqish" tabindex="-1" role="dialog" aria-hidden="true">
+                    <div class="modal-dialog modal-sm2 modal-dialog-centered " role="document">
+                        <div class="modal-content">
+                            <div class="modal-body ">
+                                <div class="modal-title ">Siz testdan chiqasizmi?</div>
+                                <div>Belgilagan javoblaringiz yo'qotiladi. </div>
+                            </div>
+                            <div class="modal-footer">
+                                <a type="button" class="btn btn-link link-secondary me-auto" data-bs-dismiss="modal">Bekor qilish</a>
+                                <a href="/multilevel" class="btn btn-danger">Chiqish</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal modal-blur fade" id="modal-topshirish" tabindex="-1" role="dialog" aria-hidden="true">
+                    <div class="modal-dialog modal-sm2 modal-dialog-centered " role="document">
+                        <div class="modal-content">
+                            <div class="modal-body ">
+                                <div class="modal-title ">Siz testni topshirasizmi?</div>
+                                <div>Hamma savollarga javob berganingizga ishonch hosil qiling. <br> Javob berilmagan savollar uchun 0 ball hioblanadi.</div>
+                            </div>
+                            <div class="modal-footer">
+                                <a type="button" class="btn btn-link link-secondary me-auto" data-bs-dismiss="modal">Bekor qilish</a>
+                                <a @click="putMlReading" class="btn btn-green">Topshirish</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                </form>
+                <div class="offcanvas offcanvas-top" tabindex="-1" id="offcanvasTop" aria-labelledby="offcanvasTopLabel">
+                    <div class="offcanvas-body">
+                        <div class="text-center">
+                            <div class="card-title">
+                                <h2>Question Palette <a class="disabled btn btn-blue">*</a> Answered
+                                    <a class=" btn btn-blue">*</a> Unanswered
+                                </h2>
+                            </div>
+                            <a :class="{disabled : r_j01 }" class="btn btn-blue">1</a>
+                            <a :class="{disabled : r_j02 }" class="btn btn-blue">2</a>
+                            <a :class="{disabled : r_j03 }" class="btn btn-blue">3</a>
+                            <a :class="{disabled : r_j04 }" class="btn btn-blue">4</a>
+                            <a :class="{disabled : r_j05 }" class="btn btn-blue">5</a>
+                            <a :class="{disabled : r_j06 }" class="btn btn-blue">6</a>
+                            <a :class="{disabled : r_j07 }" class="btn btn-blue">7</a>
+                            <a :class="{disabled : r_j08 }" class="btn btn-blue">8</a>
+                            <a :class="{disabled : r_j09 }" class="btn btn-blue">9</a>
+                            <a :class="{disabled : r_j10 }" class="btn btn-blue">10</a>
+                            <a :class="{disabled : r_j11 }" class="btn btn-blue">11</a>
+                            <a :class="{disabled : r_j12 }" class="btn btn-blue">12</a>
+                            <a :class="{disabled : r_j13 }" class="btn btn-blue">13</a>
+                            <a :class="{disabled : r_j14 }" class="btn btn-blue">14</a>
+                            <a :class="{disabled : r_j15 }" class="btn btn-blue">15</a>
+                            <a :class="{disabled : r_j16 }" class="btn btn-blue">16</a>
+                            <a :class="{disabled : r_j17 }" class="btn btn-blue">17</a>
+                            <a :class="{disabled : r_j18 }" class="btn btn-blue">18</a>
+                            <a :class="{disabled : r_j19 }" class="btn btn-blue">19</a>
+                            <a :class="{disabled : r_j20 }" class="btn btn-blue">20</a>
+                            <a :class="{disabled : r_j21 }" class="btn btn-blue">21</a>
+                            <a :class="{disabled : r_j22 }" class="btn btn-blue">22</a>
+                            <a :class="{disabled : r_j23 }" class="btn btn-blue">23</a>
+                            <a :class="{disabled : r_j24 }" class="btn btn-blue">24</a>
+                            <a :class="{disabled : r_j25 }" class="btn btn-blue">25</a>
+                            <a :class="{disabled : r_j26 }" class="btn btn-blue">26</a>
+                            <a :class="{disabled : r_j27 }" class="btn btn-blue">27</a>
+                            <a :class="{disabled : r_j28 }" class="btn btn-blue">28</a>
+                            <a :class="{disabled : r_j29 }" class="btn btn-blue">29</a>
+                            <a :class="{disabled : r_j30 }" class="btn btn-blue">30</a>
+                            <a :class="{disabled : r_j31 }" class="btn btn-blue">31</a>
+                            <a :class="{disabled : r_j32 }" class="btn btn-blue">32</a>
+                            <a :class="{disabled : r_j33 }" class="btn btn-blue">33</a>
+                            <a :class="{disabled : r_j34 }" class="btn btn-blue">34</a>
+                            <a :class="{disabled : r_j35 }" class="btn btn-blue">35</a>
+                        </div>
+                        <div class="text-center">
+                            <a class="btn mt-3" type="button" data-bs-dismiss="offcanvas">
+                            Javoblar varaqasini yopish
+                        </a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-12 fixed-bottom">
+            <div class="sticky-bottom">
+                <div class="card">
+                    <div class="text-center">
+
+                    </div>
+
+                    <div class="page-body mt-2 mb-0">
+                        <div class="container-xl">
+                            <div class="row">
+
+                                <div class="col-md-2">
+                                    <div class="mb-2 p-0">
+                                        <a class="btn btn-outline-orange col-12" data-bs-toggle="modal" data-bs-target="#modal-chiqish">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-logout" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                <path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2"></path>
+                                <path d="M7 12h14l-3 -3m0 6l3 -3"></path>
+                            </svg> Chiqish
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="col-md-1">
+                                    <div class="mb-2 p-0">
+                                        <a class="btn col-12" data-bs-toggle="offcanvas" href="#offcanvasTop" role="button" aria-controls="offcanvasTop">
+                            Javob
+                            </a>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-2">
+                                    <div class="mb-2 p-0">
+                                        <a class="btn btn-blue col-12 btnPrevious" data-bs-toggle="modal" data-bs-target="#modal-small">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-chevron-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                <polyline points="15 6 9 12 15 18"></polyline>
+                            </svg> Oldingi
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="col-2">
+                                    <div class="card-body p-0 m-0 text-center" :class="{qizil: showModal}">
+                                        <svg class="mb-3" xmlns="http://www.w3.org/2000/svg" width="40" height="40"
+                                            viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+                                            fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                            <circle cx="12" cy="13" r="7"></circle>
+                                            <polyline points="12 10 12 13 14 13"></polyline>
+                                            <line x1="7" y1="4" x2="4.25" y2="6"></line>
+                                            <line x1="17" y1="4" x2="19.75" y2="6"></line>
+                                        </svg>
+                                        <strong style="font-size: 30px;" class="m-0 p-0">{{ minutes }}:{{ seconds }}</strong>
+                                        <div v-if="showModal" class="progress">
+                                            <div class="progress-bar progress-bar-indeterminate bg-danger"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-2">
+                                    <div class="card-body mt-0 p-0">
+                                        <a class="btn btn-blue col-12 btnNext" data-bs-toggle="modal" data-bs-target="#modal-small">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-chevron-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                <polyline points="9 6 15 12 9 18"></polyline>
+                            </svg> Keyingi
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="col-md-1">
+                                    <div class="card-body mt-0 p-0">
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="card-body mb-3 p-0">
+                                        <a class="btn btn-green col-12" data-bs-toggle="modal" data-bs-target="#modal-topshirish">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-circle-check" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                <circle cx="12" cy="12" r="9"></circle>
+                                <path d="M9 12l2 2l4 -4"></path>
+                            </svg> Topshirish
+                                        </a>
+                                    </div>
+                                </div>
+                                <!-- <div class="col-md-1">
+                        <div class="card-body mb-3 p-0">
+                            <a class="btn btn-outline-blue col-12" data-bs-toggle="modal" data-bs-target="#modal-qayta">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-rotate-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                <path d="M15 4.55a8 8 0 0 0 -6 14.9m0 -4.45v5h-5"></path>
+                                <line x1="18.37" y1="7.16" x2="18.37" y2="7.17"></line>
+                                <line x1="13" y1="19.94" x2="13" y2="19.95"></line>
+                                <line x1="16.84" y1="18.37" x2="16.84" y2="18.38"></line>
+                                <line x1="19.37" y1="15.1" x2="19.37" y2="15.11"></line>
+                                <line x1="19.94" y1="11" x2="19.94" y2="11.01"></line>
+                            </svg>
+                            Qayta topshirish
+                            </a>
+                        </div>
+                        </div> -->
+
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Libs JS -->
+    
+<div class="loader-wrapper">
+    <span class="loader"><span class="loader-inner"></span></span>
+  </div>
+<script src="./public/dist/libs/apexcharts/dist/apexcharts.min.js"></script>
+<script src="./public/dist/js/itc-slider.js" defer ></script>
+<!-- Tabler Core -->
+<script src="./public/dist/js/tabler.min.js"></script>
+<script src="./public/dist/js/demo.min.js"></script>
+<script>
+    $(window).on("load",function(){
+  $(".loader-wrapper").fadeOut("slow");
+});
+</script>
+
+        <script src="../../public/vueuser/ml_test_full/01-reading.js"></script>
+        <script>
+            $('.btnNext').click(function() {
+                $('.nav-tabs > .active').next('li').find('a').trigger('click');
+            });
+
+            $('.btnPrevious').click(function() {
+                $('.nav-tabs > .active').prev('li').find('a').trigger('click');
+            });
+        </script>
+        <script>
+            (function() {
+                "use strict";
+
+                // 1111111111111111111111111
+                (function resizableX() {
+                    const resizer = document.querySelector(".resizer-x");
+                    resizer.addEventListener("mousedown", onmousedown);
+
+
+                    // for desktop
+                    function onmousedown(e) {
+                        e.preventDefault();
+                        document.addEventListener("mousemove", onmousemove);
+                        document.addEventListener("mouseup", onmouseup);
+                    }
+
+                    function onmousemove(e) {
+                        e.preventDefault();
+                        const clientX = e.clientX;
+                        const deltaX = clientX - (resizer._clientX || clientX);
+                        resizer._clientX = clientX;
+                        const l = resizer.previousElementSibling;
+                        const r = resizer.nextElementSibling;
+                        // LEFT
+                        if (deltaX < 0) {
+                            const w = Math.round(parseInt(getComputedStyle(l).width) + deltaX);
+                            l.style.flex = `0 ${w < 10 ? 0 : w}px`;
+                            r.style.flex = "1 0";
+                        }
+                        // RIGHT
+                        if (deltaX > 0) {
+                            const w = Math.round(parseInt(getComputedStyle(r).width) - deltaX);
+                            r.style.flex = `0 ${w < 10 ? 0 : w}px`;
+                            l.style.flex = "1 0";
+                        }
+                    }
+
+                    function onmouseup(e) {
+                        e.preventDefault();
+                        document.removeEventListener("mousemove", onmousemove);
+                        document.removeEventListener("mouseup", onmouseup);
+                        delete e._clientX;
+                    }
+                })();
+
+
+                (function resizableX2() {
+                    const resizer = document.querySelector(".resizer-x2");
+                    resizer.addEventListener("mousedown", onmousedown);
+
+
+                    // for desktop
+                    function onmousedown(e) {
+                        e.preventDefault();
+                        document.addEventListener("mousemove", onmousemove);
+                        document.addEventListener("mouseup", onmouseup);
+                    }
+
+                    function onmousemove(e) {
+                        e.preventDefault();
+                        const clientX = e.clientX;
+                        const deltaX = clientX - (resizer._clientX || clientX);
+                        resizer._clientX = clientX;
+                        const l = resizer.previousElementSibling;
+                        const r = resizer.nextElementSibling;
+                        // LEFT
+                        if (deltaX < 0) {
+                            const w = Math.round(parseInt(getComputedStyle(l).width) + deltaX);
+                            l.style.flex = `0 ${w < 10 ? 0 : w}px`;
+                            r.style.flex = "1 0";
+                        }
+                        // RIGHT
+                        if (deltaX > 0) {
+                            const w = Math.round(parseInt(getComputedStyle(r).width) - deltaX);
+                            r.style.flex = `0 ${w < 10 ? 0 : w}px`;
+                            l.style.flex = "1 0";
+                        }
+                    }
+
+                    function onmouseup(e) {
+                        e.preventDefault();
+                        document.removeEventListener("mousemove", onmousemove);
+                        document.removeEventListener("mouseup", onmouseup);
+                        delete e._clientX;
+                    }
+                })();
+
+                (function resizableX3() {
+                    const resizer = document.querySelector(".resizer-x3");
+                    resizer.addEventListener("mousedown", onmousedown);
+
+
+                    // for desktop
+                    function onmousedown(e) {
+                        e.preventDefault();
+                        document.addEventListener("mousemove", onmousemove);
+                        document.addEventListener("mouseup", onmouseup);
+                    }
+
+                    function onmousemove(e) {
+                        e.preventDefault();
+                        const clientX = e.clientX;
+                        const deltaX = clientX - (resizer._clientX || clientX);
+                        resizer._clientX = clientX;
+                        const l = resizer.previousElementSibling;
+                        const r = resizer.nextElementSibling;
+                        // LEFT
+                        if (deltaX < 0) {
+                            const w = Math.round(parseInt(getComputedStyle(l).width) + deltaX);
+                            l.style.flex = `0 ${w < 10 ? 0 : w}px`;
+                            r.style.flex = "1 0";
+                        }
+                        // RIGHT
+                        if (deltaX > 0) {
+                            const w = Math.round(parseInt(getComputedStyle(r).width) - deltaX);
+                            r.style.flex = `0 ${w < 10 ? 0 : w}px`;
+                            l.style.flex = "1 0";
+                        }
+                    }
+
+                    function onmouseup(e) {
+                        e.preventDefault();
+                        document.removeEventListener("mousemove", onmousemove);
+                        document.removeEventListener("mouseup", onmouseup);
+                        delete e._clientX;
+                    }
+                })();
+
+                (function resizableX4() {
+                    const resizer = document.querySelector(".resizer-x4");
+                    resizer.addEventListener("mousedown", onmousedown);
+
+
+                    // for desktop
+                    function onmousedown(e) {
+                        e.preventDefault();
+                        document.addEventListener("mousemove", onmousemove);
+                        document.addEventListener("mouseup", onmouseup);
+                    }
+
+                    function onmousemove(e) {
+                        e.preventDefault();
+                        const clientX = e.clientX;
+                        const deltaX = clientX - (resizer._clientX || clientX);
+                        resizer._clientX = clientX;
+                        const l = resizer.previousElementSibling;
+                        const r = resizer.nextElementSibling;
+                        // LEFT
+                        if (deltaX < 0) {
+                            const w = Math.round(parseInt(getComputedStyle(l).width) + deltaX);
+                            l.style.flex = `0 ${w < 10 ? 0 : w}px`;
+                            r.style.flex = "1 0";
+                        }
+                        // RIGHT
+                        if (deltaX > 0) {
+                            const w = Math.round(parseInt(getComputedStyle(r).width) - deltaX);
+                            r.style.flex = `0 ${w < 10 ? 0 : w}px`;
+                            l.style.flex = "1 0";
+                        }
+                    }
+
+                    function onmouseup(e) {
+                        e.preventDefault();
+                        document.removeEventListener("mousemove", onmousemove);
+                        document.removeEventListener("mouseup", onmouseup);
+                        delete e._clientX;
+                    }
+                })();
+
+                (function resizableX5() {
+                    const resizer = document.querySelector(".resizer-x5");
+                    resizer.addEventListener("mousedown", onmousedown);
+
+
+                    // for desktop
+                    function onmousedown(e) {
+                        e.preventDefault();
+                        document.addEventListener("mousemove", onmousemove);
+                        document.addEventListener("mouseup", onmouseup);
+                    }
+
+                    function onmousemove(e) {
+                        e.preventDefault();
+                        const clientX = e.clientX;
+                        const deltaX = clientX - (resizer._clientX || clientX);
+                        resizer._clientX = clientX;
+                        const l = resizer.previousElementSibling;
+                        const r = resizer.nextElementSibling;
+                        // LEFT
+                        if (deltaX < 0) {
+                            const w = Math.round(parseInt(getComputedStyle(l).width) + deltaX);
+                            l.style.flex = `0 ${w < 10 ? 0 : w}px`;
+                            r.style.flex = "1 0";
+                        }
+                        // RIGHT
+                        if (deltaX > 0) {
+                            const w = Math.round(parseInt(getComputedStyle(r).width) - deltaX);
+                            r.style.flex = `0 ${w < 10 ? 0 : w}px`;
+                            l.style.flex = "1 0";
+                        }
+                    }
+
+                    function onmouseup(e) {
+                        e.preventDefault();
+                        document.removeEventListener("mousemove", onmousemove);
+                        document.removeEventListener("mouseup", onmouseup);
+                        delete e._clientX;
+                    }
+                })();
+
+
+
+            })
+            ();
+        </script>
+</body>
+
+</html>
