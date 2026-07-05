@@ -1,23 +1,18 @@
 <script setup lang="ts">
-import type { Database, Attempt, Section } from '~/types/database.types'
+import type { SectionType } from '~/types/exam'
 import { SECTION_META } from '~/types/exam'
 
 definePageMeta({ layout: 'admin', middleware: 'staff' })
 
-const supabase = useSupabaseClient<Database>()
-
-const { data: queue } = await useAsyncData('grading-queue', async () => {
-  const { data } = await supabase
-    .from('attempts')
-    .select('*, sections(type, title), tests(title), profiles:user_id(full_name)')
-    .eq('status', 'submitted')
-    .order('submitted_at', { ascending: true })
-  return (data as unknown as (Attempt & {
-    sections: Section
-    tests: { title: string }
-    profiles: { full_name: string | null } | null
-  })[]) ?? []
-})
+interface QueueRow {
+  id: string
+  submittedAt: string | null
+  sectionType: SectionType
+  sectionTitle: string
+  testTitle: string
+  studentName: string | null
+}
+const { data: queue } = await useFetch<QueueRow[]>('/api/admin/grading')
 </script>
 
 <template>
@@ -38,21 +33,21 @@ const { data: queue } = await useAsyncData('grading-queue', async () => {
           class="flex items-center gap-4 p-4 hover:bg-elevated/50"
         >
           <UIcon
-            :name="SECTION_META[a.sections.type].icon"
+            :name="SECTION_META[a.sectionType].icon"
             class="size-5 text-primary shrink-0"
           />
           <div class="flex-1 min-w-0">
             <p class="font-medium truncate">
-              {{ a.tests.title }} — {{ a.sections.title }}
+              {{ a.testTitle }} — {{ a.sectionTitle }}
             </p>
             <p class="text-xs text-muted">
-              {{ a.profiles?.full_name || 'Student' }} · submitted {{ a.submitted_at ? new Date(a.submitted_at).toLocaleString() : '' }}
+              {{ a.studentName || 'Student' }} · submitted {{ a.submittedAt ? new Date(a.submittedAt).toLocaleString() : '' }}
             </p>
           </div>
           <UBadge
             color="warning"
             variant="subtle"
-            :label="a.sections.type"
+            :label="a.sectionType"
             size="sm"
           />
           <UIcon

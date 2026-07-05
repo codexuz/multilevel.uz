@@ -1,10 +1,6 @@
 <script setup lang="ts">
-import type { Database, Test } from '~/types/database.types'
-
 definePageMeta({ layout: 'admin', middleware: 'staff' })
 
-const supabase = useSupabaseClient<Database>()
-const user = useSupabaseUser()
 const toast = useToast()
 
 const state = reactive({
@@ -18,14 +14,22 @@ const saving = ref(false)
 async function create() {
   if (!state.title.trim()) return toast.add({ title: 'Title is required', color: 'error' })
   saving.value = true
-  const { data, error } = await supabase
-    .from('tests')
-    .insert({ ...state, created_by: user.value?.id })
-    .select()
-    .single()
-  saving.value = false
-  if (error) return toast.add({ title: error.message, color: 'error' })
-  await navigateTo(`/admin/tests/${(data as Test).id}`)
+  try {
+    const { id } = await $fetch<{ id: string }>('/api/admin/tests', {
+      method: 'POST',
+      body: {
+        title: state.title,
+        description: state.description,
+        level: state.level,
+        isPremium: state.is_premium
+      }
+    })
+    await navigateTo(`/admin/tests/${id}`)
+  } catch (e) {
+    toast.add({ title: (e as { data?: { message?: string } })?.data?.message ?? 'Failed', color: 'error' })
+  } finally {
+    saving.value = false
+  }
 }
 </script>
 

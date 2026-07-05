@@ -1,26 +1,28 @@
 <script setup lang="ts">
-import type { Database, Test } from '~/types/database.types'
+import type { TestDto } from '~/types/models'
 
 definePageMeta({ layout: 'admin', middleware: 'staff' })
 
-const supabase = useSupabaseClient<Database>()
-const { data: tests, refresh } = await useAsyncData('admin-tests-list', async () => {
-  const { data } = await supabase.from('tests').select('*').order('created_at', { ascending: false })
-  return (data as Test[]) ?? []
-})
+const { data: tests, refresh } = await useFetch<TestDto[]>('/api/admin/tests')
 
 const toast = useToast()
-async function togglePublish(t: Test) {
+async function togglePublish(t: TestDto) {
   const next = t.status === 'published' ? 'draft' : 'published'
-  const { error } = await supabase.from('tests').update({ status: next }).eq('id', t.id)
-  if (error) return toast.add({ title: error.message, color: 'error' })
-  await refresh()
+  try {
+    await $fetch(`/api/admin/tests/${t.id}`, { method: 'PATCH', body: { status: next } })
+    await refresh()
+  } catch (e) {
+    toast.add({ title: (e as { data?: { message?: string } })?.data?.message ?? 'Failed', color: 'error' })
+  }
 }
-async function remove(t: Test) {
+async function remove(t: TestDto) {
   if (!confirm(`Delete "${t.title}"? This removes all its sections and questions.`)) return
-  const { error } = await supabase.from('tests').delete().eq('id', t.id)
-  if (error) return toast.add({ title: error.message, color: 'error' })
-  await refresh()
+  try {
+    await $fetch(`/api/admin/tests/${t.id}`, { method: 'DELETE' })
+    await refresh()
+  } catch (e) {
+    toast.add({ title: (e as { data?: { message?: string } })?.data?.message ?? 'Failed', color: 'error' })
+  }
 }
 </script>
 
@@ -56,7 +58,7 @@ async function remove(t: Test) {
                 {{ t.title }}
               </NuxtLink>
               <UBadge
-                v-if="t.is_premium"
+                v-if="t.isPremium"
                 color="primary"
                 variant="subtle"
                 size="sm"

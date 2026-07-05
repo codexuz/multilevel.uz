@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { SECTION_META, SECTION_TYPES } from '~/types/exam'
 
-const user = useSupabaseUser()
+const { loggedIn: user } = useMe()
 const ctaTo = computed(() => (user.value ? '/dashboard' : '/login'))
 </script>
 

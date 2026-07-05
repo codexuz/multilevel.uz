@@ -1,54 +1,55 @@
 <script setup lang="ts">
-import type { Database, Profile, Subscription } from '~/types/database.types'
 import type { UserRole } from '~/types/exam'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
-const supabase = useSupabaseClient<Database>()
 const toast = useToast()
 
-const { data, refresh } = await useAsyncData('admin-users', async () => {
-  const [{ data: profiles }, { data: subs }] = await Promise.all([
-    supabase.from('profiles').select('*').order('created_at', { ascending: false }),
-    supabase.from('subscriptions').select('*').eq('status', 'active')
-  ])
-  return { profiles: (profiles as Profile[]) ?? [], subs: (subs as Subscription[]) ?? [] }
-})
+interface AdminUser {
+  id: string
+  name: string | null
+  email: string
+  avatarUrl: string | null
+  role: UserRole
+  createdAt: string
+  isPremium: boolean
+}
+const { data: usersList, refresh } = await useFetch<AdminUser[]>('/api/admin/users')
 
 const roles: UserRole[] = ['student', 'examiner', 'admin']
 
-function activeSub(userId: string) {
-  return data.value?.subs.find((s) => {
-    if (s.user_id !== userId || s.plan !== 'premium') return false
-    return !s.current_period_end || new Date(s.current_period_end) > new Date()
-  })
+function fail(e: unknown) {
+  toast.add({ title: (e as { data?: { message?: string } })?.data?.message ?? 'Failed', color: 'error' })
 }
 
-async function setRole(p: Profile, role: UserRole) {
-  const { error } = await supabase.from('profiles').update({ role }).eq('id', p.id)
-  if (error) return toast.add({ title: error.message, color: 'error' })
-  toast.add({ title: `Role updated to ${role}`, color: 'success' })
-  await refresh()
+async function setRole(p: AdminUser, role: UserRole) {
+  try {
+    await $fetch(`/api/admin/users/${p.id}/role`, { method: 'PATCH', body: { role } })
+    toast.add({ title: `Role updated to ${role}`, color: 'success' })
+    await refresh()
+  } catch (e) {
+    fail(e)
+  }
 }
 
-async function grantPremium(p: Profile, days = 30) {
-  const end = new Date(Date.now() + days * 86400000).toISOString()
-  const { error } = await supabase.from('subscriptions').insert({
-    user_id: p.id, plan: 'premium', status: 'active', current_period_end: end, provider: 'manual'
-  })
-  if (error) return toast.add({ title: error.message, color: 'error' })
-  toast.add({ title: `Premium granted for ${days} days`, color: 'success' })
-  await refresh()
+async function grantPremium(p: AdminUser, days = 30) {
+  try {
+    await $fetch(`/api/admin/users/${p.id}/subscription`, { method: 'POST', body: { days } })
+    toast.add({ title: `Premium granted for ${days} days`, color: 'success' })
+    await refresh()
+  } catch (e) {
+    fail(e)
+  }
 }
 
-async function revokePremium(p: Profile) {
-  const { error } = await supabase.from('subscriptions')
-    .update({ status: 'expired' })
-    .eq('user_id', p.id)
-    .eq('status', 'active')
-  if (error) return toast.add({ title: error.message, color: 'error' })
-  toast.add({ title: 'Premium revoked', color: 'success' })
-  await refresh()
+async function revokePremium(p: AdminUser) {
+  try {
+    await $fetch(`/api/admin/users/${p.id}/subscription`, { method: 'DELETE' })
+    toast.add({ title: 'Premium revoked', color: 'success' })
+    await refresh()
+  } catch (e) {
+    fail(e)
+  }
 }
 </script>
 
@@ -61,21 +62,21 @@ async function revokePremium(p: Profile) {
     <UCard :ui="{ body: 'p-0 sm:p-0' }">
       <div class="divide-y divide-default">
         <div
-          v-for="p in data?.profiles"
+          v-for="p in usersList"
           :key="p.id"
           class="flex flex-wrap items-center gap-4 p-4"
         >
           <UAvatar
-            :src="p.avatar_url || undefined"
-            :alt="p.full_name || 'User'"
+            :src="p.avatarUrl || undefined"
+            :alt="p.name || 'User'"
             size="md"
           />
           <div class="flex-1 min-w-0">
             <p class="font-medium truncate">
-              {{ p.full_name || 'Unnamed user' }}
+              {{ p.name || 'Unnamed user' }}
             </p>
             <p class="text-xs text-muted">
-              Joined {{ new Date(p.created_at).toLocaleDateString() }}
+              {{ p.email }} · joined {{ new Date(p.createdAt).toLocaleDateString() }}
             </p>
           </div>
 
@@ -87,14 +88,14 @@ async function revokePremium(p: Profile) {
           />
 
           <UBadge
-            v-if="activeSub(p.id)"
+            v-if="p.isPremium"
             color="primary"
             variant="subtle"
             icon="i-lucide-sparkles"
             label="Premium"
           />
           <UButton
-            v-if="activeSub(p.id)"
+            v-if="p.isPremium"
             size="sm"
             color="error"
             variant="ghost"

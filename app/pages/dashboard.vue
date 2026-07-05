@@ -1,33 +1,24 @@
 <script setup lang="ts">
-import type { Test, Attempt } from '~/types/database.types'
+import type { TestDto } from '~/types/models'
 import { SECTION_META } from '~/types/exam'
 
-const supabase = useSupabaseClient()
-const user = useSupabaseUser()
-const { profile } = useProfile()
-const { isPremium } = useSubscription()
+const { me, isPremium } = useMe()
 
-const { data: tests } = await useAsyncData('dashboard-tests', async () => {
-  const { data } = await supabase
-    .from('tests')
-    .select('*')
-    .eq('status', 'published')
-    .order('created_at', { ascending: false })
-    .limit(6)
-  return (data as Test[]) ?? []
-})
+const { data: allTests } = await useFetch<TestDto[]>('/api/tests')
+const tests = computed(() => (allTests.value ?? []).slice(0, 6))
 
-const { data: attempts } = await useAsyncData('dashboard-attempts', async () => {
-  const uid = user.value?.id
-  if (!uid) return []
-  const { data } = await supabase
-    .from('attempts')
-    .select('*, sections(type, title), tests(title)')
-    .eq('user_id', uid)
-    .order('created_at', { ascending: false })
-    .limit(5)
-  return (data as unknown as (Attempt & { sections: { type: string, title: string }, tests: { title: string } })[]) ?? []
-})
+interface AttemptRow {
+  id: string
+  status: string
+  createdAt: string
+  totalScore: number | null
+  maxScore: number | null
+  sectionType: string
+  sectionTitle: string
+  testTitle: string
+}
+const { data: allAttempts } = await useFetch<AttemptRow[]>('/api/me/attempts')
+const attempts = computed(() => (allAttempts.value ?? []).slice(0, 5))
 
 function statusColor(s: string) {
   return s === 'graded' ? 'success' : s === 'submitted' ? 'warning' : 'neutral'
@@ -39,7 +30,7 @@ function statusColor(s: string) {
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold">
-          Welcome back{{ profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : '' }}
+          Welcome back{{ me?.name ? `, ${me.name.split(' ')[0]}` : '' }}
         </h1>
         <p class="text-muted">
           Pick a test to practise or jump into a live speaking session.
@@ -116,7 +107,7 @@ function statusColor(s: string) {
               {{ t.title }}
             </h3>
             <UBadge
-              v-if="t.is_premium"
+              v-if="t.isPremium"
               color="primary"
               variant="subtle"
               icon="i-lucide-sparkles"
@@ -165,23 +156,23 @@ function statusColor(s: string) {
           >
             <div class="flex items-center gap-3 min-w-0">
               <UIcon
-                :name="SECTION_META[a.sections.type as keyof typeof SECTION_META]?.icon || 'i-lucide-file'"
+                :name="SECTION_META[a.sectionType as keyof typeof SECTION_META]?.icon || 'i-lucide-file'"
                 class="size-5 text-primary shrink-0"
               />
               <div class="min-w-0">
                 <p class="font-medium truncate">
-                  {{ a.tests?.title }} — {{ a.sections?.title }}
+                  {{ a.testTitle }} — {{ a.sectionTitle }}
                 </p>
                 <p class="text-xs text-muted">
-                  {{ new Date(a.created_at).toLocaleString() }}
+                  {{ new Date(a.createdAt).toLocaleString() }}
                 </p>
               </div>
             </div>
             <div class="flex items-center gap-3 shrink-0">
               <span
-                v-if="a.total_score != null"
+                v-if="a.totalScore != null"
                 class="text-sm font-semibold"
-              >{{ a.total_score }}<span class="text-muted">/{{ a.max_score ?? '—' }}</span></span>
+              >{{ a.totalScore }}<span class="text-muted">/{{ a.maxScore ?? '—' }}</span></span>
               <UBadge
                 :color="statusColor(a.status)"
                 variant="subtle"

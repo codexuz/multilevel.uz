@@ -1,22 +1,12 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'admin', middleware: 'staff' })
 
-const supabase = useSupabaseClient()
-
-const { data: stats } = await useAsyncData('admin-stats', async () => {
-  const [tests, published, pendingGrading, students] = await Promise.all([
-    supabase.from('tests').select('id', { count: 'exact', head: true }),
-    supabase.from('tests').select('id', { count: 'exact', head: true }).eq('status', 'published'),
-    supabase.from('attempts').select('id', { count: 'exact', head: true }).eq('status', 'submitted'),
-    supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'student')
-  ])
-  return {
-    tests: tests.count ?? 0,
-    published: published.count ?? 0,
-    pendingGrading: pendingGrading.count ?? 0,
-    students: students.count ?? 0
-  }
-})
+const { data: stats } = await useFetch<{
+  tests: number
+  published: number
+  pendingGrading: number
+  students: number
+}>('/api/admin/stats')
 
 const cards = computed(() => [
   { label: 'Total tests', value: stats.value?.tests ?? 0, icon: 'i-lucide-clipboard-list', to: '/admin/tests' },

@@ -1,6 +1,9 @@
 <script setup lang="ts">
-const user = useSupabaseUser()
-const { subscription, isPremium } = useSubscription()
+const { me, loggedIn, isPremium, refresh } = useMe()
+const toast = useToast()
+
+const PREMIUM_COIN_COST = 500
+const redeeming = ref(false)
 
 const features = [
   'All Listening & Reading mock tests',
@@ -9,6 +12,23 @@ const features = [
   'Detailed score breakdowns',
   'New tests added regularly'
 ]
+
+async function unlockWithCoins() {
+  redeeming.value = true
+  try {
+    await $fetch('/api/me/redeem-premium', { method: 'POST' })
+    await refresh()
+    toast.add({ title: 'Premium unlocked!', color: 'success', icon: 'i-lucide-sparkles' })
+  } catch (e) {
+    toast.add({
+      title: 'Could not unlock',
+      description: (e as { data?: { message?: string } })?.data?.message ?? 'Please try again.',
+      color: 'error'
+    })
+  } finally {
+    redeeming.value = false
+  }
+}
 </script>
 
 <template>
@@ -33,9 +53,7 @@ const features = [
       variant="subtle"
       icon="i-lucide-check-circle"
       title="You're on Premium"
-      :description="subscription?.current_period_end
-        ? `Active until ${new Date(subscription.current_period_end).toLocaleDateString()}`
-        : 'Your premium access is active.'"
+      description="Your premium access is active."
     />
 
     <UCard
@@ -64,13 +82,27 @@ const features = [
         </li>
       </ul>
       <template #footer>
-        <UButton
-          block
-          size="lg"
-          :to="user ? undefined : '/login'"
-          label="Request premium access"
-          icon="i-lucide-mail"
-        />
+        <div class="space-y-3">
+          <UButton
+            v-if="loggedIn"
+            block
+            size="lg"
+            color="primary"
+            :loading="redeeming"
+            :disabled="(me?.coins ?? 0) < PREMIUM_COIN_COST"
+            icon="i-lucide-coins"
+            :label="`Unlock with coins (${me?.coins ?? 0} / ${PREMIUM_COIN_COST})`"
+            @click="unlockWithCoins"
+          />
+          <UButton
+            block
+            size="lg"
+            variant="subtle"
+            :to="loggedIn ? undefined : '/login'"
+            label="Request premium access"
+            icon="i-lucide-mail"
+          />
+        </div>
       </template>
     </UCard>
   </UContainer>
