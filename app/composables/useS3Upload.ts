@@ -1,13 +1,13 @@
 type Purpose = 'test-audio' | 'test-asset' | 'recording' | 'avatar'
 
-interface PresignResponse {
-  uploadUrl: string
+interface UploadResponse {
   key: string
   publicUrl: string
 }
 
 /**
- * Uploads a File/Blob to S3-compatible storage via a server-issued presigned URL.
+ * Uploads a File/Blob to S3-compatible storage by streaming it through a Nuxt
+ * server route (the storage provider's S3 host does not support browser CORS).
  * Returns the public URL the object is served from.
  */
 export function useS3Upload() {
@@ -18,22 +18,28 @@ export function useS3Upload() {
     uploading.value = true
     progress.value = 0
     try {
-      const contentType = file.type || 'application/octet-stream'
-      const { uploadUrl, publicUrl } = await $fetch<PresignResponse>('/api/storage/presign', {
-        method: 'POST',
-        body: { purpose, contentType, fileName }
-      })
+      const form = new FormData()
+      form.append('purpose', purpose)
+      form.append('file', file, fileName || 'upload')
 
-      await new Promise<void>((resolve, reject) => {
+      const { publicUrl } = await new Promise<UploadResponse>((resolve, reject) => {
         const xhr = new XMLHttpRequest()
-        xhr.open('PUT', uploadUrl)
-        xhr.setRequestHeader('Content-Type', contentType)
+        xhr.open('POST', '/api/storage/upload')
         xhr.upload.onprogress = (e) => {
           if (e.lengthComputable) progress.value = Math.round((e.loaded / e.total) * 100)
         }
-        xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload failed (${xhr.status})`)))
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try { resolve(JSON.parse(xhr.responseText)) }
+            catch { reject(new Error('Invalid server response')) }
+          } else {
+            let msg = `Upload failed (${xhr.status})`
+            try { msg = JSON.parse(xhr.responseText).message || msg } catch { /* ignore */ }
+            reject(new Error(msg))
+          }
+        }
         xhr.onerror = () => reject(new Error('Network error during upload'))
-        xhr.send(file)
+        xhr.send(form)
       })
 
       return publicUrl

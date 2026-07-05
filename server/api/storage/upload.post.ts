@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 type Purpose = 'test-audio' | 'test-asset' | 'recording' | 'avatar'
 const STAFF_PURPOSES: Purpose[] = ['test-audio', 'test-asset']
@@ -20,27 +19,38 @@ function extFromType(type: string): string {
   return map[type] || 'bin'
 }
 
+const MAX_BYTES = 25 * 1024 * 1024 // 25 MB
+
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  const body = await readBody<{ purpose: Purpose, contentType: string }>(event)
-  const { purpose, contentType } = body || {}
 
+  const parts = await readMultipartFormData(event)
+  const filePart = parts?.find(p => p.name === 'file' && p.data)
+  const purpose = parts?.find(p => p.name === 'purpose')?.data?.toString() as Purpose | undefined
+
+  if (!filePart) throw createError({ statusCode: 400, message: 'file is required' })
   if (!purpose || !PREFIX[purpose]) throw createError({ statusCode: 400, message: 'Invalid purpose' })
-  if (!contentType) throw createError({ statusCode: 400, message: 'contentType is required' })
 
   if (STAFF_PURPOSES.includes(purpose) && user.role !== 'admin' && user.role !== 'examiner') {
     throw createError({ statusCode: 403, message: 'Forbidden' })
   }
 
+  if (filePart.data.byteLength > MAX_BYTES) {
+    throw createError({ statusCode: 413, message: 'File too large' })
+  }
+
+  const contentType = filePart.type || 'application/octet-stream'
   const scope = purpose === 'avatar' || purpose === 'recording' ? user.id : 'shared'
   const key = `${PREFIX[purpose]}/${scope}/${randomUUID()}.${extFromType(contentType)}`
 
   const client = useS3Client()
-  const url = await getSignedUrl(
-    client,
-    new PutObjectCommand({ Bucket: s3Bucket(), Key: key, ContentType: contentType }),
-    { expiresIn: 60 * 5 }
-  )
+  await client.send(new PutObjectCommand({
+    Bucket: s3Bucket(),
+    Key: key,
+    Body: filePart.data,
+    ContentType: contentType,
+    ACL: 'public-read'
+  }))
 
-  return { uploadUrl: url, key, publicUrl: s3PublicUrl(key) }
+  return { key, publicUrl: s3PublicUrl(key) }
 })
