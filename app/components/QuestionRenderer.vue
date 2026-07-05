@@ -1,17 +1,8 @@
 <script setup lang="ts">
-import type { Choice, QuestionType, QuestionMeta } from '~/types/exam'
-
-export interface StudentQuestion {
-  id: string
-  question_number: number | null
-  type: QuestionType
-  prompt: string | null
-  options: Choice[]
-  meta: QuestionMeta
-}
+import type { StudentQuestionDto } from '~/types/models'
 
 const props = defineProps<{
-  question: StudentQuestion
+  question: StudentQuestionDto
   response?: string | string[] | null
   audioUrl?: string | null
 }>()
@@ -42,8 +33,8 @@ const selectItems = computed(() => q.value.options.map(o => ({ label: o.label, v
   <div class="space-y-3">
     <div class="flex gap-2">
       <UBadge
-        v-if="q.question_number != null"
-        :label="String(q.question_number)"
+        v-if="q.questionNumber != null"
+        :label="String(q.questionNumber)"
         color="neutral"
         variant="subtle"
         class="shrink-0 mt-0.5"

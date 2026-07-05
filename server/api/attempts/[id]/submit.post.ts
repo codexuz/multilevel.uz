@@ -1,72 +1,58 @@
-import type { Json } from '~/types/database.types'
+import { and, eq, asc, inArray } from 'drizzle-orm'
+import { attempts, sections, parts, questions, answers } from '../../../database/schema'
+import { num } from '../../../utils/serialize'
+import { gradeQuestion } from '../../../utils/grade'
+import { awardForAttempt } from '../../../utils/gamify'
 
-interface QuestionRow { id: string, type: string, correct_answer: Json, points: number }
-interface AnswerRow { id: string, question_id: string, response: Json }
-
-// Submits an attempt. Objective sections (listening/reading) are auto-graded with
-// the correct answers, which live only on the server (service role). Writing and
-// speaking are marked 'submitted' for examiner grading.
+// Submit an attempt. Listening/Reading are auto-graded server-side (correct answers
+// stay on the server). Writing/Speaking go to the examiner queue.
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  const attemptId = getRouterParam(event, 'id')
-  if (!attemptId) throw createError({ statusCode: 400, message: 'attempt id required' })
+  const id = getRouterParam(event, 'id')!
+  const db = useDb()
 
-  const supabase = serviceClient(event)
-
-  const { data: attempt } = await supabase
-    .from('attempts')
-    .select('id, user_id, section_id, status, max_score, sections(type)')
-    .eq('id', attemptId)
-    .single()
+  const [attempt] = await db.select().from(attempts).where(eq(attempts.id, id)).limit(1)
   if (!attempt) throw createError({ statusCode: 404, message: 'Attempt not found' })
+  if (attempt.userId !== user.id) throw createError({ statusCode: 403, message: 'Forbidden' })
+  if (attempt.status !== 'in_progress') throw createError({ statusCode: 409, message: 'Already submitted' })
 
-  const a = attempt as unknown as { user_id: string, section_id: string, status: string, max_score: number | null, sections: { type: string } }
-  if (a.user_id !== user.id) throw createError({ statusCode: 403, message: 'Forbidden' })
-  if (a.status !== 'in_progress') throw createError({ statusCode: 409, message: 'Attempt already submitted' })
-
-  const sectionType = a.sections.type
-  const objective = sectionType === 'listening' || sectionType === 'reading'
-  const now = new Date().toISOString()
+  const [section] = await db.select().from(sections).where(eq(sections.id, attempt.sectionId)).limit(1)
+  const objective = section?.type === 'listening' || section?.type === 'reading'
+  const now = new Date()
 
   if (objective) {
-    const { data: questions } = await supabase
-      .from('questions')
-      .select('id, type, correct_answer, points, parts!inner(section_id)')
-      .eq('parts.section_id', a.section_id)
-    const { data: answers } = await supabase
-      .from('answers')
-      .select('id, question_id, response')
-      .eq('attempt_id', attemptId)
-
-    const qList = (questions as unknown as QuestionRow[]) ?? []
-    const aList = (answers as unknown as AnswerRow[]) ?? []
-    const answerByQ = new Map(aList.map(x => [x.question_id, x]))
+    const partRows = await db.select({ id: parts.id }).from(parts).where(eq(parts.sectionId, attempt.sectionId))
+    const partIds = partRows.map(p => p.id)
+    const qRows = partIds.length
+      ? await db.select().from(questions).where(inArray(questions.partId, partIds))
+      : []
+    const ansRows = await db.select().from(answers).where(eq(answers.attemptId, id))
+    const ansByQ = new Map(ansRows.map(a => [a.questionId, a]))
 
     let score = 0
     let maxScore = 0
-    for (const q of qList) {
-      maxScore += Number(q.points || 0)
-      const ans = answerByQ.get(q.id)
-      const correct = ans ? gradeQuestion(q.type, q.correct_answer, ans.response) : false
-      const awarded = correct ? Number(q.points || 0) : 0
+    for (const q of qRows) {
+      const pts = num(q.points) ?? 0
+      maxScore += pts
+      const ans = ansByQ.get(q.id)
+      const correct = ans ? gradeQuestion(q.type, q.correctAnswer as never, ans.response as never) : false
+      const awarded = correct ? pts : 0
       score += awarded
       if (ans) {
-        await supabase.from('answers').update({ is_correct: correct, awarded_points: awarded }).eq('id', ans.id)
+        await db.update(answers).set({ isCorrect: correct, awardedPoints: String(awarded) }).where(eq(answers.id, ans.id))
       }
     }
 
-    await supabase.from('attempts').update({
-      status: 'graded',
-      submitted_at: now,
-      auto_score: score,
-      total_score: score,
-      max_score: maxScore
-    }).eq('id', attemptId)
+    await db.update(attempts).set({
+      status: 'graded', submittedAt: now,
+      autoScore: String(score), totalScore: String(score), maxScore: String(maxScore)
+    }).where(eq(attempts.id, id))
 
-    return { status: 'graded', score, maxScore }
+    const gam = await awardForAttempt(user.id, score)
+    return { status: 'graded', score, maxScore, gamification: gam }
   }
 
-  // Writing / Speaking → await examiner
-  await supabase.from('attempts').update({ status: 'submitted', submitted_at: now }).eq('id', attemptId)
+  // Writing / Speaking → examiner grading
+  await db.update(attempts).set({ status: 'submitted', submittedAt: now }).where(eq(attempts.id, id))
   return { status: 'submitted' }
 })

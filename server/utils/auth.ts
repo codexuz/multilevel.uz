@@ -1,36 +1,47 @@
 import type { H3Event } from 'h3'
-import { serverSupabaseUser, serverSupabaseServiceRole } from '#supabase/server'
-import type { Database } from '~/types/database.types'
+import { eq } from 'drizzle-orm'
+import { ACCESS_COOKIE, verifyAccessToken } from './jwt'
+import { revokedTokens } from '../database/schema'
 
-export function serviceClient(event: H3Event) {
-  return serverSupabaseServiceRole<Database>(event)
+export interface AuthUser { id: string, role: string }
+
+function readAccessToken(event: H3Event): string | null {
+  const cookie = getCookie(event, ACCESS_COOKIE)
+  if (cookie) return cookie
+  const header = getRequestHeader(event, 'authorization')
+  if (header?.startsWith('Bearer ')) return header.slice(7)
+  return null
 }
 
-/**
- * Ensure a signed-in user. In @nuxtjs/supabase v2, serverSupabaseUser returns the
- * decoded JWT claims, where the user id is `sub` (not `id`). We normalise it so
- * callers can rely on `user.id`.
- */
-export async function requireUser(event: H3Event) {
-  const claims = await serverSupabaseUser(event) as (Record<string, unknown> & { sub?: string, id?: string }) | null
-  const id = claims?.id ?? claims?.sub
-  if (!claims || !id) throw createError({ statusCode: 401, message: 'Unauthorized' })
-  return { ...claims, id } as typeof claims & { id: string }
+/** Verify the access token, ensure it isn't blacklisted, return the user. */
+export async function requireUser(event: H3Event): Promise<AuthUser> {
+  const token = readAccessToken(event)
+  if (!token) throw createError({ statusCode: 401, message: 'Unauthorized' })
+
+  let claims
+  try {
+    claims = await verifyAccessToken(token)
+  } catch {
+    throw createError({ statusCode: 401, message: 'Invalid or expired token' })
+  }
+
+  const db = useDb()
+  const [blacklisted] = await db.select().from(revokedTokens).where(eq(revokedTokens.jti, claims.jti)).limit(1)
+  if (blacklisted) throw createError({ statusCode: 401, message: 'Token revoked' })
+
+  return { id: claims.sub, role: claims.role }
 }
 
-/** Fetch a user's role using the service-role client (bypasses RLS). */
-export async function getRole(event: H3Event, userId: string): Promise<string | undefined> {
-  const supabase = serviceClient(event)
-  const { data } = await supabase.from('profiles').select('role').eq('id', userId).single()
-  return (data as { role?: string } | null)?.role
-}
-
-/** Ensure the caller is examiner or admin. Returns the auth user. */
-export async function requireStaff(event: H3Event) {
+export async function requireStaff(event: H3Event): Promise<AuthUser> {
   const user = await requireUser(event)
-  const role = await getRole(event, user.id)
-  if (role !== 'admin' && role !== 'examiner') {
+  if (user.role !== 'admin' && user.role !== 'examiner') {
     throw createError({ statusCode: 403, message: 'Forbidden' })
   }
+  return user
+}
+
+export async function requireAdmin(event: H3Event): Promise<AuthUser> {
+  const user = await requireUser(event)
+  if (user.role !== 'admin') throw createError({ statusCode: 403, message: 'Forbidden' })
   return user
 }

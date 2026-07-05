@@ -1,58 +1,42 @@
-// Creates (or resumes) an attempt for a section. Enforces premium gating
-// server-side so a locked test can never be started by tampering with the client.
+import { and, eq } from 'drizzle-orm'
+import { sections, tests, parts, questions, attempts } from '../../database/schema'
+import { num } from '../../utils/serialize'
+
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   const { sectionId } = await readBody<{ sectionId: string }>(event)
   if (!sectionId) throw createError({ statusCode: 400, message: 'sectionId required' })
 
-  const supabase = serviceClient(event)
-
-  // Section + test
-  const { data: section, error: sectionError } = await supabase
-    .from('sections')
-    .select('id, test_id, tests(id, status, is_premium)')
-    .eq('id', sectionId)
-    .single()
-  if (sectionError) throw createError({ statusCode: 500, message: `Section lookup failed: ${sectionError.message}` })
+  const db = useDb()
+  const [section] = await db.select().from(sections).where(eq(sections.id, sectionId)).limit(1)
   if (!section) throw createError({ statusCode: 404, message: 'Section not found' })
 
-  const test = (section as unknown as { test_id: string, tests: { status: string, is_premium: boolean } }).tests
-  if (test.status !== 'published') throw createError({ statusCode: 403, message: 'Test not available' })
+  const [test] = await db.select().from(tests).where(eq(tests.id, section.testId)).limit(1)
+  if (!test || test.status !== 'published') throw createError({ statusCode: 403, message: 'Test not available' })
 
-  if (test.is_premium) {
-    const { data: premium } = await supabase.rpc('has_active_premium', { uid: user.id })
-    if (!premium) throw createError({ statusCode: 402, message: 'Premium subscription required' })
+  if (test.isPremium && !(await hasActivePremium(user.id))) {
+    throw createError({ statusCode: 402, message: 'Premium subscription required' })
   }
 
-  // Resume an in-progress attempt if one exists
-  const { data: existing } = await supabase
-    .from('attempts')
-    .select('id')
-    .eq('user_id', user.id)
-    .eq('section_id', sectionId)
-    .eq('status', 'in_progress')
-    .maybeSingle()
-  if (existing) return { attemptId: (existing as { id: string }).id, resumed: true }
+  // Resume existing in-progress attempt
+  const [existing] = await db.select().from(attempts)
+    .where(and(eq(attempts.userId, user.id), eq(attempts.sectionId, sectionId), eq(attempts.status, 'in_progress')))
+    .limit(1)
+  if (existing) return { attemptId: existing.id, resumed: true }
 
-  // Compute max score from question points in the section
-  const { data: questions } = await supabase
-    .from('questions')
-    .select('points, parts!inner(section_id)')
-    .eq('parts.section_id', sectionId)
-  const maxScore = ((questions as unknown as { points: number }[]) ?? []).reduce((s, q) => s + Number(q.points || 0), 0)
+  // Max score = sum of question points in the section
+  const qs = await db.select({ points: questions.points }).from(questions)
+    .innerJoin(parts, eq(questions.partId, parts.id))
+    .where(eq(parts.sectionId, sectionId))
+  const maxScore = qs.reduce((s, q) => s + (num(q.points) ?? 0), 0)
 
-  const { data: attempt, error } = await supabase
-    .from('attempts')
-    .insert({
-      user_id: user.id,
-      test_id: (section as unknown as { test_id: string }).test_id,
-      section_id: sectionId,
-      status: 'in_progress',
-      max_score: maxScore
-    })
-    .select('id')
-    .single()
-  if (error) throw createError({ statusCode: 500, message: error.message })
+  const [attempt] = await db.insert(attempts).values({
+    userId: user.id,
+    testId: section.testId,
+    sectionId,
+    status: 'in_progress',
+    maxScore: String(maxScore)
+  }).returning({ id: attempts.id })
 
-  return { attemptId: (attempt as { id: string }).id, resumed: false }
+  return { attemptId: attempt!.id, resumed: false }
 })

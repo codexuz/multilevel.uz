@@ -1,27 +1,8 @@
 <script setup lang="ts">
 definePageMeta({ layout: false })
 
-const supabase = useSupabaseClient()
-const user = useSupabaseUser()
-const toast = useToast()
-const loading = ref(false)
-
-watchEffect(() => {
-  if (user.value) navigateTo('/dashboard')
-})
-
-async function signInWithGoogle() {
-  loading.value = true
-  const redirectTo = `${window.location.origin}/confirm`
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo }
-  })
-  if (error) {
-    loading.value = false
-    toast.add({ title: 'Sign-in failed', description: error.message, color: 'error' })
-  }
-}
+const route = useRoute()
+const oauthError = computed(() => route.query.error === 'oauth')
 </script>
 
 <template>
@@ -29,10 +10,7 @@ async function signInWithGoogle() {
     <UCard class="w-full max-w-sm">
       <div class="flex flex-col items-center text-center gap-6 py-4">
         <div class="flex items-center gap-2 font-bold text-xl">
-          <UIcon
-            name="i-lucide-graduation-cap"
-            class="size-7 text-primary"
-          />
+          <UIcon name="i-lucide-graduation-cap" class="size-7 text-primary" />
           <span>Multilevel</span>
         </div>
         <div>
@@ -44,15 +22,23 @@ async function signInWithGoogle() {
           </p>
         </div>
 
+        <UAlert
+          v-if="oauthError"
+          color="error"
+          variant="subtle"
+          icon="i-lucide-triangle-alert"
+          description="Sign-in failed. Please try again."
+        />
+
         <UButton
           block
           size="lg"
           color="neutral"
           variant="outline"
           icon="i-simple-icons-google"
-          :loading="loading"
           label="Continue with Google"
-          @click="signInWithGoogle"
+          to="/auth/google"
+          external
         />
 
         <p class="text-xs text-muted">

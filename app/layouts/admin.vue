@@ -1,6 +1,5 @@
 <script setup lang="ts">
-const supabase = useSupabaseClient()
-const { profile, isAdmin } = useProfile()
+const { me, isAdmin } = useMe()
 
 const items = computed(() => [{
   label: 'Overview', icon: 'i-lucide-gauge', to: '/admin'
@@ -15,8 +14,9 @@ const items = computed(() => [{
   : [])])
 
 async function signOut() {
-  await supabase.auth.signOut()
+  await $fetch('/api/auth/logout', { method: 'POST' })
   await navigateTo('/login')
+  reloadNuxtApp({ path: '/login' })
 }
 </script>
 
@@ -61,7 +61,7 @@ async function signOut() {
         />
         <USeparator class="my-4" />
         <p class="text-xs text-muted px-2">
-          Signed in as {{ profile?.full_name || 'staff' }} ({{ profile?.role }})
+          Signed in as {{ me?.name || 'staff' }} ({{ me?.role }})
         </p>
       </aside>
       <main class="flex-1 min-w-0">

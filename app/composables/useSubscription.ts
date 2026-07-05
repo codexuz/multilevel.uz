@@ -1,35 +1,5 @@
-import type { Database, Subscription } from '~/types/database.types'
-
-/** Loads the current user's active premium subscription status. */
+// Back-compat shim: subscription/premium status now comes from /api/me.
 export function useSubscription() {
-  const user = useSupabaseUser()
-  const supabase = useSupabaseClient<Database>()
-
-  const { data: subscription, refresh, pending } = useAsyncData<Subscription | null>(
-    'subscription',
-    async () => {
-      const uid = user.value?.id
-      if (!uid) return null
-      const { data } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', uid)
-        .eq('plan', 'premium')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      return data ?? null
-    },
-    { watch: [user] }
-  )
-
-  const isPremium = computed(() => {
-    const s = subscription.value
-    if (!s) return false
-    if (!s.current_period_end) return true
-    return new Date(s.current_period_end) > new Date()
-  })
-
-  return { subscription, isPremium, refresh, pending }
+  const { me, isPremium, refresh } = useMe()
+  return { isPremium, subscription: me, refresh }
 }
