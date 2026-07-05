@@ -48,7 +48,7 @@ function addQuestion() {
     options: defaultType.value === 'single_choice' ? [{ value: 'A', label: '' }, { value: 'B', label: '' }, { value: 'C', label: '' }] : [],
     correct_answer: null,
     points: 1,
-    meta: {}
+    meta: defaultType.value === 'speaking_prompt' ? { prepTime: 30, speakTime: 60 } : {}
   })
 }
 function removeQuestion(i: number) {
@@ -77,14 +77,11 @@ function removeQuestion(i: number) {
         />
         <UFormField
           v-if="isReading"
-          label="Reading passage (HTML allowed)"
+          label="Reading passage"
         >
-          <UTextarea
+          <AdminRichEditor
             v-model="passage"
-            class="w-full font-mono text-sm"
-            :rows="5"
-            placeholder="<p>Passage text…</p>"
-            autoresize
+            placeholder="Passage text…"
           />
         </UFormField>
         <UFormField

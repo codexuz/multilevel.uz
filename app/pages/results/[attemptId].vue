@@ -4,9 +4,14 @@ import { SECTION_META } from '~/types/exam'
 
 interface ResultData {
   attempt: {
-    id: string, status: string, testId: string
-    totalScore: number | null, manualScore: number | null, maxScore: number | null
-    feedback: string | null, createdAt: string
+    id: string
+    status: string
+    testId: string
+    totalScore: number | null
+    manualScore: number | null
+    maxScore: number | null
+    feedback: string | null
+    createdAt: string
   }
   section: { id: string, type: keyof typeof SECTION_META, title: string } | null
   testTitle: string
@@ -29,6 +34,13 @@ const pct = computed(() => {
   if (!a || a.totalScore == null || !a.maxScore) return null
   return Math.round((a.totalScore / a.maxScore) * 100)
 })
+const sortedQuestions = computed(() =>
+  [...(data.value?.questions ?? [])].sort((a, b) => {
+    const an = a.questionNumber ?? a.orderIndex
+    const bn = b.questionNumber ?? b.orderIndex
+    return an - bn
+  })
+)
 function answerFor(qId: string) {
   return data.value?.answers.find(a => a.questionId === qId)
 }
@@ -42,8 +54,17 @@ function fmt(r: string | string[] | null | undefined) {
   <UContainer class="py-8 max-w-3xl space-y-6">
     <div v-if="att && data">
       <div class="flex items-center gap-3">
-        <UButton to="/dashboard" icon="i-lucide-arrow-left" variant="ghost" color="neutral" />
-        <UIcon v-if="data.section" :name="SECTION_META[data.section.type].icon" class="size-6 text-primary" />
+        <UButton
+          to="/dashboard"
+          icon="i-lucide-arrow-left"
+          variant="ghost"
+          color="neutral"
+        />
+        <UIcon
+          v-if="data.section"
+          :name="SECTION_META[data.section.type].icon"
+          class="size-6 text-primary"
+        />
         <div>
           <h1 class="text-xl font-bold">
             {{ data.testTitle }} — {{ data.section?.title }}
@@ -55,7 +76,10 @@ function fmt(r: string | string[] | null | undefined) {
       </div>
 
       <UCard class="mt-6">
-        <div v-if="isObjective && att.status === 'graded'" class="flex items-center gap-6">
+        <div
+          v-if="isObjective && att.status === 'graded'"
+          class="flex items-center gap-6"
+        >
           <div class="size-24 rounded-full flex flex-col items-center justify-center text-primary bg-primary/10">
             <span class="text-2xl font-bold">{{ pct }}%</span>
           </div>
@@ -69,8 +93,14 @@ function fmt(r: string | string[] | null | undefined) {
           </div>
         </div>
 
-        <div v-else-if="att.status === 'submitted'" class="flex items-center gap-3 text-warning">
-          <UIcon name="i-lucide-clock" class="size-6" />
+        <div
+          v-else-if="att.status === 'submitted'"
+          class="flex items-center gap-3 text-warning"
+        >
+          <UIcon
+            name="i-lucide-clock"
+            class="size-6"
+          />
           <div>
             <p class="font-semibold">
               Awaiting examiner review
@@ -81,7 +111,10 @@ function fmt(r: string | string[] | null | undefined) {
           </div>
         </div>
 
-        <div v-else-if="att.status === 'graded'" class="space-y-2">
+        <div
+          v-else-if="att.status === 'graded'"
+          class="space-y-2"
+        >
           <p class="text-lg font-semibold">
             Score: {{ att.manualScore ?? att.totalScore }} / {{ att.maxScore ?? '—' }}
           </p>
@@ -96,13 +129,20 @@ function fmt(r: string | string[] | null | undefined) {
         </div>
       </UCard>
 
-      <div v-if="isObjective" class="mt-6 space-y-2">
+      <div
+        v-if="isObjective"
+        class="mt-6 space-y-2"
+      >
         <h2 class="font-semibold">
           Answer breakdown
         </h2>
         <UCard :ui="{ body: 'p-0 sm:p-0' }">
           <div class="divide-y divide-default">
-            <div v-for="q in data.questions" :key="q.id" class="flex items-center gap-3 p-3">
+            <div
+              v-for="q in sortedQuestions"
+              :key="q.id"
+              class="flex items-center gap-3 p-3"
+            >
               <UIcon
                 :name="answerFor(q.id)?.isCorrect ? 'i-lucide-check-circle' : 'i-lucide-x-circle'"
                 :class="answerFor(q.id)?.isCorrect ? 'text-success' : 'text-error'"
@@ -110,7 +150,10 @@ function fmt(r: string | string[] | null | undefined) {
               />
               <span class="w-8 text-sm text-muted">{{ q.questionNumber }}</span>
               <!-- eslint-disable-next-line vue/no-v-html -->
-              <span class="flex-1 text-sm truncate" v-html="q.prompt" />
+              <span
+                class="flex-1 text-sm truncate"
+                v-html="q.prompt"
+              />
               <span class="text-sm font-mono">{{ fmt(answerFor(q.id)?.response) }}</span>
             </div>
           </div>
@@ -118,8 +161,16 @@ function fmt(r: string | string[] | null | undefined) {
       </div>
 
       <div class="mt-6 flex gap-2">
-        <UButton :to="`/tests/${att.testId}`" variant="subtle" color="neutral" label="Back to test" />
-        <UButton to="/dashboard" label="Dashboard" />
+        <UButton
+          :to="`/tests/${att.testId}`"
+          variant="subtle"
+          color="neutral"
+          label="Back to test"
+        />
+        <UButton
+          to="/dashboard"
+          label="Dashboard"
+        />
       </div>
     </div>
   </UContainer>

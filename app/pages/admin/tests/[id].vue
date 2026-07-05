@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { SECTION_META, SECTION_TYPES } from '~/types/exam'
-import type { SectionNode } from '~/composables/useTestBuilder'
 
 definePageMeta({ layout: 'admin', middleware: 'staff' })
 
@@ -126,22 +125,35 @@ async function togglePublish() {
       description="Add a Listening, Reading, Writing or Speaking section to begin."
     />
 
-    <UAccordion
+    <div
       v-else
-      type="multiple"
-      :items="sections.map((s: SectionNode) => ({ label: s.title, value: s.id, icon: SECTION_META[s.type].icon }))"
+      class="space-y-3"
     >
-      <template #body="{ item }">
-        <AdminSectionPanel
-          :section="sections.find((s: SectionNode) => s.id === item.value)!"
-          @save-section="builder.saveSection"
-          @delete-section="builder.deleteSection"
-          @add-part="builder.addPart"
-          @save-part="builder.savePart"
-          @delete-part="builder.deletePart"
-          @save-questions="(p, drafts, removed) => builder.saveQuestions(p, drafts, removed)"
+      <NuxtLink
+        v-for="s in sections"
+        :key="s.id"
+        :to="`/admin/tests/${testId}/sections/${s.id}`"
+        class="flex items-center gap-4 rounded-lg border border-default p-4 hover:border-primary hover:bg-elevated/30 transition-colors"
+      >
+        <div class="size-10 rounded-lg bg-elevated flex items-center justify-center shrink-0">
+          <UIcon
+            :name="SECTION_META[s.type].icon"
+            class="size-5 text-primary"
+          />
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-semibold truncate">
+            {{ s.title }}
+          </p>
+          <p class="text-xs text-muted">
+            {{ SECTION_META[s.type].label }} · {{ s.parts.length }} part{{ s.parts.length === 1 ? '' : 's' }} · {{ s.duration_minutes }} min
+          </p>
+        </div>
+        <UIcon
+          name="i-lucide-chevron-right"
+          class="size-5 text-muted shrink-0"
         />
-      </template>
-    </UAccordion>
+      </NuxtLink>
+    </div>
   </div>
 </template>

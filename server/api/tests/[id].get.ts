@@ -15,6 +15,7 @@ export default defineEventHandler(async (event) => {
   const secs = await db.select().from(sections).where(eq(sections.testId, id)).orderBy(asc(sections.orderIndex))
   const myAttempts = await db.select().from(attempts)
     .where(and(eq(attempts.testId, id), eq(attempts.userId, user.id)))
+    .orderBy(asc(attempts.startedAt))
 
   return {
     test: {

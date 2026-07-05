@@ -16,7 +16,8 @@ const { data } = await useFetch<TestDetail>(`/api/tests/${testId}`)
 
 const locked = computed(() => data.value?.test.isPremium && !isPremium.value)
 function attemptFor(sectionId: string) {
-  return data.value?.attempts.find(a => a.sectionId === sectionId)
+  // attempts arrive oldest-first; the last one is the most recent (in-progress or latest result)
+  return data.value?.attempts.filter(a => a.sectionId === sectionId).at(-1)
 }
 
 const starting = ref<string | null>(null)
@@ -31,17 +32,33 @@ async function startSection(sectionId: string) {
     starting.value = null
   }
 }
+
+async function retakeSection(sectionId: string) {
+  if (!confirm('Retake this section? A new attempt will start — your previous result stays saved.')) return
+  await startSection(sectionId)
+}
 </script>
 
 <template>
   <UContainer class="py-8 space-y-6">
     <div v-if="data?.test">
       <div class="flex items-center gap-3">
-        <UButton to="/tests" icon="i-lucide-arrow-left" variant="ghost" color="neutral" />
+        <UButton
+          to="/tests"
+          icon="i-lucide-arrow-left"
+          variant="ghost"
+          color="neutral"
+        />
         <h1 class="text-2xl font-bold">
           {{ data.test.title }}
         </h1>
-        <UBadge v-if="data.test.isPremium" color="primary" variant="subtle" icon="i-lucide-sparkles" label="Premium" />
+        <UBadge
+          v-if="data.test.isPremium"
+          color="primary"
+          variant="subtle"
+          icon="i-lucide-sparkles"
+          label="Premium"
+        />
       </div>
       <p class="text-muted mt-1 ml-11">
         {{ data.test.description }}
@@ -59,10 +76,16 @@ async function startSection(sectionId: string) {
     />
 
     <div class="grid gap-4 sm:grid-cols-2">
-      <UCard v-for="s in data?.sections" :key="s.id">
+      <UCard
+        v-for="s in data?.sections"
+        :key="s.id"
+      >
         <div class="flex items-center gap-3">
           <div class="size-10 rounded-lg bg-elevated flex items-center justify-center">
-            <UIcon :name="SECTION_META[s.type].icon" class="size-5 text-primary" />
+            <UIcon
+              :name="SECTION_META[s.type].icon"
+              class="size-5 text-primary"
+            />
           </div>
           <div class="flex-1">
             <h3 class="font-semibold">
@@ -81,14 +104,30 @@ async function startSection(sectionId: string) {
           />
         </div>
         <template #footer>
-          <UButton
+          <div
             v-if="attemptFor(s.id) && attemptFor(s.id)!.status !== 'in_progress'"
-            :to="`/results/${attemptFor(s.id)!.id}`"
-            variant="subtle"
-            color="neutral"
-            label="View result"
-            block
-          />
+            class="flex gap-2"
+          >
+            <UButton
+              :to="`/results/${attemptFor(s.id)!.id}`"
+              variant="subtle"
+              color="neutral"
+              label="View result"
+              class="flex-1"
+              block
+            />
+            <UButton
+              :loading="starting === s.id"
+              :disabled="!!locked"
+              color="primary"
+              variant="outline"
+              icon="i-lucide-rotate-ccw"
+              label="Retake"
+              class="flex-1"
+              block
+              @click="retakeSection(s.id)"
+            />
+          </div>
           <UButton
             v-else
             :loading="starting === s.id"
