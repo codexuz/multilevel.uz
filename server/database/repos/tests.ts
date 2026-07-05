@@ -1,5 +1,5 @@
-import { and, asc, desc, eq, inArray } from 'drizzle-orm'
-import { tests, sections, parts, questions } from '../schema'
+import { asc, eq, inArray } from 'drizzle-orm'
+import { tests, sections, parts, questions, attempts, answers, users } from '../schema'
 import { num } from '../../utils/serialize'
 
 type Db = ReturnType<typeof useDb>
@@ -74,7 +74,6 @@ export async function getTestTree(db: Db, testId: string) {
 
 /** Attempt with its section/part/question/answer detail for grading. */
 export async function getGradingDetail(db: Db, attemptId: string) {
-  const { attempts, answers, users } = await import('../schema')
   const [att] = await db.select({
     id: attempts.id,
     userId: attempts.userId,
@@ -120,5 +119,3 @@ export async function getGradingDetail(db: Db, attemptId: string) {
     }))
   }
 }
-
-export { and, asc, desc, eq, inArray }

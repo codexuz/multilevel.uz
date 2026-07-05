@@ -1,4 +1,4 @@
-import type { Json } from '~/types/database.types'
+export type Json = string | number | boolean | null | Json[] | { [key: string]: Json }
 
 /** Grade a single objective question. Returns true when the response is correct. */
 export function gradeQuestion(
