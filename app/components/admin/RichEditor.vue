@@ -25,19 +25,27 @@ const toolbar = [
 </script>
 
 <template>
-  <UEditor
-    v-model="model"
-    content-type="html"
-    :extensions="extensions"
-    :editor-props="{ attributes: { class: 'prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-32 p-3' } }"
-    class="border border-default rounded-lg overflow-hidden bg-default"
-  >
-    <template #default="{ editor }">
-      <UEditorToolbar
-        :editor="editor"
-        :items="toolbar"
-        class="border-b border-default p-1 flex-wrap"
-      />
+  <ClientOnly>
+    <UEditor
+      v-model="model"
+      content-type="html"
+      :extensions="extensions"
+      :editor-props="{ attributes: { class: 'prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-32 p-3' } }"
+      class="border border-default rounded-lg overflow-hidden bg-default"
+    >
+      <template #default="{ editor }">
+        <UEditorToolbar
+          :editor="editor"
+          :items="toolbar"
+          class="border-b border-default p-1 flex-wrap"
+        />
+      </template>
+    </UEditor>
+
+    <template #fallback>
+      <div class="border border-default rounded-lg p-3 min-h-32 text-sm text-muted bg-default">
+        Loading editor…
+      </div>
     </template>
-  </UEditor>
+  </ClientOnly>
 </template>

@@ -110,6 +110,8 @@ function toSectionNode(s: ApiSection): SectionNode {
 
 export function useTestBuilder(testId: string) {
   const toast = useToast()
+  // Cookie-aware fetch so the tree loads during SSR (plain $fetch drops auth on the server).
+  const request = useRequestFetch()
   const test = ref<{ id: string, title: string, description: string | null, level: string | null, status: 'draft' | 'published', is_premium: boolean } | null>(null)
   const sections = ref<SectionNode[]>([])
   const loading = ref(false)
@@ -122,7 +124,7 @@ export function useTestBuilder(testId: string) {
   async function load() {
     loading.value = true
     try {
-      const tree = await $fetch<ApiTree>(`/api/admin/tests/${testId}`)
+      const tree = await request<ApiTree>(`/api/admin/tests/${testId}`)
       test.value = {
         id: tree.test.id,
         title: tree.test.title,
