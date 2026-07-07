@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { and, eq, isNull } from 'drizzle-orm'
 import { users, sessions } from '../../database/schema'
+import { getClientIpAddress } from '../../utils/ip'
 import {
   REFRESH_COOKIE, verifyRefreshToken, signAccessToken, signRefreshToken,
   setAuthCookies, clearAuthCookies
@@ -34,7 +35,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, message: 'User not found' })
   }
 
-  const ip = getRequestIP(event, { xForwardedFor: true }) || session.ipAddress
+  const ip = getClientIpAddress(event) ?? session.ipAddress
   await db.update(sessions).set({ lastSeenAt: new Date(), ipAddress: ip }).where(eq(sessions.id, session.id))
 
   const access = await signAccessToken(user.id, user.role, randomUUID())

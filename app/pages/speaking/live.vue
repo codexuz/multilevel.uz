@@ -13,21 +13,21 @@ onMounted(() => {
 function callUser(u: OnlineUser) {
   const roomId = crypto.randomUUID()
   socket.emit('call-invite', { userId: u.userId, roomId })
-  toast.add({ title: `Calling ${u.name}...`, color: 'info' })
 }
 
 function randomCall() {
-  socket.emit('random')
-  toast.add({ title: 'Looking for a partner...', color: 'info' })
+  const roomId = crypto.randomUUID()
+  socket.emit('random', { roomId })
+  toast.add({ title: 'Room created', description: 'Notifying available students...', color: 'info' })
+  navigateTo(`/speaking/room/${roomId}`)
 }
 
 async function createRoom() {
-  await mesh.start()
   const roomId = crypto.randomUUID()
-  socket.emit('join', { roomId })
-  const url = `${location.origin}/speaking/room/${roomId}`
+  const url = `${location.origin}/speaking/group/${roomId}`
   await navigator.clipboard?.writeText(url).catch(() => {})
   toast.add({ title: 'Room created — link copied', description: url, color: 'success' })
+  navigateTo(`/speaking/group/${roomId}`)
 }
 
 function leave() {
@@ -65,7 +65,7 @@ function leave() {
         </div>
         <div class="flex flex-wrap justify-center gap-3">
           <div v-for="p in mesh.peers.value" :key="p.peerId" class="text-center">
-            <UAvatar :alt="p.name" size="lg" />
+            <UAvatar :src="p.avatarUrl || undefined" :alt="p.name" size="lg" />
             <p class="text-xs mt-1">
               {{ p.name }}
             </p>
@@ -105,7 +105,7 @@ function leave() {
       <UCard v-if="onlineUsers.length" :ui="{ body: 'p-0 sm:p-0' }">
         <div class="divide-y divide-default">
           <div v-for="u in onlineUsers" :key="u.userId" class="flex items-center gap-3 p-4">
-            <UAvatar :alt="u.name" size="sm" />
+            <UAvatar :src="u.avatarUrl || undefined" :alt="u.name" size="sm" />
             <div class="flex-1 min-w-0">
               <p class="font-medium truncate">
                 {{ u.name }}

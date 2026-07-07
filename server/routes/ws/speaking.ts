@@ -5,6 +5,7 @@ import { sendPush } from '../../utils/firebase'
 interface Presence {
   userId: string
   name: string
+  avatarUrl: string | null
   peer: Peer
   status: 'available' | 'busy'
   roomId: string | null
@@ -27,6 +28,7 @@ function onlineList() {
     userId: p.userId,
     peerId: byUser.get(p.userId),
     name: p.name,
+    avatarUrl: p.avatarUrl,
     status: p.status
   }))
 }
@@ -53,12 +55,26 @@ function joinRoom(pres: Presence, roomId: string) {
   pres.status = 'busy'
   send(pres.peer, 'room-joined', {
     roomId,
-    peers: existing.map(e => ({ peerId: peerId(e.peer), name: e.name }))
+    peers: existing.map(e => ({ peerId: peerId(e.peer), name: e.name, avatarUrl: e.avatarUrl }))
   })
   // Notify existing peers a new peer arrived (they wait for the newcomer's offer).
   for (const e of existing) {
-    send(e.peer, 'peer-joined', { peerId: peerId(pres.peer), name: pres.name })
+    send(e.peer, 'peer-joined', { peerId: peerId(pres.peer), name: pres.name, avatarUrl: pres.avatarUrl })
   }
+}
+
+function endRoom(roomId: string, endedBy?: string) {
+  const set = rooms.get(roomId)
+  if (!set) return
+
+  for (const pid of set) {
+    const other = online.get(pid)
+    if (!other) continue
+    send(other.peer, 'room-ended', { roomId, endedBy })
+    other.roomId = null
+    other.status = 'available'
+  }
+  rooms.delete(roomId)
 }
 
 function leaveRoom(pres: Presence) {
@@ -71,7 +87,7 @@ function leaveRoom(pres: Presence) {
       const other = online.get(pid)
       if (other) send(other.peer, 'peer-left', { peerId: peerId(pres.peer) })
     }
-    if (set.size === 0) rooms.delete(roomId)
+    if (set.size <= 1) endRoom(roomId, pres.userId)
   }
   pres.roomId = null
   pres.status = 'available'
@@ -96,11 +112,12 @@ export default defineWebSocketHandler({
       case 'hello': {
         const userId = String(msg.userId ?? '')
         const name = String(msg.name ?? 'Student')
+        const avatarUrl = msg.avatarUrl ? String(msg.avatarUrl) : null
         if (!userId) return
         // Replace any stale peer for this user.
         const prev = byUser.get(userId)
         if (prev && prev !== peerId(peer)) online.delete(prev)
-        online.set(peerId(peer), { userId, name, peer, status: 'available', roomId: null })
+        online.set(peerId(peer), { userId, name, avatarUrl, peer, status: 'available', roomId: null })
         byUser.set(userId, peerId(peer))
         send(peer, 'hello-ok', { peerId: peerId(peer) })
         broadcastPresence()
@@ -113,13 +130,23 @@ export default defineWebSocketHandler({
         const target = findPeerByUser(targetUserId)
         const roomId = String(msg.roomId ?? crypto.randomUUID())
         if (target && target.status === 'available') {
-          send(target.peer, 'call-invite', { from: self.userId, fromName: self.name, roomId })
+          send(target.peer, 'call-invite', {
+            from: self.userId,
+            fromName: self.name,
+            fromAvatarUrl: self.avatarUrl,
+            roomId
+          })
         }
         // Also push in case their tab is backgrounded / offline.
+        const url = new URLSearchParams({
+          from: self.userId,
+          withName: self.name
+        })
+        if (self.avatarUrl) url.set('withAvatar', self.avatarUrl)
         await sendPush([targetUserId], {
           title: `${self.name} is calling`,
           body: 'Tap to join the speaking call.',
-          data: { url: `/speaking/room/${roomId}?from=${encodeURIComponent(self.userId)}` }
+          data: { url: `/speaking/room/${roomId}?${url}` }
         })
         send(peer, 'call-ringing', { userId: targetUserId, roomId })
         break
@@ -130,7 +157,14 @@ export default defineWebSocketHandler({
         const roomId = String(msg.roomId ?? '')
         const fromUserId = String(msg.from ?? '')
         const caller = findPeerByUser(fromUserId)
-        if (caller) send(caller.peer, 'call-accepted', { by: self.userId, roomId })
+        if (caller) {
+          send(caller.peer, 'call-accepted', {
+            by: self.userId,
+            byName: self.name,
+            byAvatarUrl: self.avatarUrl,
+            roomId
+          })
+        }
         break
       }
 
@@ -144,27 +178,22 @@ export default defineWebSocketHandler({
 
       case 'random': {
         if (!self) return
-        // Invite any other available, room-less user and let them accept.
-        const other = [...online.values()].find(p =>
+        const roomId = String(msg.roomId ?? crypto.randomUUID())
+        const available = [...online.values()].filter(p =>
           p.userId !== self.userId && p.status === 'available' && !p.roomId
         )
-        if (other) {
-          const roomId = crypto.randomUUID()
-          send(other.peer, 'call-invite', {
-            from: self.userId,
-            fromName: self.name,
-            roomId,
-            random: true
-          })
-          await sendPush([other.userId], {
-            title: 'Random speaking call',
-            body: `${self.name} is looking for a speaking partner.`,
-            data: { url: `/speaking/room/${roomId}?from=${encodeURIComponent(self.userId)}` }
-          })
-          send(peer, 'call-ringing', { userId: other.userId, roomId, random: true })
-        } else {
+
+        if (available.length === 0) {
           send(peer, 'random-waiting')
+          break
         }
+
+        await sendPush(available.map(p => p.userId), {
+          title: 'Speaking room available',
+          body: `${self.name} is waiting for a speaking partner.`,
+          data: { url: `/speaking/room/${roomId}` }
+        })
+        send(peer, 'random-notified', { roomId, count: available.length })
         break
       }
 
@@ -190,6 +219,8 @@ export default defineWebSocketHandler({
         if (target && self) {
           send(target.peer, 'signal', {
             from: peerId(peer),
+            fromName: self.name,
+            fromAvatarUrl: self.avatarUrl,
             signal: msg.signal
           })
         }

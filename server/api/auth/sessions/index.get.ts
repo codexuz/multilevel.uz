@@ -1,5 +1,6 @@
 import { and, eq, isNull, desc } from 'drizzle-orm'
 import { sessions } from '../../../database/schema'
+import { preferLanIpv4ForLoopback } from '../../../utils/ip'
 import { REFRESH_COOKIE, verifyRefreshToken } from '../../../utils/jwt'
 
 export default defineEventHandler(async (event) => {
@@ -9,7 +10,11 @@ export default defineEventHandler(async (event) => {
   let currentSid: string | null = null
   const rt = getCookie(event, REFRESH_COOKIE)
   if (rt) {
-    try { currentSid = (await verifyRefreshToken(rt)).sid } catch { /* ignore */ }
+    try {
+      currentSid = (await verifyRefreshToken(rt)).sid
+    } catch {
+      // Ignore invalid refresh cookies when listing sessions.
+    }
   }
 
   const rows = await db.select().from(sessions)
@@ -20,7 +25,7 @@ export default defineEventHandler(async (event) => {
     id: s.id,
     deviceLabel: s.deviceLabel,
     userAgent: s.userAgent,
-    ipAddress: s.ipAddress,
+    ipAddress: preferLanIpv4ForLoopback(s.ipAddress),
     lastSeenAt: s.lastSeenAt,
     createdAt: s.createdAt,
     current: s.id === currentSid

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 import { users, sessions } from '../../database/schema'
+import { getClientIpAddress } from '../../utils/ip'
 import { signAccessToken, signRefreshToken, setAuthCookies, REFRESH_TTL_SECONDS } from '../../utils/jwt'
 
 interface GoogleUser { email: string, name?: string, picture?: string, sub?: string }
@@ -35,7 +36,7 @@ export default defineOAuthGoogleEventHandler({
     }
 
     const ua = getRequestHeader(event, 'user-agent')
-    const ip = getRequestIP(event, { xForwardedFor: true }) || null
+    const ip = getClientIpAddress(event)
 
     const [session] = await db.insert(sessions).values({
       userId: row!.id,

@@ -7,6 +7,7 @@ interface SocketApi {
 export interface RemotePeer {
   peerId: string
   name: string
+  avatarUrl?: string | null
   stream: MediaStream
 }
 
@@ -35,10 +36,15 @@ export function useMeshCall(socket: SocketApi) {
     return localStream
   }
 
-  function upsertPeer(peerId: string, name: string, stream: MediaStream) {
+  function upsertPeer(peerId: string, name: string, stream: MediaStream, avatarUrl?: string | null) {
     const existing = peers.value.find(p => p.peerId === peerId)
-    if (existing) existing.stream = stream
-    else peers.value.push({ peerId, name, stream })
+    if (existing) {
+      existing.name = name
+      existing.avatarUrl = avatarUrl
+      existing.stream = stream
+    } else {
+      peers.value.push({ peerId, name, avatarUrl, stream })
+    }
   }
 
   function removePeer(peerId: string) {
@@ -47,7 +53,7 @@ export function useMeshCall(socket: SocketApi) {
     peers.value = peers.value.filter(p => p.peerId !== peerId)
   }
 
-  function createConnection(peerId: string, name: string) {
+  function createConnection(peerId: string, name: string, avatarUrl?: string | null) {
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS })
     connections.set(peerId, pc)
 
@@ -59,7 +65,7 @@ export function useMeshCall(socket: SocketApi) {
       }
     }
     pc.ontrack = (ev) => {
-      upsertPeer(peerId, name, ev.streams[0]!)
+      upsertPeer(peerId, name, ev.streams[0]!, avatarUrl)
     }
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === 'failed' || pc.connectionState === 'closed') removePeer(peerId)
@@ -68,21 +74,25 @@ export function useMeshCall(socket: SocketApi) {
   }
 
   // Initiate an offer to a peer that was already in the room when we joined.
-  async function callPeer(peerId: string, name: string) {
+  async function callPeer(peerId: string, name: string, avatarUrl?: string | null) {
     await ensureLocal()
-    const pc = createConnection(peerId, name)
+    const pc = createConnection(peerId, name, avatarUrl)
     const offer = await pc.createOffer()
     await pc.setLocalDescription(offer)
     socket.emit('signal', { to: peerId, signal: { kind: 'offer', sdp: offer } })
   }
 
-  async function handleSignal(from: string, signal: Record<string, unknown>) {
+  async function handleSignal(msg: Record<string, unknown>) {
+    const from = msg.from as string
+    const signal = msg.signal as Record<string, unknown>
     const kind = signal.kind as string
     let pc = connections.get(from)
+    const name = (msg.fromName as string | undefined) || (signal.name as string | undefined) || 'Peer'
+    const avatarUrl = (msg.fromAvatarUrl as string | null | undefined) || null
 
     if (kind === 'offer') {
       await ensureLocal()
-      pc = pc ?? createConnection(from, (signal.name as string) || 'Peer')
+      pc = pc ?? createConnection(from, name, avatarUrl)
       await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp as RTCSessionDescriptionInit))
       const answer = await pc.createAnswer()
       await pc.setLocalDescription(answer)
@@ -99,18 +109,21 @@ export function useMeshCall(socket: SocketApi) {
   // Wire up socket events for the mesh.
   function bind() {
     cleanups.push(socket.on('signal', (msg) => {
-      handleSignal(msg.from as string, msg.signal as Record<string, unknown>)
+      handleSignal(msg)
     }))
     // We joined a room: offer to everyone already there.
     cleanups.push(socket.on('room-joined', async (msg) => {
       active.value = true
       await ensureLocal()
-      const existing = (msg.peers as { peerId: string, name: string }[]) ?? []
-      for (const p of existing) await callPeer(p.peerId, p.name)
+      const existing = (msg.peers as { peerId: string, name: string, avatarUrl?: string | null }[]) ?? []
+      for (const p of existing) await callPeer(p.peerId, p.name, p.avatarUrl)
     }))
     // A new peer joined after us: they will send the offer, just note their name.
-    cleanups.push(socket.on('peer-joined', () => { active.value = true }))
-    cleanups.push(socket.on('peer-left', (msg) => removePeer(msg.peerId as string)))
+    cleanups.push(socket.on('peer-joined', () => {
+      active.value = true
+    }))
+    cleanups.push(socket.on('peer-left', msg => removePeer(msg.peerId as string)))
+    cleanups.push(socket.on('room-ended', () => hangup()))
   }
 
   async function start() {

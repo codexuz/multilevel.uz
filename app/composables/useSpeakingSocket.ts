@@ -2,12 +2,14 @@ export interface OnlineUser {
   userId: string
   peerId: string
   name: string
+  avatarUrl?: string | null
   status: 'available' | 'busy'
 }
 
 export interface IncomingCall {
   from: string
   fromName: string
+  fromAvatarUrl?: string | null
   roomId: string
   random?: boolean
 }
@@ -52,7 +54,11 @@ export function useSpeakingSocket() {
 
     ws.onopen = () => {
       connected.value = true
-      emit('hello', { userId: currentUserId, name: me.value?.name || me.value?.email || 'Student' })
+      emit('hello', {
+        userId: currentUserId,
+        name: me.value?.name || me.value?.email || 'Student',
+        avatarUrl: me.value?.avatarUrl
+      })
     }
     ws.onclose = () => {
       connected.value = false
