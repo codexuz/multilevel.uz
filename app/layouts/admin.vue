@@ -51,6 +51,19 @@ async function signOut() {
           @click="signOut"
         />
       </template>
+
+      <!-- Mobile slide-over menu (opened by the auto hamburger toggle) -->
+      <template #body>
+        <UNavigationMenu
+          orientation="vertical"
+          :items="items"
+          class="-mx-2.5"
+        />
+        <USeparator class="my-4" />
+        <p class="text-xs text-muted px-2">
+          Signed in as {{ me?.name || 'staff' }} ({{ me?.role }})
+        </p>
+      </template>
     </UHeader>
 
     <div class="flex-1 w-full max-w-[90rem] mx-auto flex gap-6 px-4 sm:px-6 py-6">

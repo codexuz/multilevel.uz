@@ -49,7 +49,7 @@ onMounted(() => {
   const stop = watch(connected, async (isConnected) => {
     if (isConnected && !joined.value) {
       await mesh.start()
-      socket.emit('join', { roomId })
+      socket.emit('join', { roomId, mode: 'group' })
       joined.value = true
       stop()
     }

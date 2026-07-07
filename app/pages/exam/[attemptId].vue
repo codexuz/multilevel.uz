@@ -16,7 +16,6 @@ const route = useRoute()
 const attemptId = route.params.attemptId as string
 const toast = useToast()
 const timer = useExamTimer()
-const { me } = useMe()
 
 interface ResponseState { response: string | string[] | null, audioUrl: string | null }
 const responses = reactive<Record<string, ResponseState>>({})
@@ -32,7 +31,12 @@ const notepad = ref('')
 
 const sectionType = computed(() => section.value?.type)
 const isListening = computed(() => sectionType.value === 'listening')
-const listeningRef = ref<{ scrollToQuestion: (id: string) => void } | null>(null)
+const isReading = computed(() => sectionType.value === 'reading')
+// Reading & Listening use the full-screen split runner with a bottom nav bar.
+const isRunner = computed(() => isListening.value || isReading.value)
+// Listening is paced by the audio and Speaking by per-prompt timers, so neither
+// shows a section countdown — only Reading & Writing do.
+const showTimer = computed(() => isReading.value || sectionType.value === 'writing')
 
 function getResponse(id: string) {
   return responses[id]?.response
@@ -48,12 +52,6 @@ function isAnswered(q: StudentQuestionDto) {
   if (Array.isArray(r.response)) return r.response.length > 0
   return !!r.response
 }
-
-const numberedQuestions = computed(() =>
-  [...questions.value]
-    .filter(q => q.questionNumber != null)
-    .sort((a, b) => (a.questionNumber! - b.questionNumber!))
-)
 
 async function load() {
   let data: RunnerData
@@ -72,12 +70,16 @@ async function load() {
   for (const a of data.answers) responses[a.questionId] = { response: a.response, audioUrl: a.audioUrl }
   for (const q of questions.value) if (!responses[q.id]) responses[q.id] = { response: null, audioUrl: null }
 
-  const total = (section.value?.durationMinutes || 45) * 60
-  const elapsed = Math.floor((Date.now() - new Date(data.attempt.startedAt).getTime()) / 1000)
-  timer.start(Math.max(1, total - elapsed), {
-    onWarn: () => { warnOpen.value = true },
-    onExpire: () => submit(true)
-  })
+  // Listening is paced by the audio and Speaking by per-prompt timers, so
+  // neither has a section time limit or auto-submit — only Reading & Writing.
+  if (showTimer.value) {
+    const total = (section.value?.durationMinutes || 45) * 60
+    const elapsed = Math.floor((Date.now() - new Date(data.attempt.startedAt).getTime()) / 1000)
+    timer.start(Math.max(1, total - elapsed), {
+      onWarn: () => { warnOpen.value = true },
+      onExpire: () => submit(true)
+    })
+  }
   loading.value = false
 }
 
@@ -131,10 +133,10 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-elevated/30">
+  <div class="h-screen flex flex-col bg-elevated/30 overflow-hidden">
     <!-- Branded top bar -->
-    <header class="sticky top-0 z-20 bg-primary text-inverted shadow-sm">
-      <div class="max-w-7xl mx-auto px-4 py-2 flex items-center gap-4">
+    <header class="shrink-0 z-20 bg-primary text-inverted shadow-sm">
+      <div class="w-full px-4 py-2 flex items-center gap-3">
         <div class="flex items-center gap-2 font-bold shrink-0">
           <UIcon
             v-if="section"
@@ -143,18 +145,47 @@ onMounted(load)
           />
           <span class="hidden sm:inline">MULTI-LEVEL</span>
         </div>
-        <nav class="hidden md:flex items-center gap-1.5 text-xs text-inverted/70 truncate">
-          <span>Bosh sahifa</span><span>/</span>
-          <span>MultiLevel Test</span><span>/</span>
-          <span class="text-inverted">{{ section?.title }}</span>
-        </nav>
         <div class="flex-1" />
-        <div
-          class="font-mono text-base font-bold px-2.5 py-0.5 rounded-md bg-inverted/15"
-          :class="timer.danger.value ? 'text-error-200' : ''"
-        >
-          {{ timer.label.value }}
-        </div>
+
+        <template v-if="!loading">
+          <span class="hidden sm:inline text-xs text-inverted/80 font-medium">
+            {{ answeredCount }}/{{ questions.length }} javob
+          </span>
+          <div
+            v-if="showTimer"
+            class="font-mono text-base font-bold px-2.5 py-0.5 rounded-md bg-inverted/15"
+            :class="timer.danger.value ? 'text-error-200' : ''"
+          >
+            {{ timer.label.value }}
+          </div>
+
+          <UButton
+            icon="i-lucide-notebook-pen"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            class="text-inverted hover:bg-inverted/15"
+            aria-label="Blaknot"
+            @click="() => { notepadOpen = true }"
+          />
+          <UButton
+            icon="i-lucide-check-circle"
+            label="Topshirish"
+            color="neutral"
+            size="sm"
+            :loading="submitting"
+            @click="submit(false)"
+          />
+          <UButton
+            icon="i-lucide-log-out"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            class="text-inverted hover:bg-inverted/15"
+            aria-label="Chiqish"
+            @click="exit"
+          />
+        </template>
       </div>
     </header>
 
@@ -168,157 +199,60 @@ onMounted(load)
       />
     </div>
 
+    <!-- READING & LISTENING: full-screen split runner with bottom nav -->
+    <div
+      v-else-if="isRunner"
+      class="flex-1 min-h-0"
+    >
+      <ExamListeningView
+        v-if="isListening"
+        :parts="parts"
+        :questions="questions"
+        :section-audio="section?.audioUrl ?? null"
+        :get-response="getResponse"
+        :get-audio="getAudio"
+        :is-answered="isAnswered"
+        @response="onResponse"
+        @audio="onAudio"
+      />
+      <ExamReadingView
+        v-else
+        :parts="parts"
+        :questions="questions"
+        :get-response="getResponse"
+        :get-audio="getAudio"
+        :is-answered="isAnswered"
+        @response="onResponse"
+        @audio="onAudio"
+      />
+    </div>
+
+    <!-- WRITING & SPEAKING: padded, scrollable page -->
     <main
       v-else
-      class="flex-1 max-w-7xl w-full mx-auto px-4 py-6"
+      class="flex-1 min-h-0 overflow-auto"
     >
-      <!-- LISTENING: single page + palette sidebar -->
-      <div
-        v-if="isListening"
-        class="grid lg:grid-cols-[1fr_280px] gap-6 items-start"
-      >
-        <div class="order-2 lg:order-1">
-          <ExamListeningView
-            ref="listeningRef"
+      <div class="max-w-7xl w-full mx-auto px-4 py-6">
+        <!-- WRITING -->
+        <div v-if="sectionType === 'writing'">
+          <ExamWritingView
             :parts="parts"
             :questions="questions"
-            :section-audio="section?.audioUrl ?? null"
             :get-response="getResponse"
-            :get-audio="getAudio"
-            :is-answered="isAnswered"
             @response="onResponse"
+          />
+        </div>
+
+        <!-- SPEAKING: auto-advance; the view owns the save step -->
+        <div v-else-if="sectionType === 'speaking'">
+          <ExamSpeakingView
+            :questions="questions"
+            :get-audio="getAudio"
+            :submitting="submitting"
             @audio="onAudio"
-            @open-notepad="notepadOpen = true"
+            @save="submit(true)"
           />
         </div>
-
-        <aside class="order-1 lg:order-2 lg:sticky lg:top-32 space-y-4">
-          <div class="bg-default rounded-xl border border-default p-3 flex items-center gap-3">
-            <UAvatar
-              :src="me?.avatarUrl || undefined"
-              :alt="me?.name || 'User'"
-              size="md"
-            />
-            <div class="min-w-0">
-              <p class="font-semibold text-sm truncate">
-                {{ me?.name || me?.email || 'Guruh' }}
-              </p>
-              <p class="text-xs text-muted truncate">
-                {{ me?.email }}
-              </p>
-            </div>
-          </div>
-
-          <div class="bg-default rounded-xl border border-default p-4 space-y-3">
-            <h3 class="text-center font-bold text-sm">
-              Question Palette
-            </h3>
-            <div class="flex items-center justify-center gap-4 text-xs">
-              <span class="flex items-center gap-1.5">
-                <span class="size-3 rounded-sm bg-primary" /> Answered
-              </span>
-              <span class="flex items-center gap-1.5">
-                <span class="size-3 rounded-sm border border-default bg-default" /> Unanswered
-              </span>
-            </div>
-            <div class="grid grid-cols-8 gap-1.5">
-              <button
-                v-for="q in numberedQuestions"
-                :key="q.id"
-                type="button"
-                class="aspect-square rounded-md text-xs font-semibold flex items-center justify-center transition-colors border"
-                :class="isAnswered(q)
-                  ? 'bg-primary text-inverted border-primary'
-                  : 'bg-default text-default border-default hover:border-primary'"
-                @click="listeningRef?.scrollToQuestion(q.id)"
-              >
-                {{ q.questionNumber }}
-              </button>
-            </div>
-            <div class="flex flex-col items-center gap-1 pt-2 border-t border-default">
-              <UIcon
-                name="i-lucide-alarm-clock"
-                class="size-5 text-muted"
-              />
-              <div
-                class="font-mono text-2xl font-bold"
-                :class="timer.danger.value ? 'text-error' : 'text-default'"
-              >
-                {{ timer.label.value }}
-              </div>
-              <p class="text-xs text-muted">
-                {{ answeredCount }}/{{ questions.length }} answered
-              </p>
-            </div>
-            <UButton
-              block
-              color="primary"
-              :loading="submitting"
-              label="Topshirish"
-              icon="i-lucide-check-circle"
-              @click="submit(false)"
-            />
-            <UButton
-              block
-              color="warning"
-              variant="outline"
-              label="Chiqish"
-              icon="i-lucide-log-out"
-              @click="exit"
-            />
-          </div>
-        </aside>
-      </div>
-
-      <!-- READING: split panel + part nav -->
-      <div v-else-if="sectionType === 'reading'">
-        <ExamReadingView
-          :parts="parts"
-          :questions="questions"
-          :get-response="getResponse"
-          :get-audio="getAudio"
-          @response="onResponse"
-          @audio="onAudio"
-        />
-        <div class="flex justify-end pt-4">
-          <UButton
-            :loading="submitting"
-            color="primary"
-            label="Topshirish"
-            icon="i-lucide-check-circle"
-            @click="submit(false)"
-          />
-        </div>
-      </div>
-
-      <!-- WRITING: split panel + part nav -->
-      <div v-else-if="sectionType === 'writing'">
-        <ExamWritingView
-          :parts="parts"
-          :questions="questions"
-          :get-response="getResponse"
-          @response="onResponse"
-        />
-        <div class="flex justify-end pt-4">
-          <UButton
-            :loading="submitting"
-            color="primary"
-            label="Topshirish"
-            icon="i-lucide-check-circle"
-            @click="submit(false)"
-          />
-        </div>
-      </div>
-
-      <!-- SPEAKING: auto-advance; the view owns the save step -->
-      <div v-else-if="sectionType === 'speaking'">
-        <ExamSpeakingView
-          :questions="questions"
-          :get-audio="getAudio"
-          :submitting="submitting"
-          @audio="onAudio"
-          @save="submit(true)"
-        />
       </div>
     </main>
 
@@ -348,7 +282,7 @@ onMounted(load)
         <UButton
           label="Continue"
           color="primary"
-          @click="warnOpen = false"
+          @click="() => { warnOpen = false }"
         />
       </template>
     </UModal>

@@ -61,6 +61,15 @@ const userItems = computed(() => [[
         </UDropdownMenu>
         <UButton v-else to="/login" label="Sign in" color="primary" />
       </template>
+
+      <!-- Mobile slide-over menu (opened by the auto hamburger toggle) -->
+      <template #body>
+        <UNavigationMenu
+          :items="links"
+          orientation="vertical"
+          class="-mx-2.5"
+        />
+      </template>
     </UHeader>
 
     <UMain class="flex-1">

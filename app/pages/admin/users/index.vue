@@ -64,53 +64,60 @@ async function revokePremium(p: AdminUser) {
         <div
           v-for="p in usersList"
           :key="p.id"
-          class="flex flex-wrap items-center gap-4 p-4"
+          class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4"
         >
-          <UAvatar
-            :src="p.avatarUrl || undefined"
-            :alt="p.name || 'User'"
-            size="md"
-          />
-          <div class="flex-1 min-w-0">
-            <p class="font-medium truncate">
-              {{ p.name || 'Unnamed user' }}
-            </p>
-            <p class="text-xs text-muted">
-              {{ p.email }} · joined {{ new Date(p.createdAt).toLocaleDateString() }}
-            </p>
+          <!-- User identity -->
+          <div class="flex items-center gap-3 min-w-0 sm:flex-1">
+            <UAvatar
+              :src="p.avatarUrl || undefined"
+              :alt="p.name || 'User'"
+              size="md"
+              class="shrink-0"
+            />
+            <div class="min-w-0">
+              <p class="font-medium truncate">
+                {{ p.name || 'Unnamed user' }}
+              </p>
+              <p class="text-xs text-muted truncate">
+                {{ p.email }} · joined {{ new Date(p.createdAt).toLocaleDateString() }}
+              </p>
+            </div>
           </div>
 
-          <USelect
-            :model-value="p.role"
-            :items="roles"
-            class="w-32"
-            @update:model-value="setRole(p, $event as UserRole)"
-          />
+          <!-- Controls -->
+          <div class="flex flex-wrap items-center gap-2 sm:gap-3 sm:shrink-0">
+            <USelect
+              :model-value="p.role"
+              :items="roles"
+              class="w-32"
+              @update:model-value="setRole(p, $event as UserRole)"
+            />
 
-          <UBadge
-            v-if="p.isPremium"
-            color="primary"
-            variant="subtle"
-            icon="i-lucide-sparkles"
-            label="Premium"
-          />
-          <UButton
-            v-if="p.isPremium"
-            size="sm"
-            color="error"
-            variant="ghost"
-            label="Revoke"
-            @click="revokePremium(p)"
-          />
-          <UButton
-            v-else
-            size="sm"
-            color="primary"
-            variant="soft"
-            icon="i-lucide-sparkles"
-            label="Grant 30d"
-            @click="grantPremium(p, 30)"
-          />
+            <UBadge
+              v-if="p.isPremium"
+              color="primary"
+              variant="subtle"
+              icon="i-lucide-sparkles"
+              label="Premium"
+            />
+            <UButton
+              v-if="p.isPremium"
+              size="sm"
+              color="error"
+              variant="ghost"
+              label="Revoke"
+              @click="revokePremium(p)"
+            />
+            <UButton
+              v-else
+              size="sm"
+              color="primary"
+              variant="soft"
+              icon="i-lucide-sparkles"
+              label="Grant 30d"
+              @click="grantPremium(p, 30)"
+            />
+          </div>
         </div>
       </div>
     </UCard>

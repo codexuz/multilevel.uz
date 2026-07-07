@@ -15,6 +15,12 @@ const online = new Map<string, Presence>() // peerId -> presence
 const byUser = new Map<string, string>() // userId -> peerId
 const rooms = new Map<string, Set<string>>() // roomId -> set of peerIds
 
+// Per-room metadata. `host` is the creator (first participant); `group` marks a
+// shared "live" room that stays open until the host ends it, whereas a 1:1 room
+// tears down as soon as only one participant remains.
+interface RoomMeta { host: string, group: boolean }
+const roomMeta = new Map<string, RoomMeta>() // roomId -> meta
+
 function peerId(peer: Peer): string {
   return peer.id
 }
@@ -45,12 +51,21 @@ function findPeerByUser(userId: string): Presence | undefined {
   return pid ? online.get(pid) : undefined
 }
 
-function joinRoom(pres: Presence, roomId: string) {
+function joinRoom(pres: Presence, roomId: string, group = false) {
   const set = rooms.get(roomId) ?? new Set<string>()
   // Tell the joiner about existing peers so it can initiate offers.
   const existing = [...set].map(pid => online.get(pid)).filter(Boolean) as Presence[]
   set.add(peerId(pres.peer))
   rooms.set(roomId, set)
+
+  // The first participant becomes the host/creator of the room.
+  const meta = roomMeta.get(roomId)
+  if (meta) {
+    if (group) meta.group = true
+  } else {
+    roomMeta.set(roomId, { host: pres.userId, group })
+  }
+
   pres.roomId = roomId
   pres.status = 'busy'
   send(pres.peer, 'room-joined', {
@@ -65,7 +80,10 @@ function joinRoom(pres: Presence, roomId: string) {
 
 function endRoom(roomId: string, endedBy?: string) {
   const set = rooms.get(roomId)
-  if (!set) return
+  if (!set) {
+    roomMeta.delete(roomId)
+    return
+  }
 
   for (const pid of set) {
     const other = online.get(pid)
@@ -75,19 +93,32 @@ function endRoom(roomId: string, endedBy?: string) {
     other.status = 'available'
   }
   rooms.delete(roomId)
+  roomMeta.delete(roomId)
 }
 
 function leaveRoom(pres: Presence) {
   const roomId = pres.roomId
   if (!roomId) return
   const set = rooms.get(roomId)
+  const meta = roomMeta.get(roomId)
   if (set) {
     set.delete(peerId(pres.peer))
+    // Notify remaining peers so they can drop this participant's tile/stream.
     for (const pid of set) {
       const other = online.get(pid)
       if (other) send(other.peer, 'peer-left', { peerId: peerId(pres.peer) })
     }
-    if (set.size <= 1) endRoom(roomId, pres.userId)
+
+    if (meta?.group) {
+      // Live/group room: only the creator ending the session tears it down.
+      // Other participants leaving keeps the room open for the host.
+      if (meta.host === pres.userId || set.size === 0) {
+        endRoom(roomId, pres.userId)
+      }
+    } else if (set.size <= 1) {
+      // 1:1 / random room: end once only one participant remains.
+      endRoom(roomId, pres.userId)
+    }
   }
   pres.roomId = null
   pres.status = 'available'
@@ -200,7 +231,7 @@ export default defineWebSocketHandler({
       case 'join': {
         if (!self) return
         leaveRoom(self)
-        joinRoom(self, String(msg.roomId ?? crypto.randomUUID()))
+        joinRoom(self, String(msg.roomId ?? crypto.randomUUID()), msg.mode === 'group')
         broadcastPresence()
         break
       }
