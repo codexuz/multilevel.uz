@@ -25,8 +25,6 @@
     "@element-plus/nuxt": "1.1.5",
     "@formkit/auto-animate": "0.9.0",
     "@formkit/nuxt": "2.1.0",
-    "@hebilicious/form-actions-nuxt": "0.3.0",
-    "@hebilicious/server-block-nuxt": "0.3.4",
     "@hypernym/nuxt-anime": "2.1.1",
     "@i2d/nuxt-pdf-frame": "0.6.1",
     "@iconify-json/lucide": "^1.2.114",

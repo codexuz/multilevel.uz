@@ -119,7 +119,7 @@ export default defineWebSocketHandler({
         await sendPush([targetUserId], {
           title: `${self.name} is calling`,
           body: 'Tap to join the speaking call.',
-          data: { url: `/speaking/room/${roomId}` }
+          data: { url: `/speaking/room/${roomId}?from=${encodeURIComponent(self.userId)}` }
         })
         send(peer, 'call-ringing', { userId: targetUserId, roomId })
         break
@@ -144,14 +144,24 @@ export default defineWebSocketHandler({
 
       case 'random': {
         if (!self) return
-        // Pair with any other available, room-less user.
+        // Invite any other available, room-less user and let them accept.
         const other = [...online.values()].find(p =>
           p.userId !== self.userId && p.status === 'available' && !p.roomId
         )
         if (other) {
           const roomId = crypto.randomUUID()
-          joinRoom(self, roomId)
-          joinRoom(other, roomId)
+          send(other.peer, 'call-invite', {
+            from: self.userId,
+            fromName: self.name,
+            roomId,
+            random: true
+          })
+          await sendPush([other.userId], {
+            title: 'Random speaking call',
+            body: `${self.name} is looking for a speaking partner.`,
+            data: { url: `/speaking/room/${roomId}?from=${encodeURIComponent(self.userId)}` }
+          })
+          send(peer, 'call-ringing', { userId: other.userId, roomId, random: true })
         } else {
           send(peer, 'random-waiting')
         }

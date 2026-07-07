@@ -1,58 +1,24 @@
 <script setup lang="ts">
-import type { OnlineUser, IncomingCall } from '~/composables/useSpeakingSocket'
+import type { OnlineUser } from '~/composables/useSpeakingSocket'
 
 const toast = useToast()
 const socket = useSpeakingSocket()
 const { connected, myPeerId, onlineUsers } = socket
 const mesh = useMeshCall({ myPeerId, emit: socket.emit, on: socket.on })
 
-const incoming = ref<IncomingCall | null>(null)
-const inRoom = ref<string | null>(null)
-
 onMounted(() => {
   socket.connect()
-
-  socket.on('call-invite', (msg) => {
-    incoming.value = { from: msg.from as string, fromName: msg.fromName as string, roomId: msg.roomId as string }
-  })
-  socket.on('call-accepted', (msg) => {
-    // Callee accepted — both sides join the room.
-    joinRoom(msg.roomId as string)
-  })
-  socket.on('call-rejected', () => {
-    toast.add({ title: 'Call declined', color: 'warning' })
-  })
-  socket.on('room-joined', (msg) => {
-    inRoom.value = msg.roomId as string
-  })
 })
 
-async function callUser(u: OnlineUser) {
-  await mesh.start()
+function callUser(u: OnlineUser) {
   const roomId = crypto.randomUUID()
   socket.emit('call-invite', { userId: u.userId, roomId })
-  toast.add({ title: `Calling ${u.name}…`, color: 'info' })
+  toast.add({ title: `Calling ${u.name}...`, color: 'info' })
 }
 
-async function acceptCall() {
-  if (!incoming.value) return
-  const call = incoming.value
-  incoming.value = null
-  await mesh.start()
-  socket.emit('call-accept', { from: call.from, roomId: call.roomId })
-  joinRoom(call.roomId)
-}
-
-function rejectCall() {
-  if (!incoming.value) return
-  socket.emit('call-reject', { from: incoming.value.from })
-  incoming.value = null
-}
-
-async function randomCall() {
-  await mesh.start()
+function randomCall() {
   socket.emit('random')
-  toast.add({ title: 'Looking for a partner…', color: 'info' })
+  toast.add({ title: 'Looking for a partner...', color: 'info' })
 }
 
 async function createRoom() {
@@ -64,15 +30,9 @@ async function createRoom() {
   toast.add({ title: 'Room created — link copied', description: url, color: 'success' })
 }
 
-function joinRoom(roomId: string) {
-  socket.emit('join', { roomId })
-  inRoom.value = roomId
-}
-
 function leave() {
   socket.emit('leave')
   mesh.hangup()
-  inRoom.value = null
 }
 </script>
 
@@ -93,20 +53,6 @@ function leave() {
         size="sm"
       />
     </div>
-
-    <!-- Incoming call prompt -->
-    <UAlert
-      v-if="incoming"
-      color="primary"
-      variant="subtle"
-      icon="i-lucide-phone-incoming"
-      :title="`${incoming.fromName} is calling`"
-    >
-      <template #actions>
-        <UButton color="success" label="Accept" icon="i-lucide-phone" @click="acceptCall" />
-        <UButton color="error" variant="ghost" label="Decline" @click="rejectCall" />
-      </template>
-    </UAlert>
 
     <!-- Active call -->
     <UCard v-if="mesh.active.value">

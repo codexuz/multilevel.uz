@@ -29,5 +29,8 @@ useSeoMeta({
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
+    <ClientOnly>
+      <SpeakingGlobalCaller />
+    </ClientOnly>
   </UApp>
 </template>

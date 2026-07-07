@@ -7,6 +7,11 @@ const { connected, myPeerId } = socket
 const mesh = useMeshCall({ myPeerId, emit: socket.emit, on: socket.on })
 
 const joined = ref(false)
+const inviteAccepted = ref(false)
+const inviteFrom = computed(() => {
+  const from = route.query.from
+  return Array.isArray(from) ? from[0] : from
+})
 
 onMounted(async () => {
   socket.connect()
@@ -14,6 +19,10 @@ onMounted(async () => {
   const stop = watch(connected, async (isConnected) => {
     if (isConnected && !joined.value) {
       await mesh.start()
+      if (inviteFrom.value && !inviteAccepted.value) {
+        socket.emit('call-accept', { from: inviteFrom.value, roomId })
+        inviteAccepted.value = true
+      }
       socket.emit('join', { roomId })
       joined.value = true
       stop()

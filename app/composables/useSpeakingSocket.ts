@@ -9,9 +9,14 @@ export interface IncomingCall {
   from: string
   fromName: string
   roomId: string
+  random?: boolean
 }
 
 type Handler = (msg: Record<string, unknown>) => void
+
+let ws: WebSocket | null = null
+let currentUserId: string | null = null
+const handlers = new Map<string, Set<Handler>>()
 
 /**
  * Thin wrapper over the Nitro WebSocket signaling server (`/ws/speaking`).
@@ -20,12 +25,9 @@ type Handler = (msg: Record<string, unknown>) => void
 export function useSpeakingSocket() {
   const { me } = useMe()
 
-  const connected = ref(false)
-  const myPeerId = ref<string | null>(null)
-  const onlineUsers = ref<OnlineUser[]>([])
-
-  let ws: WebSocket | null = null
-  const handlers = new Map<string, Set<Handler>>()
+  const connected = useState('speaking-socket-connected', () => false)
+  const myPeerId = useState<string | null>('speaking-socket-peer-id', () => null)
+  const onlineUsers = useState<OnlineUser[]>('speaking-socket-online-users', () => [])
 
   function on(type: string, fn: Handler) {
     const set = handlers.get(type) ?? new Set()
@@ -42,16 +44,22 @@ export function useSpeakingSocket() {
 
   function connect() {
     if (!import.meta.client || ws) return
+    if (!me.value?.id) return
+
+    currentUserId = me.value.id
     const proto = location.protocol === 'https:' ? 'wss' : 'ws'
     ws = new WebSocket(`${proto}://${location.host}/ws/speaking`)
 
     ws.onopen = () => {
       connected.value = true
-      emit('hello', { userId: me.value?.id, name: me.value?.name || me.value?.email || 'Student' })
+      emit('hello', { userId: currentUserId, name: me.value?.name || me.value?.email || 'Student' })
     }
     ws.onclose = () => {
       connected.value = false
+      myPeerId.value = null
+      onlineUsers.value = []
       ws = null
+      currentUserId = null
     }
     ws.onmessage = (ev) => {
       let msg: Record<string, unknown>
@@ -71,9 +79,10 @@ export function useSpeakingSocket() {
     ws?.close()
     ws = null
     connected.value = false
+    myPeerId.value = null
+    onlineUsers.value = []
+    currentUserId = null
   }
-
-  onBeforeUnmount(disconnect)
 
   return { connected, myPeerId, onlineUsers, connect, disconnect, on, emit }
 }
