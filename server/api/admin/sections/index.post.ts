@@ -8,6 +8,7 @@ export default defineEventHandler(async (event) => {
     type?: 'listening' | 'reading' | 'writing' | 'speaking'
     title?: string
     durationMinutes?: number
+    videoExplanationUrl?: string | null
   }>(event)
 
   if (!body.testId || !body.type) throw createError({ statusCode: 400, message: 'testId and type required' })
@@ -21,6 +22,7 @@ export default defineEventHandler(async (event) => {
     type: body.type,
     title: body.title ?? `${body.type[0]!.toUpperCase()}${body.type.slice(1)} section`,
     durationMinutes: body.durationMinutes ?? 45,
+    videoExplanationUrl: body.videoExplanationUrl ?? null,
     orderIndex: n
   }).returning()
 
@@ -31,6 +33,7 @@ export default defineEventHandler(async (event) => {
     durationMinutes: row!.durationMinutes,
     orderIndex: row!.orderIndex,
     audioUrl: row!.audioUrl,
+    videoExplanationUrl: row!.videoExplanationUrl,
     parts: []
   }
 })

@@ -14,12 +14,14 @@ const PREFIX: Record<Purpose, string> = {
 function extFromType(type: string): string {
   const map: Record<string, string> = {
     'audio/mpeg': 'mp3', 'audio/mp3': 'mp3', 'audio/ogg': 'ogg', 'audio/webm': 'webm',
-    'audio/wav': 'wav', 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp'
+    'audio/wav': 'wav', 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp',
+    'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov'
   }
   return map[type] || 'bin'
 }
 
 const MAX_BYTES = 25 * 1024 * 1024 // 25 MB
+const MAX_VIDEO_BYTES = 200 * 1024 * 1024 // 200 MB
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
@@ -35,11 +37,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, message: 'Forbidden' })
   }
 
-  if (filePart.data.byteLength > MAX_BYTES) {
+  const contentType = filePart.type || 'application/octet-stream'
+  const maxBytes = contentType.startsWith('video/') ? MAX_VIDEO_BYTES : MAX_BYTES
+  if (filePart.data.byteLength > maxBytes) {
     throw createError({ statusCode: 413, message: 'File too large' })
   }
 
-  const contentType = filePart.type || 'application/octet-stream'
   const scope = purpose === 'avatar' || purpose === 'recording' ? user.id : 'shared'
   const key = `${PREFIX[purpose]}/${scope}/${randomUUID()}.${extFromType(contentType)}`
 

@@ -6,7 +6,7 @@ const props = defineProps<{
   purpose: Purpose
   accept?: string
   label?: string
-  preview?: 'audio' | 'image' | 'none'
+  preview?: 'audio' | 'image' | 'video' | 'none'
 }>()
 const emit = defineEmits<{ 'update:modelValue': [string | null] }>()
 
@@ -74,6 +74,12 @@ async function onPick(e: Event) {
         alt="preview"
         class="max-h-32 rounded-md border border-default"
       >
+      <video
+        v-else-if="preview === 'video'"
+        :src="modelValue"
+        controls
+        class="max-h-48 w-full rounded-md border border-default bg-black"
+      />
       <p
         v-else
         class="text-xs text-muted truncate"

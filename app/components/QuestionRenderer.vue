@@ -27,11 +27,24 @@ const multiValue = computed<string[]>({
 
 const wordCount = computed(() => (textValue.value.trim() ? textValue.value.trim().split(/\s+/).length : 0))
 const selectItems = computed(() => q.value.options.map(o => ({ label: o.label, value: o.value })))
+
+const gapPrompt = computed(() => {
+  const prompt = q.value.prompt ?? ''
+  const match = /_{3,}|\.{3,}/.exec(prompt)
+  if (!match || match.index === undefined) return null
+  return {
+    before: prompt.slice(0, match.index),
+    after: prompt.slice(match.index + match[0].length)
+  }
+})
 </script>
 
 <template>
   <div class="space-y-3">
-    <div class="flex gap-2">
+    <div
+      v-if="q.type !== 'text_input'"
+      class="flex gap-2"
+    >
       <UBadge
         v-if="q.questionNumber != null"
         :label="String(q.questionNumber)"
@@ -62,12 +75,48 @@ const selectItems = computed(() => q.value.options.map(o => ({ label: o.label, v
     />
 
     <!-- Gap fill -->
-    <UInput
+    <div
       v-else-if="q.type === 'text_input'"
-      v-model="textValue"
-      class="max-w-sm"
-      placeholder="Type your answer"
-    />
+      class="flex gap-2"
+    >
+      <UBadge
+        v-if="q.questionNumber != null"
+        :label="String(q.questionNumber)"
+        color="neutral"
+        variant="subtle"
+        class="shrink-0 mt-1"
+      />
+      <div class="flex-1 text-sm font-medium leading-9">
+        <template v-if="gapPrompt">
+          <!-- eslint-disable vue/no-v-html -->
+          <span v-html="gapPrompt.before" />
+          <!-- eslint-enable vue/no-v-html -->
+          <UInput
+            v-model="textValue"
+            class="mx-1 inline-flex w-36 align-middle"
+            size="sm"
+            placeholder="Answer"
+          />
+          <!-- eslint-disable vue/no-v-html -->
+          <span v-html="gapPrompt.after" />
+          <!-- eslint-enable vue/no-v-html -->
+        </template>
+        <template v-else>
+          <!-- eslint-disable vue/no-v-html -->
+          <span
+            v-if="q.prompt"
+            class="block"
+            v-html="q.prompt"
+          />
+          <!-- eslint-enable vue/no-v-html -->
+          <UInput
+            v-model="textValue"
+            class="mt-2 max-w-sm"
+            placeholder="Type your answer"
+          />
+        </template>
+      </div>
+    </div>
 
     <!-- Dropdown match -->
     <USelect

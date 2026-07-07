@@ -3,9 +3,40 @@ import type { TestDto } from '~/types/models'
 
 definePageMeta({ layout: 'admin', middleware: 'staff' })
 
-const { data: tests, refresh } = await useFetch<TestDto[]>('/api/admin/tests')
-
 const toast = useToast()
+const tests = ref<TestDto[]>([])
+const loading = ref(true)
+
+function errorStatus(e: unknown) {
+  return (e as { statusCode?: number, response?: { status?: number }, data?: { statusCode?: number } }).statusCode
+    ?? (e as { statusCode?: number, response?: { status?: number }, data?: { statusCode?: number } }).response?.status
+    ?? (e as { statusCode?: number, response?: { status?: number }, data?: { statusCode?: number } }).data?.statusCode
+}
+
+async function handleLoadError(e: unknown) {
+  const status = errorStatus(e)
+  if (status === 401) {
+    await navigateTo('/login')
+    return
+  }
+  if (status === 403) {
+    await navigateTo('/dashboard')
+    return
+  }
+  toast.add({ title: (e as { data?: { message?: string } })?.data?.message ?? 'Failed', color: 'error' })
+}
+
+async function refresh() {
+  loading.value = true
+  try {
+    tests.value = await $fetch<TestDto[]>('/api/admin/tests')
+  } catch (e) {
+    await handleLoadError(e)
+  } finally {
+    loading.value = false
+  }
+}
+
 async function togglePublish(t: TestDto) {
   const next = t.status === 'published' ? 'draft' : 'published'
   try {
@@ -24,6 +55,8 @@ async function remove(t: TestDto) {
     toast.add({ title: (e as { data?: { message?: string } })?.data?.message ?? 'Failed', color: 'error' })
   }
 }
+
+onMounted(refresh)
 </script>
 
 <template>
@@ -39,8 +72,15 @@ async function remove(t: TestDto) {
       />
     </div>
 
+    <div
+      v-if="loading"
+      class="text-muted"
+    >
+      Loading…
+    </div>
+
     <UCard
-      v-if="tests?.length"
+      v-else-if="tests.length"
       :ui="{ body: 'p-0 sm:p-0' }"
     >
       <div class="divide-y divide-default">

@@ -27,6 +27,7 @@ export interface SectionNode {
   title: string
   duration_minutes: number
   audio_url: string | null
+  video_explanation_url: string | null
   order_index: number
   parts: PartNode[]
 }
@@ -65,6 +66,7 @@ interface ApiSection {
   title: string
   durationMinutes: number
   audioUrl: string | null
+  videoExplanationUrl: string | null
   orderIndex: number
   parts: ApiPart[]
 }
@@ -103,6 +105,7 @@ function toSectionNode(s: ApiSection): SectionNode {
     title: s.title,
     duration_minutes: s.durationMinutes,
     audio_url: s.audioUrl,
+    video_explanation_url: s.videoExplanationUrl,
     order_index: s.orderIndex,
     parts: (s.parts ?? []).map(toPartNode)
   }
@@ -115,6 +118,21 @@ export function useTestBuilder(testId: string) {
   const test = ref<{ id: string, title: string, description: string | null, level: string | null, status: 'draft' | 'published', is_premium: boolean } | null>(null)
   const sections = ref<SectionNode[]>([])
   const loading = ref(false)
+
+  async function handleAuthError(e: unknown) {
+    const status = (e as { statusCode?: number, response?: { status?: number }, data?: { statusCode?: number } }).statusCode
+      ?? (e as { statusCode?: number, response?: { status?: number }, data?: { statusCode?: number } }).response?.status
+      ?? (e as { statusCode?: number, response?: { status?: number }, data?: { statusCode?: number } }).data?.statusCode
+    if (status === 401) {
+      await navigateTo('/login')
+      return true
+    }
+    if (status === 403) {
+      await navigateTo('/dashboard')
+      return true
+    }
+    return false
+  }
 
   function notifyError(e: unknown) {
     const msg = (e as { data?: { message?: string } })?.data?.message ?? 'Something went wrong'
@@ -135,6 +153,7 @@ export function useTestBuilder(testId: string) {
       }
       sections.value = tree.sections.map(toSectionNode)
     } catch (e) {
+      if (await handleAuthError(e)) return
       notifyError(e)
     } finally {
       loading.value = false
@@ -173,7 +192,12 @@ export function useTestBuilder(testId: string) {
     try {
       await $fetch(`/api/admin/sections/${s.id}`, {
         method: 'PATCH',
-        body: { title: s.title, durationMinutes: s.duration_minutes, audioUrl: s.audio_url }
+        body: {
+          title: s.title,
+          durationMinutes: s.duration_minutes,
+          audioUrl: s.audio_url,
+          videoExplanationUrl: s.video_explanation_url
+        }
       })
       toast.add({ title: 'Section saved', color: 'success', icon: 'i-lucide-check' })
     } catch (e) {

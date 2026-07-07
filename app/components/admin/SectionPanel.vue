@@ -13,6 +13,7 @@ const emit = defineEmits<{
 }>()
 
 const isListening = computed(() => props.section.type === 'listening')
+const isReading = computed(() => props.section.type === 'reading')
 </script>
 
 <template>
@@ -43,6 +44,19 @@ const isListening = computed(() => props.section.type === 'listening')
         accept="audio/*"
         preview="audio"
         label="Upload listening audio"
+      />
+    </UFormField>
+
+    <UFormField
+      v-if="isReading"
+      label="Video explanation"
+    >
+      <FileUpload
+        v-model="section.video_explanation_url"
+        purpose="test-asset"
+        accept="video/*"
+        preview="video"
+        label="Upload video explanation"
       />
     </UFormField>
 

@@ -103,6 +103,7 @@ export const sections = pgTable('sections', {
   durationMinutes: integer('duration_minutes').notNull().default(45),
   orderIndex: integer('order_index').notNull().default(0),
   audioUrl: text('audio_url'),
+  videoExplanationUrl: text('video_explanation_url'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, t => [index('sections_test_idx').on(t.testId)])
 

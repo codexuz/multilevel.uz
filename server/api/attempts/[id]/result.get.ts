@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
   const [section] = await db.select().from(sections).where(eq(sections.id, attempt.sectionId)).limit(1)
   const [test] = await db.select().from(tests).where(eq(tests.id, attempt.testId)).limit(1)
 
-  const partRows = await db.select({ id: parts.id }).from(parts).where(eq(parts.sectionId, attempt.sectionId)).orderBy(asc(parts.orderIndex))
+  const partRows = await db.select().from(parts).where(eq(parts.sectionId, attempt.sectionId)).orderBy(asc(parts.orderIndex))
   const partIds = partRows.map(p => p.id)
   const qRows = partIds.length
     ? await db.select().from(questions).where(inArray(questions.partId, partIds)).orderBy(asc(questions.orderIndex))
@@ -32,7 +32,12 @@ export default defineEventHandler(async (event) => {
       feedback: attempt.feedback,
       createdAt: attempt.createdAt
     },
-    section: section && { id: section.id, type: section.type, title: section.title },
+    section: section && {
+      id: section.id,
+      type: section.type,
+      title: section.title,
+      videoExplanationUrl: section.videoExplanationUrl
+    },
     testTitle: test?.title ?? '',
     questions: qRows.map(toStudentQuestion),
     answers: ansRows.map(a => ({

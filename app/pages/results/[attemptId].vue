@@ -13,7 +13,7 @@ interface ResultData {
     feedback: string | null
     createdAt: string
   }
-  section: { id: string, type: keyof typeof SECTION_META, title: string } | null
+  section: { id: string, type: keyof typeof SECTION_META, title: string, videoExplanationUrl: string | null } | null
   testTitle: string
   questions: StudentQuestionDto[]
   answers: { questionId: string, response: string | string[] | null, isCorrect: boolean | null, awardedPoints: number | null }[]
@@ -141,22 +141,58 @@ function fmt(r: string | string[] | null | undefined) {
             <div
               v-for="q in sortedQuestions"
               :key="q.id"
-              class="flex items-center gap-3 p-3"
+              class="space-y-3 p-3"
             >
-              <UIcon
-                :name="answerFor(q.id)?.isCorrect ? 'i-lucide-check-circle' : 'i-lucide-x-circle'"
-                :class="answerFor(q.id)?.isCorrect ? 'text-success' : 'text-error'"
-                class="size-5 shrink-0"
-              />
-              <span class="w-8 text-sm text-muted">{{ q.questionNumber }}</span>
-              <!-- eslint-disable-next-line vue/no-v-html -->
-              <span
-                class="flex-1 text-sm truncate"
-                v-html="q.prompt"
-              />
-              <span class="text-sm font-mono">{{ fmt(answerFor(q.id)?.response) }}</span>
+              <div class="flex items-center gap-3">
+                <UIcon
+                  :name="answerFor(q.id)?.isCorrect ? 'i-lucide-check-circle' : 'i-lucide-x-circle'"
+                  :class="answerFor(q.id)?.isCorrect ? 'text-success' : 'text-error'"
+                  class="size-5 shrink-0"
+                />
+                <span class="w-8 text-sm text-muted">{{ q.questionNumber }}</span>
+                <!-- eslint-disable vue/no-v-html -->
+                <span
+                  class="flex-1 text-sm truncate"
+                  v-html="q.prompt"
+                />
+                <!-- eslint-enable vue/no-v-html -->
+                <span class="text-sm font-mono">{{ fmt(answerFor(q.id)?.response) }}</span>
+              </div>
+              <div
+                v-if="q.meta.fromText || q.meta.explanation"
+                class="ml-16 space-y-2 rounded-lg border border-default bg-elevated/30 p-3 text-sm"
+              >
+                <blockquote
+                  v-if="q.meta.fromText"
+                  class="border-l-2 border-primary pl-3 text-muted whitespace-pre-line"
+                >
+                  {{ q.meta.fromText }}
+                </blockquote>
+                <p
+                  v-if="q.meta.explanation"
+                  class="text-default whitespace-pre-line"
+                >
+                  {{ q.meta.explanation }}
+                </p>
+              </div>
             </div>
           </div>
+        </UCard>
+      </div>
+
+      <div
+        v-if="data.section?.type === 'reading' && data.section.videoExplanationUrl"
+        class="mt-6 space-y-3"
+      >
+        <h2 class="font-semibold">
+          Video explanation
+        </h2>
+        <UCard>
+          <video
+            :src="data.section.videoExplanationUrl"
+            controls
+            class="w-full rounded-lg border border-default bg-black"
+          />
         </UCard>
       </div>
 

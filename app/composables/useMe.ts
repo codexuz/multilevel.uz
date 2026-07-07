@@ -6,7 +6,17 @@ export function useMe() {
   const { data: me, refresh, pending } = useAsyncData<Me | null>('me', async () => {
     try {
       return await request<Me>('/api/me')
-    } catch {
+    } catch (e) {
+      const status = (e as { statusCode?: number, response?: { status?: number } }).statusCode
+        ?? (e as { statusCode?: number, response?: { status?: number } }).response?.status
+      if (status === 401) {
+        try {
+          await request('/api/auth/refresh', { method: 'POST' })
+          return await request<Me>('/api/me')
+        } catch {
+          return null
+        }
+      }
       return null
     }
   })

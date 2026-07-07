@@ -47,4 +47,6 @@ export interface QuestionMeta {
   prepTime?: number // seconds
   speakTime?: number // seconds
   imageUrl?: string
+  explanation?: string
+  fromText?: string
 }

@@ -49,20 +49,16 @@ export default defineNuxtConfig({
   },
 
   routeRules: {
-    '/': { prerender: false },
-    // Admin builder is interactive, auth-gated and data-heavy — render client-side
-    // only to avoid SSR/client hydration mismatches from the live-loaded test tree.
-    '/admin/**': { ssr: false }
+    '/': { prerender: false }
   },
 
+  compatibilityDate: '2026-06-30',
   nitro: {
     experimental: {
       // Enables defineWebSocketHandler for the live speaking signaling server
       websocket: true
     }
   },
-
-  compatibilityDate: '2026-06-30',
 
   eslint: {
     config: {

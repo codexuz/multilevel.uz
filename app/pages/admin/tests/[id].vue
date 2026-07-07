@@ -7,14 +7,27 @@ const route = useRoute()
 const testId = route.params.id as string
 const builder = useTestBuilder(testId)
 const { test, sections, loading } = builder
+const ready = ref(false)
 
-await builder.load()
+async function loadTest() {
+  ready.value = false
+  await builder.load()
+  ready.value = true
+}
 
 const addMenu = computed(() => SECTION_TYPES.map(type => ({
   label: SECTION_META[type].label,
   icon: SECTION_META[type].icon,
   onSelect: () => builder.addSection(type)
 })))
+
+function sectionPath(sectionId: string) {
+  return `/admin/tests/${testId}/sections/${sectionId}`
+}
+
+async function openSection(sectionId: string) {
+  await navigateTo(sectionPath(sectionId))
+}
 
 const publishing = ref(false)
 async function togglePublish() {
@@ -23,6 +36,8 @@ async function togglePublish() {
   await builder.saveTestMeta({ status: test.value.status === 'published' ? 'draft' : 'published' })
   publishing.value = false
 }
+
+onMounted(loadTest)
 </script>
 
 <template>
@@ -110,7 +125,7 @@ async function togglePublish() {
     </div>
 
     <div
-      v-if="loading"
+      v-if="!ready || loading"
       class="text-muted"
     >
       Loading…
@@ -129,11 +144,12 @@ async function togglePublish() {
       v-else
       class="space-y-3"
     >
-      <NuxtLink
+      <a
         v-for="s in sections"
         :key="s.id"
-        :to="`/admin/tests/${testId}/sections/${s.id}`"
+        :href="sectionPath(s.id)"
         class="flex items-center gap-4 rounded-lg border border-default p-4 hover:border-primary hover:bg-elevated/30 transition-colors"
+        @click.prevent="openSection(s.id)"
       >
         <div class="size-10 rounded-lg bg-elevated flex items-center justify-center shrink-0">
           <UIcon
@@ -153,7 +169,7 @@ async function togglePublish() {
           name="i-lucide-chevron-right"
           class="size-5 text-muted shrink-0"
         />
-      </NuxtLink>
+      </a>
     </div>
   </div>
 </template>

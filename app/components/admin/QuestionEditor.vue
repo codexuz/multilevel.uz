@@ -41,6 +41,9 @@ function toggleMulti(val: string) {
 function isMultiChecked(val: string) {
   return Array.isArray(model.value.correct_answer) && model.value.correct_answer.includes(val)
 }
+function setCorrectAnswer(val: string) {
+  model.value.correct_answer = val
+}
 
 const showChoices = computed(() => ['single_choice', 'multiple_choice', 'dropdown_match'].includes(model.value.type))
 const meta = computed(() => model.value.meta)
@@ -122,7 +125,7 @@ const meta = computed(() => model.value.meta)
           :icon="model.correct_answer === opt.value ? 'i-lucide-circle-check' : 'i-lucide-circle'"
           :color="model.correct_answer === opt.value ? 'primary' : 'neutral'"
           variant="ghost"
-          @click="model.correct_answer = opt.value"
+          @click="setCorrectAnswer(opt.value)"
         />
         <UInput
           v-model="opt.value"
@@ -159,6 +162,27 @@ const meta = computed(() => model.value.meta)
         @update:model-value="model.correct_answer = String($event).split(',').map(s => s.trim()).filter(Boolean)"
       />
     </UFormField>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <UFormField label="Explanation">
+        <UTextarea
+          v-model="meta.explanation"
+          :rows="3"
+          class="w-full"
+          placeholder="Explain why this answer is correct…"
+          autoresize
+        />
+      </UFormField>
+      <UFormField label="From text">
+        <UTextarea
+          v-model="meta.fromText"
+          :rows="3"
+          class="w-full"
+          placeholder="Paste the passage line or phrase used for this question…"
+          autoresize
+        />
+      </UFormField>
+    </div>
 
     <!-- Essay (writing) -->
     <div

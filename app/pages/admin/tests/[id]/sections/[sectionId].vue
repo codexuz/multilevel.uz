@@ -10,10 +10,15 @@ const sectionId = route.params.sectionId as string
 
 const builder = useTestBuilder(testId)
 const { test, sections, loading } = builder
-
-await builder.load()
+const ready = ref(false)
 
 const section = computed<SectionNode | undefined>(() => sections.value.find(s => s.id === sectionId))
+
+async function loadSection() {
+  ready.value = false
+  await builder.load()
+  ready.value = true
+}
 
 async function onDeleteSection(id: string) {
   await builder.deleteSection(id)
@@ -22,6 +27,8 @@ async function onDeleteSection(id: string) {
     await navigateTo(`/admin/tests/${testId}`)
   }
 }
+
+onMounted(loadSection)
 </script>
 
 <template>
@@ -49,7 +56,7 @@ async function onDeleteSection(id: string) {
     </div>
 
     <div
-      v-if="loading"
+      v-if="!ready || loading"
       class="text-muted"
     >
       Loading…
