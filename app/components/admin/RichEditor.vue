@@ -2,25 +2,32 @@
 // WYSIWYG HTML editor for passages and rich prompts. Wraps Nuxt UI's UEditor
 // (TipTap) and binds an HTML string. No extra dependency — all extensions ship
 // with @nuxt/ui.
-import StarterKit from '@tiptap/starter-kit'
-import Link from '@tiptap/extension-link'
-import Image from '@tiptap/extension-image'
-
 const model = defineModel<string>({ default: '' })
 defineProps<{ placeholder?: string }>()
 
-const extensions = [
-  StarterKit,
-  Link.configure({ openOnClick: false }),
-  Image
-]
-
-// Toolbar command groups (icons resolved by UEditorToolbar's built-in handlers).
+// Toolbar command groups using EditorToolbarItem objects.
 const toolbar = [
-  ['bold', 'italic', 'strike', 'code'],
-  ['heading1', 'heading2', 'bulletList', 'orderedList'],
-  ['blockquote', 'link', 'horizontalRule'],
-  ['undo', 'redo']
+  [
+    { kind: 'mark' as const, mark: 'bold' as const, icon: 'i-lucide-bold' },
+    { kind: 'mark' as const, mark: 'italic' as const, icon: 'i-lucide-italic' },
+    { kind: 'mark' as const, mark: 'strike' as const, icon: 'i-lucide-strikethrough' },
+    { kind: 'mark' as const, mark: 'code' as const, icon: 'i-lucide-code' }
+  ],
+  [
+    { kind: 'heading' as const, level: 1 as const, icon: 'i-lucide-heading-1' },
+    { kind: 'heading' as const, level: 2 as const, icon: 'i-lucide-heading-2' },
+    { kind: 'bulletList' as const, icon: 'i-lucide-list' },
+    { kind: 'orderedList' as const, icon: 'i-lucide-list-ordered' }
+  ],
+  [
+    { kind: 'blockquote' as const, icon: 'i-lucide-text-quote' },
+    { kind: 'link' as const, icon: 'i-lucide-link' },
+    { kind: 'horizontalRule' as const, icon: 'i-lucide-minus' }
+  ],
+  [
+    { kind: 'undo' as const, icon: 'i-lucide-undo-2' },
+    { kind: 'redo' as const, icon: 'i-lucide-redo-2' }
+  ]
 ]
 </script>
 
@@ -29,7 +36,7 @@ const toolbar = [
     <UEditor
       v-model="model"
       content-type="html"
-      :extensions="extensions"
+      :placeholder="placeholder"
       :editor-props="{ attributes: { class: 'prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-32 p-3' } }"
       class="border border-default rounded-lg overflow-hidden bg-default"
     >
