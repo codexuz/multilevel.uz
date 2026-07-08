@@ -8,9 +8,9 @@ async function getMessaging() {
   if (!_initTried) {
     _initTried = true
     const cfg = useRuntimeConfig()
-    const projectId = cfg.firebaseProjectId
-    const clientEmail = cfg.firebaseClientEmail
-    const privateKey = (cfg.firebasePrivateKey as string | undefined)?.replace(/\\n/g, '\n')
+    const projectId = process.env.FIREBASE_PROJECT_ID || cfg.firebaseProjectId
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL || cfg.firebaseClientEmail
+    const privateKey = ((process.env.FIREBASE_PRIVATE_KEY || cfg.firebasePrivateKey) as string | undefined)?.replace(/\\n/g, '\n')
     if (projectId && clientEmail && privateKey) {
       const { initializeApp, getApps, cert } = await import('firebase-admin/app')
       _app = getApps()[0] ?? initializeApp({ credential: cert({ projectId, clientEmail, privateKey }) })

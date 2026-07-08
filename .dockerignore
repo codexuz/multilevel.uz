@@ -1,0 +1,24 @@
+# Dependencies & build artifacts (rebuilt inside the image)
+node_modules
+.nuxt
+.output
+dist
+
+# Local env & secrets — provide these as Coolify environment variables instead
+.env
+.env.*
+!.env.example
+
+# VCS & tooling
+.git
+.github
+.vscode
+
+# Logs & OS cruft
+*.log
+.nuxt-dev.*.log
+.DS_Store
+
+# Docs / examples not needed in the image
+examples
+app-structure.md
