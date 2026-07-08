@@ -3,9 +3,10 @@ import type { DeviceSessionDto } from '~/types/models'
 
 const { data: sessions, refresh } = await useFetch<DeviceSessionDto[]>('/api/auth/sessions')
 const toast = useToast()
+const { confirm } = useConfirm()
 
 async function revoke(id: string) {
-  if (!confirm('Sign out this device?')) return
+  if (!await confirm({ title: 'Sign out this device?', confirmLabel: 'Sign out', color: 'error' })) return
   await $fetch(`/api/auth/sessions/${id}`, { method: 'DELETE' })
   toast.add({ title: 'Device signed out', color: 'success' })
   await refresh()

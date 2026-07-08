@@ -32,5 +32,6 @@ useSeoMeta({
     <ClientOnly>
       <SpeakingGlobalCaller />
     </ClientOnly>
+    <ConfirmDialog />
   </UApp>
 </template>

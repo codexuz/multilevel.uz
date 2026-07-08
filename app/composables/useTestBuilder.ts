@@ -113,6 +113,7 @@ function toSectionNode(s: ApiSection): SectionNode {
 
 export function useTestBuilder(testId: string) {
   const toast = useToast()
+  const { confirm } = useConfirm()
   // Cookie-aware fetch so the tree loads during SSR (plain $fetch drops auth on the server).
   const request = useRequestFetch()
   const test = ref<{ id: string, title: string, description: string | null, level: string | null, status: 'draft' | 'published', is_premium: boolean } | null>(null)
@@ -217,7 +218,12 @@ export function useTestBuilder(testId: string) {
   }
 
   async function deleteSection(id: string) {
-    if (!confirm('Delete this section and all its parts/questions?')) return
+    if (!await confirm({
+      title: 'Delete this section?',
+      description: 'All its parts and questions will be removed.',
+      confirmLabel: 'Delete',
+      color: 'error'
+    })) return
     try {
       await $fetch(`/api/admin/sections/${id}`, { method: 'DELETE' })
       sections.value = sections.value.filter(s => s.id !== id)
@@ -243,7 +249,12 @@ export function useTestBuilder(testId: string) {
   }
 
   async function deletePart(id: string) {
-    if (!confirm('Delete this part and its questions?')) return
+    if (!await confirm({
+      title: 'Delete this part?',
+      description: 'Its questions will be removed.',
+      confirmLabel: 'Delete',
+      color: 'error'
+    })) return
     try {
       await $fetch(`/api/admin/parts/${id}`, { method: 'DELETE' })
       for (const s of sections.value) s.parts = s.parts.filter(p => p.id !== id)

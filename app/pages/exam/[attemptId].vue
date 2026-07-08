@@ -15,6 +15,7 @@ interface RunnerData {
 const route = useRoute()
 const attemptId = route.params.attemptId as string
 const toast = useToast()
+const { confirm } = useConfirm()
 const timer = useExamTimer()
 
 interface ResponseState { response: string | string[] | null, audioUrl: string | null }
@@ -109,7 +110,11 @@ function onAudio(qId: string, v: string | null) {
 const answeredCount = computed(() => questions.value.filter(isAnswered).length)
 
 async function submit(auto = false) {
-  if (!auto && !confirm('Submit this section? You will not be able to change your answers.')) return
+  if (!auto && !await confirm({
+    title: 'Submit this section?',
+    description: 'You will not be able to change your answers.',
+    confirmLabel: 'Submit'
+  })) return
   submitting.value = true
   timer.stop()
   Object.values(saveTimers).forEach(clearTimeout)
@@ -125,8 +130,12 @@ async function submit(auto = false) {
   }
 }
 
-function exit() {
-  if (confirm('Chiqishni istaysizmi? Javoblaringiz saqlanadi.')) navigateTo('/dashboard')
+async function exit() {
+  if (await confirm({
+    title: 'Chiqishni istaysizmi?',
+    description: 'Javoblaringiz saqlanadi.',
+    confirmLabel: 'Chiqish'
+  })) navigateTo('/dashboard')
 }
 
 onMounted(load)

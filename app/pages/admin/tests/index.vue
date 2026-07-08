@@ -4,6 +4,7 @@ import type { TestDto, Paginated } from '~/types/models'
 definePageMeta({ layout: 'admin', middleware: 'staff' })
 
 const toast = useToast()
+const { confirm } = useConfirm()
 const tests = ref<TestDto[]>([])
 const loading = ref(true)
 const page = ref(1)
@@ -54,7 +55,12 @@ async function togglePublish(t: TestDto) {
   }
 }
 async function remove(t: TestDto) {
-  if (!confirm(`Delete "${t.title}"? This removes all its sections and questions.`)) return
+  if (!await confirm({
+    title: `Delete "${t.title}"?`,
+    description: 'This removes all its sections and questions.',
+    confirmLabel: 'Delete',
+    color: 'error'
+  })) return
   try {
     await $fetch(`/api/admin/tests/${t.id}`, { method: 'DELETE' })
     await refresh()

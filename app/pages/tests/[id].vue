@@ -11,6 +11,7 @@ const route = useRoute()
 const testId = route.params.id as string
 const { isPremium } = useMe()
 const toast = useToast()
+const { confirm } = useConfirm()
 
 const { data } = await useFetch<TestDetail>(`/api/tests/${testId}`)
 
@@ -34,7 +35,11 @@ async function startSection(sectionId: string) {
 }
 
 async function retakeSection(sectionId: string) {
-  if (!confirm('Retake this section? A new attempt will start — your previous result stays saved.')) return
+  if (!await confirm({
+    title: 'Retake this section?',
+    description: 'A new attempt will start — your previous result stays saved.',
+    confirmLabel: 'Retake'
+  })) return
   await startSection(sectionId)
 }
 </script>
