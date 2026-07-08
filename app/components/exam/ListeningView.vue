@@ -30,6 +30,20 @@ function questionsFor(partId: string) {
 }
 const partQuestions = computed(() => (part.value ? questionsFor(part.value.id) : []))
 
+// Grouped gap-fill (summary/note/table completion) for the active part.
+const groups = computed(() => part.value?.content?.groups ?? [])
+const groupedNumbers = computed(() => {
+  const set = new Set<number>()
+  for (const g of groups.value) {
+    const text = g.template ?? (g.rows?.flat().join(' ') ?? '')
+    for (const m of text.matchAll(/\{\{\s*(\d+)\s*\}\}/g)) set.add(Number(m[1]))
+  }
+  return set
+})
+const ungroupedQuestions = computed(() =>
+  partQuestions.value.filter(q => q.questionNumber == null || !groupedNumbers.value.has(q.questionNumber))
+)
+
 const flatQuestions = computed(() =>
   props.parts.flatMap((p, partIndex) => questionsFor(p.id).map(q => ({ q, partIndex })))
 )
@@ -136,8 +150,20 @@ function step(delta: number) {
         >
           {{ part.title }}
         </h2>
+        <!-- Grouped completions (shared paragraph/table with inline blanks) -->
+        <ExamCompletionGroup
+          v-for="(group, gi) in groups"
+          :key="`group-${gi}`"
+          :group="group"
+          :questions="partQuestions"
+          :get-response="getResponse"
+          :current-question-id="currentQuestionId"
+          @response="(id, v) => emit('response', id, v)"
+        />
+
+        <!-- Standalone questions -->
         <div
-          v-for="q in partQuestions"
+          v-for="q in ungroupedQuestions"
           :id="`q-${q.id}`"
           :key="q.id"
           class="scroll-mt-4 rounded-lg transition-colors"

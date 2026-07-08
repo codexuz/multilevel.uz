@@ -39,10 +39,37 @@ async function main() {
   ]).returning()
 
   // Reading parts
-  const [rp1, rp2, rp3] = await db.insert(parts).values([
+  const [rp1, rp2, rp3, rp4] = await db.insert(parts).values([
     { sectionId: reading!.id, title: 'Part 1: Questions 1–3', instructions: 'Complete the sentences with ONE word.', orderIndex: 0, content: { passage: '<p>The city library first opened in 1897. Today it holds over two million books and welcomes thousands of visitors every week.</p>' } },
     { sectionId: reading!.id, title: 'Part 2: Questions 4–6', instructions: 'Match each paragraph (4–6) with a heading (A–D).', orderIndex: 1, content: { passage: '<p><strong>A</strong> A new beginning<br><strong>B</strong> Facing challenges<br><strong>C</strong> Lasting success<br><strong>D</strong> Early years</p>' } },
-    { sectionId: reading!.id, title: 'Part 3: Questions 7–9', instructions: 'Choose the correct answer A, B or C.', orderIndex: 2, content: { passage: '<p>Read the article and answer the questions below.</p>' } }
+    { sectionId: reading!.id, title: 'Part 3: Questions 7–9', instructions: 'Choose the correct answer A, B or C.', orderIndex: 2, content: { passage: '<p>Read the article and answer the questions below.</p>' } },
+    // Part 4 demonstrates grouped completions (summary + table) rendered by CompletionGroup.
+    {
+      sectionId: reading!.id,
+      title: 'Part 4: Questions 10–16',
+      instructions: 'Complete the summary and table below.',
+      orderIndex: 3,
+      content: {
+        passage: '<p>Coastal erosion has reshaped the village of Hallsands over the past century. Heavy storms, the removal of offshore shingle and rising sea levels each played a part in the loss of the original settlement.</p>',
+        groups: [
+          {
+            kind: 'summary_completion',
+            heading: 'Complete the summary below. Write ONE WORD ONLY from the passage for each answer.',
+            template: 'The village was damaged mainly by powerful {{10}}, made worse after offshore {{11}} was removed for building work. As a result the {{12}} rose and gradually washed away the {{13}} that protected the houses.'
+          },
+          {
+            kind: 'table_completion',
+            heading: 'Complete the table below. Write NO MORE THAN TWO WORDS for each answer.',
+            columns: ['Year', 'Event'],
+            rows: [
+              ['1897', 'Shingle dredging began near the {{14}}.'],
+              ['1917', 'A severe {{15}} destroyed most of the houses.'],
+              ['Today', 'The site is a protected {{16}}.']
+            ]
+          }
+        ]
+      }
+    }
   ]).returning()
 
   const [wp] = await db.insert(parts).values([
@@ -83,6 +110,14 @@ async function main() {
     { partId: rp3!.id, orderIndex: 0, questionNumber: 7, type: 'single_choice', prompt: 'What is the main idea of the article?', options: [{ value: 'A', label: 'Libraries are outdated.' }, { value: 'B', label: 'Libraries remain valuable community spaces.' }, { value: 'C', label: 'Books are too expensive.' }], correctAnswer: 'B', points: '1' },
     { partId: rp3!.id, orderIndex: 1, questionNumber: 8, type: 'single_choice', prompt: 'According to the writer, libraries should…', options: [{ value: 'A', label: 'close on weekends.' }, { value: 'B', label: 'charge higher fees.' }, { value: 'C', label: 'offer digital services.' }], correctAnswer: 'C', points: '1' },
     { partId: rp3!.id, orderIndex: 2, questionNumber: 9, type: 'single_choice', prompt: "The writer's tone is…", options: [{ value: 'A', label: 'positive.' }, { value: 'B', label: 'angry.' }, { value: 'C', label: 'uncertain.' }], correctAnswer: 'A', points: '1' },
+    // Reading P4 grouped completions (blanks referenced by {{n}} in rp4.content.groups)
+    { partId: rp4!.id, orderIndex: 0, questionNumber: 10, type: 'text_input', correctAnswer: ['storms', 'storm'], points: '1' },
+    { partId: rp4!.id, orderIndex: 1, questionNumber: 11, type: 'text_input', correctAnswer: ['shingle'], points: '1' },
+    { partId: rp4!.id, orderIndex: 2, questionNumber: 12, type: 'text_input', correctAnswer: ['sea'], points: '1' },
+    { partId: rp4!.id, orderIndex: 3, questionNumber: 13, type: 'text_input', correctAnswer: ['beach'], points: '1' },
+    { partId: rp4!.id, orderIndex: 4, questionNumber: 14, type: 'text_input', correctAnswer: ['village'], points: '1' },
+    { partId: rp4!.id, orderIndex: 5, questionNumber: 15, type: 'text_input', correctAnswer: ['storm'], points: '1' },
+    { partId: rp4!.id, orderIndex: 6, questionNumber: 16, type: 'text_input', correctAnswer: ['site'], points: '1' },
     // Writing essays
     { partId: wp!.id, orderIndex: 0, questionNumber: 1, type: 'essay', prompt: 'Task 1.1 — You received an email from a friend. Write a short reply (about 60 words).', points: '6', meta: { taskLabel: '1.1', wordLimit: 80 } },
     { partId: wp!.id, orderIndex: 1, questionNumber: 2, type: 'essay', prompt: 'Task 1.2 — Write a note to a colleague explaining why you will be late (about 60 words).', points: '6', meta: { taskLabel: '1.2', wordLimit: 80 } },

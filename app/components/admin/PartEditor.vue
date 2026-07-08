@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { PartNode } from '~/composables/useTestBuilder'
 import type { EditableQuestion } from './QuestionEditor.vue'
-import type { QuestionType, Choice, QuestionMeta } from '~/types/exam'
+import type { QuestionType, Choice, QuestionMeta, CompletionGroup } from '~/types/exam'
 
 const props = defineProps<{ part: PartNode, sectionType: string }>()
 const emit = defineEmits<{
@@ -37,6 +37,41 @@ function toDraft(q: PartNode['questions'][number]): EditableQuestion {
 
 const drafts = ref<EditableQuestion[]>(props.part.questions.map(toDraft))
 const removedIds = ref<string[]>([])
+
+// Completion groups (summary/note/table etc.) stored in content.groups.
+const groups = computed<CompletionGroup[]>({
+  get: () => ((props.part.content as { groups?: CompletionGroup[] }).groups ?? []),
+  set: (v) => { props.part.content = { ...(props.part.content as object), groups: v } }
+})
+function addGroup() {
+  const g: CompletionGroup = { kind: 'summary_completion', heading: '', template: '' }
+  groups.value = [...groups.value, g]
+}
+function updateGroup(i: number, g: CompletionGroup) {
+  const arr = [...groups.value]
+  arr[i] = g
+  groups.value = arr
+}
+function removeGroup(i: number) {
+  groups.value = groups.value.filter((_, idx) => idx !== i)
+}
+
+// Numbers consumed by a group's {{n}} tokens — these text_input drafts are edited
+// inside the group, so they're hidden from the standalone question list.
+const groupedNumbers = computed(() => {
+  const set = new Set<number>()
+  for (const g of groups.value) {
+    const text = g.template ?? (g.rows?.flat().join(' ') ?? '')
+    for (const m of text.matchAll(/\{\{\s*(\d+)\s*\}\}/g)) set.add(Number(m[1]))
+  }
+  return set
+})
+function isGrouped(q: EditableQuestion) {
+  return q.type === 'text_input' && q.question_number != null && groupedNumbers.value.has(q.question_number)
+}
+
+// Completions only apply to reading/listening parts.
+const supportsGroups = computed(() => isReading.value || isListening.value)
 
 const defaultType = computed<QuestionType>(() => (props.sectionType === 'writing' ? 'essay' : props.sectionType === 'speaking' ? 'speaking_prompt' : 'single_choice'))
 
@@ -115,17 +150,46 @@ function removeQuestion(i: number) {
       </div>
     </div>
 
+    <!-- Completion groups (summary/note/table with inline blanks) -->
+    <template v-if="supportsGroups">
+      <USeparator label="Completion groups" />
+      <div class="space-y-4">
+        <AdminCompletionGroupEditor
+          v-for="(g, gi) in groups"
+          :key="`group-${gi}`"
+          :model-value="g"
+          :drafts="drafts"
+          @update:model-value="updateGroup(gi, $event)"
+          @remove="removeGroup(gi)"
+        />
+        <UButton
+          icon="i-lucide-plus"
+          variant="soft"
+          color="primary"
+          label="Add completion group"
+          @click="addGroup"
+        />
+        <p class="text-xs text-muted">
+          Blanks defined here create their own gap-fill questions — they won't appear in the list below.
+        </p>
+      </div>
+    </template>
+
     <USeparator label="Questions" />
 
     <div class="space-y-4">
-      <AdminQuestionEditor
+      <template
         v-for="(q, i) in drafts"
         :key="q.id || i"
-        :model-value="q"
-        :section-type="sectionType"
-        @update:model-value="drafts[i] = $event"
-        @remove="removeQuestion(i)"
-      />
+      >
+        <AdminQuestionEditor
+          v-if="!isGrouped(q)"
+          :model-value="q"
+          :section-type="sectionType"
+          @update:model-value="drafts[i] = $event"
+          @remove="removeQuestion(i)"
+        />
+      </template>
     </div>
 
     <div class="flex items-center justify-between">

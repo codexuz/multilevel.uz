@@ -3,7 +3,7 @@
 // no server-only imports.
 import type {
   UserRole, TestStatus, SectionType, QuestionType, AttemptStatus,
-  SubPlan, SubStatus, Choice, QuestionMeta
+  SubPlan, SubStatus, Choice, QuestionMeta, CompletionGroup
 } from './exam'
 
 export interface Me {
@@ -48,7 +48,7 @@ export interface PartDto {
   sectionId: string
   title: string
   instructions: string | null
-  content: { passage?: string } & Record<string, unknown>
+  content: { passage?: string, groups?: CompletionGroup[] } & Record<string, unknown>
   audioUrl: string | null
   orderIndex: number
 }

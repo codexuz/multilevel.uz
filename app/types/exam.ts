@@ -50,3 +50,21 @@ export interface QuestionMeta {
   explanation?: string
   fromText?: string
 }
+
+// Grouped gap-fill: a shared paragraph/table with numbered blanks rendered inline.
+// Each blank is still a standalone `text_input` question — the group only supplies
+// the shared shell. Blanks are referenced by `{{n}}` tokens (n = questionNumber).
+export type CompletionKind
+  = | 'summary_completion'
+    | 'note_completion'
+    | 'sentence_completion'
+    | 'flow_chart_completion'
+    | 'table_completion'
+
+export interface CompletionGroup {
+  kind: CompletionKind
+  heading?: string // e.g. "Complete the summary. Write ONE WORD ONLY."
+  template?: string // paragraph/note/sentence/flow-chart text with {{14}} tokens
+  columns?: string[] // table_completion: header cells
+  rows?: string[][] // table_completion: body cells, each may hold {{n}} tokens
+}
