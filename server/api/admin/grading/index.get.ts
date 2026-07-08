@@ -1,9 +1,13 @@
-import { eq, asc } from 'drizzle-orm'
+import { eq, asc, count } from 'drizzle-orm'
 import { attempts, sections, tests, users } from '../../../database/schema'
 
 export default defineEventHandler(async (event) => {
   await requireStaff(event)
   const db = useDb()
+  const p = getPagination(event)
+
+  const [totalRow] = await db.select({ total: count() }).from(attempts)
+    .where(eq(attempts.status, 'submitted'))
 
   const rows = await db.select({
     id: attempts.id,
@@ -18,6 +22,7 @@ export default defineEventHandler(async (event) => {
     .innerJoin(users, eq(attempts.userId, users.id))
     .where(eq(attempts.status, 'submitted'))
     .orderBy(asc(attempts.submittedAt))
+    .limit(p.pageSize).offset(p.offset)
 
-  return rows
+  return paginate(rows, totalRow?.total ?? 0, p)
 })

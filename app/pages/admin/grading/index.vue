@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { SectionType } from '~/types/exam'
 import { SECTION_META } from '~/types/exam'
+import type { Paginated } from '~/types/models'
 
 definePageMeta({ layout: 'admin', middleware: 'staff' })
 
@@ -12,7 +13,11 @@ interface QueueRow {
   testTitle: string
   studentName: string | null
 }
-const { data: queue } = await useFetch<QueueRow[]>('/api/admin/grading')
+const page = ref(1)
+const { data } = await useFetch<Paginated<QueueRow>>('/api/admin/grading', { query: { page } })
+const queue = computed(() => data.value?.items ?? [])
+const total = computed(() => data.value?.total ?? 0)
+const pageSize = computed(() => data.value?.pageSize ?? 20)
 </script>
 
 <template>
@@ -22,7 +27,7 @@ const { data: queue } = await useFetch<QueueRow[]>('/api/admin/grading')
     </h1>
 
     <UCard
-      v-if="queue?.length"
+      v-if="queue.length"
       :ui="{ body: 'p-0 sm:p-0' }"
     >
       <div class="divide-y divide-default">
@@ -66,5 +71,16 @@ const { data: queue } = await useFetch<QueueRow[]>('/api/admin/grading')
       title="All caught up"
       description="There are no writing or speaking submissions awaiting grading."
     />
+
+    <div
+      v-if="total > pageSize"
+      class="flex justify-center"
+    >
+      <UPagination
+        v-model:page="page"
+        :total="total"
+        :items-per-page="pageSize"
+      />
+    </div>
   </div>
 </template>

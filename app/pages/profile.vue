@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { SECTION_META } from '~/types/exam'
+import type { Paginated } from '~/types/models'
 
 const { me } = useMe()
 
@@ -13,7 +14,11 @@ interface AttemptRow {
   sectionTitle: string
   testTitle: string
 }
-const { data: attempts } = await useFetch<AttemptRow[]>('/api/me/attempts')
+const page = ref(1)
+const { data } = await useFetch<Paginated<AttemptRow>>('/api/me/attempts', { query: { page } })
+const attempts = computed(() => data.value?.items ?? [])
+const total = computed(() => data.value?.total ?? 0)
+const pageSize = computed(() => data.value?.pageSize ?? 20)
 
 function statusColor(s: string) {
   return s === 'graded' ? 'success' : s === 'submitted' ? 'warning' : 'neutral'
@@ -110,7 +115,7 @@ function statusColor(s: string) {
       <h2 class="text-lg font-semibold">
         Past attempts
       </h2>
-      <UCard v-if="attempts?.length" :ui="{ body: 'p-0 sm:p-0' }">
+      <UCard v-if="attempts.length" :ui="{ body: 'p-0 sm:p-0' }">
         <div class="divide-y divide-default">
           <NuxtLink
             v-for="a in attempts"
@@ -149,6 +154,17 @@ function statusColor(s: string) {
         title="No attempts yet"
         description="Take a test to see your results here."
       />
+
+      <div
+        v-if="total > pageSize"
+        class="flex justify-center"
+      >
+        <UPagination
+          v-model:page="page"
+          :total="total"
+          :items-per-page="pageSize"
+        />
+      </div>
     </section>
   </UContainer>
 </template>

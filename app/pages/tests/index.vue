@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import type { TestDto } from '~/types/models'
+import type { TestDto, Paginated } from '~/types/models'
 
 const { isPremium } = useMe()
-const { data: tests } = await useFetch<TestDto[]>('/api/tests')
+const page = ref(1)
+const { data } = await useFetch<Paginated<TestDto>>('/api/tests', { query: { page } })
+const tests = computed(() => data.value?.items ?? [])
+const total = computed(() => data.value?.total ?? 0)
+const pageSize = computed(() => data.value?.pageSize ?? 20)
 
 function locked(t: TestDto) {
   return t.isPremium && !isPremium.value
@@ -57,5 +61,16 @@ function locked(t: TestDto) {
       title="No tests available yet"
       description="Check back soon."
     />
+
+    <div
+      v-if="total > pageSize"
+      class="flex justify-center"
+    >
+      <UPagination
+        v-model:page="page"
+        :total="total"
+        :items-per-page="pageSize"
+      />
+    </div>
   </UContainer>
 </template>

@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import type { TestDto } from '~/types/models'
+import type { TestDto, Paginated } from '~/types/models'
 
 definePageMeta({ layout: 'admin', middleware: 'staff' })
 
 const toast = useToast()
 const tests = ref<TestDto[]>([])
 const loading = ref(true)
+const page = ref(1)
+const total = ref(0)
+const pageSize = ref(20)
 
 function errorStatus(e: unknown) {
   return (e as { statusCode?: number, response?: { status?: number }, data?: { statusCode?: number } }).statusCode
@@ -29,13 +32,17 @@ async function handleLoadError(e: unknown) {
 async function refresh() {
   loading.value = true
   try {
-    tests.value = await $fetch<TestDto[]>('/api/admin/tests')
+    const res = await $fetch<Paginated<TestDto>>('/api/admin/tests', { query: { page: page.value } })
+    tests.value = res.items
+    total.value = res.total
+    pageSize.value = res.pageSize
   } catch (e) {
     await handleLoadError(e)
   } finally {
     loading.value = false
   }
 }
+watch(page, refresh)
 
 async function togglePublish(t: TestDto) {
   const next = t.status === 'published' ? 'draft' : 'published'
@@ -144,5 +151,16 @@ onMounted(refresh)
       title="No tests yet"
       description="Create your first test to get started."
     />
+
+    <div
+      v-if="total > pageSize"
+      class="flex justify-center"
+    >
+      <UPagination
+        v-model:page="page"
+        :total="total"
+        :items-per-page="pageSize"
+      />
+    </div>
   </div>
 </template>

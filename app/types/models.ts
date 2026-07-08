@@ -114,6 +114,15 @@ export interface DeviceSessionDto {
   current: boolean
 }
 
+// Standard envelope returned by paginated list endpoints.
+export interface Paginated<T> {
+  items: T[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
 export interface LeaderboardRow {
   rank: number
   id: string

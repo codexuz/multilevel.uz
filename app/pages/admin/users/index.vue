@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { UserRole } from '~/types/exam'
+import type { Paginated } from '~/types/models'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
@@ -14,7 +15,11 @@ interface AdminUser {
   createdAt: string
   isPremium: boolean
 }
-const { data: usersList, refresh } = await useFetch<AdminUser[]>('/api/admin/users')
+const page = ref(1)
+const { data, refresh } = await useFetch<Paginated<AdminUser>>('/api/admin/users', { query: { page } })
+const usersList = computed(() => data.value?.items ?? [])
+const total = computed(() => data.value?.total ?? 0)
+const pageSize = computed(() => data.value?.pageSize ?? 20)
 
 const roles: UserRole[] = ['student', 'examiner', 'admin']
 
@@ -121,5 +126,16 @@ async function revokePremium(p: AdminUser) {
         </div>
       </div>
     </UCard>
+
+    <div
+      v-if="total > pageSize"
+      class="flex justify-center"
+    >
+      <UPagination
+        v-model:page="page"
+        :total="total"
+        :items-per-page="pageSize"
+      />
+    </div>
   </div>
 </template>

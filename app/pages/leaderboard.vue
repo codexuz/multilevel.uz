@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import type { LeaderboardRow } from '~/types/models'
+import type { LeaderboardRow, Paginated } from '~/types/models'
 
 const { me } = useMe()
-const { data: rows } = await useFetch<LeaderboardRow[]>('/api/leaderboard')
+const page = ref(1)
+const { data } = await useFetch<Paginated<LeaderboardRow>>('/api/leaderboard', { query: { page } })
+const rows = computed(() => data.value?.items ?? [])
+const total = computed(() => data.value?.total ?? 0)
+const pageSize = computed(() => data.value?.pageSize ?? 50)
 
 function medal(rank: number) {
   return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null
@@ -51,12 +55,23 @@ function medal(rank: number) {
     </UCard>
 
     <UAlert
-      v-if="!rows?.length"
+      v-if="!rows.length"
       icon="i-lucide-inbox"
       color="neutral"
       variant="subtle"
       title="No rankings yet"
       description="Complete a test to get on the board."
     />
+
+    <div
+      v-if="total > pageSize"
+      class="flex justify-center"
+    >
+      <UPagination
+        v-model:page="page"
+        :total="total"
+        :items-per-page="pageSize"
+      />
+    </div>
   </UContainer>
 </template>

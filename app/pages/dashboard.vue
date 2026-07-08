@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import type { TestDto } from '~/types/models'
+import type { TestDto, Paginated } from '~/types/models'
 import { SECTION_META } from '~/types/exam'
 
 const { me, isPremium } = useMe()
 
-const { data: allTests } = await useFetch<TestDto[]>('/api/tests')
-const tests = computed(() => (allTests.value ?? []).slice(0, 6))
+// Dashboard shows only the first few of each list — request small pages.
+const { data: allTests } = await useFetch<Paginated<TestDto>>('/api/tests', { query: { pageSize: 6 } })
+const tests = computed(() => allTests.value?.items ?? [])
 
 interface AttemptRow {
   id: string
@@ -17,8 +18,8 @@ interface AttemptRow {
   sectionTitle: string
   testTitle: string
 }
-const { data: allAttempts } = await useFetch<AttemptRow[]>('/api/me/attempts')
-const attempts = computed(() => (allAttempts.value ?? []).slice(0, 5))
+const { data: allAttempts } = await useFetch<Paginated<AttemptRow>>('/api/me/attempts', { query: { pageSize: 5 } })
+const attempts = computed(() => allAttempts.value?.items ?? [])
 
 function statusColor(s: string) {
   return s === 'graded' ? 'success' : s === 'submitted' ? 'warning' : 'neutral'

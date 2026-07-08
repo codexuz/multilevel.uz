@@ -1,11 +1,14 @@
-import { eq, desc } from 'drizzle-orm'
+import { eq, desc, count } from 'drizzle-orm'
 import { attempts, sections, tests } from '../../database/schema'
 import { num } from '../../utils/serialize'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   const db = useDb()
+  const p = getPagination(event)
 
+  const [totalRow] = await db.select({ total: count() }).from(attempts)
+    .where(eq(attempts.userId, user.id))
   const rows = await db.select({
     id: attempts.id,
     status: attempts.status,
@@ -20,9 +23,9 @@ export default defineEventHandler(async (event) => {
     .innerJoin(tests, eq(attempts.testId, tests.id))
     .where(eq(attempts.userId, user.id))
     .orderBy(desc(attempts.createdAt))
-    .limit(50)
+    .limit(p.pageSize).offset(p.offset)
 
-  return rows.map(r => ({
+  return paginate(rows.map(r => ({
     id: r.id,
     status: r.status,
     createdAt: r.createdAt,
@@ -31,5 +34,5 @@ export default defineEventHandler(async (event) => {
     sectionType: r.sectionType,
     sectionTitle: r.sectionTitle,
     testTitle: r.testTitle
-  }))
+  })), totalRow?.total ?? 0, p)
 })
