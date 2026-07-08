@@ -116,6 +116,10 @@ export function useTestBuilder(testId: string) {
   const { confirm } = useConfirm()
   // Cookie-aware fetch so the tree loads during SSR (plain $fetch drops auth on the server).
   const request = useRequestFetch()
+  const dynamicFetch = $fetch as unknown as <T = unknown>(
+    request: string,
+    options?: { method?: string, body?: unknown }
+  ) => Promise<T>
   const test = ref<{ id: string, title: string, description: string | null, level: string | null, status: 'draft' | 'published', is_premium: boolean } | null>(null)
   const sections = ref<SectionNode[]>([])
   const loading = ref(false)
@@ -179,7 +183,7 @@ export function useTestBuilder(testId: string) {
 
   async function saveTestMeta(patch: Partial<{ title: string, description: string | null, level: string | null, is_premium: boolean, status: 'draft' | 'published' }>) {
     try {
-      await $fetch(`/api/admin/tests/${testId}`, {
+      await dynamicFetch(`/api/admin/tests/${testId}`, {
         method: 'PATCH',
         body: {
           title: patch.title,
@@ -206,7 +210,7 @@ export function useTestBuilder(testId: string) {
   }
 
   async function saveSection(s: SectionNode) {
-    await track(() => $fetch(`/api/admin/sections/${s.id}`, {
+    await track(() => dynamicFetch(`/api/admin/sections/${s.id}`, {
       method: 'PATCH',
       body: {
         title: s.title,
@@ -225,7 +229,7 @@ export function useTestBuilder(testId: string) {
       color: 'error'
     })) return
     try {
-      await $fetch(`/api/admin/sections/${id}`, { method: 'DELETE' })
+      await dynamicFetch(`/api/admin/sections/${id}`, { method: 'DELETE' })
       sections.value = sections.value.filter(s => s.id !== id)
     } catch (e) {
       notifyError(e)
@@ -242,7 +246,7 @@ export function useTestBuilder(testId: string) {
   }
 
   async function savePart(p: PartNode) {
-    await track(() => $fetch(`/api/admin/parts/${p.id}`, {
+    await track(() => dynamicFetch(`/api/admin/parts/${p.id}`, {
       method: 'PATCH',
       body: { title: p.title, instructions: p.instructions, content: p.content, audioUrl: p.audio_url }
     }))
@@ -256,7 +260,7 @@ export function useTestBuilder(testId: string) {
       color: 'error'
     })) return
     try {
-      await $fetch(`/api/admin/parts/${id}`, { method: 'DELETE' })
+      await dynamicFetch(`/api/admin/parts/${id}`, { method: 'DELETE' })
       for (const s of sections.value) s.parts = s.parts.filter(p => p.id !== id)
     } catch (e) {
       notifyError(e)
@@ -265,7 +269,7 @@ export function useTestBuilder(testId: string) {
 
   async function saveQuestions(part: PartNode, drafts: EditableQuestion[], removedIds: string[]) {
     await track(async () => {
-      const res = await $fetch<{ saved: { id: string, tempIndex: number }[] }>(
+      const res = await dynamicFetch<{ saved: { id: string, tempIndex: number }[] }>(
         `/api/admin/parts/${part.id}/questions`,
         {
           method: 'POST',

@@ -3,6 +3,11 @@ definePageMeta({ layout: false })
 
 const route = useRoute()
 const oauthError = computed(() => route.query.error === 'oauth')
+
+useSeoMeta({
+  title: 'Sign in',
+  description: 'Sign in to continue practicing Multilevel English mock exams.'
+})
 </script>
 
 <template>

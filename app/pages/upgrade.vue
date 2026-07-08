@@ -13,6 +13,13 @@ const features = [
   'New tests added regularly'
 ]
 
+useSeoMeta({
+  title: 'Multilevel Premium',
+  description: 'Unlock the full Multilevel mock exam library with examiner feedback, speaking practice and detailed score breakdowns.',
+  ogTitle: 'Multilevel Premium',
+  ogDescription: 'Get full access to premium English mock exams and practice features.'
+})
+
 async function unlockWithCoins() {
   redeeming.value = true
   try {

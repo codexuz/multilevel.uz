@@ -8,6 +8,11 @@ const rows = computed(() => data.value?.items ?? [])
 const total = computed(() => data.value?.total ?? 0)
 const pageSize = computed(() => data.value?.pageSize ?? 50)
 
+useSeoMeta({
+  title: 'Leaderboard',
+  description: 'See top Multilevel learners ranked by practice points.'
+})
+
 function medal(rank: number) {
   return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null
 }

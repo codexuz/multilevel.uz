@@ -8,6 +8,11 @@ const tests = computed(() => data.value?.items ?? [])
 const total = computed(() => data.value?.total ?? 0)
 const pageSize = computed(() => data.value?.pageSize ?? 20)
 
+useSeoMeta({
+  title: 'Tests',
+  description: 'Choose a Multilevel mock exam section to practice.'
+})
+
 function locked(t: TestDto) {
   return t.isPremium && !isPremium.value
 }

@@ -1,14 +1,27 @@
+const siteName = 'Multilevel'
+const siteUrl = (process.env.NUXT_PUBLIC_SITE_URL || 'https://multilevel.uz').replace(/\/$/, '')
+const siteDescription = 'Practice CEFR and Multilevel English exams with realistic Listening, Reading, Writing and Speaking mock tests.'
+const noIndex = { robots: false, sitemap: false }
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
     '@nuxt/ui',
-    'nuxt-auth-utils'
+    'nuxt-auth-utils',
+    '@nuxtjs/seo'
   ],
   devtools: {
     enabled: true
   },
   css: ['~/assets/css/main.css'],
+  site: {
+    url: siteUrl,
+    name: siteName,
+    description: siteDescription,
+    defaultLocale: 'en',
+    indexable: process.env.NUXT_SITE_INDEXABLE !== 'false'
+  },
 
   runtimeConfig: {
     // Database
@@ -34,6 +47,11 @@ export default defineNuxtConfig({
       }
     },
     public: {
+      siteUrl,
+      socialLinks: {
+        telegramUrl: process.env.NUXT_PUBLIC_TELEGRAM_URL || 'https://t.me/sizlidersizadmin2',
+        youtubeUrl: process.env.NUXT_PUBLIC_YOUTUBE_URL || 'https://www.youtube.com/@multileveluz'
+      },
       // Public base URL objects are served from (CDN / bucket public URL)
       s3PublicUrl: process.env.S3_PUBLIC_URL,
       // Firebase web SDK config (client FCM)
@@ -49,7 +67,19 @@ export default defineNuxtConfig({
   },
 
   routeRules: {
-    '/': { prerender: false }
+    '/': { prerender: false },
+    '/admin/**': noIndex,
+    '/dashboard': noIndex,
+    '/exam/**': noIndex,
+    '/leaderboard': noIndex,
+    '/login': noIndex,
+    '/onboarding': noIndex,
+    '/profile': noIndex,
+    '/results/**': noIndex,
+    '/settings': noIndex,
+    '/speaking/**': noIndex,
+    '/tests': noIndex,
+    '/tests/**': noIndex
   },
 
   compatibilityDate: '2026-06-30',
@@ -57,15 +87,6 @@ export default defineNuxtConfig({
     experimental: {
       // Enables defineWebSocketHandler for the live speaking signaling server
       websocket: true
-    }
-  },
-
-  eslint: {
-    config: {
-      stylistic: {
-        commaDangle: 'never',
-        braceStyle: '1tbs'
-      }
     }
   },
 
@@ -78,6 +99,15 @@ export default defineNuxtConfig({
         '@nuxt/ui > prosemirror-view',
         '@nuxt/ui > prosemirror-gapcursor'
       ]
+    }
+  },
+
+  eslint: {
+    config: {
+      stylistic: {
+        commaDangle: 'never',
+        braceStyle: '1tbs'
+      }
     }
   }
 })

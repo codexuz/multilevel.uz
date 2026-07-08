@@ -3,6 +3,13 @@ import { SECTION_META, SECTION_TYPES } from '~/types/exam'
 
 const { loggedIn: user } = useMe()
 const ctaTo = computed(() => (user.value ? '/dashboard' : '/login'))
+
+useSeoMeta({
+  title: 'Multilevel English Exam Prep',
+  description: 'Prepare for CEFR and Multilevel English exams with realistic mock tests, live speaking practice, timed sections and instant scoring.',
+  ogTitle: 'Multilevel English Exam Prep',
+  ogDescription: 'Practice Listening, Reading, Writing and Speaking with realistic online mock exams.'
+})
 </script>
 
 <template>

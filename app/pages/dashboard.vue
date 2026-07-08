@@ -3,10 +3,27 @@ import type { TestDto, Paginated } from '~/types/models'
 import { SECTION_META } from '~/types/exam'
 
 const { me, isPremium } = useMe()
+const config = useRuntimeConfig()
 
 // Dashboard shows only the first few of each list — request small pages.
 const { data: allTests } = await useFetch<Paginated<TestDto>>('/api/tests', { query: { pageSize: 6 } })
 const tests = computed(() => allTests.value?.items ?? [])
+const socialLinks = computed(() => [{
+  title: 'Telegram',
+  description: 'Join updates and support chat',
+  icon: 'i-simple-icons-telegram',
+  to: config.public.socialLinks.telegramUrl
+}, {
+  title: 'YouTube',
+  description: 'Watch lessons and explanations',
+  icon: 'i-simple-icons-youtube',
+  to: config.public.socialLinks.youtubeUrl
+}])
+
+useSeoMeta({
+  title: 'Dashboard',
+  description: 'Continue your Multilevel English exam practice.'
+})
 
 interface AttemptRow {
   id: string
@@ -47,7 +64,7 @@ function statusColor(s: string) {
     </div>
 
     <!-- Quick actions -->
-    <div class="grid gap-4 sm:grid-cols-3">
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
       <UPageCard
         to="/tests"
         icon="i-lucide-clipboard-list"
@@ -76,6 +93,17 @@ function statusColor(s: string) {
         icon="i-lucide-crown"
         title="Premium active"
         description="All tests unlocked"
+        spotlight
+      />
+      <UPageCard
+        v-for="link in socialLinks"
+        :key="link.title"
+        :to="link.to"
+        :icon="link.icon"
+        :title="link.title"
+        :description="link.description"
+        target="_blank"
+        rel="noopener noreferrer"
         spotlight
       />
     </div>
