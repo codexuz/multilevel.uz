@@ -5,6 +5,8 @@ import type { Paginated } from '~/types/models'
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const toast = useToast()
+const { confirm } = useConfirm()
+const { me } = useMe()
 
 interface AdminUser {
   id: string
@@ -12,6 +14,7 @@ interface AdminUser {
   email: string
   avatarUrl: string | null
   role: UserRole
+  banned: boolean
   createdAt: string
   isPremium: boolean
 }
@@ -56,6 +59,39 @@ async function revokePremium(p: AdminUser) {
     fail(e)
   }
 }
+
+async function toggleBan(p: AdminUser) {
+  const banning = !p.banned
+  if (banning && !await confirm({
+    title: `Ban ${p.name || p.email}?`,
+    description: 'They will be signed out of all devices and blocked from using the app.',
+    confirmLabel: 'Ban',
+    color: 'error'
+  })) return
+  try {
+    await $fetch(`/api/admin/users/${p.id}/ban`, { method: 'PATCH', body: { banned: banning } })
+    toast.add({ title: banning ? 'User banned' : 'User unbanned', color: 'success' })
+    await refresh()
+  } catch (e) {
+    fail(e)
+  }
+}
+
+async function removeUser(p: AdminUser) {
+  if (!await confirm({
+    title: `Delete ${p.name || p.email}?`,
+    description: 'This permanently removes the account and all their attempts and results. This cannot be undone.',
+    confirmLabel: 'Delete',
+    color: 'error'
+  })) return
+  try {
+    await $fetch(`/api/admin/users/${p.id}`, { method: 'DELETE' })
+    toast.add({ title: 'User deleted', color: 'success' })
+    await refresh()
+  } catch (e) {
+    fail(e)
+  }
+}
 </script>
 
 <template>
@@ -80,8 +116,16 @@ async function revokePremium(p: AdminUser) {
               class="shrink-0"
             />
             <div class="min-w-0">
-              <p class="font-medium truncate">
+              <p class="font-medium truncate flex items-center gap-2">
                 {{ p.name || 'Unnamed user' }}
+                <UBadge
+                  v-if="p.banned"
+                  color="error"
+                  variant="subtle"
+                  size="sm"
+                  icon="i-lucide-ban"
+                  label="Banned"
+                />
               </p>
               <p class="text-xs text-muted truncate">
                 {{ p.email }} · joined {{ new Date(p.createdAt).toLocaleDateString() }}
@@ -122,6 +166,25 @@ async function revokePremium(p: AdminUser) {
               label="Grant 30d"
               @click="grantPremium(p, 30)"
             />
+
+            <!-- Ban / delete (never on your own account) -->
+            <template v-if="p.id !== me?.id">
+              <UButton
+                size="sm"
+                :color="p.banned ? 'success' : 'warning'"
+                variant="ghost"
+                :icon="p.banned ? 'i-lucide-circle-check' : 'i-lucide-ban'"
+                :label="p.banned ? 'Unban' : 'Ban'"
+                @click="toggleBan(p)"
+              />
+              <UButton
+                size="sm"
+                color="error"
+                variant="ghost"
+                icon="i-lucide-trash-2"
+                @click="removeUser(p)"
+              />
+            </template>
           </div>
         </div>
       </div>

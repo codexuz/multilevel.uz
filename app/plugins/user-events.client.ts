@@ -25,6 +25,15 @@ export default defineNuxtPlugin(() => {
             icon: 'i-lucide-sparkles'
           })
         }
+      } else if (msg.type === 'banned') {
+        toast.add({
+          title: 'Account suspended',
+          description: 'Your account has been banned. Contact support if you think this is a mistake.',
+          color: 'error',
+          icon: 'i-lucide-ban'
+        })
+        disconnect()
+        navigateTo('/login')
       }
     }
     // EventSource auto-reconnects on transient errors; the loggedIn watcher

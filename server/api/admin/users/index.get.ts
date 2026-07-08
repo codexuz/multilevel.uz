@@ -30,6 +30,7 @@ export default defineEventHandler(async (event) => {
     email: u.email,
     avatarUrl: u.avatarUrl,
     role: u.role,
+    banned: u.banned,
     createdAt: u.createdAt,
     isPremium: premiumIds.has(u.id)
   })), totalRow?.total ?? 0, p)

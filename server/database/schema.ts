@@ -24,6 +24,7 @@ export const users = pgTable('users', {
   name: text('name'),
   avatarUrl: text('avatar_url'),
   role: userRole('role').notNull().default('student'),
+  banned: boolean('banned').notNull().default(false),
   // onboarding
   currentLevel: text('current_level'), // A1..C1
   learningDuration: text('learning_duration'), // '<6m' | '6-12m' | '1-2y' | '2y+'
