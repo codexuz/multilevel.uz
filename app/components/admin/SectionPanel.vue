@@ -51,12 +51,9 @@ const isReading = computed(() => props.section.type === 'reading')
       v-if="isReading"
       label="Video explanation"
     >
-      <FileUpload
+      <VideoUpload
         v-model="section.video_explanation_url"
-        purpose="test-asset"
-        accept="video/*"
-        preview="video"
-        label="Upload video explanation"
+        label="video explanation"
       />
     </UFormField>
 

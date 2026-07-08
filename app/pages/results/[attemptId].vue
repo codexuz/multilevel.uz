@@ -188,11 +188,7 @@ function fmt(r: string | string[] | null | undefined) {
           Video explanation
         </h2>
         <UCard>
-          <video
-            :src="data.section.videoExplanationUrl"
-            controls
-            class="w-full rounded-lg border border-default bg-black"
-          />
+          <VideoPlayer :src="data.section.videoExplanationUrl" />
         </UCard>
       </div>
 
