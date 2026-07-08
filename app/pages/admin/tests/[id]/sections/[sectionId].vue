@@ -9,7 +9,7 @@ const testId = route.params.id as string
 const sectionId = route.params.sectionId as string
 
 const builder = useTestBuilder(testId)
-const { test, sections, loading } = builder
+const { test, sections, loading, saving, savedAt } = builder
 const ready = ref(false)
 
 const section = computed<SectionNode | undefined>(() => sections.value.find(s => s.id === sectionId))
@@ -52,6 +52,22 @@ onMounted(loadSection)
         <p class="text-xs text-muted">
           {{ test?.title }}
         </p>
+      </div>
+      <div class="shrink-0 text-xs text-muted flex items-center gap-1.5">
+        <template v-if="saving > 0">
+          <UIcon
+            name="i-lucide-loader-circle"
+            class="animate-spin"
+          />
+          Saving…
+        </template>
+        <template v-else-if="savedAt">
+          <UIcon
+            name="i-lucide-check"
+            class="text-success"
+          />
+          All changes saved
+        </template>
       </div>
     </div>
 

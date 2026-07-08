@@ -14,6 +14,16 @@ const emit = defineEmits<{
 
 const isListening = computed(() => props.section.type === 'listening')
 const isReading = computed(() => props.section.type === 'reading')
+
+// Autosave: debounce (with jitter) field changes and emit saveSection.
+const sectionSig = computed(() => JSON.stringify({
+  title: props.section.title,
+  duration_minutes: props.section.duration_minutes,
+  audio_url: props.section.audio_url,
+  video_explanation_url: props.section.video_explanation_url
+}))
+const saveSection = useDebouncedCallback(() => emit('saveSection', props.section))
+watch(sectionSig, saveSection.trigger)
 </script>
 
 <template>
@@ -58,13 +68,6 @@ const isReading = computed(() => props.section.type === 'reading')
     </UFormField>
 
     <div class="flex gap-2">
-      <UButton
-        icon="i-lucide-save"
-        size="sm"
-        variant="soft"
-        label="Save section"
-        @click="emit('saveSection', section)"
-      />
       <UButton
         icon="i-lucide-trash-2"
         size="sm"

@@ -1,6 +1,7 @@
 import { eq, asc, inArray } from 'drizzle-orm'
 import { attempts, sections, tests, parts, questions, answers } from '../../../database/schema'
 import { toStudentQuestion, num } from '../../../utils/serialize'
+import { cefrLevel } from '../../../utils/score'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
@@ -21,6 +22,12 @@ export default defineEventHandler(async (event) => {
     : []
   const ansRows = await db.select().from(answers).where(eq(answers.attemptId, id))
 
+  // For objective sections the scaled score lives in totalScore (max 75); derive
+  // the CEFR band from it and expose the raw correct count (stored in autoScore).
+  const objective = section?.type === 'listening' || section?.type === 'reading'
+  const scaled = num(attempt.totalScore)
+  const level = objective && scaled != null ? cefrLevel(scaled) : null
+
   return {
     attempt: {
       id: attempt.id,
@@ -29,6 +36,9 @@ export default defineEventHandler(async (event) => {
       totalScore: num(attempt.totalScore),
       manualScore: num(attempt.manualScore),
       maxScore: num(attempt.maxScore),
+      correctCount: num(attempt.autoScore),
+      totalQuestions: qRows.length,
+      level,
       feedback: attempt.feedback,
       createdAt: attempt.createdAt
     },

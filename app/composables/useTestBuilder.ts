@@ -118,6 +118,22 @@ export function useTestBuilder(testId: string) {
   const test = ref<{ id: string, title: string, description: string | null, level: string | null, status: 'draft' | 'published', is_premium: boolean } | null>(null)
   const sections = ref<SectionNode[]>([])
   const loading = ref(false)
+  // Autosave state: `saving` counts in-flight saves; `savedAt` is the last success.
+  const saving = ref(0)
+  const savedAt = ref<number | null>(null)
+
+  async function track<T>(fn: () => Promise<T>): Promise<T | undefined> {
+    saving.value++
+    try {
+      const r = await fn()
+      savedAt.value = Date.now()
+      return r
+    } catch (e) {
+      notifyError(e)
+    } finally {
+      saving.value--
+    }
+  }
 
   async function handleAuthError(e: unknown) {
     const status = (e as { statusCode?: number, response?: { status?: number }, data?: { statusCode?: number } }).statusCode
@@ -189,20 +205,15 @@ export function useTestBuilder(testId: string) {
   }
 
   async function saveSection(s: SectionNode) {
-    try {
-      await $fetch(`/api/admin/sections/${s.id}`, {
-        method: 'PATCH',
-        body: {
-          title: s.title,
-          durationMinutes: s.duration_minutes,
-          audioUrl: s.audio_url,
-          videoExplanationUrl: s.video_explanation_url
-        }
-      })
-      toast.add({ title: 'Section saved', color: 'success', icon: 'i-lucide-check' })
-    } catch (e) {
-      notifyError(e)
-    }
+    await track(() => $fetch(`/api/admin/sections/${s.id}`, {
+      method: 'PATCH',
+      body: {
+        title: s.title,
+        durationMinutes: s.duration_minutes,
+        audioUrl: s.audio_url,
+        videoExplanationUrl: s.video_explanation_url
+      }
+    }))
   }
 
   async function deleteSection(id: string) {
@@ -225,15 +236,10 @@ export function useTestBuilder(testId: string) {
   }
 
   async function savePart(p: PartNode) {
-    try {
-      await $fetch(`/api/admin/parts/${p.id}`, {
-        method: 'PATCH',
-        body: { title: p.title, instructions: p.instructions, content: p.content, audioUrl: p.audio_url }
-      })
-      toast.add({ title: 'Part saved', color: 'success', icon: 'i-lucide-check' })
-    } catch (e) {
-      notifyError(e)
-    }
+    await track(() => $fetch(`/api/admin/parts/${p.id}`, {
+      method: 'PATCH',
+      body: { title: p.title, instructions: p.instructions, content: p.content, audioUrl: p.audio_url }
+    }))
   }
 
   async function deletePart(id: string) {
@@ -247,7 +253,7 @@ export function useTestBuilder(testId: string) {
   }
 
   async function saveQuestions(part: PartNode, drafts: EditableQuestion[], removedIds: string[]) {
-    try {
+    await track(async () => {
       const res = await $fetch<{ saved: { id: string, tempIndex: number }[] }>(
         `/api/admin/parts/${part.id}/questions`,
         {
@@ -267,9 +273,14 @@ export function useTestBuilder(testId: string) {
           }
         }
       )
-      // Reflect new ids back onto the part's question nodes.
-      part.questions = drafts.map((d, i) => ({
-        id: res.saved.find(s => s.tempIndex === i)?.id ?? d.id ?? '',
+      // Backfill new ids onto the SAME draft objects so a subsequent autosave
+      // updates (not re-inserts) them, and mirror onto the part's nodes.
+      for (const s of res.saved) {
+        const d = drafts[s.tempIndex]
+        if (d) d.id = s.id
+      }
+      part.questions = drafts.map(d => ({
+        id: d.id ?? '',
         type: d.type,
         question_number: d.question_number,
         prompt: d.prompt,
@@ -278,16 +289,15 @@ export function useTestBuilder(testId: string) {
         points: d.points,
         meta: d.meta
       }))
-      toast.add({ title: 'Questions saved', color: 'success', icon: 'i-lucide-check' })
-    } catch (e) {
-      notifyError(e)
-    }
+    })
   }
 
   return {
     test,
     sections,
     loading,
+    saving,
+    savedAt,
     load,
     saveTestMeta,
     addSection,

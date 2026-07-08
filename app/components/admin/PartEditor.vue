@@ -91,6 +91,31 @@ function removeQuestion(i: number) {
   if (q?.id) removedIds.value.push(q.id)
   drafts.value.splice(i, 1)
 }
+
+// --- Autosave -------------------------------------------------------------
+// Part fields (title/instructions/passage/groups/audio).
+const partSig = computed(() => JSON.stringify({
+  title: props.part.title,
+  instructions: props.part.instructions,
+  content: props.part.content,
+  audio_url: props.part.audio_url
+}))
+const savePart = useDebouncedCallback(() => emit('savePart', props.part))
+watch(partSig, savePart.trigger)
+
+// Questions. Signature excludes ids so the id-backfill after saving doesn't
+// retrigger a save. Removed-question ids are read at flush time.
+const draftsSig = computed(() => JSON.stringify(
+  drafts.value.map(({ id: _id, ...rest }) => rest)
+))
+function flushQuestions() {
+  emit('saveQuestions', drafts.value, removedIds.value)
+  removedIds.value = []
+}
+// draftsSig changes on any edit, add, or removal (fewer items); removedIds is
+// read at flush time, so it doesn't need its own trigger.
+const saveQuestions = useDebouncedCallback(flushQuestions, 800)
+watch(draftsSig, saveQuestions.trigger)
 </script>
 
 <template>
@@ -133,13 +158,6 @@ function removeQuestion(i: number) {
         </UFormField>
       </div>
       <div class="flex flex-col gap-1">
-        <UButton
-          icon="i-lucide-save"
-          size="sm"
-          variant="soft"
-          label="Save part"
-          @click="emit('savePart', part)"
-        />
         <UButton
           icon="i-lucide-trash-2"
           size="sm"
@@ -198,12 +216,6 @@ function removeQuestion(i: number) {
         variant="soft"
         label="Add question"
         @click="addQuestion"
-      />
-      <UButton
-        icon="i-lucide-save"
-        color="primary"
-        label="Save questions"
-        @click="emit('saveQuestions', drafts, removedIds); removedIds = []"
       />
     </div>
   </div>

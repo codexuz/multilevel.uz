@@ -10,6 +10,9 @@ interface ResultData {
     totalScore: number | null
     manualScore: number | null
     maxScore: number | null
+    correctCount: number | null
+    totalQuestions: number | null
+    level: 'A2' | 'B1' | 'B2' | 'C1' | null
     feedback: string | null
     createdAt: string
   }
@@ -29,11 +32,14 @@ if (data.value?.attempt.status === 'in_progress') {
 
 const att = computed(() => data.value?.attempt)
 const isObjective = computed(() => ['listening', 'reading'].includes(data.value?.section?.type || ''))
-const pct = computed(() => {
-  const a = att.value
-  if (!a || a.totalScore == null || !a.maxScore) return null
-  return Math.round((a.totalScore / a.maxScore) * 100)
-})
+
+// CEFR band → badge colour.
+const LEVEL_COLOR: Record<string, 'success' | 'info' | 'warning' | 'neutral'> = {
+  C1: 'success', B2: 'info', B1: 'warning', A2: 'neutral'
+}
+function levelColor(l: string | null | undefined) {
+  return l ? LEVEL_COLOR[l] ?? 'neutral' : 'neutral'
+}
 const sortedQuestions = computed(() =>
   [...(data.value?.questions ?? [])].sort((a, b) => {
     const an = a.questionNumber ?? a.orderIndex
@@ -81,14 +87,23 @@ function fmt(r: string | string[] | null | undefined) {
           class="flex items-center gap-6"
         >
           <div class="size-24 rounded-full flex flex-col items-center justify-center text-primary bg-primary/10">
-            <span class="text-2xl font-bold">{{ pct }}%</span>
+            <span class="text-3xl font-bold leading-none">{{ att.totalScore }}</span>
+            <span class="text-xs text-muted">/ 75</span>
           </div>
-          <div>
-            <p class="text-lg font-semibold">
-              {{ att.totalScore }} / {{ att.maxScore }} correct
-            </p>
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <p class="text-lg font-semibold">
+                Scaled score
+              </p>
+              <UBadge
+                v-if="att.level"
+                :label="att.level"
+                :color="levelColor(att.level)"
+                variant="subtle"
+              />
+            </div>
             <p class="text-muted text-sm">
-              Auto-graded objective section.
+              {{ att.correctCount }} of {{ att.totalQuestions }} correct · auto-graded {{ data.section?.type }}.
             </p>
           </div>
         </div>
