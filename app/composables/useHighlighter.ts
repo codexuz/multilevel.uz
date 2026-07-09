@@ -33,6 +33,11 @@ const UI_SELECTOR = '[data-highlight-ui]'
 
 let nextId = 1
 
+/** Ids must stay unique across panels that share a document. */
+function makeId() {
+  return `hl-${Date.now().toString(36)}-${nextId++}`
+}
+
 /**
  * Walk the text nodes under `root` (skipping text already inside a highlight),
  * find `searchText` in the flattened string and return a Range covering it.
@@ -121,8 +126,11 @@ function wrapRange(range: Range, id: string, color: string, hasNote: boolean) {
  * Text highlighting over arbitrary rendered content: select → pick a colour,
  * click a highlight → add a note or delete it. Highlights are stored per
  * `scope` (part id) and re-applied by text search after a re-render.
+ *
+ * When `storageKey` is given, highlights survive a page reload — they're saved
+ * to localStorage and re-painted on mount.
  */
-export function useHighlighter(scope: () => string) {
+export function useHighlighter(scope: () => string, storageKey?: () => string | null) {
   const containerRef = ref<HTMLElement | null>(null)
   const highlights = ref<HighlightEntry[]>([])
   const popup = ref<PopupState>({ visible: false, x: 0, y: 0, highlightId: null })
@@ -161,7 +169,7 @@ export function useHighlighter(scope: () => string) {
       return
     }
 
-    const id = `hl-${nextId++}`
+    const id = makeId()
     const entry: HighlightEntry = { id, scope: scope(), text: range.toString(), color, note: '' }
     wrapRange(range, id, color, false)
     window.getSelection()?.removeAllRanges()
@@ -227,6 +235,27 @@ export function useHighlighter(scope: () => string) {
     savedRange = range.cloneRange()
     showPopup(range.getBoundingClientRect(), null)
   }
+
+  // --- Persistence ---------------------------------------------------------
+  // Saved per attempt + panel so a mid-exam reload keeps the student's marks.
+  onMounted(() => {
+    const key = storageKey?.()
+    if (!key) return
+    try {
+      const raw = localStorage.getItem(key)
+      if (raw) highlights.value = JSON.parse(raw) as HighlightEntry[]
+    } catch { /* corrupt or unavailable storage — start with none */ }
+    // Paint the loaded entries once the slot content is in the DOM.
+    nextTick(restore)
+  })
+
+  watch(highlights, (v) => {
+    const key = storageKey?.()
+    if (!key) return
+    try {
+      localStorage.setItem(key, JSON.stringify(v))
+    } catch { /* private mode — highlights just won't persist */ }
+  }, { deep: true })
 
   return {
     containerRef,

@@ -28,7 +28,11 @@ const loading = ref(true)
 const submitting = ref(false)
 const warnOpen = ref(false)
 const notepadOpen = ref(false)
+const settingsOpen = ref(false)
 const notepad = ref('')
+
+// Text size + contrast mode for the runner (persisted across sections).
+const { settings } = useExamSettings()
 
 const sectionType = computed(() => section.value?.type)
 const isListening = computed(() => sectionType.value === 'listening')
@@ -142,7 +146,10 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="h-screen flex flex-col bg-elevated/30 overflow-hidden">
+  <div
+    class="h-screen flex flex-col bg-default overflow-hidden"
+    :data-exam-contrast="settings.contrast === 'default' ? undefined : settings.contrast"
+  >
     <!-- Branded top bar -->
     <header class="shrink-0 z-20 bg-primary text-inverted shadow-sm">
       <div class="w-full px-4 py-2 flex items-center gap-3">
@@ -168,6 +175,15 @@ onMounted(load)
             {{ timer.label.value }}
           </div>
 
+          <UButton
+            icon="i-lucide-type"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            class="text-inverted hover:bg-inverted/15"
+            aria-label="Ko'rinish sozlamalari"
+            @click="() => { settingsOpen = true }"
+          />
           <UButton
             icon="i-lucide-notebook-pen"
             color="neutral"
@@ -264,6 +280,8 @@ onMounted(load)
         </div>
       </div>
     </main>
+
+    <ExamSettingsModal v-model:open="settingsOpen" />
 
     <UModal
       v-model:open="notepadOpen"

@@ -143,9 +143,11 @@ function step(delta: number) {
     </div>
 
     <!-- Centered single-part question panel -->
+    <!-- pb-28 keeps the last question clear of the bottom part-nav bar. -->
     <ExamHighlightablePanel
       :scope="`questions-${part?.id}`"
-      class="flex-1 min-h-0 overflow-auto flex justify-center py-6"
+      storage-key="listening-questions"
+      class="flex-1 min-h-0 overflow-auto flex justify-center pt-6 pb-28"
     >
       <div class="w-full max-w-3xl px-4 space-y-5">
         <h2

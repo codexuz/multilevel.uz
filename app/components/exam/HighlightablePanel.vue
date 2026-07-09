@@ -4,7 +4,20 @@
 // per `scope` (part id) and re-applied after the content re-renders.
 import { DEFAULT_HIGHLIGHT_COLOR, useHighlighter } from '~/composables/useHighlighter'
 
-const props = defineProps<{ scope: string }>()
+const props = defineProps<{
+  scope: string
+  /** Panel name — highlights persist under `exam-hl:<attemptId>:<storageKey>`. */
+  storageKey?: string
+}>()
+
+const route = useRoute()
+
+// Highlights belong to one attempt; a different attempt starts clean.
+const persistKey = computed(() => {
+  const attemptId = route.params.attemptId
+  if (!props.storageKey || typeof attemptId !== 'string') return null
+  return `exam-hl:${attemptId}:${props.storageKey}`
+})
 
 const {
   containerRef,
@@ -17,7 +30,7 @@ const {
   restore,
   closePopup,
   onMouseUp
-} = useHighlighter(() => props.scope)
+} = useHighlighter(() => props.scope, () => persistKey.value)
 
 const noteOpen = ref(false)
 const noteTargetId = ref<string | null>(null)

@@ -42,7 +42,7 @@ const gapPrompt = computed(() => {
 <template>
   <div class="space-y-3">
     <div
-      v-if="q.type !== 'text_input'"
+      v-if="q.type !== 'text_input' && q.type !== 'dropdown_match'"
       class="flex gap-2"
     >
       <UBadge
@@ -118,16 +118,58 @@ const gapPrompt = computed(() => {
       </div>
     </div>
 
-    <!-- Dropdown match -->
-    <USelect
+    <!-- Dropdown match — the select sits inline with the prompt, either in the
+         gap (if the prompt has one) or straight after the text. -->
+    <div
       v-else-if="q.type === 'dropdown_match'"
-      :model-value="textValue"
-      :items="selectItems"
-      value-key="value"
-      class="w-40"
-      placeholder="Select"
-      @update:model-value="emit('update:response', String($event))"
-    />
+      class="flex gap-2"
+    >
+      <UBadge
+        v-if="q.questionNumber != null"
+        :label="String(q.questionNumber)"
+        color="neutral"
+        variant="subtle"
+        class="shrink-0 mt-1"
+      />
+      <!-- `[&_p]:inline` keeps a rich-text <p> prompt on the same line as the select. -->
+      <div class="flex-1 text-sm font-medium leading-9 [&_p]:inline [&_p]:m-0">
+        <template v-if="gapPrompt">
+          <!-- eslint-disable vue/no-v-html -->
+          <span v-html="gapPrompt.before" />
+          <!-- eslint-enable vue/no-v-html -->
+          <USelect
+            :model-value="textValue"
+            :items="selectItems"
+            value-key="value"
+            class="mx-1 inline-flex w-40 align-middle"
+            size="sm"
+            placeholder="Select"
+            @update:model-value="emit('update:response', String($event))"
+          />
+          <!-- eslint-disable vue/no-v-html -->
+          <span v-html="gapPrompt.after" />
+          <!-- eslint-enable vue/no-v-html -->
+        </template>
+        <template v-else>
+          <!-- eslint-disable vue/no-v-html -->
+          <span
+            v-if="q.prompt"
+            class="align-middle"
+            v-html="q.prompt"
+          />
+          <!-- eslint-enable vue/no-v-html -->
+          <USelect
+            :model-value="textValue"
+            :items="selectItems"
+            value-key="value"
+            class="ml-2 inline-flex w-40 align-middle"
+            size="sm"
+            placeholder="Select"
+            @update:model-value="emit('update:response', String($event))"
+          />
+        </template>
+      </div>
+    </div>
 
     <!-- Essay -->
     <div

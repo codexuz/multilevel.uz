@@ -16,3 +16,67 @@
   --color-green-900: #0A5331;
   --color-green-950: #052E16;
 }
+
+/*
+ * Exam contrast modes. These override Nuxt UI's design tokens on the runner
+ * root, so every descendant using `bg-default`, `text-muted`, `border-default`
+ * etc. follows the selected mode without per-component styling.
+ */
+[data-exam-contrast='black-on-white'] {
+  color-scheme: light;
+  --ui-bg: #ffffff;
+  --ui-bg-muted: #f9fafb;
+  --ui-bg-elevated: #f3f4f6;
+  --ui-bg-accented: #e5e7eb;
+  --ui-bg-inverted: #111827;
+  --ui-text-dimmed: #6b7280;
+  --ui-text-muted: #4b5563;
+  --ui-text-toned: #374151;
+  --ui-text: #111827;
+  --ui-text-highlighted: #000000;
+  --ui-text-inverted: #ffffff;
+  --ui-border: #e5e7eb;
+  --ui-border-muted: #f3f4f6;
+  --ui-border-accented: #d1d5db;
+  --ui-border-inverted: #111827;
+}
+
+[data-exam-contrast='white-on-black'] {
+  color-scheme: dark;
+  --ui-bg: #111111;
+  --ui-bg-muted: #1a1a1a;
+  --ui-bg-elevated: #1f2430;
+  --ui-bg-accented: #2d3748;
+  --ui-bg-inverted: #e5e7eb;
+  --ui-text-dimmed: #718096;
+  --ui-text-muted: #a0aec0;
+  --ui-text-toned: #cbd5e0;
+  --ui-text: #e5e7eb;
+  --ui-text-highlighted: #ffffff;
+  --ui-text-inverted: #111111;
+  --ui-border: #2d3748;
+  --ui-border-muted: #1f2430;
+  --ui-border-accented: #4a5568;
+  --ui-border-inverted: #e5e7eb;
+  --ui-primary: #63b3ed;
+}
+
+[data-exam-contrast='yellow-on-black'] {
+  color-scheme: dark;
+  --ui-bg: #111111;
+  --ui-bg-muted: #1a1a1a;
+  --ui-bg-elevated: #1f1f1f;
+  --ui-bg-accented: #2a2a2a;
+  --ui-bg-inverted: #f6c543;
+  --ui-text-dimmed: #a8862f;
+  --ui-text-muted: #d4a843;
+  --ui-text-toned: #e6b93c;
+  --ui-text: #f6c543;
+  --ui-text-highlighted: #ffd970;
+  --ui-text-inverted: #111111;
+  --ui-border: #333333;
+  --ui-border-muted: #242424;
+  --ui-border-accented: #f6c543;
+  --ui-border-inverted: #f6c543;
+  --ui-primary: #f6c543;
+}

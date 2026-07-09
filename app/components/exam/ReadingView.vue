@@ -110,6 +110,7 @@ function step(delta: number) {
       <template #left>
         <ExamHighlightablePanel
           :scope="`passage-${part?.id}`"
+          storage-key="reading-passage"
           class="h-full overflow-auto p-5"
         >
           <h2 class="text-base font-bold text-primary mb-2">
@@ -140,6 +141,7 @@ function step(delta: number) {
       <template #right>
         <ExamHighlightablePanel
           :scope="`questions-${part?.id}`"
+          storage-key="reading-questions"
           class="h-full overflow-auto p-5 space-y-5 border-t lg:border-t-0 lg:border-l border-default"
         >
           <!-- Grouped completions (shared paragraph/table with inline blanks) -->
