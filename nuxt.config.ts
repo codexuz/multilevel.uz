@@ -9,7 +9,8 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
     '@nuxt/ui',
     'nuxt-auth-utils',
-    '@nuxtjs/seo'
+    '@nuxtjs/robots',
+    '@nuxtjs/sitemap'
   ],
   devtools: {
     enabled: true
