@@ -228,7 +228,8 @@ async function saveLesson() {
         <UFormField label="Level">
           <USelect
             v-model="meta.level"
-            :items="['', 'A2', 'B1', 'B2', 'C1']"
+            :items="['A2', 'B1', 'B2', 'C1']"
+            placeholder="No level"
             class="w-full"
           />
         </UFormField>
