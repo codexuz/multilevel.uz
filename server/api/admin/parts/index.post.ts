@@ -22,6 +22,7 @@ export default defineEventHandler(async (event) => {
     instructions: row!.instructions,
     content: row!.content,
     audioUrl: row!.audioUrl,
+    imageUrl: row!.imageUrl,
     orderIndex: row!.orderIndex,
     questions: []
   }

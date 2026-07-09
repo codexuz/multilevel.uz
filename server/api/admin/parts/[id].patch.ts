@@ -9,6 +9,7 @@ export default defineEventHandler(async (event) => {
     instructions?: string | null
     content?: unknown
     audioUrl?: string | null
+    imageUrl?: string | null
     orderIndex?: number
   }>(event)
 
@@ -17,6 +18,7 @@ export default defineEventHandler(async (event) => {
   if (body.instructions !== undefined) patch.instructions = body.instructions
   if (body.content !== undefined) patch.content = body.content
   if (body.audioUrl !== undefined) patch.audioUrl = body.audioUrl
+  if (body.imageUrl !== undefined) patch.imageUrl = body.imageUrl
   if (body.orderIndex !== undefined) patch.orderIndex = body.orderIndex
 
   const db = useDb()

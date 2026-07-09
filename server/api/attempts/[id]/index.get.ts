@@ -30,7 +30,7 @@ export default defineEventHandler(async (event) => {
     },
     parts: partRows.map(p => ({
       id: p.id, title: p.title, instructions: p.instructions,
-      content: p.content, audioUrl: p.audioUrl, orderIndex: p.orderIndex
+      content: p.content, audioUrl: p.audioUrl, imageUrl: p.imageUrl, orderIndex: p.orderIndex
     })),
     questions: qRows.map(toStudentQuestion),
     answers: ansRows.map(a => ({

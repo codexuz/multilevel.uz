@@ -7,12 +7,26 @@ const props = defineProps<{
   accept?: string
   label?: string
   preview?: 'audio' | 'image' | 'video' | 'none'
+  /** Also offer a field for pasting an external URL instead of uploading. */
+  allowUrl?: boolean
+  urlPlaceholder?: string
 }>()
 const emit = defineEmits<{ 'update:modelValue': [string | null] }>()
 
 const { upload, uploading, progress } = useS3Upload()
 const toast = useToast()
 const input = ref<HTMLInputElement>()
+
+// Local draft so the parent only sees a committed URL, not every keystroke.
+const urlDraft = ref(props.modelValue ?? '')
+watch(() => props.modelValue, (v) => {
+  urlDraft.value = v ?? ''
+})
+
+function commitUrl() {
+  const url = urlDraft.value.trim()
+  emit('update:modelValue', url || null)
+}
 
 async function onPick(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
@@ -60,6 +74,29 @@ async function onPick(e: Event) {
       class="hidden"
       @change="onPick"
     >
+
+    <div
+      v-if="allowUrl"
+      class="flex items-center gap-2"
+    >
+      <UInput
+        v-model="urlDraft"
+        class="flex-1"
+        size="sm"
+        icon="i-lucide-link"
+        :placeholder="urlPlaceholder || 'Or paste a URL…'"
+        @blur="commitUrl"
+        @keydown.enter.prevent="commitUrl"
+      />
+      <UButton
+        v-if="urlDraft !== (modelValue ?? '')"
+        label="Use URL"
+        size="sm"
+        color="neutral"
+        variant="soft"
+        @click="commitUrl"
+      />
+    </div>
 
     <template v-if="modelValue && preview !== 'none'">
       <audio

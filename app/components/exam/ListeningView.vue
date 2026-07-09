@@ -21,6 +21,7 @@ const playing = ref(false)
 const sectionAudioEl = ref<HTMLAudioElement | null>(null)
 
 const part = computed(() => props.parts[current.value])
+const passage = computed(() => (part.value?.content as { passage?: string })?.passage)
 const hasAudio = computed(() => !!props.sectionAudio || props.parts.some(p => p.audioUrl))
 
 function questionsFor(partId: string) {
@@ -142,7 +143,10 @@ function step(delta: number) {
     </div>
 
     <!-- Centered single-part question panel -->
-    <div class="flex-1 min-h-0 overflow-auto flex justify-center py-6">
+    <ExamHighlightablePanel
+      :scope="`questions-${part?.id}`"
+      class="flex-1 min-h-0 overflow-auto flex justify-center py-6"
+    >
       <div class="w-full max-w-3xl px-4 space-y-5">
         <h2
           v-if="part?.title"
@@ -150,6 +154,19 @@ function step(delta: number) {
         >
           {{ part.title }}
         </h2>
+        <img
+          v-if="part?.imageUrl"
+          :src="part.imageUrl"
+          :alt="part.title"
+          class="max-w-full rounded-md border border-default"
+        >
+        <!-- eslint-disable vue/no-v-html -->
+        <div
+          v-if="passage"
+          class="prose prose-sm dark:prose-invert max-w-none"
+          v-html="passage"
+        />
+        <!-- eslint-enable vue/no-v-html -->
         <!-- Grouped completions (shared paragraph/table with inline blanks) -->
         <ExamCompletionGroup
           v-for="(group, gi) in groups"
@@ -178,7 +195,7 @@ function step(delta: number) {
           />
         </div>
       </div>
-    </div>
+    </ExamHighlightablePanel>
 
     <!-- Bottom part navigation -->
     <ExamPartNav

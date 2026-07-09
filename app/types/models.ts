@@ -51,6 +51,7 @@ export interface PartDto {
   instructions: string | null
   content: { passage?: string, groups?: CompletionGroup[] } & Record<string, unknown>
   audioUrl: string | null
+  imageUrl: string | null
   orderIndex: number
 }
 

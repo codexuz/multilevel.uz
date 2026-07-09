@@ -18,6 +18,7 @@ export interface PartNode {
   instructions: string | null
   content: Record<string, unknown>
   audio_url: string | null
+  image_url: string | null
   order_index: number
   questions: QuestionNode[]
 }
@@ -57,6 +58,7 @@ interface ApiPart {
   instructions: string | null
   content: Record<string, unknown>
   audioUrl: string | null
+  imageUrl: string | null
   orderIndex: number
   questions: ApiQuestion[]
 }
@@ -94,6 +96,7 @@ function toPartNode(p: ApiPart): PartNode {
     instructions: p.instructions,
     content: p.content ?? {},
     audio_url: p.audioUrl,
+    image_url: p.imageUrl ?? null,
     order_index: p.orderIndex,
     questions: (p.questions ?? []).map(toQuestionNode)
   }
@@ -248,7 +251,7 @@ export function useTestBuilder(testId: string) {
   async function savePart(p: PartNode) {
     await track(() => dynamicFetch(`/api/admin/parts/${p.id}`, {
       method: 'PATCH',
-      body: { title: p.title, instructions: p.instructions, content: p.content, audioUrl: p.audio_url }
+      body: { title: p.title, instructions: p.instructions, content: p.content, audioUrl: p.audio_url, imageUrl: p.image_url }
     }))
   }
 

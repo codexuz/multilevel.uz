@@ -118,6 +118,7 @@ export const parts = pgTable('parts', {
   instructions: text('instructions'),
   content: jsonb('content').notNull().default({}),
   audioUrl: text('audio_url'),
+  imageUrl: text('image_url'),
   orderIndex: integer('order_index').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, t => [index('parts_section_idx').on(t.sectionId)])

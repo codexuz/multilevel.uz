@@ -56,6 +56,7 @@ export async function getTestTree(db: Db, testId: string) {
         instructions: p.instructions,
         content: p.content,
         audioUrl: p.audioUrl,
+        imageUrl: p.imageUrl,
         orderIndex: p.orderIndex,
         questions: (qByPart.get(p.id) ?? []).map(q => ({
           id: q.id,

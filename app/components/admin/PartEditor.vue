@@ -93,12 +93,13 @@ function removeQuestion(i: number) {
 }
 
 // --- Autosave -------------------------------------------------------------
-// Part fields (title/instructions/passage/groups/audio).
+// Part fields (title/instructions/passage/groups/audio/image).
 const partSig = computed(() => JSON.stringify({
   title: props.part.title,
   instructions: props.part.instructions,
   content: props.part.content,
-  audio_url: props.part.audio_url
+  audio_url: props.part.audio_url,
+  image_url: props.part.image_url
 }))
 const savePart = useDebouncedCallback(() => emit('savePart', props.part))
 watch(partSig, savePart.trigger)
@@ -146,6 +147,15 @@ watch(draftsSig, saveQuestions.trigger)
         </UFormField>
         <UFormField
           v-if="isListening"
+          label="Listening text (optional — shown alongside the questions)"
+        >
+          <AdminRichEditor
+            v-model="passage"
+            placeholder="Notes, transcript or context text…"
+          />
+        </UFormField>
+        <UFormField
+          v-if="isListening"
           label="Part audio (optional — overrides section audio)"
         >
           <FileUpload
@@ -154,6 +164,19 @@ watch(draftsSig, saveQuestions.trigger)
             accept="audio/*"
             preview="audio"
             label="Upload part audio"
+            allow-url
+            url-placeholder="Or paste an audio URL…"
+          />
+        </UFormField>
+        <UFormField label="Part image (optional — e.g. a map, plan or diagram)">
+          <FileUpload
+            v-model="part.image_url"
+            purpose="test-asset"
+            accept="image/*"
+            preview="image"
+            label="Upload part image"
+            allow-url
+            url-placeholder="Or paste an image URL…"
           />
         </UFormField>
       </div>

@@ -108,10 +108,19 @@ function step(delta: number) {
       storage-key="reading-split"
     >
       <template #left>
-        <div class="h-full overflow-auto p-5">
+        <ExamHighlightablePanel
+          :scope="`passage-${part?.id}`"
+          class="h-full overflow-auto p-5"
+        >
           <h2 class="text-base font-bold text-primary mb-2">
             {{ part?.title }}
           </h2>
+          <img
+            v-if="part?.imageUrl"
+            :src="part.imageUrl"
+            :alt="part.title"
+            class="mb-3 max-w-full rounded-md border border-default"
+          >
           <!-- eslint-disable vue/no-v-html -->
           <div
             v-if="passage"
@@ -120,16 +129,19 @@ function step(delta: number) {
           />
           <!-- eslint-enable vue/no-v-html -->
           <p
-            v-else
+            v-else-if="!part?.imageUrl"
             class="text-sm text-muted"
           >
             No passage for this part.
           </p>
-        </div>
+        </ExamHighlightablePanel>
       </template>
 
       <template #right>
-        <div class="h-full overflow-auto p-5 space-y-5 border-t lg:border-t-0 lg:border-l border-default">
+        <ExamHighlightablePanel
+          :scope="`questions-${part?.id}`"
+          class="h-full overflow-auto p-5 space-y-5 border-t lg:border-t-0 lg:border-l border-default"
+        >
           <!-- Grouped completions (shared paragraph/table with inline blanks) -->
           <ExamCompletionGroup
             v-for="(group, gi) in groups"
@@ -157,7 +169,7 @@ function step(delta: number) {
               @update:audio-url="emit('audio', q.id, $event)"
             />
           </div>
-        </div>
+        </ExamHighlightablePanel>
       </template>
     </ResizableSplit>
 
