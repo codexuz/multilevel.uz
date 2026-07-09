@@ -6,11 +6,15 @@ const { data: stats } = await useFetch<{
   published: number
   pendingGrading: number
   students: number
+  courses: number
+  enrollments: number
 }>('/api/admin/stats')
 
 const cards = computed(() => [
   { label: 'Total tests', value: stats.value?.tests ?? 0, icon: 'i-lucide-clipboard-list', to: '/admin/tests' },
   { label: 'Published', value: stats.value?.published ?? 0, icon: 'i-lucide-globe', to: '/admin/tests' },
+  { label: 'Courses', value: stats.value?.courses ?? 0, icon: 'i-lucide-graduation-cap', to: '/admin/courses' },
+  { label: 'Enrollments', value: stats.value?.enrollments ?? 0, icon: 'i-lucide-user-check', to: '/admin/courses' },
   { label: 'Awaiting grading', value: stats.value?.pendingGrading ?? 0, icon: 'i-lucide-check-check', to: '/admin/grading' },
   { label: 'Students', value: stats.value?.students ?? 0, icon: 'i-lucide-users', to: '/admin/users' }
 ])

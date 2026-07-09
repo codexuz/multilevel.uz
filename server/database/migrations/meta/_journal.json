@@ -15,6 +15,13 @@
       "when": 1783403414486,
       "tag": "0001_young_ravenous",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783571232713,
+      "tag": "0002_unusual_susan_delgado",
+      "breakpoints": true
     }
   ]
 }

@@ -14,6 +14,17 @@ export type AttemptStatus = 'in_progress' | 'submitted' | 'graded'
 export type SubPlan = 'free' | 'premium'
 export type SubStatus = 'active' | 'canceled' | 'expired'
 
+// ---------- LMS ----------
+export type CourseStatus = 'draft' | 'published'
+export type LessonType = 'video' | 'article' | 'quiz'
+export type EnrollmentStatus = 'active' | 'completed' | 'canceled'
+
+export const LESSON_TYPE_META: Record<LessonType, { label: string, icon: string }> = {
+  video: { label: 'Video', icon: 'i-lucide-play-circle' },
+  article: { label: 'Article', icon: 'i-lucide-file-text' },
+  quiz: { label: 'Quiz', icon: 'i-lucide-list-checks' }
+}
+
 export const SECTION_TYPES: SectionType[] = ['listening', 'reading', 'writing', 'speaking']
 
 export const SECTION_META: Record<SectionType, { label: string, icon: string, duration: number, color: string }> = {

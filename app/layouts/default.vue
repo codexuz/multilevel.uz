@@ -3,6 +3,7 @@ const { me, isStaff } = useMe()
 
 const links = computed(() => [
   { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/dashboard' },
+  { label: 'Courses', icon: 'i-lucide-graduation-cap', to: '/courses' },
   { label: 'Tests', icon: 'i-lucide-clipboard-list', to: '/tests' },
   { label: 'Speaking Live', icon: 'i-lucide-mic', to: '/speaking/live' },
   { label: 'Leaderboard', icon: 'i-lucide-trophy', to: '/leaderboard' }
@@ -30,28 +31,55 @@ const userItems = computed(() => [[
   <div class="min-h-screen flex flex-col">
     <UHeader>
       <template #left>
-        <NuxtLink to="/dashboard" class="flex items-center gap-2 font-bold text-lg">
-          <UIcon name="i-lucide-graduation-cap" class="size-6 text-primary" />
+        <NuxtLink
+          to="/dashboard"
+          class="flex items-center gap-2 font-bold text-lg"
+        >
+          <UIcon
+            name="i-lucide-graduation-cap"
+            class="size-6 text-primary"
+          />
           <span>Multilevel</span>
         </NuxtLink>
       </template>
 
-      <UNavigationMenu :items="links" variant="link" />
+      <UNavigationMenu
+        :items="links"
+        variant="link"
+      />
 
       <template #right>
         <template v-if="me">
           <div class="hidden sm:flex items-center gap-3 mr-1 text-sm">
-            <span class="flex items-center gap-1" title="Streak">🔥 {{ me.streakCount }}</span>
-            <span class="flex items-center gap-1 text-primary" title="Points">
-              <UIcon name="i-lucide-star" class="size-4" />{{ me.points }}
+            <span
+              class="flex items-center gap-1"
+              title="Streak"
+            >🔥 {{ me.streakCount }}</span>
+            <span
+              class="flex items-center gap-1 text-primary"
+              title="Points"
+            >
+              <UIcon
+                name="i-lucide-star"
+                class="size-4"
+              />{{ me.points }}
             </span>
-            <span class="flex items-center gap-1 text-amber-500" title="Coins">
-              <UIcon name="i-lucide-coins" class="size-4" />{{ me.coins }}
+            <span
+              class="flex items-center gap-1 text-amber-500"
+              title="Coins"
+            >
+              <UIcon
+                name="i-lucide-coins"
+                class="size-4"
+              />{{ me.coins }}
             </span>
           </div>
         </template>
         <UColorModeButton />
-        <UDropdownMenu v-if="me" :items="userItems">
+        <UDropdownMenu
+          v-if="me"
+          :items="userItems"
+        >
           <UButton
             :avatar="{ src: me.avatarUrl || undefined, alt: me.name || 'User' }"
             color="neutral"
@@ -59,7 +87,12 @@ const userItems = computed(() => [[
             trailing-icon="i-lucide-chevron-down"
           />
         </UDropdownMenu>
-        <UButton v-else to="/login" label="Sign in" color="primary" />
+        <UButton
+          v-else
+          to="/login"
+          label="Sign in"
+          color="primary"
+        />
       </template>
 
       <!-- Mobile slide-over menu (opened by the auto hamburger toggle) -->

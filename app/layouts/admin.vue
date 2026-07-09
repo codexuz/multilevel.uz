@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import type { NavigationMenuItem } from '@nuxt/ui'
+
 const { me, isAdmin } = useMe()
 
-const items = computed(() => [{
+const items = computed<NavigationMenuItem[]>(() => [{
   label: 'Overview', icon: 'i-lucide-gauge', to: '/admin'
 }, {
   label: 'Tests', icon: 'i-lucide-clipboard-list', to: '/admin/tests'
+}, {
+  label: 'Courses', icon: 'i-lucide-graduation-cap', to: '/admin/courses'
 }, {
   label: 'Grading', icon: 'i-lucide-check-check', to: '/admin/grading'
 }, ...(isAdmin.value

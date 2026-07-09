@@ -16,6 +16,9 @@ export const subPlan = pgEnum('sub_plan', ['free', 'premium'])
 export const subStatus = pgEnum('sub_status', ['active', 'canceled', 'expired'])
 export const roomStatus = pgEnum('room_status', ['open', 'active', 'ended'])
 export const currency = pgEnum('currency', ['points', 'coins'])
+export const courseStatus = pgEnum('course_status', ['draft', 'published'])
+export const lessonType = pgEnum('lesson_type', ['video', 'article', 'quiz'])
+export const enrollmentStatus = pgEnum('enrollment_status', ['active', 'completed', 'canceled'])
 
 // ---------- users ----------
 export const users = pgTable('users', {
@@ -175,12 +178,81 @@ export const speakingRooms = pgTable('speaking_rooms', {
   endedAt: timestamp('ended_at', { withTimezone: true })
 })
 
+// ---------- LMS: courses / modules / lessons ----------
+export const courses = pgTable('courses', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  title: text('title').notNull(),
+  slug: text('slug').notNull().unique(),
+  description: text('description'),
+  thumbnailUrl: text('thumbnail_url'),
+  level: text('level'), // A1..C1
+  category: text('category'), // e.g. Grammar, Vocabulary, Exam Skills
+  status: courseStatus('status').notNull().default('draft'),
+  isPremium: boolean('is_premium').notNull().default(false),
+  estimatedMinutes: integer('estimated_minutes'),
+  orderIndex: integer('order_index').notNull().default(0),
+  createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+}, t => [index('courses_status_idx').on(t.status)])
+
+export const courseModules = pgTable('course_modules', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  courseId: uuid('course_id').notNull().references(() => courses.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  summary: text('summary'),
+  orderIndex: integer('order_index').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, t => [index('course_modules_course_idx').on(t.courseId)])
+
+export const lessons = pgTable('lessons', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  moduleId: uuid('module_id').notNull().references(() => courseModules.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  type: lessonType('type').notNull().default('article'),
+  content: text('content'), // markdown/html body for article lessons
+  videoUrl: text('video_url'),
+  attachments: jsonb('attachments').notNull().default([]), // [{ label, url }]
+  durationMinutes: integer('duration_minutes').notNull().default(5),
+  isPreview: boolean('is_preview').notNull().default(false), // viewable without enrollment
+  orderIndex: integer('order_index').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, t => [index('lessons_module_idx').on(t.moduleId)])
+
+// ---------- LMS: enrollments / progress ----------
+export const enrollments = pgTable('enrollments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  courseId: uuid('course_id').notNull().references(() => courses.id, { onDelete: 'cascade' }),
+  status: enrollmentStatus('status').notNull().default('active'),
+  enrolledAt: timestamp('enrolled_at', { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  lastLessonId: uuid('last_lesson_id').references(() => lessons.id, { onDelete: 'set null' })
+}, t => [
+  uniqueIndex('enrollments_user_course_uq').on(t.userId, t.courseId),
+  index('enrollments_user_idx').on(t.userId)
+])
+
+export const lessonProgress = pgTable('lesson_progress', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  lessonId: uuid('lesson_id').notNull().references(() => lessons.id, { onDelete: 'cascade' }),
+  courseId: uuid('course_id').notNull().references(() => courses.id, { onDelete: 'cascade' }),
+  completed: boolean('completed').notNull().default(false),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+}, t => [
+  uniqueIndex('lesson_progress_user_lesson_uq').on(t.userId, t.lessonId),
+  index('lesson_progress_user_course_idx').on(t.userId, t.courseId)
+])
+
 // ---------- relations ----------
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   attempts: many(attempts),
   subscriptions: many(subscriptions),
-  transactions: many(transactions)
+  transactions: many(transactions),
+  enrollments: many(enrollments)
 }))
 export const testsRelations = relations(tests, ({ many }) => ({ sections: many(sections) }))
 export const sectionsRelations = relations(sections, ({ one, many }) => ({
@@ -203,4 +275,24 @@ export const attemptsRelations = relations(attempts, ({ one, many }) => ({
 export const answersRelations = relations(answers, ({ one }) => ({
   attempt: one(attempts, { fields: [answers.attemptId], references: [attempts.id] }),
   question: one(questions, { fields: [answers.questionId], references: [questions.id] })
+}))
+export const coursesRelations = relations(courses, ({ many }) => ({
+  modules: many(courseModules),
+  enrollments: many(enrollments)
+}))
+export const courseModulesRelations = relations(courseModules, ({ one, many }) => ({
+  course: one(courses, { fields: [courseModules.courseId], references: [courses.id] }),
+  lessons: many(lessons)
+}))
+export const lessonsRelations = relations(lessons, ({ one }) => ({
+  module: one(courseModules, { fields: [lessons.moduleId], references: [courseModules.id] })
+}))
+export const enrollmentsRelations = relations(enrollments, ({ one }) => ({
+  user: one(users, { fields: [enrollments.userId], references: [users.id] }),
+  course: one(courses, { fields: [enrollments.courseId], references: [courses.id] })
+}))
+export const lessonProgressRelations = relations(lessonProgress, ({ one }) => ({
+  user: one(users, { fields: [lessonProgress.userId], references: [users.id] }),
+  lesson: one(lessons, { fields: [lessonProgress.lessonId], references: [lessons.id] }),
+  course: one(courses, { fields: [lessonProgress.courseId], references: [courses.id] })
 }))

@@ -24,7 +24,7 @@ export async function awardForAttempt(userId: string, score: number) {
   const coins = Math.floor(points / 5)
 
   // Streak: same day keeps, yesterday increments, otherwise resets to 1.
-  let streak = u.streakCount
+  let streak: number
   const today = todayStr()
   if (u.lastActivityDate === today) {
     streak = Math.max(1, u.streakCount)
@@ -46,6 +46,42 @@ export async function awardForAttempt(userId: string, score: number) {
   if (coins > 0) await db.insert(transactions).values({ userId, currency: 'coins', delta: coins, reason: 'attempt' })
 
   return { points: u.points + points, coins: u.coins + coins, streak }
+}
+
+/**
+ * Award a fixed number of points (and derived coins) for a generic activity
+ * such as completing a lesson, and bump the daily streak. Returns new totals.
+ */
+export async function awardActivity(userId: string, points: number, reason: string) {
+  const db = useDb()
+  const [u] = await db.select().from(users).where(eq(users.id, userId)).limit(1)
+  if (!u) return null
+
+  const pts = Math.max(0, Math.round(points))
+  const coins = Math.floor(pts / 5)
+
+  let streak: number
+  const today = todayStr()
+  if (u.lastActivityDate === today) {
+    streak = Math.max(1, u.streakCount)
+  } else if (u.lastActivityDate === yesterdayStr()) {
+    streak = u.streakCount + 1
+  } else {
+    streak = 1
+  }
+
+  await db.update(users).set({
+    points: u.points + pts,
+    coins: u.coins + coins,
+    streakCount: streak,
+    lastActivityDate: today,
+    updatedAt: new Date()
+  }).where(eq(users.id, userId))
+
+  if (pts > 0) await db.insert(transactions).values({ userId, currency: 'points', delta: pts, reason })
+  if (coins > 0) await db.insert(transactions).values({ userId, currency: 'coins', delta: coins, reason })
+
+  return { points: u.points + pts, coins: u.coins + coins, streak }
 }
 
 /** Spend coins to unlock a premium subscription. Throws on insufficient balance. */

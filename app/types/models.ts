@@ -3,7 +3,8 @@
 // no server-only imports.
 import type {
   UserRole, TestStatus, SectionType, QuestionType, AttemptStatus,
-  SubPlan, SubStatus, Choice, QuestionMeta, CompletionGroup
+  SubPlan, SubStatus, Choice, QuestionMeta, CompletionGroup,
+  CourseStatus, LessonType, EnrollmentStatus
 } from './exam'
 
 export interface Me {
@@ -112,6 +113,127 @@ export interface DeviceSessionDto {
   lastSeenAt: string
   createdAt: string
   current: boolean
+}
+
+// ---------- LMS ----------
+export interface LessonAttachment {
+  label: string
+  url: string
+}
+
+// Lesson summary — no article body.
+export interface LessonSummaryDto {
+  id: string
+  moduleId: string
+  title: string
+  type: LessonType
+  videoUrl: string | null
+  durationMinutes: number
+  isPreview: boolean
+  orderIndex: number
+}
+
+// Admin lesson — includes body + attachments.
+export interface AdminLessonDto extends LessonSummaryDto {
+  content: string | null
+  attachments: LessonAttachment[]
+}
+
+// Full lesson content (student player).
+export interface LessonDto {
+  id: string
+  moduleId: string
+  courseId: string
+  title: string
+  type: LessonType
+  content: string | null
+  videoUrl: string | null
+  attachments: LessonAttachment[]
+  durationMinutes: number
+  isPreview: boolean
+  completed: boolean
+  enrolled: boolean
+}
+
+export interface CourseModuleDto<L = LessonSummaryDto> {
+  id: string
+  title: string
+  summary: string | null
+  orderIndex: number
+  lessons: L[]
+}
+
+export interface CourseDto {
+  id: string
+  title: string
+  slug: string
+  description: string | null
+  thumbnailUrl: string | null
+  level: string | null
+  category: string | null
+  status: CourseStatus
+  isPremium: boolean
+  estimatedMinutes: number | null
+}
+
+// Row shape for course list endpoints (admin + student catalog).
+export interface CourseListItemDto {
+  id: string
+  title: string
+  slug: string
+  description: string | null
+  thumbnailUrl: string | null
+  level: string | null
+  category: string | null
+  status?: CourseStatus
+  isPremium: boolean
+  estimatedMinutes?: number | null
+  lessonCount: number
+  enrolled?: boolean
+  createdAt?: string
+}
+
+export interface EnrollmentInfoDto {
+  status: EnrollmentStatus
+  enrolledAt: string
+  completedAt: string | null
+  lastLessonId: string | null
+}
+
+// GET /api/courses/[id] — student course detail.
+export interface CourseDetailDto {
+  course: CourseDto
+  lessonCount: number
+  modules: CourseModuleDto[]
+  enrollment: EnrollmentInfoDto | null
+  completedLessonIds: string[]
+  progress: number
+}
+
+// GET /api/admin/courses/[id] — admin course tree.
+export interface AdminCourseTreeDto {
+  course: CourseDto
+  lessonCount: number
+  modules: CourseModuleDto<AdminLessonDto>[]
+}
+
+// GET /api/me/courses — enrolled courses with progress.
+export interface MyCourseDto {
+  enrollmentId: string
+  status: EnrollmentStatus
+  enrolledAt: string
+  completedAt: string | null
+  lastLessonId: string | null
+  id: string
+  title: string
+  slug: string
+  description: string | null
+  thumbnailUrl: string | null
+  level: string | null
+  category: string | null
+  lessonCount: number
+  completedCount: number
+  progress: number
 }
 
 // Standard envelope returned by paginated list endpoints.
