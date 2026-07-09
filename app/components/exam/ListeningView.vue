@@ -143,13 +143,15 @@ function step(delta: number) {
     </div>
 
     <!-- Centered single-part question panel -->
-    <!-- pb-28 keeps the last question clear of the bottom part-nav bar. -->
+    <!-- Block (not flex) scroll container: Chromium drops a flex scroller's
+         padding-bottom from its scrollable area, so the trailing space lives on
+         the inner element instead — it keeps the last question reachable. -->
     <ExamHighlightablePanel
       :scope="`questions-${part?.id}`"
       storage-key="listening-questions"
-      class="flex-1 min-h-0 overflow-auto flex justify-center pt-6 pb-28"
+      class="flex-1 min-h-0 overflow-auto"
     >
-      <div class="w-full max-w-3xl px-4 space-y-5">
+      <div class="w-full max-w-3xl mx-auto px-4 pt-6 pb-28 space-y-5">
         <h2
           v-if="part?.title"
           class="text-base font-bold text-primary"
