@@ -5,6 +5,9 @@ const { me, loggedIn, isPremium, refresh } = useMe()
 const toast = useToast()
 
 const PREMIUM_COIN_COST = 500
+// Display only — activation still happens via coins or the center.
+const PREMIUM_PRICE = '60 000'
+const PREMIUM_DURATION = '1.5 months'
 const redeeming = ref(false)
 
 const features = [
@@ -51,7 +54,7 @@ async function unlockWithCoins() {
         Multilevel Premium
       </h1>
       <p class="text-muted">
-        Unlock the full library of premium mock exams.
+        Unlock the full library of premium mock exams for {{ PREMIUM_PRICE }} so'm / {{ PREMIUM_DURATION }}.
       </p>
     </div>
 
@@ -70,11 +73,18 @@ async function unlockWithCoins() {
       class="mt-8"
     >
       <div class="text-center space-y-1">
-        <p class="text-4xl font-bold">
+        <p class="text-sm font-medium uppercase tracking-wide text-muted">
           Premium
         </p>
+        <p class="text-4xl font-bold">
+          {{ PREMIUM_PRICE }}
+          <span class="text-2xl">so'm</span>
+        </p>
+        <p class="text-muted">
+          {{ PREMIUM_DURATION }}
+        </p>
         <p class="text-muted text-sm">
-          Contact your center to activate premium access.
+          Contact Us to activate premium access.
         </p>
       </div>
       <ul class="mt-6 space-y-3">
@@ -103,13 +113,17 @@ async function unlockWithCoins() {
             :label="`Unlock with coins (${me?.coins ?? 0} / ${PREMIUM_COIN_COST})`"
             @click="unlockWithCoins"
           />
+          <!-- Requesting access needs no account, so this always goes straight
+               to Telegram rather than bouncing guests through /login. -->
           <UButton
             block
             size="lg"
             variant="subtle"
-            :to="loggedIn ? undefined : '/login'"
-            label="Request premium access"
-            icon="i-lucide-mail"
+            to="https://t.me/javlon_developer"
+            target="_blank"
+            rel="noopener noreferrer"
+            label="Contact us on Telegram"
+            icon="i-simple-icons-telegram"
           />
         </div>
       </template>

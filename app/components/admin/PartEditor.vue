@@ -140,7 +140,7 @@ watch(draftsSig, saveQuestions.trigger)
           v-if="isReading"
           label="Reading passage"
         >
-          <AdminRichEditor
+          <RichEditor
             v-model="passage"
             placeholder="Passage text…"
           />
@@ -149,7 +149,7 @@ watch(draftsSig, saveQuestions.trigger)
           v-if="isListening"
           label="Listening text (optional — shown alongside the questions)"
         >
-          <AdminRichEditor
+          <RichEditor
             v-model="passage"
             placeholder="Notes, transcript or context text…"
           />

@@ -1,15 +1,20 @@
 import { randomUUID } from 'node:crypto'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
 
-type Purpose = 'test-audio' | 'test-asset' | 'recording' | 'avatar'
+type Purpose = 'test-audio' | 'test-asset' | 'recording' | 'avatar' | 'community'
 const STAFF_PURPOSES: Purpose[] = ['test-audio', 'test-asset']
 
 const PREFIX: Record<Purpose, string> = {
   'test-audio': 'tests/audio',
   'test-asset': 'tests/assets',
   'recording': 'recordings',
-  'avatar': 'avatars'
+  'avatar': 'avatars',
+  'community': 'community'
 }
+
+// Community posts are user-generated, so only images and audio are accepted —
+// video would otherwise slip in under the 200 MB ceiling below.
+const MEDIA_ONLY_PURPOSES: Purpose[] = ['community']
 
 function extFromType(type: string): string {
   const map: Record<string, string> = {
@@ -38,12 +43,20 @@ export default defineEventHandler(async (event) => {
   }
 
   const contentType = filePart.type || 'application/octet-stream'
+
+  if (MEDIA_ONLY_PURPOSES.includes(purpose)
+    && !contentType.startsWith('image/') && !contentType.startsWith('audio/')) {
+    throw createError({ statusCode: 415, message: 'Only images and audio are allowed' })
+  }
+
   const maxBytes = contentType.startsWith('video/') ? MAX_VIDEO_BYTES : MAX_BYTES
   if (filePart.data.byteLength > maxBytes) {
     throw createError({ statusCode: 413, message: 'File too large' })
   }
 
-  const scope = purpose === 'avatar' || purpose === 'recording' ? user.id : 'shared'
+  const scope = purpose === 'avatar' || purpose === 'recording' || purpose === 'community'
+    ? user.id
+    : 'shared'
   const key = `${PREFIX[purpose]}/${scope}/${randomUUID()}.${extFromType(contentType)}`
 
   const client = useS3Client()

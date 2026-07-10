@@ -1,4 +1,4 @@
-type Purpose = 'test-audio' | 'test-asset' | 'recording' | 'avatar'
+type Purpose = 'test-audio' | 'test-asset' | 'recording' | 'avatar' | 'community'
 
 interface UploadResponse {
   key: string

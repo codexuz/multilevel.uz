@@ -3,7 +3,15 @@
 // (TipTap) and binds an HTML string. No extra dependency — all extensions ship
 // with @nuxt/ui.
 const model = defineModel<string>({ default: '' })
-defineProps<{ placeholder?: string }>()
+const props = withDefaults(defineProps<{
+  placeholder?: string
+  /** Tailwind min-height for the editing surface. */
+  minHeight?: string
+}>(), { minHeight: 'min-h-32' })
+
+const editorClass = computed(() =>
+  `prose prose-sm dark:prose-invert max-w-none focus:outline-none p-3 ${props.minHeight}`
+)
 
 // Toolbar command groups using EditorToolbarItem objects.
 const toolbar = [
@@ -37,7 +45,7 @@ const toolbar = [
       v-model="model"
       content-type="html"
       :placeholder="placeholder"
-      :editor-props="{ attributes: { class: 'prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-32 p-3' } }"
+      :editor-props="{ attributes: { class: editorClass } }"
       class="border border-default rounded-lg overflow-hidden bg-default"
     >
       <template #default="{ editor }">
@@ -50,7 +58,10 @@ const toolbar = [
     </UEditor>
 
     <template #fallback>
-      <div class="border border-default rounded-lg p-3 min-h-32 text-sm text-muted bg-default">
+      <div
+        class="border border-default rounded-lg p-3 text-sm text-muted bg-default"
+        :class="minHeight"
+      >
         Loading editor…
       </div>
     </template>

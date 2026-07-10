@@ -29,6 +29,13 @@
       "when": 1783587344906,
       "tag": "0003_smiling_marauders",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1783678216892,
+      "tag": "0004_striped_thunderbolt",
+      "breakpoints": true
     }
   ]
 }

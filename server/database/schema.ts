@@ -247,6 +247,34 @@ export const lessonProgress = pgTable('lesson_progress', {
   index('lesson_progress_user_course_idx').on(t.userId, t.courseId)
 ])
 
+// ---------- community ----------
+// Posts and replies are soft-deleted (`deletedAt`) so removing a post never
+// orphans its replies, and a removed reply keeps the thread's numbering intact.
+export const communityPosts = pgTable('community_posts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  title: text('title'),
+  body: text('body').notNull(),
+  attachments: jsonb('attachments').notNull().default([]), // [{ type: 'image'|'audio', url }]
+  replyCount: integer('reply_count').notNull().default(0),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+}, t => [
+  index('community_posts_created_idx').on(t.createdAt),
+  index('community_posts_user_idx').on(t.userId)
+])
+
+export const communityReplies = pgTable('community_replies', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  postId: uuid('post_id').notNull().references(() => communityPosts.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  body: text('body').notNull(),
+  attachments: jsonb('attachments').notNull().default([]),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, t => [index('community_replies_post_idx').on(t.postId, t.createdAt)])
+
 // ---------- relations ----------
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
@@ -296,4 +324,12 @@ export const lessonProgressRelations = relations(lessonProgress, ({ one }) => ({
   user: one(users, { fields: [lessonProgress.userId], references: [users.id] }),
   lesson: one(lessons, { fields: [lessonProgress.lessonId], references: [lessons.id] }),
   course: one(courses, { fields: [lessonProgress.courseId], references: [courses.id] })
+}))
+export const communityPostsRelations = relations(communityPosts, ({ one, many }) => ({
+  author: one(users, { fields: [communityPosts.userId], references: [users.id] }),
+  replies: many(communityReplies)
+}))
+export const communityRepliesRelations = relations(communityReplies, ({ one }) => ({
+  post: one(communityPosts, { fields: [communityReplies.postId], references: [communityPosts.id] }),
+  author: one(users, { fields: [communityReplies.userId], references: [users.id] })
 }))

@@ -20,6 +20,7 @@ const links = computed<NavigationMenuItem[]>(() => [
   { label: 'Courses', icon: 'i-lucide-graduation-cap', to: '/courses' },
   { label: 'Tests', icon: 'i-lucide-clipboard-list', to: '/tests' },
   { label: 'Speaking Live', icon: 'i-lucide-mic', to: '/speaking/live' },
+  { label: 'Community', icon: 'i-lucide-messages-square', to: '/community' },
   { label: 'Leaderboard', icon: 'i-lucide-trophy', to: '/leaderboard' }
 ])
 
