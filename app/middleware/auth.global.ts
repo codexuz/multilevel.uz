@@ -1,4 +1,6 @@
-const PUBLIC_PATHS = new Set(['/', '/login', '/upgrade'])
+// Exact matches only: `/courses` and `/tests` are browsable catalogs, but the
+// detail routes beneath them (`/courses/:id`, `/tests/:id`) stay protected.
+const PUBLIC_PATHS = new Set(['/', '/login', '/upgrade', '/courses', '/tests'])
 
 export default defineNuxtRouteMiddleware(async (to) => {
   const { me, refresh } = useMe()

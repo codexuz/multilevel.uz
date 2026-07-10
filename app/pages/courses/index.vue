@@ -1,10 +1,18 @@
 <script setup lang="ts">
 import type { CourseListItemDto, MyCourseDto, Paginated } from '~/types/models'
 
-const { isPremium } = useMe()
+definePageMeta({ layout: 'public', middleware: 'public-layout' })
+
+const { isPremium, loggedIn } = useMe()
 const page = ref(1)
-const { data } = await useFetch<Paginated<CourseListItemDto>>('/api/courses', { query: { page } })
-const { data: mine } = await useFetch<MyCourseDto[]>('/api/me/courses')
+// Guests read the unauthenticated catalog; members get the full endpoint.
+const endpoint = loggedIn.value ? '/api/courses' : '/api/catalog/courses'
+const { data } = await useFetch<Paginated<CourseListItemDto>>(endpoint, { query: { page } })
+// "Continue learning" is member-only — never request it as a guest.
+const { data: mine } = await useFetch<MyCourseDto[]>('/api/me/courses', {
+  immediate: loggedIn.value,
+  default: () => []
+})
 
 const courses = computed(() => data.value?.items ?? [])
 const total = computed(() => data.value?.total ?? 0)
@@ -130,7 +138,14 @@ function locked(c: CourseListItemDto) {
           </div>
           <template #footer>
             <UButton
-              v-if="locked(c)"
+              v-if="!loggedIn"
+              to="/login"
+              block
+              label="Sign in to start"
+              trailing-icon="i-lucide-arrow-right"
+            />
+            <UButton
+              v-else-if="locked(c)"
               to="/upgrade"
               block
               color="primary"

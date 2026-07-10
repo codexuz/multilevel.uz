@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import type { TestDto, Paginated } from '~/types/models'
 
-const { isPremium } = useMe()
+definePageMeta({ layout: 'public', middleware: 'public-layout' })
+
+const { isPremium, loggedIn } = useMe()
 const page = ref(1)
-const { data } = await useFetch<Paginated<TestDto>>('/api/tests', { query: { page } })
+// Guests read the unauthenticated catalog; members get the full endpoint.
+const endpoint = loggedIn.value ? '/api/tests' : '/api/catalog/tests'
+const { data } = await useFetch<Paginated<TestDto>>(endpoint, { query: { page } })
 const tests = computed(() => data.value?.items ?? [])
 const total = computed(() => data.value?.total ?? 0)
 const pageSize = computed(() => data.value?.pageSize ?? 20)
@@ -45,7 +49,14 @@ function locked(t: TestDto) {
         </div>
         <template #footer>
           <UButton
-            v-if="locked(t)"
+            v-if="!loggedIn"
+            to="/login"
+            block
+            label="Sign in to start"
+            trailing-icon="i-lucide-arrow-right"
+          />
+          <UButton
+            v-else-if="locked(t)"
             to="/upgrade"
             block
             color="primary"

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { SECTION_META, SECTION_TYPES } from '~/types/exam'
 
+definePageMeta({ layout: 'public' })
+
 const { loggedIn: user } = useMe()
 const ctaTo = computed(() => (user.value ? '/dashboard' : '/login'))
 

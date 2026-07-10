@@ -145,6 +145,22 @@ function fmt(r: string | string[] | null | undefined) {
       </UCard>
 
       <div
+        v-if="isObjective && att.status === 'graded'"
+        class="mt-6"
+      >
+        <UButton
+          :to="`/review/${att.id}`"
+          icon="i-lucide-search-check"
+          label="Review answers"
+          block
+          size="lg"
+        />
+        <p class="mt-2 text-center text-sm text-muted">
+          Walk through every question with the correct answers and explanations.
+        </p>
+      </div>
+
+      <div
         v-if="isObjective"
         class="mt-6 space-y-2"
       >

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'public', middleware: 'public-layout' })
+
 const { me, loggedIn, isPremium, refresh } = useMe()
 const toast = useToast()
 
