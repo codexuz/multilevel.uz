@@ -97,14 +97,20 @@ const userItems = computed<DropdownMenuItem[][]>(() => [
       <template #header>
         <UButton
           to="/dashboard"
-          icon="i-lucide-graduation-cap"
           label="Multilevel"
           color="neutral"
           variant="ghost"
           square
           class="w-full overflow-hidden font-bold"
-          :ui="{ leadingIcon: 'text-primary' }"
-        />
+        >
+          <template #leading>
+            <img
+              src="/logo.png"
+              alt=""
+              class="size-5 shrink-0 object-contain"
+            >
+          </template>
+        </UButton>
       </template>
 
       <template #default="{ state }">

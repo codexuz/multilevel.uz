@@ -15,7 +15,7 @@ useSeoMeta({
     <UCard class="w-full max-w-sm">
       <div class="flex flex-col items-center text-center gap-6 py-4">
         <div class="flex items-center gap-2 font-bold text-xl">
-          <UIcon name="i-lucide-graduation-cap" class="size-7 text-primary" />
+          <img src="/logo.png" alt="" class="size-7 object-contain">
           <span>Multilevel</span>
         </div>
         <div>

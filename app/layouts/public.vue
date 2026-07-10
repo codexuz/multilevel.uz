@@ -11,6 +11,13 @@ const links: NavigationMenuItem[] = [
   { label: 'Tests', icon: 'i-lucide-clipboard-list', to: '/tests' },
   { label: 'Pricing', icon: 'i-lucide-sparkles', to: '/upgrade' }
 ]
+
+const socials = [
+  { label: 'Impulse LC on Telegram', icon: 'i-simple-icons-telegram', to: 'https://t.me/impulse_lc' },
+  { label: 'Speak Up Impulse on Telegram', icon: 'i-simple-icons-telegram', to: 'https://t.me/speakup_impulse' },
+  { label: 'Impulse LC on YouTube', icon: 'i-simple-icons-youtube', to: 'https://youtube.com/@impulse_lc' },
+  { label: 'Impulse Study on Instagram', icon: 'i-simple-icons-instagram', to: 'https://instagram.com/impulsestudy_lc' }
+]
 </script>
 
 <template>
@@ -21,10 +28,11 @@ const links: NavigationMenuItem[] = [
           to="/"
           class="flex items-center gap-2 font-bold text-lg"
         >
-          <UIcon
-            name="i-lucide-graduation-cap"
-            class="size-6 text-primary"
-          />
+          <img
+            src="/logo.png"
+            alt=""
+            class="size-6 object-contain"
+          >
           <span>Multilevel</span>
         </NuxtLink>
       </template>
@@ -70,6 +78,21 @@ const links: NavigationMenuItem[] = [
         <p class="text-sm text-muted">
           © {{ new Date().getFullYear() }} Multilevel Exam Prep
         </p>
+      </template>
+
+      <template #right>
+        <UButton
+          v-for="social in socials"
+          :key="social.to"
+          :to="social.to"
+          :icon="social.icon"
+          :aria-label="social.label"
+          :title="social.label"
+          target="_blank"
+          rel="noopener noreferrer"
+          color="neutral"
+          variant="ghost"
+        />
       </template>
     </UFooter>
   </div>
