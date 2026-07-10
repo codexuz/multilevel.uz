@@ -23,6 +23,8 @@ export default defineEventHandler(async (event) => {
     body: post!.body,
     attachments: toAttachments(post!.attachments),
     replyCount: post!.replyCount,
+    likeCount: post!.likeCount,
+    liked: false,
     createdAt: post!.createdAt
   }
 })

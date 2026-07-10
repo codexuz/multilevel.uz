@@ -257,12 +257,24 @@ export const communityPosts = pgTable('community_posts', {
   body: text('body').notNull(),
   attachments: jsonb('attachments').notNull().default([]), // [{ type: 'image'|'audio', url }]
   replyCount: integer('reply_count').notNull().default(0),
+  likeCount: integer('like_count').notNull().default(0),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 }, t => [
   index('community_posts_created_idx').on(t.createdAt),
   index('community_posts_user_idx').on(t.userId)
+])
+
+// One row per (user, post). `likeCount` above is the denormalized tally, kept in
+// step with this table inside the same transaction as the insert/delete.
+export const communityPostLikes = pgTable('community_post_likes', {
+  postId: uuid('post_id').notNull().references(() => communityPosts.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, t => [
+  uniqueIndex('community_post_likes_uq').on(t.postId, t.userId),
+  index('community_post_likes_user_idx').on(t.userId)
 ])
 
 export const communityReplies = pgTable('community_replies', {
@@ -327,7 +339,12 @@ export const lessonProgressRelations = relations(lessonProgress, ({ one }) => ({
 }))
 export const communityPostsRelations = relations(communityPosts, ({ one, many }) => ({
   author: one(users, { fields: [communityPosts.userId], references: [users.id] }),
-  replies: many(communityReplies)
+  replies: many(communityReplies),
+  likes: many(communityPostLikes)
+}))
+export const communityPostLikesRelations = relations(communityPostLikes, ({ one }) => ({
+  post: one(communityPosts, { fields: [communityPostLikes.postId], references: [communityPosts.id] }),
+  user: one(users, { fields: [communityPostLikes.userId], references: [users.id] })
 }))
 export const communityRepliesRelations = relations(communityReplies, ({ one }) => ({
   post: one(communityPosts, { fields: [communityReplies.postId], references: [communityPosts.id] }),

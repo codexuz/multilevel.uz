@@ -89,17 +89,7 @@ const isStaff = computed(() => author.value.role === 'admin' || author.value.rol
 
         <CommunityAttachments :attachments="post.attachments" />
 
-        <NuxtLink
-          v-if="!detail"
-          :to="`/community/${post.id}`"
-          class="inline-flex items-center gap-1.5 text-sm text-muted hover:text-primary"
-        >
-          <UIcon
-            name="i-lucide-message-circle"
-            class="size-4"
-          />
-          {{ post.replyCount }} {{ post.replyCount === 1 ? 'reply' : 'replies' }}
-        </NuxtLink>
+        <CommunityActions :post="post" />
       </div>
     </div>
   </UCard>

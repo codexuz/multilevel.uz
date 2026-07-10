@@ -18,10 +18,18 @@ export interface CommunityPostDto {
   body: string
   attachments: Attachment[]
   replyCount: number
+  likeCount: number
+  /** Whether the requesting user has liked this post. */
+  liked: boolean
   createdAt: string
   author: CommunityAuthor
   /** Whether the requesting user may delete this post. */
   canDelete: boolean
+}
+
+export interface LikeResultDto {
+  liked: boolean
+  likeCount: number
 }
 
 export interface CommunityReplyDto {

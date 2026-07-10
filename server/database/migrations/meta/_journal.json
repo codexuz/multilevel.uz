@@ -36,6 +36,13 @@
       "when": 1783678216892,
       "tag": "0004_striped_thunderbolt",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1783681173663,
+      "tag": "0005_mighty_carmella_unuscione",
+      "breakpoints": true
     }
   ]
 }

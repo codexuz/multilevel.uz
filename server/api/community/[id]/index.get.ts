@@ -1,5 +1,5 @@
 import { eq, asc, and, isNull } from 'drizzle-orm'
-import { communityPosts, communityReplies, users } from '../../../database/schema'
+import { communityPosts, communityPostLikes, communityReplies, users } from '../../../database/schema'
 import { toAttachments } from '~/types/community'
 
 // A single thread: the post plus its replies, oldest first.
@@ -14,6 +14,7 @@ export default defineEventHandler(async (event) => {
     body: communityPosts.body,
     attachments: communityPosts.attachments,
     replyCount: communityPosts.replyCount,
+    likeCount: communityPosts.likeCount,
     createdAt: communityPosts.createdAt,
     authorId: users.id,
     authorName: users.name,
@@ -25,6 +26,11 @@ export default defineEventHandler(async (event) => {
     .limit(1)
 
   if (!row) throw createError({ statusCode: 404, message: 'Post not found' })
+
+  const [like] = await db.select({ postId: communityPostLikes.postId })
+    .from(communityPostLikes)
+    .where(and(eq(communityPostLikes.postId, id), eq(communityPostLikes.userId, user.id)))
+    .limit(1)
 
   const replyRows = await db.select({
     id: communityReplies.id,
@@ -48,6 +54,8 @@ export default defineEventHandler(async (event) => {
       body: row.body,
       attachments: toAttachments(row.attachments),
       replyCount: row.replyCount,
+      likeCount: row.likeCount,
+      liked: !!like,
       createdAt: row.createdAt,
       author: toAuthor({ id: row.authorId, name: row.authorName, avatarUrl: row.authorAvatarUrl, role: row.authorRole }),
       canDelete: canModerate(user, row.authorId)
