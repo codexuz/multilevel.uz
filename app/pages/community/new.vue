@@ -29,7 +29,7 @@ async function createPost(payload: { title: string | null, body: string, attachm
 </script>
 
 <template>
-  <UContainer class="py-8 max-w-2xl space-y-6">
+  <UContainer class="py-6 sm:py-8 max-w-2xl space-y-6">
     <div class="flex items-center gap-3">
       <UButton
         to="/community"

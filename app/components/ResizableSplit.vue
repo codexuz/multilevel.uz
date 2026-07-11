@@ -1,8 +1,9 @@
 <script setup lang="ts">
-// Two-pane horizontal split with a draggable divider. On small screens it
-// stacks vertically and the handle is hidden.
+// Two-pane split with a draggable divider: side-by-side on large screens,
+// stacked into a vertical (top/bottom) split on small ones. The same ratio
+// drives width on desktop and height on mobile, and the handle drags either.
 const props = withDefaults(defineProps<{
-  initial?: number // initial left width as % (0-100)
+  initial?: number // initial left/top size as % (0-100)
   min?: number // min % for either pane
   storageKey?: string // persist ratio in localStorage
 }>(), { initial: 50, min: 20 })
@@ -10,6 +11,11 @@ const props = withDefaults(defineProps<{
 const left = ref(props.initial)
 const container = ref<HTMLElement>()
 const dragging = ref(false)
+
+// Tailwind's `lg` breakpoint — below it the split is vertical (drag on the Y axis).
+function isVertical() {
+  return typeof window !== 'undefined' && window.innerWidth < 1024
+}
 
 onMounted(() => {
   if (props.storageKey) {
@@ -25,7 +31,9 @@ function onDown(e: PointerEvent) {
 function onMove(e: PointerEvent) {
   if (!dragging.value || !container.value) return
   const rect = container.value.getBoundingClientRect()
-  const pct = ((e.clientX - rect.left) / rect.width) * 100
+  const pct = isVertical()
+    ? ((e.clientY - rect.top) / rect.height) * 100
+    : ((e.clientX - rect.left) / rect.width) * 100
   left.value = Math.min(100 - props.min, Math.max(props.min, pct))
 }
 function onUp() {
@@ -38,30 +46,38 @@ function onUp() {
 <template>
   <div
     ref="container"
-    class="flex flex-col lg:flex-row gap-4 lg:gap-0"
-    :class="dragging ? 'select-none cursor-col-resize' : ''"
+    class="flex flex-col lg:flex-row"
+    :class="dragging ? 'select-none cursor-row-resize lg:cursor-col-resize' : ''"
   >
     <div
-      class="min-w-0 lg:overflow-auto"
+      class="min-w-0 min-h-0 overflow-auto"
       :style="{ flexBasis: `${left}%` }"
     >
       <slot name="left" />
     </div>
 
     <div
-      class="hidden lg:flex items-center justify-center w-3 shrink-0 cursor-col-resize group"
+      class="flex items-center justify-center shrink-0 group touch-none
+             h-3 w-full cursor-row-resize
+             lg:h-full lg:w-3 lg:cursor-col-resize"
       @pointerdown="onDown"
       @pointermove="onMove"
       @pointerup="onUp"
       @pointercancel="onUp"
     >
-      <div class="w-px h-full bg-default group-hover:bg-primary transition-colors relative">
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-1 rounded-full bg-muted group-hover:bg-primary" />
+      <div
+        class="bg-default group-hover:bg-primary transition-colors relative
+                  h-px w-full lg:h-full lg:w-px"
+      >
+        <div
+          class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-muted group-hover:bg-primary
+                    h-1 w-8 lg:h-8 lg:w-1"
+        />
       </div>
     </div>
 
     <div
-      class="min-w-0 lg:flex-1 lg:overflow-auto"
+      class="min-w-0 min-h-0 flex-1 overflow-auto"
       :style="{ flexBasis: `${100 - left}%` }"
     >
       <slot name="right" />

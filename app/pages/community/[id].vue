@@ -57,14 +57,10 @@ async function removeReply(replyId: string) {
     toast.add({ title: 'Could not delete', description: (e as Error).message, color: 'error' })
   }
 }
-
-function when(date: string) {
-  return new Date(date).toLocaleString()
-}
 </script>
 
 <template>
-  <UContainer class="py-8 max-w-2xl space-y-6">
+  <UContainer class="py-6 sm:py-8 max-w-2xl space-y-6">
     <UButton
       to="/community"
       icon="i-lucide-arrow-left"
@@ -102,25 +98,32 @@ function when(date: string) {
           v-for="reply in data.replies"
           :key="reply.id"
         >
-          <div class="flex items-start gap-3">
+          <div class="flex items-start gap-2.5 sm:gap-3">
             <UAvatar
               :src="reply.author.avatarUrl || undefined"
               :alt="reply.author.name || 'User'"
               size="sm"
+              class="shrink-0"
             />
             <div class="min-w-0 flex-1 space-y-2">
-              <div class="flex items-center gap-2">
-                <span class="text-sm font-semibold text-highlighted truncate">
-                  {{ reply.author.name || 'Anonymous' }}
-                </span>
-                <span class="text-xs text-muted">{{ when(reply.createdAt) }}</span>
+              <div class="flex items-start gap-2">
+                <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-w-0 flex-1">
+                  <span class="text-sm font-semibold text-highlighted truncate max-w-full">
+                    {{ reply.author.name || 'Anonymous' }}
+                  </span>
+                  <time
+                    class="text-xs text-muted whitespace-nowrap"
+                    :datetime="reply.createdAt"
+                    :title="fullTime(reply.createdAt)"
+                  >{{ timeAgo(reply.createdAt) }}</time>
+                </div>
                 <UButton
                   v-if="reply.canDelete"
                   icon="i-lucide-trash-2"
                   color="neutral"
                   variant="ghost"
                   size="xs"
-                  class="ml-auto"
+                  class="shrink-0 -mt-1 -mr-1"
                   aria-label="Delete reply"
                   @click="removeReply(reply.id)"
                 />

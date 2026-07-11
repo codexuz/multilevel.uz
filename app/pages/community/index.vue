@@ -35,7 +35,7 @@ async function removePost(id: string) {
 </script>
 
 <template>
-  <UContainer class="py-8 max-w-2xl space-y-6">
+  <UContainer class="py-6 sm:py-8 max-w-2xl space-y-6">
     <div class="flex items-start justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold">

@@ -105,7 +105,7 @@ function seek(event: MouseEvent) {
       <span
         v-for="(peak, i) in peaks"
         :key="i"
-        class="w-[3px] shrink-0 rounded-full transition-colors"
+        class="flex-1 min-w-0 max-w-[3px] rounded-full transition-colors"
         :class="i / peaks.length < progress ? 'bg-primary' : 'bg-accented'"
         :style="{ height: `${Math.round(peak * 100)}%` }"
       />

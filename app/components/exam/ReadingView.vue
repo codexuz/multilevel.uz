@@ -142,7 +142,7 @@ function step(delta: number) {
         <ExamHighlightablePanel
           :scope="`questions-${part?.id}`"
           storage-key="reading-questions"
-          class="h-full overflow-auto p-5 space-y-5 border-t lg:border-t-0 lg:border-l border-default"
+          class="h-full overflow-auto p-5 space-y-5 lg:border-l border-default"
         >
           <!-- Grouped completions (shared paragraph/table with inline blanks) -->
           <ExamCompletionGroup

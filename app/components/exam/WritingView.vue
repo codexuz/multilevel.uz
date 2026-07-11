@@ -96,7 +96,7 @@ function isDone(id: string) {
 
       <!-- Answer textarea on the right -->
       <template #right>
-        <div class="h-full overflow-auto p-5 flex flex-col border-t lg:border-t-0 lg:border-l border-default">
+        <div class="h-full overflow-auto p-5 flex flex-col lg:border-l border-default">
           <UTextarea
             :model-value="textOf(task.id)"
             :rows="18"

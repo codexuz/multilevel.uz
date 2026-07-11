@@ -10,32 +10,38 @@ const props = defineProps<{
 defineEmits<{ delete: [id: string] }>()
 
 const author = computed(() => props.post.author)
-const when = computed(() => new Date(props.post.createdAt).toLocaleString())
 const isStaff = computed(() => author.value.role === 'admin' || author.value.role === 'examiner')
 </script>
 
 <template>
   <UCard>
-    <div class="flex items-start gap-3">
+    <div class="flex items-start gap-2.5 sm:gap-3">
       <UAvatar
         :src="author.avatarUrl || undefined"
         :alt="author.name || 'User'"
         size="md"
+        class="shrink-0"
       />
 
       <div class="min-w-0 flex-1 space-y-2">
-        <div class="flex items-center gap-2">
-          <span class="font-semibold text-highlighted truncate">
-            {{ author.name || 'Anonymous' }}
-          </span>
-          <UBadge
-            v-if="isStaff"
-            :label="author.role"
-            color="primary"
-            variant="subtle"
-            size="sm"
-          />
-          <span class="text-xs text-muted">{{ when }}</span>
+        <div class="flex items-start gap-2">
+          <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-w-0 flex-1">
+            <span class="font-semibold text-highlighted truncate max-w-full">
+              {{ author.name || 'Anonymous' }}
+            </span>
+            <UBadge
+              v-if="isStaff"
+              :label="author.role"
+              color="primary"
+              variant="subtle"
+              size="sm"
+            />
+            <time
+              class="text-xs text-muted whitespace-nowrap"
+              :datetime="post.createdAt"
+              :title="fullTime(post.createdAt)"
+            >{{ timeAgo(post.createdAt) }}</time>
+          </div>
 
           <UButton
             v-if="post.canDelete"
@@ -43,7 +49,7 @@ const isStaff = computed(() => author.value.role === 'admin' || author.value.rol
             color="neutral"
             variant="ghost"
             size="xs"
-            class="ml-auto"
+            class="shrink-0 -mt-1 -mr-1"
             aria-label="Delete post"
             @click="$emit('delete', post.id)"
           />
