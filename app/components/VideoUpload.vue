@@ -4,7 +4,7 @@
 const props = withDefaults(defineProps<{
   modelValue?: string | null
   label?: string
-  purpose?: 'test-audio' | 'test-asset' | 'recording' | 'avatar'
+  purpose?: 'test-audio' | 'test-asset' | 'recording' | 'avatar' | 'course-video'
 }>(), {
   modelValue: null,
   label: 'Video',
@@ -55,6 +55,12 @@ const ytInvalid = computed(() =>
 function clear() {
   emit('update:modelValue', null)
 }
+
+// Privately-stored uploads 403 at their bucket URL, so the inline player can't
+// show them — only preview embeddable/external URLs.
+const s3Base = (useRuntimeConfig().public.s3PublicUrl as string || '').replace(/\/$/, '')
+const canPreview = computed(() =>
+  !!props.modelValue && !(s3Base && props.modelValue.startsWith(`${s3Base}/`)))
 </script>
 
 <template>
@@ -137,9 +143,18 @@ function clear() {
 
     <!-- Preview -->
     <VideoPlayer
-      v-if="modelValue"
-      :src="modelValue"
+      v-if="canPreview"
+      :src="modelValue!"
       class="max-w-md"
     />
+    <p
+      v-else-if="modelValue"
+      class="text-xs text-muted"
+    >
+      <UIcon
+        name="i-lucide-lock"
+        class="size-3 align-middle"
+      /> Uploaded privately — plays on the lesson page.
+    </p>
   </div>
 </template>

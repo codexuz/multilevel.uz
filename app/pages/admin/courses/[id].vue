@@ -418,13 +418,12 @@ async function saveLesson() {
           </div>
           <UFormField
             v-if="edit.type === 'video'"
-            label="Video URL"
-            description="YouTube, Vimeo or direct .mp4"
+            label="Video"
+            description="Upload a private file, or paste a YouTube / Vimeo / direct URL"
           >
-            <UInput
+            <VideoUpload
               v-model="edit.videoUrl"
-              class="w-full"
-              placeholder="https://youtube.com/watch?v=…"
+              purpose="course-video"
             />
           </UFormField>
           <UFormField

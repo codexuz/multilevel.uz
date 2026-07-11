@@ -45,12 +45,48 @@ const embedUrl = computed(() => {
   if (!url) return null
   const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/)
   if (yt) return `https://www.youtube.com/embed/${yt[1]}`
-  const vimeo = url.match(/vimeo\.com\/(\d+)/)
-  if (vimeo) return `https://player.vimeo.com/video/${vimeo[1]}`
+  // Vimeo: normal, channel, and player URLs, plus optional privacy hash for
+  // unlisted videos (vimeo.com/123456789/abcdef123 -> ?h=abcdef123).
+  const vimeo = url.match(/vimeo\.com\/(?:.*\/)?(\d+)(?:\/([\w]+))?/)
+  if (vimeo) return `https://player.vimeo.com/video/${vimeo[1]}${vimeo[2] ? `?h=${vimeo[2]}` : ''}`
   return null
 })
-const isDirectVideo = computed(() =>
-  !!lesson.value?.videoUrl && !embedUrl.value && /\.(mp4|webm|ogg)(\?.*)?$/i.test(lesson.value.videoUrl))
+// Anything the server didn't hand back as a YouTube/Vimeo embed is a direct
+// file — served through the gated /video endpoint, which has no file extension.
+const isDirectVideo = computed(() => !!lesson.value?.videoUrl && !embedUrl.value)
+
+// Turn bare URLs in the lesson HTML into links, and make every link open in a
+// new window. Splits on tags so we never linkify inside attributes or existing
+// anchors (works during SSR — no DOM APIs required).
+function linkifyText(text: string) {
+  return text.replace(/(https?:\/\/[^\s<]+)/g, (match) => {
+    const trail = match.match(/[.,;:!?)\]]+$/)?.[0] ?? ''
+    const url = trail ? match.slice(0, -trail.length) : match
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>${trail}`
+  })
+}
+const renderedContent = computed(() => {
+  const html = lesson.value?.content
+  if (!html) return ''
+  let insideAnchor = 0
+  return html.split(/(<[^>]+>)/).map((seg) => {
+    if (seg.startsWith('<')) {
+      const tag = seg.toLowerCase()
+      if (tag.startsWith('<a ') || tag === '<a>') {
+        insideAnchor++
+        return /target=/i.test(seg)
+          ? seg
+          : seg.replace(/<a\b/i, '<a target="_blank" rel="noopener noreferrer"')
+      }
+      if (tag.startsWith('</a')) {
+        if (insideAnchor > 0) insideAnchor--
+        return seg
+      }
+      return seg
+    }
+    return insideAnchor > 0 ? seg : linkifyText(seg)
+  }).join('')
+})
 
 const saving = ref(false)
 async function toggleComplete() {
@@ -174,7 +210,10 @@ watch(lessonId, () => refreshLesson())
           v-else-if="isDirectVideo"
           :src="lesson.videoUrl!"
           controls
+          controlslist="nodownload noplaybackrate"
+          disablepictureinpicture
           class="w-full rounded-lg bg-black"
+          @contextmenu.prevent
         />
 
         <!-- Article body -->
@@ -182,7 +221,7 @@ watch(lessonId, () => refreshLesson())
         <div
           v-if="lesson.content"
           class="prose prose-sm dark:prose-invert max-w-none"
-          v-html="lesson.content"
+          v-html="renderedContent"
         />
 
         <UAlert

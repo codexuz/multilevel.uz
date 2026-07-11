@@ -1,15 +1,21 @@
 import { randomUUID } from 'node:crypto'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
 
-type Purpose = 'test-audio' | 'test-asset' | 'recording' | 'avatar' | 'community'
-const STAFF_PURPOSES: Purpose[] = ['test-audio', 'test-asset']
+type Purpose = 'test-audio' | 'test-asset' | 'recording' | 'avatar' | 'community' | 'course-video'
+const STAFF_PURPOSES: Purpose[] = ['test-audio', 'test-asset', 'course-video']
+
+// Course videos are stored privately and only ever served through the gated
+// /video stream, so they never get a public-read ACL.
+const PRIVATE_PURPOSES: Purpose[] = ['course-video']
+const VIDEO_ONLY_PURPOSES: Purpose[] = ['course-video']
 
 const PREFIX: Record<Purpose, string> = {
   'test-audio': 'tests/audio',
   'test-asset': 'tests/assets',
   'recording': 'recordings',
   'avatar': 'avatars',
-  'community': 'community'
+  'community': 'community',
+  'course-video': 'courses/videos'
 }
 
 // Community posts are user-generated, so only images and audio are accepted —
@@ -72,6 +78,10 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  if (VIDEO_ONLY_PURPOSES.includes(purpose) && !mime.startsWith('video/')) {
+    throw createError({ statusCode: 415, message: 'Only video files are allowed' })
+  }
+
   const maxBytes = mime.startsWith('video/') ? MAX_VIDEO_BYTES : MAX_BYTES
   if (filePart.data.byteLength > maxBytes) {
     throw createError({ statusCode: 413, message: 'File too large' })
@@ -88,8 +98,11 @@ export default defineEventHandler(async (event) => {
     Key: key,
     Body: filePart.data,
     ContentType: contentType,
-    ACL: 'public-read'
+    ACL: PRIVATE_PURPOSES.includes(purpose) ? 'private' : 'public-read'
   }))
 
+  // The URL is still returned in s3PublicUrl() form so its key round-trips
+  // through s3KeyFromUrl(); private objects 403 at that URL directly and are
+  // reachable only via the gated /video stream.
   return { key, publicUrl: s3PublicUrl(key) }
 })

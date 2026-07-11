@@ -1,4 +1,5 @@
-import { S3Client } from '@aws-sdk/client-s3'
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 let client: S3Client | null = null
 
@@ -24,8 +25,26 @@ export function s3Bucket(): string {
   return (process.env.S3_BUCKET || useRuntimeConfig().s3Bucket) as string
 }
 
+function s3PublicBase(): string {
+  return (process.env.S3_PUBLIC_URL || useRuntimeConfig().public.s3PublicUrl as string || '').replace(/\/$/, '')
+}
+
 /** Public URL an uploaded object is served from. */
 export function s3PublicUrl(key: string): string {
-  const base = (process.env.S3_PUBLIC_URL || useRuntimeConfig().public.s3PublicUrl as string || '').replace(/\/$/, '')
-  return `${base}/${key}`
+  return `${s3PublicBase()}/${key}`
+}
+
+/**
+ * Inverse of s3PublicUrl: returns the object key when `url` points at our
+ * bucket, or null for external URLs (YouTube, third-party CDNs, …).
+ */
+export function s3KeyFromUrl(url: string): string | null {
+  const base = s3PublicBase()
+  if (!base || !url.startsWith(`${base}/`)) return null
+  return decodeURIComponent(url.slice(base.length + 1).split('?')[0]!)
+}
+
+/** Short-lived signed GET URL for a private object (default 5 min). */
+export function presignGetObject(key: string, expiresIn = 300): Promise<string> {
+  return getSignedUrl(useS3Client(), new GetObjectCommand({ Bucket: s3Bucket(), Key: key }), { expiresIn })
 }
