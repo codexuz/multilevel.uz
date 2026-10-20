@@ -30,6 +30,16 @@ const bottomLinks = computed<NavigationMenuItem[]>(() => loggedIn.value
   ? [{ label: 'Profile', icon: 'i-lucide-user', to: '/profile' }, { label: 'Settings', icon: 'i-lucide-settings', to: '/settings' }]
   : [])
 
+// The phone's tab bar: the places a candidate goes most, one tap away (staff pages stay in the menu).
+const tabBar = computed(() => [
+  { label: 'Home', icon: 'i-lucide-house', to: '/' },
+  { label: 'Tests', icon: 'i-lucide-clipboard-list', to: '/tests' },
+  ...(loggedIn.value
+    ? [{ label: 'Results', icon: 'i-lucide-chart-column', to: '/results' }, { label: 'Profile', icon: 'i-lucide-circle-user', to: '/profile' }]
+    : [{ label: 'Sign in', icon: 'i-lucide-log-in', to: `/login?next=${encodeURIComponent(route.fullPath)}` }])
+])
+const tabActive = (to: string) => (to === '/' ? route.path === '/' : route.path === to.split('?')[0] || route.path.startsWith(`${to}/`))
+
 const displayName = computed(() => me.value?.name || me.value?.email || 'Account')
 
 async function logout() {
@@ -143,5 +153,26 @@ const userMenu = computed<DropdownMenuItem[][]>(() => [
     </UDashboardSidebar>
 
     <slot />
+
+    <nav
+      class="lg:hidden fixed inset-x-0 bottom-0 z-40 px-3 pt-2 pb-safe pointer-events-none"
+      aria-label="Main"
+    >
+      <div class="pointer-events-auto mx-auto mb-2 max-w-md flex items-stretch gap-1 rounded-full bg-default/90 backdrop-blur-xl shadow-overlay p-1.5 dark:ring-1 dark:ring-default">
+        <NuxtLink
+          v-for="t in tabBar"
+          :key="t.label"
+          :to="t.to"
+          class="flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 rounded-full py-1.5 text-[11px] font-medium transition-colors active:scale-95 duration-150"
+          :class="tabActive(t.to) ? 'bg-primary/12 text-primary' : 'text-muted hover:text-highlighted'"
+        >
+          <UIcon
+            :name="t.icon"
+            class="size-5"
+          />
+          <span class="truncate">{{ t.label }}</span>
+        </NuxtLink>
+      </div>
+    </nav>
   </UDashboardGroup>
 </template>

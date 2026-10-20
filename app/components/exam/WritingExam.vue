@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useMediaQuery } from '@vueuse/core'
 import type { WritingPartData } from '~/utils/exam-transform'
 
 const props = withDefaults(defineProps<{
@@ -26,7 +25,6 @@ const running = ref(props.autoStart)
 const submitted = ref(false)
 const notesOpen = ref(false)
 const notes = ref('')
-const wide = useMediaQuery('(min-width: 1024px)')
 
 const part = computed(() => props.parts[current.value])
 const wordCount = computed(() => countWords(essays.value[part.value?.id ?? ''] ?? ''))
@@ -78,13 +76,12 @@ const subtitle = computed(() => [
       :instruction="subtitle"
     />
 
-    <USplitter
-      :key="String(wide)"
-      :orientation="wide ? 'horizontal' : 'vertical'"
-      :items="[{ slot: 'prompt', defaultSize: wide ? 40 : 45, minSize: 20 }, { slot: 'editor', defaultSize: wide ? 60 : 55, minSize: 30 }]"
-      class="flex-1 min-h-0"
+    <ExamPanes
+      :labels="['Task', 'Your answer']"
+      :sizes="[40, 60]"
+      :min-sizes="[20, 30]"
     >
-      <template #prompt>
+      <template #first>
         <ExamHighlightablePanel>
           <div class="h-full overflow-y-auto px-4 md:px-6 py-4 bg-default">
             <div
@@ -101,7 +98,7 @@ const subtitle = computed(() => [
           </div>
         </ExamHighlightablePanel>
       </template>
-      <template #editor>
+      <template #second>
         <div class="h-full w-full flex flex-col px-4 md:px-6 py-4 bg-default">
           <UTextarea
             :model-value="essays[part.id] ?? ''"
@@ -125,7 +122,7 @@ const subtitle = computed(() => [
           </div>
         </div>
       </template>
-    </USplitter>
+    </ExamPanes>
 
     <ExamPartNavigator
       :parts="parts"

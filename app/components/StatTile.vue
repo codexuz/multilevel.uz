@@ -35,7 +35,7 @@ const tones = {
         />
         <p
           v-else
-          class="text-2xl sm:text-3xl font-semibold text-highlighted"
+          class="text-xl sm:text-3xl font-semibold text-highlighted tracking-tight"
         >
           {{ value ?? '—' }}
         </p>
@@ -50,6 +50,7 @@ const tones = {
       <UAvatar
         :icon="icon"
         size="lg"
+        class="shrink-0 max-[400px]:hidden"
         :ui="tones[props.color || 'primary']"
       />
     </div>

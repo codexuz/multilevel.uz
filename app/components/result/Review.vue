@@ -35,12 +35,8 @@ const task = computed(() => tasks.value[current.value] ?? tasks.value[0] ?? null
 const speaking = computed(() => section.value?.speaking ?? [])
 
 const showKey = ref(true)
-const wide = ref(true)
-onMounted(() => {
-  const query = window.matchMedia('(min-width: 1024px)')
-  wide.value = query.matches
-  query.addEventListener('change', e => (wide.value = e.matches))
-})
+// On a phone one pane shows at a time; jumping to a question shows the questions.
+const pane = ref(0)
 const questionsEl = ref<HTMLElement>()
 const passageEl = ref<HTMLElement>()
 
@@ -62,6 +58,7 @@ const transcriptUrl = computed(() => mediaUrl(part.value?.transcriptUrl) || null
 let pendingJump: number | null = null
 function jump(n: number) {
   pendingJump = n
+  pane.value = 1
   nextTick(() => requestAnimationFrame(() => {
     if (pendingJump == null) return
     const q = document.getElementById(`review-question-${pendingJump}`)
@@ -141,14 +138,13 @@ const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') 
         />
       </div>
 
-      <USplitter
+      <ExamPanes
         v-if="(section.skill === 'READING' && part.passage) || (section.skill === 'LISTENING' && transcriptUrl)"
-        :key="`${wide}:${part.id}`"
-        :orientation="wide ? 'horizontal' : 'vertical'"
-        :items="[{ slot: 'source', defaultSize: 50, minSize: 20 }, { slot: 'questions', defaultSize: 50, minSize: 20 }]"
-        class="flex-1 min-h-0"
+        :key="part.id"
+        v-model:pane="pane"
+        :labels="[section.skill === 'LISTENING' ? 'Transcript' : 'Passage', 'Questions']"
       >
-        <template #source>
+        <template #first>
           <ReviewTranscriptPanel
             v-if="section.skill === 'LISTENING'"
             :audio-url="audioUrl"
@@ -172,7 +168,7 @@ const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') 
             />
           </div>
         </template>
-        <template #questions>
+        <template #second>
           <div
             ref="questionsEl"
             class="h-full overflow-y-auto px-4 md:px-6 py-4"
@@ -188,7 +184,7 @@ const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') 
             </div>
           </div>
         </template>
-      </USplitter>
+      </ExamPanes>
 
       <div
         v-else

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useMediaQuery } from '@vueuse/core'
 import type { AnswerMap, PartData } from '~/types/exam'
 
 const props = withDefaults(defineProps<{
@@ -23,7 +22,9 @@ const session = useExamSession(() => props.parts, props.autoStart)
 session.answers.value = { ...props.initialAnswers }
 const notesOpen = ref(false)
 const notes = ref('')
-const wide = useMediaQuery('(min-width: 1024px)')
+// On a phone one pane shows at a time; picking a question in the navigator shows the questions.
+const pane = ref(0)
+watch(() => session.currentQuestion.value, () => (pane.value = 1))
 
 // Every answer, and every move between parts, goes to the page to be kept.
 watch([session.answers, session.currentPart], () => {
@@ -60,13 +61,11 @@ function submit() {
       :instruction="session.part.value.instruction"
     />
 
-    <USplitter
-      :key="String(wide)"
-      :orientation="wide ? 'horizontal' : 'vertical'"
-      :items="[{ slot: 'passage', defaultSize: 50, minSize: 20 }, { slot: 'questions', defaultSize: 50, minSize: 20 }]"
-      class="flex-1 min-h-0"
+    <ExamPanes
+      v-model:pane="pane"
+      :labels="['Passage', 'Questions']"
     >
-      <template #passage>
+      <template #first>
         <ExamHighlightablePanel>
           <div class="h-full overflow-y-auto px-4 md:px-6 py-4 bg-default">
             <p
@@ -89,7 +88,7 @@ function submit() {
           </div>
         </ExamHighlightablePanel>
       </template>
-      <template #questions>
+      <template #second>
         <ExamHighlightablePanel>
           <ExamQuestionPanel
             :questions="session.part.value.questions"
@@ -100,7 +99,7 @@ function submit() {
           />
         </ExamHighlightablePanel>
       </template>
-    </USplitter>
+    </ExamPanes>
 
     <ExamPartNavigator
       :parts="parts"

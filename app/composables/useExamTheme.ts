@@ -53,6 +53,10 @@ export function provideExamTheme() {
       '--ui-border-muted': p.border,
       '--ui-border-accented': p.muted,
       '--ui-primary': p.accent,
+      // The paper keeps its own colours whatever the site's mode: fields and their shadow follow it.
+      '--ui-field': isDark.value ? p.elevated : p.panel,
+      '--ui-segment': isDark.value ? p.border : p.panel,
+      '--field-shadow': isDark.value ? 'none' : '0 2px 4px 0 rgb(0 0 0 / 0.04), 0 1px 2px 0 rgb(0 0 0 / 0.06), 0 0 1px 0 rgb(0 0 0 / 0.06)',
       'fontSize': `${FONT_SCALE[textSize.value]}rem`
     }
   })

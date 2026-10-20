@@ -11,9 +11,9 @@ const { data, status } = await useFetch<{ items: Row[], total: number, pages: nu
 
 const columns: TableColumn<Row>[] = [
   { id: 'title', header: 'Test' },
-  { id: 'skill', header: 'Section' },
+  { id: 'skill', header: 'Section', meta: { class: { th: 'max-sm:hidden', td: 'max-sm:hidden' } } },
   { id: 'score', header: 'Score' },
-  { id: 'status', header: 'Status' },
+  { id: 'status', header: 'Status', meta: { class: { th: 'max-sm:hidden', td: 'max-sm:hidden' } } },
   { id: 'date', header: 'Date', meta: { class: { th: 'max-md:hidden', td: 'max-md:hidden' } } }
 ]
 const STATUS: Record<string, { label: string, color: 'warning' | 'success' }> = {
