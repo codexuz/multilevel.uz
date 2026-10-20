@@ -16,7 +16,7 @@ definePageMeta({ layout: 'exam' })
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
-const { loggedIn } = useMe()
+const { loggedIn, isStaff, credits, refresh: refreshMe } = useMe()
 const slug = String(route.params.slug)
 const skill = String(route.params.skill).toUpperCase() as 'LISTENING' | 'READING' | 'WRITING' | 'SPEAKING'
 
@@ -92,6 +92,14 @@ async function handIn(extra: { recordings?: { partId: string, audioRef: string, 
     sessionStorage.setItem(`ml.result.${slug}.${skill}`, JSON.stringify({ ...result, durationSeconds }))
     return router.replace(`/tests/${slug}/${skill.toLowerCase()}/result`)
   } catch (e: any) {
+    if (e?.statusCode === 402) {
+      // No marking credit (or no Premium) after all: keep the work here and offer what is missing.
+      submitting.value = false
+      refreshMe()
+      if (e?.data?.data?.code === 'PREMIUM_REQUIRED') premiumNeeded.value = true
+      else practice.value = skill === 'SPEAKING' ? 'SPEAKING' : 'WRITING'
+      return
+    }
     toast.add({ title: 'Not handed in', description: e?.data?.message || e?.message || 'Check your connection and try again. Your answers are kept.', color: 'error' })
     submitting.value = false
   }
@@ -104,19 +112,21 @@ function finishObjective(next: AnswerMap) {
 }
 
 // ─── Writing and Speaking, where a guest practises: nothing is marked or sent ───
+// A signed-in candidate without a marking credit lands here too, with the offer of one.
 const practice = ref<'WRITING' | 'SPEAKING' | null>(null)
+const canBeMarked = computed(() => loggedIn.value && (isStaff.value || credits.value > 0))
 const recordings = ref<SpeakingRecording[]>([])
 
 function finishWriting(next: Record<string, string>) {
   essays.value = { ...essays.value, ...next }
   keep()
-  if (loggedIn.value) return handIn()
+  if (canBeMarked.value) return handIn()
   practice.value = 'WRITING'
 }
 
 async function finishSpeaking(list: SpeakingRecording[]) {
   recordings.value = list
-  if (!loggedIn.value) {
+  if (!canBeMarked.value) {
     practice.value = 'SPEAKING'
     return
   }
@@ -159,14 +169,38 @@ function startOver() {
 }
 
 const leaveTo = `/tests/${slug}`
+// A premium test without Premium: the paper is not sent, the offer is shown instead.
+const premiumNeeded = ref(false)
+watch(error, (e) => {
+  if (e?.statusCode === 402) premiumNeeded.value = true
+}, { immediate: true })
+const practiceNote = computed(() => (loggedIn.value
+  ? 'A marking credit gets it a score out of 75 and feedback from an examiner. Your work stays here while you get one.'
+  : 'Sign in to have an examiner mark it.'))
+
 const pageError = computed(() => {
+  if (premiumNeeded.value) return null
   if (error.value) return error.value.statusCode === 404 ? 'This section is not available.' : 'The paper could not be opened. Check your connection and try again.'
   return null
 })
 </script>
 
 <template>
+  <div
+    v-if="premiumNeeded"
+    class="h-dvh grid place-items-center bg-muted p-4"
+  >
+    <BillingPaywall reason="premium">
+      <UButton
+        :to="leaveTo"
+        label="Back to the test"
+        color="neutral"
+        variant="outline"
+      />
+    </BillingPaywall>
+  </div>
   <ExamLoadState
+    v-else
     :loading="status === 'pending' || status === 'idle'"
     :error="pageError"
     :back-to="leaveTo"
@@ -195,9 +229,23 @@ const pageError = computed(() => {
           <UEmpty
             icon="i-lucide-file-check"
             title="Writing finished"
-            description="Download your answers to keep them or show a teacher. Sign in and write again to have an examiner mark them."
+            :description="`Download your answers to keep them or show a teacher. ${practiceNote}`"
             variant="naked"
           />
+          <template v-if="loggedIn">
+            <UButton
+              v-if="canBeMarked"
+              label="Hand in for marking"
+              icon="i-lucide-send"
+              class="self-center"
+              @click="() => { practice = null; handIn() }"
+            />
+            <BillingPaywall
+              v-else
+              reason="credit"
+              compact
+            />
+          </template>
           <div class="flex flex-wrap justify-center gap-2">
             <UButton
               label="Download PDF"
@@ -245,6 +293,7 @@ const pageError = computed(() => {
           </UCard>
           <div class="flex flex-wrap justify-center gap-2">
             <UButton
+              v-if="!loggedIn"
               :to="`/login?next=${encodeURIComponent(route.fullPath)}`"
               label="Sign in to have it marked"
               icon="i-lucide-log-in"
@@ -277,9 +326,23 @@ const pageError = computed(() => {
           <UEmpty
             icon="i-lucide-mic"
             title="Speaking finished"
-            description="Listen to your answers and download them. Sign in to have an examiner mark your Speaking."
+            :description="`Listen to your answers and download them. ${practiceNote}`"
             variant="naked"
           />
+          <template v-if="loggedIn">
+            <UButton
+              v-if="canBeMarked"
+              label="Hand in for marking"
+              icon="i-lucide-send"
+              class="self-center"
+              @click="() => { practice = null; finishSpeaking(recordings) }"
+            />
+            <BillingPaywall
+              v-else
+              reason="credit"
+              compact
+            />
+          </template>
           <UCard
             v-for="r in recordings"
             :key="r.partId"
@@ -303,6 +366,7 @@ const pageError = computed(() => {
           </UCard>
           <div class="flex flex-wrap justify-center gap-2">
             <UButton
+              v-if="!loggedIn"
               :to="`/login?next=${encodeURIComponent(route.fullPath)}`"
               label="Sign in to have it marked"
               icon="i-lucide-log-in"

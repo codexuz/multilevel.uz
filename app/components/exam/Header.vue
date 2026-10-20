@@ -75,6 +75,7 @@ function leave() {
       <UButton
         icon="i-lucide-arrow-left"
         label="Back"
+        aria-label="Back"
         color="neutral"
         variant="ghost"
         :ui="{ label: 'max-sm:hidden' }"
@@ -125,6 +126,7 @@ function leave() {
         v-if="started && canSubmit"
         icon="i-lucide-send"
         label="Submit"
+        aria-label="Submit"
         color="error"
         :ui="{ label: 'max-sm:hidden' }"
         @click="() => { confirmOpen = true }"

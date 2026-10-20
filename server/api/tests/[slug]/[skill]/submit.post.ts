@@ -3,7 +3,8 @@ import { answers, attempts, essays, speakingResponses } from '../../../../databa
 /**
  * Handing in one section. Listening and Reading are marked at once for everybody; Writing and
  * Speaking are not marked here. A signed-in candidate's attempt is saved (Writing and Speaking go
- * to an examiner); a guest's answers are checked and the result is returned, nothing is stored.
+ * to an examiner, for one marking credit); a guest's answers are checked and the result is returned,
+ * nothing is stored. Explanations in the review come with Premium.
  */
 interface SubmitBody {
   answers?: { itemId: string, answer: string }[]
@@ -21,6 +22,8 @@ export default defineEventHandler(async (event) => {
 
   const body = (await readBody<SubmitBody>(event)) ?? {}
   const user = await optionalUser(event)
+  const access = await accessOf(user)
+  if (test.access === 'PREMIUM' && !access.premium) paymentRequired('PREMIUM_REQUIRED', 'This test is part of Premium')
 
   // Only this section's questions and tasks count; anything else in the body is ignored.
   const ids = itemIdsOf(section)
@@ -44,8 +47,12 @@ export default defineEventHandler(async (event) => {
   let attemptId: string | null = null
   if (user) {
     if (skill === 'SPEAKING' && !recordings.length) throw createError({ statusCode: 400, message: 'Record at least one answer before handing in' })
+    // An examiner's time is what a marking credit pays for; staff hand in freely.
+    const needsCredit = !objective && !isStaffRole(user.role)
+    if (needsCredit && access.credits < 1) paymentRequired('CREDIT_REQUIRED', 'Marking by an examiner needs a marking credit')
     const db = useDb()
     attemptId = await db.transaction(async (tx) => {
+      if (needsCredit && !(await holdCredits(tx, user.id))) paymentRequired('CREDIT_REQUIRED', 'Marking by an examiner needs a marking credit')
       const [attempt] = await tx.insert(attempts).values({
         userId: user.id, testId: test.id, sectionId: section.id, skill, mode: test.mode,
         status: objective ? 'GRADED' : 'SUBMITTED', startedAt, gradedAt: objective ? new Date() : null,
@@ -57,6 +64,7 @@ export default defineEventHandler(async (event) => {
       const essayRows = [...essayMap.entries()].map(([taskId, e]) => ({ attemptId: attempt!.id, taskId, text: e.text, wordCount: e.wordCount }))
       if (essayRows.length) await tx.insert(essays).values(essayRows)
       if (recordings.length) await tx.insert(speakingResponses).values(recordings.map(r => ({ attemptId: attempt!.id, partId: r.partId, audioRef: r.audioRef, durationSeconds: r.durationSeconds ?? null })))
+      if (needsCredit) await spendCredit(tx, user.id, attempt!.id)
       return attempt!.id
     })
   }
@@ -74,6 +82,7 @@ export default defineEventHandler(async (event) => {
     cefrLevel: objective ? marked.cefrLevel : null,
     review: {
       sections: [reviewSection(section, {
+        explanations: access.premium,
         given, marks: marked.marks,
         correct: objective ? marked.correct : null, total: objective ? marked.total : null, score: objective ? marked.score : null,
         essays: essayMap

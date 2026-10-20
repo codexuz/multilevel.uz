@@ -19,7 +19,7 @@ export interface ResultView {
   cefrLevel?: string | null
   feedback?: string | null
   recordings?: { partId: string, audioUrl: string, durationSeconds?: number | null }[]
-  review: { sections: (ReviewSection & { speaking?: any[] })[] } | null
+  review: { sections: (ReviewSection & { speaking?: any[], locked?: number })[] } | null
 }
 
 const section = computed(() => props.view.review?.sections?.[0] ?? null)
@@ -110,6 +110,23 @@ const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') 
         />
       </template>
     </ReviewHeader>
+
+    <!-- Without Premium the key is shown, the reasons are not -->
+    <div
+      v-if="section.locked"
+      class="shrink-0 flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-2 border-b border-default bg-primary/5 text-sm"
+    >
+      <UIcon
+        name="i-lucide-lightbulb"
+        class="size-4 text-primary shrink-0"
+      />
+      <span class="text-toned flex-1 min-w-48">{{ section.locked }} explanations, and where each answer is in the passage, come with Premium.</span>
+      <UButton
+        :to="`/pricing?from=${encodeURIComponent(route.fullPath)}`"
+        label="See Premium"
+        size="xs"
+      />
+    </div>
 
     <!-- Listening and Reading -->
     <template v-if="(section.skill === 'LISTENING' || section.skill === 'READING') && part">

@@ -36,6 +36,11 @@ export default defineNuxtConfig({
     s3Bucket: process.env.S3_BUCKET,
     s3AccessKeyId: process.env.S3_ACCESS_KEY_ID,
     s3SecretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
+    // Click.uz merchant (SHOP API). Without these, plans are sold privately on Telegram.
+    clickServiceId: process.env.CLICK_SERVICE_ID,
+    clickMerchantId: process.env.CLICK_MERCHANT_ID,
+    clickSecretKey: process.env.CLICK_SECRET_KEY,
+    clickMerchantUserId: process.env.CLICK_MERCHANT_USER_ID,
     // Firebase Admin (push send)
     firebaseProjectId: process.env.FIREBASE_PROJECT_ID,
     firebaseClientEmail: process.env.FIREBASE_CLIENT_EMAIL,
@@ -49,6 +54,8 @@ export default defineNuxtConfig({
     },
     public: {
       siteUrl,
+      // Where plans are bought privately when Click is not set up (an admin's Telegram).
+      salesTelegram: process.env.NUXT_PUBLIC_SALES_TELEGRAM || process.env.NUXT_PUBLIC_TELEGRAM_URL || 'https://t.me/sizlidersizadmin2',
       socialLinks: {
         telegramUrl: process.env.NUXT_PUBLIC_TELEGRAM_URL || 'https://t.me/sizlidersizadmin2',
         youtubeUrl: process.env.NUXT_PUBLIC_YOUTUBE_URL || 'https://www.youtube.com/@multileveluz'
@@ -74,6 +81,7 @@ export default defineNuxtConfig({
     '/': { prerender: false },
     '/dashboard': { redirect: '/results' },
     '/admin/**': noIndex,
+    '/billing/**': noIndex,
     '/builder/**': noIndex,
     '/marking/**': noIndex,
     '/login': noIndex,

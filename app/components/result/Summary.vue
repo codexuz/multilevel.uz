@@ -108,6 +108,13 @@ const againTo = computed(() => (props.view.test ? `/tests/${props.view.test.slug
       :actions="[{ label: 'Sign in', to: `/login?next=${encodeURIComponent(testTo)}`, color: 'neutral', variant: 'outline' }]"
     />
 
+    <BillingPaywall
+      v-if="view.review?.sections?.[0]?.locked"
+      reason="explanations"
+      :count="view.review.sections[0].locked"
+      compact
+    />
+
     <slot />
 
     <div class="flex flex-wrap gap-2">

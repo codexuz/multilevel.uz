@@ -17,12 +17,12 @@ const { data: test, status, error } = useAsyncData<Test>(() => `test:${id.value}
 useSeoMeta({ title: () => `${test.value?.title ?? 'Test'} — Builder`, robots: 'noindex' })
 
 // ─── Details ───────────────────────────────────────────────────────────────
-const meta = reactive({ title: '', slug: '', description: '', mode: 'PRACTICE', category: null as string | null, source: '' })
+const meta = reactive({ title: '', slug: '', description: '', mode: 'PRACTICE', access: 'FREE', category: null as string | null, source: '' })
 watch(test, (t) => {
   if (!t) return
-  Object.assign(meta, { title: t.title, slug: t.slug ?? '', description: t.description ?? '', mode: t.mode, category: t.category ?? null, source: t.source ?? '' })
+  Object.assign(meta, { title: t.title, slug: t.slug ?? '', description: t.description ?? '', mode: t.mode, access: t.access ?? 'FREE', category: t.category ?? null, source: t.source ?? '' })
 }, { immediate: true })
-const detailsDirty = computed(() => !!test.value && (meta.title !== test.value.title || meta.slug !== (test.value.slug ?? '') || meta.description !== (test.value.description ?? '') || meta.mode !== test.value.mode
+const detailsDirty = computed(() => !!test.value && (meta.title !== test.value.title || meta.slug !== (test.value.slug ?? '') || meta.description !== (test.value.description ?? '') || meta.mode !== test.value.mode || meta.access !== (test.value.access ?? 'FREE')
   || meta.category !== (test.value.category ?? null) || meta.source !== (test.value.source ?? '')))
 
 const saving = ref(false)
@@ -38,7 +38,7 @@ async function run(action: () => Promise<Test>, done?: string) {
   }
 }
 const saveDetails = () => run(() => libraryAPI.updateTest(id.value, {
-  title: meta.title.trim(), slug: meta.slug.trim() || undefined, description: meta.description.trim() || null, mode: meta.mode, category: meta.category, source: meta.source.trim() || null
+  title: meta.title.trim(), slug: meta.slug.trim() || undefined, description: meta.description.trim() || null, mode: meta.mode, access: meta.access, category: meta.category, source: meta.source.trim() || null
 }), 'Saved')
 
 // ─── Sections ──────────────────────────────────────────────────────────────
@@ -453,6 +453,16 @@ const readiness = computed(() => test.value?.readiness ?? { errors: [], warnings
                 />
               </UFormField>
             </div>
+            <UFormField
+              label="Access"
+              help="Premium tests keep a public page; sitting them needs Premium."
+            >
+              <USelect
+                v-model="meta.access"
+                :items="[{ label: 'Free for everyone', value: 'FREE' }, { label: 'Premium', value: 'PREMIUM' }]"
+                class="w-full"
+              />
+            </UFormField>
             <UFormField label="Source">
               <UInput
                 v-model="meta.source"

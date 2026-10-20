@@ -205,6 +205,13 @@ const createLabel = computed(() => ({ tests: 'New test', listening: 'New Listeni
             </div>
             <span class="text-xs text-muted tabular-nums max-sm:hidden">{{ t.attempts ?? 0 }} attempts</span>
             <UBadge
+              v-if="t.access === 'PREMIUM'"
+              label="Premium"
+              icon="i-lucide-sparkles"
+              color="primary"
+              variant="soft"
+            />
+            <UBadge
               :label="STATUS_META[t.status ?? 'DRAFT']!.label"
               :color="STATUS_META[t.status ?? 'DRAFT']!.color"
               variant="subtle"

@@ -2,7 +2,7 @@
 definePageMeta({ middleware: 'staff' })
 useSeoMeta({ title: 'Overview', robots: 'noindex' })
 
-const { data: stats } = await useFetch<{ tests: number, published: number, pendingMarking: number, students: number, attempts: number }>('/api/admin/stats')
+const { data: stats } = await useFetch<{ tests: number, published: number, pendingMarking: number, students: number, attempts: number, premiumUsers: number, revenueThisMonthUzs: number }>('/api/admin/stats')
 const { isAdmin } = useMe()
 </script>
 

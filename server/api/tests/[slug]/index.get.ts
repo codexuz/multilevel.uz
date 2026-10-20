@@ -8,6 +8,7 @@ export default defineEventHandler(async (event) => {
     title: test.title,
     description: test.description,
     mode: test.mode,
+    access: test.access,
     category: test.category,
     source: test.source,
     publishedAt: test.publishedAt,

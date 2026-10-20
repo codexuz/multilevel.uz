@@ -438,6 +438,7 @@ export async function updateTest(id: string, body: Body) {
     title, slug,
     description: body.description !== undefined ? text(body.description) : test.description,
     mode: MODES.includes(body.mode) ? body.mode : test.mode,
+    access: body.access === 'PREMIUM' || body.access === 'FREE' ? body.access : test.access,
     category: body.category === null ? null : CATEGORIES.includes(body.category) ? body.category : test.category,
     source: body.source !== undefined ? text(body.source) : test.source
   }).where(eq(tests.id, id))
@@ -479,7 +480,7 @@ export async function duplicateTest(id: string, userId: string) {
   const db = useDb()
   const copyId = await db.transaction(async (tx) => {
     const [test] = await tx.insert(tests).values({
-      slug: await uniqueSlug(title), title, description: source.description, mode: source.mode,
+      slug: await uniqueSlug(title), title, description: source.description, mode: source.mode, access: source.access,
       category: source.category, module: source.module, source: source.source, createdById: userId
     }).returning({ id: tests.id })
     for (const section of source.sections) {

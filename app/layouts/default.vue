@@ -3,20 +3,22 @@ import type { DropdownMenuItem, NavigationMenuItem } from '@nuxt/ui'
 
 // The erp-lms IELTS app's shell (layouts/default.vue there), open to guests: anyone can browse and
 // take tests; signing in keeps the results, and staff get the builder and marking.
-const { me, loggedIn, isStaff, isAdmin } = useMe()
+const { me, loggedIn, isStaff, isAdmin, isPremium } = useMe()
 const colorMode = useColorMode()
 const route = useRoute()
 
 const mainNav = computed<NavigationMenuItem[]>(() => [
   { label: 'Home', icon: 'i-lucide-house', to: '/' },
   { label: 'Tests', icon: 'i-lucide-clipboard-list', to: '/tests' },
-  ...(loggedIn.value ? [{ label: 'My results', icon: 'i-lucide-chart-column', to: '/results' }] : [])
+  ...(loggedIn.value ? [{ label: 'My results', icon: 'i-lucide-chart-column', to: '/results' }] : []),
+  { label: 'Premium', icon: 'i-lucide-sparkles', to: '/pricing', badge: isPremium.value ? { label: 'On', color: 'success' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined }
 ])
 
 const staffNav = computed<NavigationMenuItem[]>(() => [
   ...(isAdmin.value ? [{ label: 'Test builder', icon: 'i-lucide-blocks', to: '/builder' }] : []),
   ...(isStaff.value ? [{ label: 'Marking', icon: 'i-lucide-pen-line', to: '/marking' }] : []),
   ...(isAdmin.value ? [{ label: 'Users', icon: 'i-lucide-users', to: '/admin/users' }] : []),
+  ...(isAdmin.value ? [{ label: 'Orders', icon: 'i-lucide-receipt', to: '/admin/orders' }, { label: 'Plans', icon: 'i-lucide-tags', to: '/admin/plans' }] : []),
   ...(isStaff.value ? [{ label: 'Overview', icon: 'i-lucide-layout-dashboard', to: '/admin' }] : [])
 ])
 

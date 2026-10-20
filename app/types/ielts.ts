@@ -152,6 +152,7 @@ export interface Test {
   title: string
   description?: string | null
   mode: TestMode
+  access?: 'FREE' | 'PREMIUM'
   status: TestStatus
   category?: string | null
   module: IeltsModule
@@ -172,6 +173,7 @@ export interface TestSummary {
   title: string
   description?: string | null
   mode: TestMode
+  access?: 'FREE' | 'PREMIUM'
   status?: TestStatus
   category?: string | null
   module: IeltsModule

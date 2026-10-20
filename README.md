@@ -26,6 +26,28 @@ and `erp-lms/ielts-test` import/export format, set to the Multilevel format.
   `erp-lms/ielts-test` files (see `examples/multilevel-practice-test-1.json`).
 - **Marking** (`/marking`, examiners and admins).
 
+## Free and Premium
+
+| Free | Premium (time) | Marking credits |
+| --- | --- | --- |
+| Every test marked Free, checked instantly with score, CEFR level and the answer key | Premium tests (their pages stay public and indexed) and the explanations in every review | One Writing or Speaking section marked by an examiner |
+
+- Plans live in the `plans` table and are edited on `/admin/plans`; the first five come from
+  migration 0007 (prices are a starting guess). A plan gives days of Premium, credits, or both.
+  Buying while Premium runs adds the new days after the current ones; nothing renews by itself.
+- Tests are Free or Premium (Builder → test → Details → Access).
+- **Click.uz**: set `CLICK_SERVICE_ID`, `CLICK_MERCHANT_ID` and `CLICK_SECRET_KEY` (and optionally
+  `CLICK_MERCHANT_USER_ID`), and give Click these URLs:
+  - Prepare: `https://multilevel.uz/api/billing/click/prepare`
+  - Complete: `https://multilevel.uz/api/billing/click/complete`
+
+  Buy then sends the buyer to Click; the plan switches on when Click confirms (signed with the
+  secret key, safe to repeat), and `/billing/return` waits for it.
+- **Without Click**: Buy opens a Telegram chat with `NUXT_PUBLIC_SALES_TELEGRAM` (the admin's
+  account) with the order written out. When they have paid, an admin finds them on
+  `/admin/users` and presses **Grant**, which records a paid order with the amount received.
+- `/admin/orders` lists every order and this month's revenue.
+
 ## The Multilevel format
 
 | Section | Parts | Questions | Time |
@@ -81,7 +103,9 @@ npm run build      # production build
   keys, the builder library, marking and review, import and export.
 - `server/api/tests/**` — the open API: the catalogue, a test, a section's paper, and
   handing in (saved only when signed in).
-- `server/api/admin/**` — builder and marking; `server/api/__sitemap__/urls.ts` — the
-  sitemap's test pages.
+- `server/api/admin/**` — builder, marking, users, plans and orders; `server/api/__sitemap__/urls.ts` —
+  the sitemap's test pages.
+- `server/utils/billing.ts`, `server/api/billing/**` — access (Premium, credits), Click's Prepare and
+  Complete, orders.
 - `app/pages/tests/**` — catalogue, test page, sitting a section, result and review.
 - `app/components/exam`, `review`, `builder` — shared with the erp-lms IELTS app.

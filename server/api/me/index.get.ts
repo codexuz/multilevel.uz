@@ -6,6 +6,7 @@ export default defineEventHandler(async (event) => {
   const db = useDb()
   const [u] = await db.select().from(users).where(eq(users.id, auth.id)).limit(1)
   if (!u) throw createError({ statusCode: 404, message: 'User not found' })
+  const access = await accessOf(auth, db)
 
   return {
     id: u.id,
@@ -17,6 +18,9 @@ export default defineEventHandler(async (event) => {
     learningDuration: u.learningDuration,
     targetLevel: u.targetLevel,
     targetScore: u.targetScore,
-    onboarded: u.onboarded
+    onboarded: u.onboarded,
+    premium: access.premium,
+    premiumUntil: access.premiumUntil,
+    credits: access.credits
   }
 })

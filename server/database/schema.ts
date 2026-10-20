@@ -1,6 +1,6 @@
 import { relations } from 'drizzle-orm'
 import {
-  pgTable, pgEnum, uuid, text, integer, boolean,
+  pgTable, pgEnum, uuid, text, integer, boolean, serial,
   timestamp, jsonb, index, uniqueIndex
 } from 'drizzle-orm/pg-core'
 
@@ -64,6 +64,8 @@ export const tests = pgTable('tests', {
   category: text('category'), // AUTHENTIC | CAMBRIDGE | PRE_TEST | CUSTOM
   module: text('module').notNull().default('MULTILEVEL'),
   source: text('source'),
+  /** FREE: anyone can sit it. PREMIUM: its page is public, sitting it needs an active plan. */
+  access: text('access').notNull().default('FREE'),
   createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
   publishedAt: timestamp('published_at', { withTimezone: true }),
   createdAt: created(),
@@ -236,6 +238,73 @@ export const speakingResponses = pgTable('speaking_responses', {
 }, t => [uniqueIndex('speaking_responses_attempt_part_uq').on(t.attemptId, t.partId)])
 
 // ---------- relations ----------
+// ---------- Billing ----------
+// What is sold: time with Premium (the whole library and every explanation) and marking credits
+// (one Writing or Speaking section marked by an examiner). A plan can carry both.
+
+export const plans = pgTable('plans', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  code: text('code').notNull().unique(),
+  name: text('name').notNull(),
+  description: text('description'),
+  /** In so'm. */
+  priceUzs: integer('price_uzs').notNull(),
+  /** Days of Premium it gives (0 for a pack of credits only). */
+  durationDays: integer('duration_days').notNull().default(0),
+  /** Marking credits it gives. */
+  credits: integer('credits').notNull().default(0),
+  /** Shown as the one to choose. */
+  featured: boolean('featured').notNull().default(false),
+  active: boolean('active').notNull().default(true),
+  position: integer('position').notNull().default(1),
+  createdAt: created(),
+  updatedAt: updated()
+})
+
+export const orders = pgTable('orders', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  /** The order's number: Click's merchant_trans_id and merchant_prepare_id. */
+  number: serial('number').notNull().unique(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  planId: uuid('plan_id').references(() => plans.id, { onDelete: 'set null' }),
+  /** The plan as it was sold, so later price changes do not rewrite history. */
+  planName: text('plan_name').notNull(),
+  amountUzs: integer('amount_uzs').notNull(),
+  durationDays: integer('duration_days').notNull().default(0),
+  credits: integer('credits').notNull().default(0),
+  /** click | manual (sold privately, granted by an admin) */
+  provider: text('provider').notNull(),
+  status: text('status').notNull().default('PENDING'), // PENDING | PAID | CANCELLED
+  clickTransId: text('click_trans_id'),
+  clickPaydocId: text('click_paydoc_id'),
+  note: text('note'),
+  grantedById: uuid('granted_by_id').references(() => users.id, { onDelete: 'set null' }),
+  paidAt: timestamp('paid_at', { withTimezone: true }),
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [index('orders_user_idx').on(t.userId, t.createdAt), index('orders_status_idx').on(t.status)])
+
+/** A stretch of Premium. Buying while one runs starts the next where it ends. */
+export const subscriptions = pgTable('subscriptions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  orderId: uuid('order_id').references(() => orders.id, { onDelete: 'set null' }),
+  startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+  endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+  createdAt: created()
+}, t => [index('subscriptions_user_idx').on(t.userId, t.endsAt)])
+
+/** Marking credits in and out; the balance is their sum. */
+export const creditTransactions = pgTable('credit_transactions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  delta: integer('delta').notNull(),
+  reason: text('reason').notNull(), // PURCHASE | GRANT | MARKING | REFUND
+  orderId: uuid('order_id').references(() => orders.id, { onDelete: 'set null' }),
+  attemptId: uuid('attempt_id').references(() => attempts.id, { onDelete: 'set null' }),
+  createdAt: created()
+}, t => [index('credit_transactions_user_idx').on(t.userId)])
+
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   attempts: many(attempts)
@@ -282,4 +351,9 @@ export const essaysRelations = relations(essays, ({ one }) => ({
 export const speakingResponsesRelations = relations(speakingResponses, ({ one }) => ({
   attempt: one(attempts, { fields: [speakingResponses.attemptId], references: [attempts.id] }),
   part: one(speakingParts, { fields: [speakingResponses.partId], references: [speakingParts.id] })
+}))
+
+export const ordersRelations = relations(orders, ({ one }) => ({
+  user: one(users, { fields: [orders.userId], references: [users.id] }),
+  plan: one(plans, { fields: [orders.planId], references: [plans.id] })
 }))

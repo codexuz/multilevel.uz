@@ -4,7 +4,7 @@
 const route = useRoute()
 const slug = String(route.params.slug)
 const config = useRuntimeConfig()
-const { loggedIn } = useMe()
+const { loggedIn, isPremium } = useMe()
 
 const { data: test, error } = await useFetch<any>(`/api/tests/${slug}`)
 if (error.value || !test.value) throw createError({ statusCode: 404, statusMessage: 'Test not found', fatal: true })
@@ -55,7 +55,7 @@ useHead({
         'educationalLevel': 'CEFR B1–C1',
         'assesses': 'English language proficiency (Multilevel)',
         'learningResourceType': 'Practice test',
-        'isAccessibleForFree': true,
+        'isAccessibleForFree': t.access !== 'PREMIUM',
         'datePublished': t.publishedAt ?? undefined,
         'dateModified': t.updatedAt ?? undefined,
         'about': { '@type': 'Thing', 'name': 'Multilevel English exam' },
@@ -99,6 +99,13 @@ useHead({
             variant="subtle"
           />
           <UBadge
+            v-if="t.access === 'PREMIUM'"
+            label="Premium"
+            icon="i-lucide-sparkles"
+            color="primary"
+            variant="solid"
+          />
+          <UBadge
             v-if="t.mode === 'MOCK'"
             label="Mock format"
             color="warning"
@@ -119,8 +126,13 @@ useHead({
         </div>
       </div>
 
+      <BillingPaywall
+        v-if="t.access === 'PREMIUM' && !isPremium"
+        reason="premium"
+        compact
+      />
       <UAlert
-        v-if="!loggedIn"
+        v-else-if="!loggedIn"
         color="info"
         variant="subtle"
         icon="i-lucide-info"
@@ -159,6 +171,16 @@ useHead({
             {{ howChecked[s.skill] }}
           </p>
           <UButton
+            v-if="t.access === 'PREMIUM' && !isPremium"
+            class="mt-auto self-start"
+            :to="`/pricing?from=${encodeURIComponent(route.fullPath)}`"
+            label="Unlock with Premium"
+            icon="i-lucide-lock-keyhole"
+            color="neutral"
+            variant="outline"
+          />
+          <UButton
+            v-else
             class="mt-auto self-start"
             :to="`/tests/${t.slug}/${String(s.skill).toLowerCase()}`"
             :label="`Start ${SKILL_META[s.skill as keyof typeof SKILL_META].label}`"

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // A published test in a list: its title, what it is, its sections and the way in. The title links to
 // the test's own page, which search engines index.
-defineProps<{ test: { slug: string, title: string, description?: string | null, mode?: string, category?: string | null, source?: string | null, sections: { skill: string, questions?: number, items?: number, durationSeconds?: number | null }[] } }>()
+defineProps<{ test: { slug: string, title: string, description?: string | null, mode?: string, access?: string, category?: string | null, source?: string | null, sections: { skill: string, questions?: number, items?: number, durationSeconds?: number | null }[] } }>()
 </script>
 
 <template>
@@ -16,12 +16,23 @@ defineProps<{ test: { slug: string, title: string, description?: string | null, 
           Multilevel{{ test.category ? ` · ${categoryLabel(test.category)}` : '' }}{{ test.source ? ` · ${test.source}` : '' }}
         </p>
       </div>
-      <UBadge
-        v-if="test.mode === 'MOCK'"
-        label="Mock format"
-        color="warning"
-        variant="subtle"
-      />
+      <div class="flex gap-1.5 shrink-0">
+        <UBadge
+          v-if="test.access === 'PREMIUM'"
+          label="Premium"
+          icon="i-lucide-sparkles"
+          color="primary"
+          variant="solid"
+          size="sm"
+        />
+        <UBadge
+          v-if="test.mode === 'MOCK'"
+          label="Mock format"
+          color="warning"
+          variant="subtle"
+          size="sm"
+        />
+      </div>
     </div>
     <p
       v-if="test.description"

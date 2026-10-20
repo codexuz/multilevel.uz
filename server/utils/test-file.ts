@@ -70,7 +70,7 @@ export function exportTest(test: any) {
     version: 1,
     exportedAt: new Date(),
     test: {
-      title: test.title, description: test.description, mode: test.mode, category: test.category, module: test.module, source: test.source,
+      title: test.title, description: test.description, mode: test.mode, access: test.access, category: test.category, module: test.module, source: test.source,
       sections: (test.sections ?? []).map((section: any) => ({
         skill: section.skill, title: section.title, instructions: section.instructions, durationSeconds: section.durationSeconds,
         audioRef: section.audioRef, settings: section.settings,
@@ -99,6 +99,7 @@ export async function importTest(payload: any, userId: string | null) {
     const [test] = await tx.insert(tests).values({
       slug, title: String(source.title).slice(0, 300), description: source.description ?? null,
       mode: ['PRACTICE', 'MOCK'].includes(source.mode) ? source.mode : 'PRACTICE',
+      access: source.access === 'PREMIUM' ? 'PREMIUM' : 'FREE',
       category: ['AUTHENTIC', 'CAMBRIDGE', 'PRE_TEST', 'CUSTOM'].includes(source.category) ? source.category : null,
       module: 'MULTILEVEL', source: source.source ?? null, createdById: userId
     }).returning({ id: tests.id })

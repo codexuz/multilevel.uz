@@ -1,7 +1,7 @@
 // Subscribes to the per-user SSE stream while logged in and reacts to events: a Writing or
-// Speaking attempt marked by an examiner, or the account being banned.
+// Speaking attempt marked by an examiner, a plan paid for or granted, or the account being banned.
 export default defineNuxtPlugin((nuxtApp) => {
-  const { loggedIn } = useMe()
+  const { loggedIn, refresh } = useMe()
   const toast = useToast()
   let es: EventSource | null = null
 
@@ -9,7 +9,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     if (es) return
     es = new EventSource('/api/me/events')
     es.onmessage = (e) => {
-      let msg: { type?: string, attemptId?: string }
+      let msg: { type?: string, attemptId?: string, orderId?: string }
       try {
         msg = JSON.parse(e.data)
       } catch {
@@ -24,6 +24,10 @@ export default defineNuxtPlugin((nuxtApp) => {
           icon: 'i-lucide-award',
           actions: [{ label: 'See result', to: `/results/${msg.attemptId}` }]
         })
+      } else if (msg.type === 'billing') {
+        // A plan paid for, granted or ended: what the user may open has changed.
+        refresh()
+        if (msg.orderId) toast.add({ title: 'Your plan is active', description: 'Thank you! Premium and markings are on your account.', color: 'success', icon: 'i-lucide-sparkles' })
       } else if (msg.type === 'banned') {
         toast.add({
           title: 'Account suspended',

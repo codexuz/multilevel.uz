@@ -36,8 +36,13 @@ export function itemIdsOf(section: any) {
   return ids
 }
 
-/** The marked section as the result screens show it: every key, the answer given, right or wrong. */
+/**
+ * The marked section as the result screens show it: every key, the answer given, right or wrong.
+ * Without `explanations` (no Premium), the reasons and the lines in the passage that hold each
+ * answer are left out, and `locked` says how many there were.
+ */
 export function reviewSection(section: any, opts: {
+  explanations?: boolean
   given: Map<string, string>
   marks: Map<string, boolean>
   correct: number | null
@@ -46,6 +51,25 @@ export function reviewSection(section: any, opts: {
   essays?: Map<string, { id?: string, text: string, wordCount: number, feedback?: string | null }>
 }) {
   const paper = paperSection(section, true)
+  const withWhy = opts.explanations !== false
+  let locked = 0
+  const why = (from: any) => {
+    if (withWhy) return from
+    const { explanation, evidence, ...rest } = from
+    if (explanation || evidence) locked++
+    return rest
+  }
+  const parts = paper.parts.map((part: any) => ({
+    ...part,
+    groups: part.groups.map((group: any) => ({
+      ...why(group),
+      items: group.items.map((item: any) => ({
+        ...why(item),
+        answer: opts.given.get(item.id) ?? null,
+        isCorrect: opts.marks.get(item.id) ?? false
+      }))
+    }))
+  }))
   return {
     skill: paper.skill,
     title: paper.title,
@@ -56,17 +80,7 @@ export function reviewSection(section: any, opts: {
     score: opts.score,
     cefrLevel: opts.score == null ? null : cefrLevel(opts.score),
     estimated: opts.total != null && opts.total !== 35,
-    parts: paper.parts.map((part: any) => ({
-      ...part,
-      groups: part.groups.map((group: any) => ({
-        ...group,
-        items: group.items.map((item: any) => ({
-          ...item,
-          answer: opts.given.get(item.id) ?? null,
-          isCorrect: opts.marks.get(item.id) ?? false
-        }))
-      }))
-    })),
+    parts,
     tasks: paper.tasks.map((task: any) => {
       const essay = opts.essays?.get(task.id)
       return {
@@ -76,6 +90,7 @@ export function reviewSection(section: any, opts: {
           : null
       }
     }),
-    speaking: paper.speaking
+    speaking: paper.speaking,
+    locked
   }
 }

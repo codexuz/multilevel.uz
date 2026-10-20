@@ -14,6 +14,11 @@ export interface Me {
   targetLevel: string | null
   targetScore: number | null
   onboarded: boolean
+  /** Premium now (staff always): every test and every explanation. */
+  premium: boolean
+  premiumUntil: string | null
+  /** Writing or Speaking markings left. */
+  credits: number
 }
 
 export interface DeviceSessionDto {

@@ -1,7 +1,10 @@
 <script setup lang="ts">
-/** Who is signed in, their goals, and how their marked sections have gone. */
+import type { Order } from '~/utils/billing'
+
+/** Who is signed in, their plan, their goals, and how their marked sections have gone. */
 useSeoMeta({ title: 'Profile', robots: 'noindex' })
-const { me } = useMe()
+const { me, isPremium, credits } = useMe()
+const { data: purchases } = await useFetch<Order[]>('/api/me/orders', { default: () => [] })
 
 const { data } = await useFetch<{ items: { skill: string, score: number | null, status: string }[], total: number }>('/api/me/attempts', { query: { limit: 100 } })
 const best = computed(() => {
@@ -43,6 +46,67 @@ const best = computed(() => {
           color="neutral"
         />
       </div>
+
+      <UCard>
+        <template #header>
+          <div class="flex items-center justify-between gap-2">
+            <h2 class="font-semibold flex items-center gap-2">
+              <UIcon
+                name="i-lucide-sparkles"
+                class="text-primary"
+              />Plan
+            </h2>
+            <UButton
+              to="/pricing"
+              :label="isPremium ? 'Extend' : 'Get Premium'"
+              size="sm"
+              :variant="isPremium ? 'outline' : 'solid'"
+              :color="isPremium ? 'neutral' : 'primary'"
+            />
+          </div>
+        </template>
+        <dl class="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <dt class="text-muted">
+              Premium
+            </dt><dd class="font-medium">
+              {{ isPremium ? (me?.premiumUntil ? `Until ${formatDate(me.premiumUntil)}` : 'On') : 'Free plan' }}
+            </dd>
+          </div>
+          <div>
+            <dt class="text-muted">
+              Markings left
+            </dt><dd class="font-medium tabular-nums">
+              {{ credits }}
+            </dd>
+          </div>
+        </dl>
+        <template
+          v-if="purchases?.length"
+          #footer
+        >
+          <p class="text-xs font-medium text-muted mb-2">
+            Purchases
+          </p>
+          <ul class="divide-y divide-default text-sm">
+            <li
+              v-for="o in purchases"
+              :key="o.id"
+              class="py-2 flex items-center gap-3"
+            >
+              <span class="flex-1 min-w-0 truncate">{{ o.planName }}</span>
+              <span class="text-muted tabular-nums max-sm:hidden">{{ formatDate(o.paidAt || o.createdAt) }}</span>
+              <span class="tabular-nums">{{ fmtUzs(o.amountUzs) }}</span>
+              <UBadge
+                :label="ORDER_STATUS[o.status].label"
+                :color="ORDER_STATUS[o.status].color"
+                variant="subtle"
+                size="sm"
+              />
+            </li>
+          </ul>
+        </template>
+      </UCard>
 
       <UCard>
         <template #header>
