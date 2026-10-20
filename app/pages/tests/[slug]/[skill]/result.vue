@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { ResultView } from '~/components/result/Review.vue'
 
+definePageMeta({ guestLayout: true })
+
 /**
  * A guest's result, shown once from this tab (sessionStorage) and kept nowhere. A signed-in
  * candidate's result lives at /results/{id}.

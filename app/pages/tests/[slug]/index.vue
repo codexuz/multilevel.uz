@@ -1,4 +1,5 @@
 <script setup lang="ts">
+definePageMeta({ guestLayout: true })
 // A test's public page: what Google indexes for the test's title. Rendered on the server with the
 // test's title and description, structured data, and a way into each section for anyone.
 const route = useRoute()

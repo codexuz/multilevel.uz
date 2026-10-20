@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { Paged } from '~/types/ielts'
 
+definePageMeta({ guestLayout: true })
+
 // The open catalog, rendered on the server so every title and description is in the page Google reads.
 const route = useRoute()
 const router = useRouter()

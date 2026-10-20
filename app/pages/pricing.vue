@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { Plan } from '~/utils/billing'
 
+definePageMeta({ guestLayout: true })
+
 /**
  * Premium and marking credits. Paid through Click when it is set up; otherwise bought privately on
  * Telegram, where an admin switches the plan on (Users → Grant).
