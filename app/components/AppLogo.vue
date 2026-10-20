@@ -1,10 +1,10 @@
 <script setup lang="ts">
-defineProps<{ collapsed?: boolean }>()
+withDefaults(defineProps<{ collapsed?: boolean, to?: string }>(), { to: '/' })
 </script>
 
 <template>
   <ULink
-    to="/"
+    :to="to"
     class="flex items-center gap-2 font-semibold text-highlighted"
   >
     <UAvatar

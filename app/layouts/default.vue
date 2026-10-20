@@ -8,7 +8,6 @@ const colorMode = useColorMode()
 const route = useRoute()
 
 const mainNav = computed<NavigationMenuItem[]>(() => [
-  { label: 'Home', icon: 'i-lucide-house', to: '/' },
   { label: 'Tests', icon: 'i-lucide-clipboard-list', to: '/tests' },
   ...(loggedIn.value ? [{ label: 'My results', icon: 'i-lucide-chart-column', to: '/results' }] : []),
   { label: 'Premium', icon: 'i-lucide-sparkles', to: '/pricing', badge: isPremium.value ? { label: 'On', color: 'success' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined }
@@ -34,10 +33,9 @@ const bottomLinks = computed<NavigationMenuItem[]>(() => loggedIn.value
 
 // The phone's tab bar: the places a candidate goes most, one tap away (staff pages stay in the menu).
 const tabBar = computed(() => [
-  { label: 'Home', icon: 'i-lucide-house', to: '/' },
   { label: 'Tests', icon: 'i-lucide-clipboard-list', to: '/tests' },
   ...(loggedIn.value
-    ? [{ label: 'Results', icon: 'i-lucide-chart-column', to: '/results' }, { label: 'Profile', icon: 'i-lucide-circle-user', to: '/profile' }]
+    ? [{ label: 'Results', icon: 'i-lucide-chart-column', to: '/results' }, { label: 'Premium', icon: 'i-lucide-sparkles', to: '/pricing' }, { label: 'Profile', icon: 'i-lucide-circle-user', to: '/profile' }]
     : [{ label: 'Sign in', icon: 'i-lucide-log-in', to: `/login?next=${encodeURIComponent(route.fullPath)}` }])
 ])
 const tabActive = (to: string) => (to === '/' ? route.path === '/' : route.path === to.split('?')[0] || route.path.startsWith(`${to}/`))
@@ -82,7 +80,10 @@ const userMenu = computed<DropdownMenuItem[][]>(() => [
       :ui="{ footer: 'border-t border-default' }"
     >
       <template #header="{ collapsed }">
-        <AppLogo :collapsed="collapsed" />
+        <AppLogo
+          :collapsed="collapsed"
+          to="/tests"
+        />
       </template>
 
       <template #default="{ collapsed }">
