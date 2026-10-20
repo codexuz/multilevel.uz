@@ -50,7 +50,7 @@ const tones = {
       <UAvatar
         :icon="icon"
         size="lg"
-        class="shrink-0 max-[400px]:hidden"
+        class="shrink-0 rounded-lg max-[400px]:hidden"
         :ui="tones[props.color || 'primary']"
       />
     </div>

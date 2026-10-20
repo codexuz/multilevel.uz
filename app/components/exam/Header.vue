@@ -115,7 +115,7 @@ function leave() {
         v-if="!started"
         label="Start"
         color="error"
-        class="rounded-full px-5"
+        class="px-5"
         @click="emit('start')"
       />
     </div>
@@ -126,7 +126,6 @@ function leave() {
         icon="i-lucide-send"
         label="Submit"
         color="error"
-        class="rounded-full"
         :ui="{ label: 'max-sm:hidden' }"
         @click="() => { confirmOpen = true }"
       />

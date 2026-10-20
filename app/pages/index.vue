@@ -30,7 +30,7 @@ const steps = [
     <div class="flex flex-col gap-8 max-w-6xl">
       <UCard
         :ui="{ body: 'p-6 sm:p-8' }"
-        class="bg-gradient-to-br from-primary/10 to-transparent"
+        class="bg-[radial-gradient(120%_120%_at_100%_0%,color-mix(in_oklab,var(--ui-primary)_10%,transparent),transparent_60%)]"
       >
         <div class="flex flex-col gap-4 max-w-2xl">
           <UBadge
@@ -39,10 +39,10 @@ const steps = [
             variant="subtle"
             class="self-start"
           />
-          <h1 class="text-3xl sm:text-4xl font-bold text-highlighted">
+          <h1 class="text-2xl sm:text-4xl font-semibold tracking-tight text-highlighted text-balance">
             {{ loggedIn && me?.name ? `Welcome back, ${me.name.split(' ')[0]}` : 'Multilevel English mock tests, free and online' }}
           </h1>
-          <p class="text-muted text-lg">
+          <p class="text-muted sm:text-lg text-pretty">
             Practise Listening, Reading, Writing and Speaking in the official format. Your answers are checked whether you sign in or not — sign in to keep them.
           </p>
           <div class="flex flex-wrap gap-2">

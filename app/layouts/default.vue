@@ -155,17 +155,21 @@ const userMenu = computed<DropdownMenuItem[][]>(() => [
     <slot />
 
     <nav
-      class="lg:hidden fixed inset-x-0 bottom-0 z-40 px-3 pt-2 pb-safe pointer-events-none"
+      class="lg:hidden fixed inset-x-0 bottom-0 z-40 border-t border-default bg-default/95 backdrop-blur-xl pb-safe"
       aria-label="Main"
     >
-      <div class="pointer-events-auto mx-auto mb-2 max-w-md flex items-stretch gap-1 rounded-full bg-default/90 backdrop-blur-xl shadow-overlay p-1.5 dark:ring-1 dark:ring-default">
+      <div class="mx-auto max-w-lg grid grid-flow-col auto-cols-fr">
         <NuxtLink
           v-for="t in tabBar"
           :key="t.label"
           :to="t.to"
-          class="flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 rounded-full py-1.5 text-[11px] font-medium transition-colors active:scale-95 duration-150"
-          :class="tabActive(t.to) ? 'bg-primary/12 text-primary' : 'text-muted hover:text-highlighted'"
+          class="relative flex flex-col items-center justify-center gap-1 h-14 text-[11px] font-medium transition-colors"
+          :class="tabActive(t.to) ? 'text-primary' : 'text-muted hover:text-highlighted'"
         >
+          <span
+            v-if="tabActive(t.to)"
+            class="absolute top-0 inset-x-6 h-0.5 rounded-b-sm bg-primary"
+          />
           <UIcon
             :name="t.icon"
             class="size-5"

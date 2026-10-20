@@ -18,8 +18,8 @@
 }
 
 /*
- * The look of HeroUI v3: a grey canvas with white surfaces that float on soft shadows instead of
- * borders, pill-shaped controls and borderless fields. Colours are HeroUI's default theme (zinc
+ * In the manner of HeroUI v3: a grey canvas with white surfaces on soft shadows, hairline borders
+ * where structure needs them, and modest corners. Colours are HeroUI's default theme (zinc
  * neutrals); the brand blue stays the accent. Dark mode drops the shadows, as HeroUI does.
  */
 @theme inline {
@@ -30,7 +30,7 @@
 }
 
 :root {
-  --ui-radius: 0.5rem;
+  --ui-radius: 0.25rem;
   --ui-canvas: oklch(0.9702 0 0);
   --ui-bg: oklch(100% 0 0);
   --ui-bg-muted: oklch(0.9702 0 0);
@@ -78,7 +78,12 @@
 body {
   background: var(--ui-canvas);
   -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv11", "ss01";
 }
+
+h1, h2, h3 { letter-spacing: -0.015em; }
 
 /* Room for the phone tab bar and the home indicator. */
 .pb-safe { padding-bottom: env(safe-area-inset-bottom); }

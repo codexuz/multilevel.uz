@@ -101,7 +101,7 @@ function submit() {
           title="You will be listening to an audio clip during this test."
           description="Make sure your speakers or headphones are working properly. To continue, click Play."
           size="lg"
-          :actions="[{ label: 'Play', icon: 'i-lucide-play', color: 'error', size: 'lg', class: 'rounded-full px-8', onClick: () => begin(true) }]"
+          :actions="[{ label: 'Play', icon: 'i-lucide-play', color: 'error', size: 'lg', class: 'px-8', onClick: () => begin(true) }]"
           class="py-10"
         />
       </template>
