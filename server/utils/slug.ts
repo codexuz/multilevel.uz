@@ -6,5 +6,5 @@ export function slugify(input: string): string {
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/[\s_-]+/g, '-')
     .replace(/^-+|-+$/g, '')
-    .slice(0, 80) || 'course'
+    .slice(0, 80) || 'test'
 }

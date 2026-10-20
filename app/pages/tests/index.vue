@@ -1,92 +1,84 @@
 <script setup lang="ts">
-import type { TestDto, Paginated } from '~/types/models'
+import type { Paged } from '~/types/ielts'
 
-definePageMeta({ layout: 'public', middleware: 'public-layout' })
+// The open catalog, rendered on the server so every title and description is in the page Google reads.
+const route = useRoute()
+const router = useRouter()
+const search = ref(typeof route.query.q === 'string' ? route.query.q : '')
+const page = ref(Number(route.query.page) || 1)
+const debounced = ref(search.value)
+let timer: ReturnType<typeof setTimeout> | undefined
+watch(search, (q) => {
+  clearTimeout(timer)
+  timer = setTimeout(() => {
+    debounced.value = q.trim()
+    page.value = 1
+  }, 300)
+})
+watch([debounced, page], ([q, p]) => router.replace({ query: { ...(q ? { q } : {}), ...(p > 1 ? { page: String(p) } : {}) } }))
 
-const { isPremium, loggedIn } = useMe()
-const page = ref(1)
-// Guests read the unauthenticated catalog; members get the full endpoint.
-const endpoint = loggedIn.value ? '/api/tests' : '/api/catalog/tests'
-const { data } = await useFetch<Paginated<TestDto>>(endpoint, { query: { page } })
-const tests = computed(() => data.value?.items ?? [])
-const total = computed(() => data.value?.total ?? 0)
-const pageSize = computed(() => data.value?.pageSize ?? 20)
+const { data: tests, status } = await useFetch<Paged<any>>('/api/tests', { query: computed(() => ({ search: debounced.value || undefined, page: page.value, limit: 12 })) })
 
 useSeoMeta({
-  title: 'Tests',
-  description: 'Choose a Multilevel mock exam section to practice.'
+  title: 'Free Multilevel practice tests',
+  description: 'Free Multilevel (CEFR) English practice tests with instant checking: Listening, Reading, Writing and Speaking papers in the real exam format.'
 })
-
-function locked(t: TestDto) {
-  return t.isPremium && !isPremium.value
-}
 </script>
 
 <template>
-  <UContainer class="py-8 space-y-6">
-    <div>
-      <h1 class="text-2xl font-bold">
-        Tests
-      </h1>
-      <p class="text-muted">
-        Choose a mock exam and take any section.
-      </p>
-    </div>
-
-    <div v-if="tests?.length" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <UCard v-for="t in tests" :key="t.id">
-        <div class="flex items-start justify-between gap-2">
-          <h3 class="font-semibold">
-            {{ t.title }}
-          </h3>
-          <UBadge v-if="t.isPremium" color="primary" variant="subtle" icon="i-lucide-sparkles" label="Premium" size="sm" />
-        </div>
-        <p class="text-sm text-muted mt-1 line-clamp-2">
-          {{ t.description || 'Full mock exam' }}
+  <AppPage
+    title="Tests"
+    icon="i-lucide-clipboard-list"
+  >
+    <div class="flex flex-col gap-4">
+      <div>
+        <h1 class="text-2xl font-semibold text-highlighted">
+          Multilevel practice tests
+        </h1>
+        <p class="text-muted">
+          Every test is free. Listening and Reading are checked the moment you finish; sign in to keep your results.
         </p>
-        <div v-if="t.level" class="flex gap-2 mt-2">
-          <UBadge color="neutral" variant="subtle" :label="t.level" size="sm" />
-        </div>
-        <template #footer>
-          <UButton
-            v-if="!loggedIn"
-            to="/login"
-            block
-            label="Sign in to start"
-            trailing-icon="i-lucide-arrow-right"
-          />
-          <UButton
-            v-else-if="locked(t)"
-            to="/upgrade"
-            block
-            color="primary"
-            variant="subtle"
-            icon="i-lucide-lock"
-            label="Unlock with Premium"
-          />
-          <UButton v-else :to="`/tests/${t.id}`" block label="Open test" trailing-icon="i-lucide-arrow-right" />
-        </template>
-      </UCard>
-    </div>
+      </div>
+      <UInput
+        v-model="search"
+        icon="i-lucide-search"
+        placeholder="Search tests"
+        class="w-full sm:w-80"
+        aria-label="Search tests"
+      />
 
-    <UAlert
-      v-else
-      icon="i-lucide-inbox"
-      color="neutral"
-      variant="subtle"
-      title="No tests available yet"
-      description="Check back soon."
-    />
-
-    <div
-      v-if="total > pageSize"
-      class="flex justify-center"
-    >
+      <div
+        v-if="status === 'pending' && !tests"
+        class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4"
+      >
+        <USkeleton
+          v-for="i in 6"
+          :key="i"
+          class="h-48"
+        />
+      </div>
+      <UEmpty
+        v-else-if="!tests?.items.length"
+        icon="i-lucide-files"
+        :title="search ? 'No tests match your search' : 'No tests yet'"
+        :description="search ? 'Try other words.' : 'New tests are published here.'"
+      />
+      <div
+        v-else
+        class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4"
+      >
+        <TestCard
+          v-for="t in tests.items"
+          :key="t.id"
+          :test="t"
+        />
+      </div>
       <UPagination
+        v-if="(tests?.pages ?? 1) > 1"
         v-model:page="page"
-        :total="total"
-        :items-per-page="pageSize"
+        :total="tests!.total"
+        :items-per-page="tests!.limit"
       />
     </div>
-  </UContainer>
+  </AppPage>
 </template>

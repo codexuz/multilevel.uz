@@ -52,7 +52,7 @@ export function useFcm() {
             description: n.body,
             icon: 'i-lucide-bell',
             actions: payload.data?.url
-              ? [{ label: 'View', onClick: () => navigateTo(payload.data!.url as string) }]
+              ? [{ label: 'View', onClick: () => { navigateTo(payload.data!.url as string) } }]
               : undefined
           })
         }

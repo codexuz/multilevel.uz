@@ -1,6 +1,6 @@
 import { registerStream, unregisterStream } from '../../utils/events'
 
-// SSE stream of per-user events (e.g. premium status changes). The client keeps
+// SSE stream of per-user events (e.g. an account being suspended). The client keeps
 // this open and reacts to messages; auth comes from the access-token cookie.
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)

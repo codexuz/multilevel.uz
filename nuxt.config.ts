@@ -1,6 +1,6 @@
 const siteName = 'Multilevel'
 const siteUrl = (process.env.NUXT_PUBLIC_SITE_URL || 'https://multilevel.uz').replace(/\/$/, '')
-const siteDescription = 'Practice CEFR and Multilevel English exams with realistic Listening, Reading, Writing and Speaking mock tests.'
+const siteDescription = 'Free online Multilevel (CEFR) English mock tests: Listening, Reading, Writing and Speaking in the official format, checked instantly.'
 const noIndex = { robots: false, sitemap: false }
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
@@ -67,30 +67,23 @@ export default defineNuxtConfig({
     }
   },
 
+  // Open to search engines: the home page, the catalogue and each test's page (/tests/{slug}).
+  // Everything behind a sign-in is not indexed; sitting a section, its result and its review
+  // (/tests/{slug}/{skill}/…) say noindex on the page itself.
   routeRules: {
     '/': { prerender: false },
+    '/dashboard': { redirect: '/results' },
     '/admin/**': noIndex,
-    '/dashboard': noIndex,
-    '/exam/**': noIndex,
-    '/leaderboard': noIndex,
+    '/builder/**': noIndex,
+    '/marking/**': noIndex,
     '/login': noIndex,
     '/onboarding': noIndex,
     '/profile': noIndex,
     '/results/**': noIndex,
-    '/settings': noIndex,
-    '/speaking/**': noIndex,
-    '/tests': noIndex,
-    '/tests/**': noIndex
+    '/settings': noIndex
   },
 
   compatibilityDate: '2026-06-30',
-  nitro: {
-    experimental: {
-      // Enables defineWebSocketHandler for the live speaking signaling server
-      websocket: true
-    }
-  },
-
   vite: {
     optimizeDeps: {
       include: [
@@ -110,5 +103,10 @@ export default defineNuxtConfig({
         braceStyle: '1tbs'
       }
     }
+  },
+
+  sitemap: {
+    sources: ['/api/__sitemap__/urls'],
+    exclude: ['/admin/**', '/builder/**', '/marking/**', '/results/**', '/login', '/onboarding', '/profile', '/settings']
   }
 })

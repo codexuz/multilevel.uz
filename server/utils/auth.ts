@@ -49,3 +49,13 @@ export async function requireAdmin(event: H3Event): Promise<AuthUser> {
   if (user.role !== 'admin') throw createError({ statusCode: 403, message: 'Forbidden' })
   return user
 }
+
+/** The signed-in user, or null for a guest (open pages: a guest's answers are checked, not saved). */
+export async function optionalUser(event: H3Event): Promise<AuthUser | null> {
+  if (!readAccessToken(event)) return null
+  try {
+    return await requireUser(event)
+  } catch {
+    return null
+  }
+}

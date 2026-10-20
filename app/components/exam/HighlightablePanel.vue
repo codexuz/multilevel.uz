@@ -1,124 +1,110 @@
 <script setup lang="ts">
-// Wraps scrollable exam content with text-highlighting: select text to pick a
-// colour, click a highlight to attach a note or remove it. Highlights are kept
-// per `scope` (part id) and re-applied after the content re-renders.
-import { DEFAULT_HIGHLIGHT_COLOR, useHighlighter } from '~/composables/useHighlighter'
+const COLORS = [
+  { value: '#fef08a', label: 'Yellow' },
+  { value: '#bbf7d0', label: 'Green' },
+  { value: '#fbcfe8', label: 'Pink' },
+  { value: '#bfdbfe', label: 'Blue' }
+]
 
-const props = defineProps<{
-  scope: string
-  /** Panel name — highlights persist under `exam-hl:<attemptId>:<storageKey>`. */
-  storageKey?: string
-}>()
-
-const route = useRoute()
-
-// Highlights belong to one attempt; a different attempt starts clean.
-const persistKey = computed(() => {
-  const attemptId = route.params.attemptId
-  if (!props.storageKey || typeof attemptId !== 'string') return null
-  return `exam-hl:${attemptId}:${props.storageKey}`
-})
-
-const {
-  containerRef,
-  highlights,
-  popup,
-  activeHighlight,
-  addHighlight,
-  setNote,
-  removeHighlight,
-  restore,
-  closePopup,
-  onMouseUp
-} = useHighlighter(() => props.scope, () => persistKey.value)
+const { container, highlights, popup, addHighlight, updateComment, removeHighlight, closePopup, onMouseUp } = useHighlighter()
 
 const noteOpen = ref(false)
-const noteTargetId = ref<string | null>(null)
-const noteText = ref('')
+const activeId = ref<string | null>(null)
+const activeComment = computed(() => highlights.value.find(h => h.id === activeId.value)?.comment ?? '')
 
 function openNote(id: string | null) {
-  // No id → the user picked "add note" straight from a fresh selection.
-  const target = id ?? addHighlight(DEFAULT_HIGHLIGHT_COLOR)
+  const target = id ?? addHighlight('#fef08a')
   if (!target) return
-  noteTargetId.value = target
-  noteText.value = highlights.value.find(h => h.id === target)?.note ?? ''
+  activeId.value = target
   noteOpen.value = true
   closePopup()
 }
 
-function saveNote() {
-  if (noteTargetId.value) setNote(noteTargetId.value, noteText.value.trim())
-  noteOpen.value = false
+function saveNote(text: string) {
+  if (activeId.value) updateComment(activeId.value, text)
 }
-
-function closeNote() {
-  noteOpen.value = false
-}
-
-// Re-wrap any <mark> Vue threw away when it re-rendered the slot content.
-onUpdated(restore)
 </script>
 
 <template>
   <div
-    ref="containerRef"
-    class="relative"
+    ref="container"
+    class="relative h-full"
     @mouseup="onMouseUp"
   >
     <slot />
 
-    <ExamHighlightPopup
-      :popup="popup"
-      :has-note="!!activeHighlight?.note"
-      @highlight="addHighlight"
-      @note="openNote"
-      @remove="removeHighlight"
-      @close="closePopup"
-    />
+    <template v-if="popup.visible">
+      <div
+        class="fixed inset-0 z-40"
+        @click="closePopup"
+      />
+      <UCard
+        class="absolute z-50 -translate-x-1/2 shadow-lg"
+        :style="{ left: `${popup.x}px`, top: `${popup.y}px` }"
+        :ui="{ body: 'p-1 sm:p-1 flex items-center gap-1' }"
+        @mousedown.prevent.stop
+        @mouseup.stop
+        @click.stop
+      >
+        <template v-if="popup.highlightId">
+          <UTooltip text="Add / edit note">
+            <UButton
+              icon="i-lucide-message-square-plus"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              @mousedown.prevent.stop="openNote(popup.highlightId)"
+            />
+          </UTooltip>
+          <UTooltip text="Remove highlight">
+            <UButton
+              icon="i-lucide-trash-2"
+              color="error"
+              variant="ghost"
+              size="sm"
+              @mousedown.prevent.stop="removeHighlight(popup.highlightId!)"
+            />
+          </UTooltip>
+        </template>
+        <template v-else>
+          <UTooltip
+            v-for="c in COLORS"
+            :key="c.value"
+            :text="c.label"
+          >
+            <UButton
+              size="sm"
+              variant="outline"
+              color="neutral"
+              square
+              class="rounded-full size-6 p-0"
+              :style="{ backgroundColor: c.value }"
+              :aria-label="`Highlight ${c.label}`"
+              @mousedown.prevent.stop="addHighlight(c.value)"
+            />
+          </UTooltip>
+          <USeparator
+            orientation="vertical"
+            class="h-4 mx-1"
+          />
+          <UTooltip text="Add note">
+            <UButton
+              icon="i-lucide-message-square-plus"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              @mousedown.prevent.stop="openNote(null)"
+            />
+          </UTooltip>
+        </template>
+      </UCard>
+    </template>
 
-    <UModal
+    <ExamNotesSlideover
       v-model:open="noteOpen"
-      title="Izoh"
-    >
-      <template #body>
-        <UTextarea
-          v-model="noteText"
-          :rows="8"
-          class="w-full"
-          placeholder="Belgilangan matn uchun izoh yozing…"
-          autoresize
-          autofocus
-        />
-      </template>
-      <template #footer>
-        <div class="flex justify-end gap-2 w-full">
-          <UButton
-            color="neutral"
-            variant="ghost"
-            label="Bekor qilish"
-            @click="closeNote"
-          />
-          <UButton
-            color="primary"
-            label="Saqlash"
-            @click="saveNote"
-          />
-        </div>
-      </template>
-    </UModal>
+      title="Highlight note"
+      :model-value="activeComment"
+      @update:model-value="saveNote"
+    />
   </div>
 </template>
-
-<style>
-/* Marks are created imperatively, so these rules can't be scoped. */
-.exam-highlight {
-  color: #000;
-  border-radius: 2px;
-  cursor: pointer;
-}
-
-.exam-highlight[data-note] {
-  border-bottom: 2px solid currentColor;
-  padding-bottom: 1px;
-}
-</style>

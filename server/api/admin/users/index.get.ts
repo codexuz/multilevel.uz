@@ -1,5 +1,5 @@
-import { desc, eq, and, gt, or, isNull, inArray, count } from 'drizzle-orm'
-import { users, subscriptions } from '../../../database/schema'
+import { desc, count } from 'drizzle-orm'
+import { users } from '../../../database/schema'
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)
@@ -11,19 +11,6 @@ export default defineEventHandler(async (event) => {
     .orderBy(desc(users.createdAt))
     .limit(p.pageSize).offset(p.offset)
 
-  // Premium lookup scoped to just this page's users.
-  const ids = rows.map(u => u.id)
-  const activeSubs = ids.length
-    ? await db.select({ userId: subscriptions.userId }).from(subscriptions)
-        .where(and(
-          inArray(subscriptions.userId, ids),
-          eq(subscriptions.status, 'active'),
-          eq(subscriptions.plan, 'premium'),
-          or(isNull(subscriptions.currentPeriodEnd), gt(subscriptions.currentPeriodEnd, new Date()))
-        ))
-    : []
-  const premiumIds = new Set(activeSubs.map(s => s.userId))
-
   return paginate(rows.map(u => ({
     id: u.id,
     name: u.name,
@@ -31,7 +18,6 @@ export default defineEventHandler(async (event) => {
     avatarUrl: u.avatarUrl,
     role: u.role,
     banned: u.banned,
-    createdAt: u.createdAt,
-    isPremium: premiumIds.has(u.id)
+    createdAt: u.createdAt
   })), totalRow?.total ?? 0, p)
 })

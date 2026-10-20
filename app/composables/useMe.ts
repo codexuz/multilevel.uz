@@ -25,7 +25,5 @@ export function useMe() {
   const role = computed(() => me.value?.role ?? 'student')
   const isStaff = computed(() => role.value === 'examiner' || role.value === 'admin')
   const isAdmin = computed(() => role.value === 'admin')
-  const isPremium = computed(() => !!me.value?.isPremium)
-
-  return { me, loggedIn, role, isStaff, isAdmin, isPremium, refresh, pending }
+  return { me, loggedIn, role, isStaff, isAdmin, refresh, pending }
 }

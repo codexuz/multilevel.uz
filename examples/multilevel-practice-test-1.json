@@ -1,0 +1,846 @@
+{
+  "format": "erp-lms/ielts-test",
+  "version": 1,
+  "exportedAt": "2026-10-20T00:00:00.000Z",
+  "test": {
+    "title": "Multilevel Practice Test 1",
+    "description": "A Multilevel (CEFR) practice test: Reading (5 parts, 35 questions), Writing (Task 1.1, Task 1.2 and Task 2) and Speaking (4 parts). Check your Reading answers instantly, free and without signing up.",
+    "mode": "PRACTICE",
+    "category": "CUSTOM",
+    "module": "MULTILEVEL",
+    "source": "multilevel.uz sample",
+    "sections": [
+      {
+        "skill": "READING",
+        "title": null,
+        "instructions": null,
+        "durationSeconds": 3600,
+        "audioRef": null,
+        "settings": {},
+        "items": [
+          {
+            "part": {
+              "skill": "READING",
+              "partNumber": 1,
+              "title": "A new library for Chilonzor",
+              "difficulty": null,
+              "timeLimitMinutes": null,
+              "audioRef": null,
+              "transcriptRef": null,
+              "passage": "<p>Read the text. Complete the gaps with ONE word only.</p>",
+              "groups": [
+                {
+                  "type": "NOTE_COMPLETION",
+                  "instruction": "Read the text. Fill in each gap with ONE word only.",
+                  "context": "<p>Last month the city opened a new public library in Chilonzor. The building has three {1}, and the top one is a quiet reading room with a view of the park. Visitors do not need to pay; they only have to show an identity {2} to get a card. The library is open every day except {3}, from nine in the morning until eight in the {4}. On Saturdays there are free English clubs for {5}, and older readers can take computer lessons. The manager hopes the library will become a place where neighbours meet and {6} ideas.</p>",
+                  "content": {},
+                  "explanation": null,
+                  "items": [
+                    {
+                      "number": 1,
+                      "prompt": null,
+                      "acceptedAnswers": [
+                        "floors"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    },
+                    {
+                      "number": 2,
+                      "prompt": null,
+                      "acceptedAnswers": [
+                        "card",
+                        "document"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    },
+                    {
+                      "number": 3,
+                      "prompt": null,
+                      "acceptedAnswers": [
+                        "Monday"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    },
+                    {
+                      "number": 4,
+                      "prompt": null,
+                      "acceptedAnswers": [
+                        "evening"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    },
+                    {
+                      "number": 5,
+                      "prompt": null,
+                      "acceptedAnswers": [
+                        "children",
+                        "teenagers"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    },
+                    {
+                      "number": 6,
+                      "prompt": null,
+                      "acceptedAnswers": [
+                        "share"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "part": {
+              "skill": "READING",
+              "partNumber": 2,
+              "title": "Everyday habits",
+              "difficulty": null,
+              "timeLimitMinutes": null,
+              "audioRef": null,
+              "transcriptRef": null,
+              "passage": "<p><strong>7.</strong> I started running because my doctor told me to, but now I cannot imagine a week without it.</p><p><strong>8.</strong> Our family always cooks plov on Fridays, and my grandmother still checks the rice herself.</p><p><strong>9.</strong> The bus to my office is crowded, so I listen to podcasts and forget about the noise.</p><p><strong>10.</strong> I learned to play the dutar at sixty, which proves it is never too late to begin.</p><p><strong>11.</strong> Working from home saved me two hours a day, but I miss chatting with colleagues.</p><p><strong>12.</strong> When I travel, I always buy a local cookbook instead of a souvenir.</p><p><strong>13.</strong> My phone tells me how many steps I take, and I try to beat yesterday's number.</p><p><strong>14.</strong> I volunteer at an animal shelter every Sunday; the dogs recognise me now.</p>",
+              "groups": [
+                {
+                  "type": "MATCHING_FEATURES",
+                  "instruction": "Read the texts 7–14 and the statements A–J. Decide which statement matches each text. There are two extra statements.",
+                  "context": null,
+                  "content": {
+                    "options": [
+                      {
+                        "key": "A",
+                        "text": "This person took up a hobby late in life."
+                      },
+                      {
+                        "key": "B",
+                        "text": "This person keeps a family tradition."
+                      },
+                      {
+                        "key": "C",
+                        "text": "This person exercises for health reasons."
+                      },
+                      {
+                        "key": "D",
+                        "text": "This person uses travel time well."
+                      },
+                      {
+                        "key": "E",
+                        "text": "This person helps others without pay."
+                      },
+                      {
+                        "key": "F",
+                        "text": "This person measures daily activity."
+                      },
+                      {
+                        "key": "G",
+                        "text": "This person collects something on trips."
+                      },
+                      {
+                        "key": "H",
+                        "text": "This person has mixed feelings about a change."
+                      },
+                      {
+                        "key": "I",
+                        "text": "This person dislikes cooking."
+                      },
+                      {
+                        "key": "J",
+                        "text": "This person moved to a new city."
+                      }
+                    ]
+                  },
+                  "explanation": null,
+                  "items": [
+                    {
+                      "number": 7,
+                      "prompt": "Text 7",
+                      "acceptedAnswers": [
+                        "C"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    },
+                    {
+                      "number": 8,
+                      "prompt": "Text 8",
+                      "acceptedAnswers": [
+                        "B"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    },
+                    {
+                      "number": 9,
+                      "prompt": "Text 9",
+                      "acceptedAnswers": [
+                        "D"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    },
+                    {
+                      "number": 10,
+                      "prompt": "Text 10",
+                      "acceptedAnswers": [
+                        "A"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    },
+                    {
+                      "number": 11,
+                      "prompt": "Text 11",
+                      "acceptedAnswers": [
+                        "H"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    },
+                    {
+                      "number": 12,
+                      "prompt": "Text 12",
+                      "acceptedAnswers": [
+                        "G"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    },
+                    {
+                      "number": 13,
+                      "prompt": "Text 13",
+                      "acceptedAnswers": [
+                        "F"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    },
+                    {
+                      "number": 14,
+                      "prompt": "Text 14",
+                      "acceptedAnswers": [
+                        "E"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "part": {
+              "skill": "READING",
+              "partNumber": 3,
+              "title": "Why we forget",
+              "difficulty": null,
+              "timeLimitMinutes": null,
+              "audioRef": null,
+              "transcriptRef": null,
+              "passage": "<p><strong>A</strong> Most people assume that forgetting is a failure of memory. Researchers now think it is often useful: by letting go of unimportant details, the brain keeps the important ones easy to find.</p><p><strong>B</strong> In the 1880s the German psychologist Hermann Ebbinghaus tested himself with lists of nonsense syllables. He found that most of what he learned disappeared within a day, and then the loss slowed down.</p><p><strong>C</strong> Sleep plays a large part in deciding what stays. During deep sleep the brain replays the day's experiences and strengthens the links that matter.</p><p><strong>D</strong> Stress has the opposite effect. Students who revise while anxious often remember less, because stress hormones make it harder to store new information.</p><p><strong>E</strong> The good news is that memory can be trained. Testing yourself, rather than simply re-reading notes, is one of the most reliable ways to remember more.</p><p><strong>F</strong> Finally, forgetting can protect us. People who keep every painful detail of the past find it harder to move on, so a little forgetting may support mental health.</p>",
+              "groups": [
+                {
+                  "type": "MATCHING_HEADINGS",
+                  "instruction": "Read the text. Choose the correct heading for each paragraph A–F from the list of headings. There are two extra headings.",
+                  "context": null,
+                  "content": {
+                    "headings": [
+                      {
+                        "key": "i",
+                        "text": "An early experiment on memory"
+                      },
+                      {
+                        "key": "ii",
+                        "text": "How worry affects learning"
+                      },
+                      {
+                        "key": "iii",
+                        "text": "Forgetting as a helpful process"
+                      },
+                      {
+                        "key": "iv",
+                        "text": "The role of a good night's rest"
+                      },
+                      {
+                        "key": "v",
+                        "text": "A practical study method"
+                      },
+                      {
+                        "key": "vi",
+                        "text": "Memory and emotional wellbeing"
+                      },
+                      {
+                        "key": "vii",
+                        "text": "Why children learn faster"
+                      },
+                      {
+                        "key": "viii",
+                        "text": "The cost of memory tests"
+                      }
+                    ]
+                  },
+                  "explanation": null,
+                  "items": [
+                    {
+                      "number": 15,
+                      "prompt": "Paragraph A",
+                      "acceptedAnswers": [
+                        "iii"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    },
+                    {
+                      "number": 16,
+                      "prompt": "Paragraph B",
+                      "acceptedAnswers": [
+                        "i"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    },
+                    {
+                      "number": 17,
+                      "prompt": "Paragraph C",
+                      "acceptedAnswers": [
+                        "iv"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    },
+                    {
+                      "number": 18,
+                      "prompt": "Paragraph D",
+                      "acceptedAnswers": [
+                        "ii"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    },
+                    {
+                      "number": 19,
+                      "prompt": "Paragraph E",
+                      "acceptedAnswers": [
+                        "v"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    },
+                    {
+                      "number": 20,
+                      "prompt": "Paragraph F",
+                      "acceptedAnswers": [
+                        "vi"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "part": {
+              "skill": "READING",
+              "partNumber": 4,
+              "title": "The return of the bicycle",
+              "difficulty": null,
+              "timeLimitMinutes": null,
+              "audioRef": null,
+              "transcriptRef": null,
+              "passage": "<p>Fifty years ago the bicycle seemed to belong to the past. Cars were becoming cheaper, cities were building wider roads, and cycling was something children did in the park. Today, many cities are trying hard to bring bicycles back.</p><p>The reasons are partly practical. In crowded centres a bicycle is often the fastest way to cross town, and it needs very little space to park. Cities also want cleaner air, and every short trip made by bicycle instead of by car reduces pollution.</p><p>Copenhagen is often given as an example. There, more than forty per cent of people travel to work or school by bicycle. This did not happen by accident: the city spent decades building separate lanes protected from traffic.</p><p>Not everyone is convinced. Some shop owners fear that removing car parking will cost them customers, although studies in several cities found that cyclists visit local shops more often than drivers. Others point out that cycling is difficult in hot or very hilly places.</p><p>Electric bicycles may solve some of these problems. They make hills and long distances easier, and they are popular with older riders. Whether they will change transport in the way supporters hope is still uncertain.</p>",
+              "groups": [
+                {
+                  "type": "MULTIPLE_CHOICE",
+                  "instruction": "Choose the correct answer, A, B, C or D.",
+                  "context": null,
+                  "content": {
+                    "options": [
+                      {
+                        "key": "A",
+                        "text": "a popular way to commute."
+                      },
+                      {
+                        "key": "B",
+                        "text": "an activity for children."
+                      },
+                      {
+                        "key": "C",
+                        "text": "a sport for professionals."
+                      },
+                      {
+                        "key": "D",
+                        "text": "too expensive for most people."
+                      }
+                    ]
+                  },
+                  "explanation": null,
+                  "items": [
+                    {
+                      "number": 21,
+                      "prompt": "According to the text, fifty years ago cycling was mainly",
+                      "acceptedAnswers": [
+                        "B"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    }
+                  ]
+                },
+                {
+                  "type": "MULTIPLE_CHOICE",
+                  "instruction": "Choose the correct answer, A, B, C or D.",
+                  "context": null,
+                  "content": {
+                    "options": [
+                      {
+                        "key": "A",
+                        "text": "are cheaper than buses."
+                      },
+                      {
+                        "key": "B",
+                        "text": "are safer than walking."
+                      },
+                      {
+                        "key": "C",
+                        "text": "need little parking space."
+                      },
+                      {
+                        "key": "D",
+                        "text": "can carry heavy goods."
+                      }
+                    ]
+                  },
+                  "explanation": null,
+                  "items": [
+                    {
+                      "number": 22,
+                      "prompt": "One practical advantage of bicycles in city centres is that they",
+                      "acceptedAnswers": [
+                        "C"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    }
+                  ]
+                },
+                {
+                  "type": "MULTIPLE_CHOICE",
+                  "instruction": "Choose the correct answer, A, B, C or D.",
+                  "context": null,
+                  "content": {
+                    "options": [
+                      {
+                        "key": "A",
+                        "text": "the weather is mild."
+                      },
+                      {
+                        "key": "B",
+                        "text": "cars were banned."
+                      },
+                      {
+                        "key": "C",
+                        "text": "fuel became very expensive."
+                      },
+                      {
+                        "key": "D",
+                        "text": "the city built protected lanes."
+                      }
+                    ]
+                  },
+                  "explanation": null,
+                  "items": [
+                    {
+                      "number": 23,
+                      "prompt": "Cycling became common in Copenhagen because",
+                      "acceptedAnswers": [
+                        "D"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    }
+                  ]
+                },
+                {
+                  "type": "MULTIPLE_CHOICE",
+                  "instruction": "Choose the correct answer, A, B, C or D.",
+                  "context": null,
+                  "content": {
+                    "options": [
+                      {
+                        "key": "A",
+                        "text": "They are only used by young people."
+                      },
+                      {
+                        "key": "B",
+                        "text": "Their long-term effect is not yet clear."
+                      },
+                      {
+                        "key": "C",
+                        "text": "They will replace cars soon."
+                      },
+                      {
+                        "key": "D",
+                        "text": "They are not allowed in city centres."
+                      }
+                    ]
+                  },
+                  "explanation": null,
+                  "items": [
+                    {
+                      "number": 24,
+                      "prompt": "What does the writer say about electric bicycles?",
+                      "acceptedAnswers": [
+                        "B"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    }
+                  ]
+                },
+                {
+                  "type": "TRUE_FALSE_NOT_GIVEN",
+                  "instruction": "Do the following statements agree with the information in the text? Write TRUE, FALSE or NOT GIVEN.",
+                  "context": null,
+                  "content": {},
+                  "explanation": null,
+                  "items": [
+                    {
+                      "number": 25,
+                      "prompt": "Short car trips add to air pollution.",
+                      "acceptedAnswers": [
+                        "TRUE"
+                      ],
+                      "explanation": null,
+                      "evidence": "every short trip made by bicycle instead of by car reduces pollution",
+                      "points": 1
+                    },
+                    {
+                      "number": 26,
+                      "prompt": "Most people in Copenhagen drive to work.",
+                      "acceptedAnswers": [
+                        "FALSE"
+                      ],
+                      "explanation": null,
+                      "evidence": "more than forty per cent of people travel to work or school by bicycle",
+                      "points": 1
+                    },
+                    {
+                      "number": 27,
+                      "prompt": "Shop owners in Copenhagen asked for more bicycle lanes.",
+                      "acceptedAnswers": [
+                        "NOT GIVEN"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    },
+                    {
+                      "number": 28,
+                      "prompt": "Research shows cyclists visit local shops more often than drivers.",
+                      "acceptedAnswers": [
+                        "TRUE"
+                      ],
+                      "explanation": null,
+                      "evidence": "cyclists visit local shops more often than drivers",
+                      "points": 1
+                    },
+                    {
+                      "number": 29,
+                      "prompt": "Electric bicycles are cheaper than ordinary bicycles.",
+                      "acceptedAnswers": [
+                        "NOT GIVEN"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "part": {
+              "skill": "READING",
+              "partNumber": 5,
+              "title": "The Aral Sea",
+              "difficulty": null,
+              "timeLimitMinutes": null,
+              "audioRef": null,
+              "transcriptRef": null,
+              "passage": "<p>The Aral Sea was once the fourth largest lake in the world. From the 1960s, the rivers that fed it, the Amu Darya and the Syr Darya, were used to water huge cotton fields. As less water reached the sea, it began to shrink.</p><p>By the early 2000s the sea had split into separate parts, and fishing towns such as Moynaq found themselves many kilometres from the water. Salt and dust from the dry seabed were carried by the wind, harming crops and people's health.</p><p>Since then, efforts have been made to limit the damage. A dam completed in 2005 helped the northern part of the sea to recover, and fish have returned there. In the south, millions of salt-tolerant plants have been planted on the dry seabed to stop the dust.</p><p>Scientists say the sea will never return to its old size, but careful use of water could still improve life for the people who live around it.</p>",
+              "groups": [
+                {
+                  "type": "SUMMARY_COMPLETION",
+                  "instruction": "Complete the summary. Use NO MORE THAN TWO WORDS from the text for each answer.",
+                  "context": null,
+                  "content": {
+                    "lead": "What happened to the Aral Sea"
+                  },
+                  "explanation": null,
+                  "items": [
+                    {
+                      "number": 30,
+                      "prompt": "Water from the rivers was used for {30} fields.",
+                      "acceptedAnswers": [
+                        "cotton"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    },
+                    {
+                      "number": 31,
+                      "prompt": "Towns like Moynaq ended up far from the {31}.",
+                      "acceptedAnswers": [
+                        "water",
+                        "sea"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    },
+                    {
+                      "number": 32,
+                      "prompt": "Wind carried salt and {32} from the seabed.",
+                      "acceptedAnswers": [
+                        "dust"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    },
+                    {
+                      "number": 33,
+                      "prompt": "A {33} built in 2005 helped the northern part.",
+                      "acceptedAnswers": [
+                        "dam"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    }
+                  ]
+                },
+                {
+                  "type": "MULTIPLE_CHOICE",
+                  "instruction": "Choose the correct answer, A, B, C or D.",
+                  "context": null,
+                  "content": {
+                    "options": [
+                      {
+                        "key": "A",
+                        "text": "feed animals."
+                      },
+                      {
+                        "key": "B",
+                        "text": "stop the dust."
+                      },
+                      {
+                        "key": "C",
+                        "text": "attract tourists."
+                      },
+                      {
+                        "key": "D",
+                        "text": "produce cotton."
+                      }
+                    ]
+                  },
+                  "explanation": null,
+                  "items": [
+                    {
+                      "number": 34,
+                      "prompt": "Plants were planted on the dry seabed in order to",
+                      "acceptedAnswers": [
+                        "B"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    }
+                  ]
+                },
+                {
+                  "type": "MULTIPLE_CHOICE",
+                  "instruction": "Choose the correct answer, A, B, C or D.",
+                  "context": null,
+                  "content": {
+                    "options": [
+                      {
+                        "key": "A",
+                        "text": "The sea will be as large as before."
+                      },
+                      {
+                        "key": "B",
+                        "text": "The sea will disappear completely."
+                      },
+                      {
+                        "key": "C",
+                        "text": "Life nearby can still improve."
+                      },
+                      {
+                        "key": "D",
+                        "text": "Fishing will stop in the north."
+                      }
+                    ]
+                  },
+                  "explanation": null,
+                  "items": [
+                    {
+                      "number": 35,
+                      "prompt": "What do scientists expect for the future?",
+                      "acceptedAnswers": [
+                        "C"
+                      ],
+                      "explanation": null,
+                      "evidence": null,
+                      "points": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "skill": "WRITING",
+        "title": null,
+        "instructions": null,
+        "durationSeconds": 3600,
+        "audioRef": null,
+        "settings": {},
+        "items": [
+          {
+            "writingTask": {
+              "taskNumber": 1,
+              "module": null,
+              "title": "Task 1.1 — A letter to a friend",
+              "prompt": "<p>You have just moved to a new flat. Write a letter to your friend. Tell them about the flat and invite them to visit.</p><p>Write about <strong>50 words</strong>.</p>",
+              "imageRef": null,
+              "minWords": 50,
+              "suggestedMinutes": 15
+            }
+          },
+          {
+            "writingTask": {
+              "taskNumber": 2,
+              "module": null,
+              "title": "Task 1.2 — A letter to the manager",
+              "prompt": "<p>The gym you go to has recently changed its opening hours, and now it closes at 7 pm. Write a letter to the manager. Explain why the change is a problem for you and suggest what the gym could do.</p><p>Write <strong>120–150 words</strong>.</p>",
+              "imageRef": null,
+              "minWords": 120,
+              "suggestedMinutes": 20
+            }
+          },
+          {
+            "writingTask": {
+              "taskNumber": 3,
+              "module": null,
+              "title": "Task 2 — Essay",
+              "prompt": "<p>Some people think that students should learn practical skills, such as cooking and managing money, at school. Others believe schools should focus only on academic subjects.</p><p>Discuss both views and give your own opinion. Write at least <strong>180 words</strong>.</p>",
+              "imageRef": null,
+              "minWords": 180,
+              "suggestedMinutes": 25
+            }
+          }
+        ]
+      },
+      {
+        "skill": "SPEAKING",
+        "title": null,
+        "instructions": null,
+        "durationSeconds": 900,
+        "audioRef": null,
+        "settings": {},
+        "items": [
+          {
+            "speakingPart": {
+              "partNumber": 1,
+              "title": "Part 1.1 — About you",
+              "cueCard": null,
+              "imageRef": null,
+              "prepSeconds": 5,
+              "speakSeconds": 30,
+              "questions": [
+                "What do you usually do at the weekend?",
+                "Do you prefer to study in the morning or in the evening? Why?",
+                "Tell me about your favourite place in your town."
+              ]
+            }
+          },
+          {
+            "speakingPart": {
+              "partNumber": 2,
+              "title": "Part 1.2 — Compare the pictures",
+              "imageRef": null,
+              "prepSeconds": 10,
+              "speakSeconds": 45,
+              "cueCard": "<p>Look at two pictures: <strong>a family eating dinner at home</strong> and <strong>friends eating in a restaurant</strong>.</p>",
+              "questions": [
+                "What can you see in the pictures?",
+                "Which kind of meal do you enjoy more? Why?",
+                "How have eating habits changed in your country?"
+              ]
+            }
+          },
+          {
+            "speakingPart": {
+              "partNumber": 3,
+              "title": "Part 2 — Talk about a topic",
+              "imageRef": null,
+              "prepSeconds": 60,
+              "speakSeconds": 120,
+              "cueCard": "<p><strong>Describe a teacher who helped you.</strong></p><p>You should say:</p><ul><li>who the teacher was</li><li>what subject they taught</li><li>how they helped you</li></ul><p>and explain why you still remember them.</p>",
+              "questions": []
+            }
+          },
+          {
+            "speakingPart": {
+              "partNumber": 4,
+              "title": "Part 3 — Argument",
+              "imageRef": null,
+              "prepSeconds": 60,
+              "speakSeconds": 120,
+              "cueCard": "<p><strong>Online learning should replace classroom lessons.</strong> Give arguments for and against.</p><table><thead><tr><th>For</th><th>Against</th></tr></thead><tbody><tr><td>Students can learn at their own pace</td><td>Less contact with teachers and classmates</td></tr><tr><td>No time is lost travelling</td><td>Not everyone has a good internet connection</td></tr><tr><td>Lessons can be watched again</td><td>Harder to stay motivated at home</td></tr></tbody></table>",
+              "questions": []
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

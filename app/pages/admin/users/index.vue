@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { UserRole } from '~/types/exam'
-import type { Paginated } from '~/types/models'
+import type { Paginated, UserRole } from '~/types/models'
 
-definePageMeta({ layout: 'admin', middleware: 'admin' })
+definePageMeta({ middleware: 'admin' })
+useSeoMeta({ title: 'Users', robots: 'noindex' })
 
 const toast = useToast()
-const { confirm } = useConfirm()
+const { confirm } = useDialogs()
 const { me } = useMe()
 
 interface AdminUser {
@@ -16,7 +16,6 @@ interface AdminUser {
   role: UserRole
   banned: boolean
   createdAt: string
-  isPremium: boolean
 }
 const page = ref(1)
 const { data, refresh } = await useFetch<Paginated<AdminUser>>('/api/admin/users', { query: { page } })
@@ -34,26 +33,6 @@ async function setRole(p: AdminUser, role: UserRole) {
   try {
     await $fetch(`/api/admin/users/${p.id}/role`, { method: 'PATCH', body: { role } })
     toast.add({ title: `Role updated to ${role}`, color: 'success' })
-    await refresh()
-  } catch (e) {
-    fail(e)
-  }
-}
-
-async function grantPremium(p: AdminUser, days = 30) {
-  try {
-    await $fetch(`/api/admin/users/${p.id}/subscription`, { method: 'POST', body: { days } })
-    toast.add({ title: `Premium granted for ${days} days`, color: 'success' })
-    await refresh()
-  } catch (e) {
-    fail(e)
-  }
-}
-
-async function revokePremium(p: AdminUser) {
-  try {
-    await $fetch(`/api/admin/users/${p.id}/subscription`, { method: 'DELETE' })
-    toast.add({ title: 'Premium revoked', color: 'success' })
     await refresh()
   } catch (e) {
     fail(e)
@@ -95,11 +74,10 @@ async function removeUser(p: AdminUser) {
 </script>
 
 <template>
-  <div class="space-y-6">
-    <h1 class="text-2xl font-bold">
-      Users
-    </h1>
-
+  <AppPage
+    title="Users"
+    icon="i-lucide-users"
+  >
     <UCard :ui="{ body: 'p-0 sm:p-0' }">
       <div class="divide-y divide-default">
         <div
@@ -142,31 +120,6 @@ async function removeUser(p: AdminUser) {
               @update:model-value="setRole(p, $event as UserRole)"
             />
 
-            <UBadge
-              v-if="p.isPremium"
-              color="primary"
-              variant="subtle"
-              icon="i-lucide-sparkles"
-              label="Premium"
-            />
-            <UButton
-              v-if="p.isPremium"
-              size="sm"
-              color="error"
-              variant="ghost"
-              label="Revoke"
-              @click="revokePremium(p)"
-            />
-            <UButton
-              v-else
-              size="sm"
-              color="primary"
-              variant="soft"
-              icon="i-lucide-sparkles"
-              label="Grant 30d"
-              @click="grantPremium(p, 30)"
-            />
-
             <!-- Ban / delete (never on your own account) -->
             <template v-if="p.id !== me?.id">
               <UButton
@@ -200,5 +153,5 @@ async function removeUser(p: AdminUser) {
         :items-per-page="pageSize"
       />
     </div>
-  </div>
+  </AppPage>
 </template>

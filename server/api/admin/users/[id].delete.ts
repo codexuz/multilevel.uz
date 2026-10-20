@@ -1,8 +1,8 @@
 import { eq } from 'drizzle-orm'
 import { users } from '../../../database/schema'
 
-// Permanently delete a user. Sessions, attempts, answers, subscriptions and
-// transactions cascade; authored tests/graded attempts keep null references.
+// Permanently delete a user. Sessions and attempts (with their answers, essays and
+// recordings) cascade; authored tests and graded attempts keep null references.
 export default defineEventHandler(async (event) => {
   const admin = await requireAdmin(event)
   const id = getRouterParam(event, 'id')!

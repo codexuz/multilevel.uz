@@ -1,7 +1,7 @@
-// Subscribes to the per-user SSE stream while logged in and reacts to events
-// (e.g. premium granted/revoked) by refreshing /api/me so the UI updates live.
-export default defineNuxtPlugin(() => {
-  const { loggedIn, refresh } = useMe()
+// Subscribes to the per-user SSE stream while logged in and reacts to events: a Writing or
+// Speaking attempt marked by an examiner, or the account being banned.
+export default defineNuxtPlugin((nuxtApp) => {
+  const { loggedIn } = useMe()
   const toast = useToast()
   let es: EventSource | null = null
 
@@ -9,22 +9,21 @@ export default defineNuxtPlugin(() => {
     if (es) return
     es = new EventSource('/api/me/events')
     es.onmessage = (e) => {
-      let msg: { type?: string, isPremium?: boolean }
+      let msg: { type?: string, attemptId?: string }
       try {
         msg = JSON.parse(e.data)
       } catch {
         return
       }
-      if (msg.type === 'premium') {
-        refresh()
-        if (msg.isPremium) {
-          toast.add({
-            title: 'Premium activated 🎉',
-            description: 'Your account now has premium access.',
-            color: 'primary',
-            icon: 'i-lucide-sparkles'
-          })
-        }
+      if (msg.type === 'graded' && msg.attemptId) {
+        nuxtApp.callHook('ml:graded' as any, msg.attemptId)
+        toast.add({
+          title: 'Your test has been marked',
+          description: 'An examiner has marked your answers.',
+          color: 'success',
+          icon: 'i-lucide-award',
+          actions: [{ label: 'See result', to: `/results/${msg.attemptId}` }]
+        })
       } else if (msg.type === 'banned') {
         toast.add({
           title: 'Account suspended',

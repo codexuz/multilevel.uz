@@ -37,3 +37,18 @@ export function cefrLevel(score: number): CefrLevel {
   if (score >= 38) return 'B1'
   return 'A2'
 }
+
+/**
+ * The scaled score for a section of `total` questions. A full 35-question paper reads the official
+ * table; a shorter practice paper is scaled to the same table by its share of right answers.
+ * `settings.scale` on a section (36 numbers, index = right answers) replaces the table.
+ */
+export function sectionScore(skill: ObjectiveSkill, correct: number, total: number, settings?: { scale?: unknown } | null): number {
+  const custom = Array.isArray(settings?.scale) && settings.scale.length === 36 && settings.scale.every(n => Number.isFinite(Number(n)))
+    ? (settings.scale as unknown[]).map(Number)
+    : null
+  const table = custom ?? (skill === 'listening' ? LISTENING : READING)
+  const onTable = total === 35 ? correct : total > 0 ? Math.round((correct / total) * 35) : 0
+  const i = Math.max(0, Math.min(Math.round(onTable), table.length - 1))
+  return table[i]!
+}

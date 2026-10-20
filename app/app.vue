@@ -4,7 +4,7 @@ const config = useRuntimeConfig()
 
 const siteName = 'Multilevel'
 const title = 'Multilevel - English Exam Prep'
-const description = 'Practice CEFR/Multilevel English exams: Listening, Reading, Writing and Speaking with live speaking partners and instant scoring.'
+const description = 'Free Multilevel (CEFR) English practice tests: Listening, Reading, Writing and Speaking. Check your answers instantly, with or without an account.'
 const siteUrl = computed(() => String(config.public.siteUrl || 'https://multilevel.uz').replace(/\/$/, ''))
 const canonicalUrl = computed(() => `${siteUrl.value}${route.path === '/' ? '/' : route.path}`)
 const socialImage = computed(() => `${siteUrl.value}/logo.png`)
@@ -16,7 +16,7 @@ useHead(() => ({
   },
   meta: [
     { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-    { name: 'theme-color', content: '#00A155' }
+    { name: 'theme-color', content: '#007aff' }
   ],
   link: [
     { rel: 'icon', href: '/favicon.ico' },
@@ -61,9 +61,5 @@ useSeoMeta({
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
-    <ClientOnly>
-      <SpeakingGlobalCaller />
-    </ClientOnly>
-    <ConfirmDialog />
   </UApp>
 </template>

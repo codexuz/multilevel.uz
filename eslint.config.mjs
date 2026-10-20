@@ -2,16 +2,18 @@
 import withNuxt from './.nuxt/eslint.config.mjs'
 
 export default withNuxt(
-  // The admin test builder edits a shared reactive tree (sections/parts) in place
-  // via v-model and then persists with explicit Save buttons — mutating these
-  // passed-in objects is intentional.
+  // The exam, review and builder code is shared with the erp-lms IELTS app and keeps its
+  // conventions: loosely typed API payloads, one-line guards, best-effort storage access
+  // (empty catches), and HTML written by test authors rendered as HTML.
   {
-    files: ['app/components/admin/**', 'app/pages/admin/tests/**'],
     rules: {
-      'vue/no-mutating-props': 'off'
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@stylistic/max-statements-per-line': 'off',
+      'no-empty': ['error', { allowEmptyCatch: true }],
+      'vue/no-v-html': 'off'
     }
   }
 ).prepend({
-  // Legacy reference files (Vue 2 / axios) and SQL — not part of the app.
-  ignores: ['examples/**', 'supabase/**']
+  // The sample test (data, not code).
+  ignores: ['examples/**']
 })

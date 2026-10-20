@@ -50,7 +50,11 @@ export default defineOAuthGoogleEventHandler({
     const refresh = await signRefreshToken(row!.id, session!.id)
     setAuthCookies(event, access, refresh)
 
-    return sendRedirect(event, row!.onboarded ? '/dashboard' : '/onboarding')
+    // Back to the page sign-in started from (a test's result, say); only a path on this site.
+    const next = getCookie(event, 'ml_next')
+    deleteCookie(event, 'ml_next', { path: '/' })
+    const back = next && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/auth/') ? next : '/tests'
+    return sendRedirect(event, row!.onboarded ? back : `/onboarding?next=${encodeURIComponent(back)}`)
   },
   onError(event, error) {
     console.error('Google OAuth error:', error)

@@ -1,24 +1,11 @@
 import { relations } from 'drizzle-orm'
 import {
-  pgTable, pgEnum, uuid, text, integer, numeric, boolean,
-  timestamp, jsonb, date, index, uniqueIndex
+  pgTable, pgEnum, uuid, text, integer, boolean,
+  timestamp, jsonb, index, uniqueIndex
 } from 'drizzle-orm/pg-core'
 
 // ---------- Enums ----------
 export const userRole = pgEnum('user_role', ['student', 'examiner', 'admin'])
-export const testStatus = pgEnum('test_status', ['draft', 'published'])
-export const sectionType = pgEnum('section_type', ['listening', 'reading', 'writing', 'speaking'])
-export const questionType = pgEnum('question_type', [
-  'single_choice', 'multiple_choice', 'text_input', 'dropdown_match', 'essay', 'speaking_prompt'
-])
-export const attemptStatus = pgEnum('attempt_status', ['in_progress', 'submitted', 'graded'])
-export const subPlan = pgEnum('sub_plan', ['free', 'premium'])
-export const subStatus = pgEnum('sub_status', ['active', 'canceled', 'expired'])
-export const roomStatus = pgEnum('room_status', ['open', 'active', 'ended'])
-export const currency = pgEnum('currency', ['points', 'coins'])
-export const courseStatus = pgEnum('course_status', ['draft', 'published'])
-export const lessonType = pgEnum('lesson_type', ['video', 'article', 'quiz'])
-export const enrollmentStatus = pgEnum('enrollment_status', ['active', 'completed', 'canceled'])
 
 // ---------- users ----------
 export const users = pgTable('users', {
@@ -34,11 +21,6 @@ export const users = pgTable('users', {
   targetLevel: text('target_level'), // A1..C1
   targetScore: integer('target_score'), // 0..75
   onboarded: boolean('onboarded').notNull().default(false),
-  // gamification
-  points: integer('points').notNull().default(0),
-  coins: integer('coins').notNull().default(0),
-  streakCount: integer('streak_count').notNull().default(0),
-  lastActivityDate: date('last_activity_date'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 })
@@ -63,290 +45,241 @@ export const revokedTokens = pgTable('revoked_tokens', {
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull()
 })
 
-// ---------- gamification ledger ----------
-export const transactions = pgTable('transactions', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  currency: currency('currency').notNull(),
-  delta: integer('delta').notNull(),
-  reason: text('reason'),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
-}, t => [index('transactions_user_idx').on(t.userId)])
+// ---------- tests ----------
+// The same structure as the erp-lms IELTS addon (IeltsTest … IeltsQuestionItem), without the
+// centre, so a test file moves between the two unchanged. Values are upper case, as there:
+// status DRAFT | PUBLISHED, skill LISTENING | READING | WRITING | SPEAKING.
 
-// ---------- subscriptions ----------
-export const subscriptions = pgTable('subscriptions', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  plan: subPlan('plan').notNull().default('premium'),
-  status: subStatus('status').notNull().default('active'),
-  currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
-  provider: text('provider'),
-  providerRef: text('provider_ref'),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
-}, t => [index('subscriptions_user_idx').on(t.userId)])
+const created = () => timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+const updated = () => timestamp('updated_at', { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date())
 
-// ---------- tests / sections / parts / questions ----------
 export const tests = pgTable('tests', {
   id: uuid('id').primaryKey().defaultRandom(),
+  /** The address of the test's public page, /tests/<slug>. */
+  slug: text('slug').notNull().unique(),
   title: text('title').notNull(),
   description: text('description'),
-  level: text('level'),
-  status: testStatus('status').notNull().default('draft'),
-  isPremium: boolean('is_premium').notNull().default(false),
-  createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
-})
+  mode: text('mode').notNull().default('PRACTICE'), // PRACTICE | MOCK
+  status: text('status').notNull().default('DRAFT'),
+  category: text('category'), // AUTHENTIC | CAMBRIDGE | PRE_TEST | CUSTOM
+  module: text('module').notNull().default('MULTILEVEL'),
+  source: text('source'),
+  createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
+  publishedAt: timestamp('published_at', { withTimezone: true }),
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [index('tests_status_idx').on(t.status)])
 
 export const sections = pgTable('sections', {
   id: uuid('id').primaryKey().defaultRandom(),
   testId: uuid('test_id').notNull().references(() => tests.id, { onDelete: 'cascade' }),
-  type: sectionType('type').notNull(),
-  title: text('title').notNull(),
-  durationMinutes: integer('duration_minutes').notNull().default(45),
-  orderIndex: integer('order_index').notNull().default(0),
-  audioUrl: text('audio_url'),
-  videoExplanationUrl: text('video_explanation_url'),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
-}, t => [index('sections_test_idx').on(t.testId)])
+  skill: text('skill').notNull(),
+  position: integer('position').notNull().default(1),
+  title: text('title'),
+  instructions: text('instructions'),
+  durationSeconds: integer('duration_seconds'),
+  /** Listening: the full recording, played through the whole section. */
+  audioRef: text('audio_ref'),
+  settings: jsonb('settings').notNull().default({}),
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [uniqueIndex('sections_test_skill_uq').on(t.testId, t.skill)])
 
 export const parts = pgTable('parts', {
   id: uuid('id').primaryKey().defaultRandom(),
-  sectionId: uuid('section_id').notNull().references(() => sections.id, { onDelete: 'cascade' }),
-  title: text('title').notNull(),
-  instructions: text('instructions'),
-  content: jsonb('content').notNull().default({}),
-  audioUrl: text('audio_url'),
-  imageUrl: text('image_url'),
-  orderIndex: integer('order_index').notNull().default(0),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
-}, t => [index('parts_section_idx').on(t.sectionId)])
+  skill: text('skill').notNull(), // LISTENING | READING
+  partNumber: integer('part_number').notNull(),
+  title: text('title'),
+  passage: text('passage'),
+  audioRef: text('audio_ref'),
+  transcriptRef: text('transcript_ref'),
+  difficulty: text('difficulty'),
+  timeLimitMinutes: integer('time_limit_minutes'),
+  isActive: boolean('is_active').notNull().default(true),
+  createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: created(),
+  updatedAt: updated()
+})
 
-export const questions = pgTable('questions', {
+export const questionGroups = pgTable('question_groups', {
   id: uuid('id').primaryKey().defaultRandom(),
   partId: uuid('part_id').notNull().references(() => parts.id, { onDelete: 'cascade' }),
-  orderIndex: integer('order_index').notNull().default(0),
-  questionNumber: integer('question_number'),
-  type: questionType('type').notNull(),
-  prompt: text('prompt'),
-  options: jsonb('options').notNull().default([]),
-  correctAnswer: jsonb('correct_answer'), // never sent to students
-  points: numeric('points').notNull().default('1'),
-  meta: jsonb('meta').notNull().default({}),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
-}, t => [index('questions_part_idx').on(t.partId)])
+  position: integer('position').notNull().default(1),
+  /** One of the task types in server/utils/answers.ts (NOTE_COMPLETION, MATCHING_HEADINGS …). */
+  type: text('type').notNull(),
+  instruction: text('instruction'),
+  /** Shared text with the gaps in it (notes, drag-and-drop summary), as HTML. */
+  context: text('context'),
+  /** { options: [{key, text}], headings: [{key, text}], table: {headers, rows}, image, lead }. */
+  content: jsonb('content').notNull().default({}),
+  explanation: text('explanation'),
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [index('question_groups_part_idx').on(t.partId, t.position)])
 
-// ---------- attempts / answers ----------
+export const questionItems = pgTable('question_items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  groupId: uuid('group_id').notNull().references(() => questionGroups.id, { onDelete: 'cascade' }),
+  number: integer('number').notNull(),
+  position: integer('position').notNull().default(1),
+  prompt: text('prompt'),
+  /** Never sent before the answers are in. */
+  acceptedAnswers: text('accepted_answers').array().notNull().default([]),
+  explanation: text('explanation'),
+  evidence: text('evidence'),
+  points: integer('points').notNull().default(1),
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [index('question_items_group_idx').on(t.groupId)])
+
+export const writingTasks = pgTable('writing_tasks', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  /** Multilevel: 1 = Task 1.1, 2 = Task 1.2, 3 = Task 2 (the title says which). */
+  taskNumber: integer('task_number').notNull(),
+  module: text('module'),
+  title: text('title'),
+  prompt: text('prompt').notNull(),
+  imageRef: text('image_ref'),
+  minWords: integer('min_words'),
+  suggestedMinutes: integer('suggested_minutes'),
+  createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: created(),
+  updatedAt: updated()
+})
+
+export const speakingParts = pgTable('speaking_parts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  /** Multilevel: 1 = Part 1.1, 2 = Part 1.2, 3 = Part 2, 4 = Part 3 (the title says which). */
+  partNumber: integer('part_number').notNull(),
+  title: text('title'),
+  cueCard: text('cue_card'),
+  /** Multilevel picture tasks (Part 1.2, Part 2). */
+  imageRef: text('image_ref'),
+  prepSeconds: integer('prep_seconds'),
+  speakSeconds: integer('speak_seconds'),
+  createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: created(),
+  updatedAt: updated()
+})
+
+export const speakingQuestions = pgTable('speaking_questions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  partId: uuid('part_id').notNull().references(() => speakingParts.id, { onDelete: 'cascade' }),
+  text: text('text').notNull(),
+  position: integer('position').notNull().default(1),
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [index('speaking_questions_part_idx').on(t.partId)])
+
+export const sectionItems = pgTable('section_items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sectionId: uuid('section_id').notNull().references(() => sections.id, { onDelete: 'cascade' }),
+  position: integer('position').notNull().default(1),
+  partId: uuid('part_id').references(() => parts.id, { onDelete: 'cascade' }),
+  writingTaskId: uuid('writing_task_id').references(() => writingTasks.id, { onDelete: 'cascade' }),
+  speakingPartId: uuid('speaking_part_id').references(() => speakingParts.id, { onDelete: 'cascade' }),
+  createdAt: created()
+}, t => [index('section_items_section_idx').on(t.sectionId, t.position)])
+
+// ---------- attempts (signed-in users only; a guest's answers are checked and never stored) ----------
 export const attempts = pgTable('attempts', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  testId: uuid('test_id').notNull().references(() => tests.id, { onDelete: 'cascade' }),
-  sectionId: uuid('section_id').notNull().references(() => sections.id, { onDelete: 'cascade' }),
-  status: attemptStatus('status').notNull().default('in_progress'),
-  startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
-  submittedAt: timestamp('submitted_at', { withTimezone: true }),
-  autoScore: numeric('auto_score'),
-  manualScore: numeric('manual_score'),
-  totalScore: numeric('total_score'),
-  maxScore: numeric('max_score'),
+  testId: uuid('test_id').references(() => tests.id, { onDelete: 'set null' }),
+  sectionId: uuid('section_id').references(() => sections.id, { onDelete: 'set null' }),
+  /** The skill this attempt was (one section at a time). */
+  skill: text('skill').notNull(),
+  mode: text('mode').notNull().default('PRACTICE'),
+  status: text('status').notNull().default('SUBMITTED'), // SUBMITTED (awaiting an examiner) | GRADED
+  startedAt: timestamp('started_at', { withTimezone: true }),
+  submittedAt: timestamp('submitted_at', { withTimezone: true }).notNull().defaultNow(),
+  gradedAt: timestamp('graded_at', { withTimezone: true }),
+  /** Listening and Reading: right answers out of the questions. */
+  correct: integer('correct'),
+  total: integer('total'),
+  /** The Multilevel scaled score, 0–75, and its CEFR level. */
+  score: integer('score'),
+  cefrLevel: text('cefr_level'),
   examinerId: uuid('examiner_id').references(() => users.id, { onDelete: 'set null' }),
   feedback: text('feedback'),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
-}, t => [index('attempts_user_idx').on(t.userId), index('attempts_status_idx').on(t.status)])
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [index('attempts_user_idx').on(t.userId, t.submittedAt), index('attempts_status_idx').on(t.status)])
 
 export const answers = pgTable('answers', {
   id: uuid('id').primaryKey().defaultRandom(),
   attemptId: uuid('attempt_id').notNull().references(() => attempts.id, { onDelete: 'cascade' }),
-  questionId: uuid('question_id').notNull().references(() => questions.id, { onDelete: 'cascade' }),
-  response: jsonb('response'),
-  audioUrl: text('audio_url'),
+  itemId: uuid('item_id').notNull().references(() => questionItems.id, { onDelete: 'cascade' }),
+  response: text('response'),
   isCorrect: boolean('is_correct'),
-  awardedPoints: numeric('awarded_points'),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
-}, t => [
-  uniqueIndex('answers_attempt_question_uq').on(t.attemptId, t.questionId),
-  index('answers_attempt_idx').on(t.attemptId)
-])
+  createdAt: created()
+}, t => [uniqueIndex('answers_attempt_item_uq').on(t.attemptId, t.itemId)])
 
-// ---------- speaking rooms ----------
-export const speakingRooms = pgTable('speaking_rooms', {
+export const essays = pgTable('essays', {
   id: uuid('id').primaryKey().defaultRandom(),
-  hostId: uuid('host_id').references(() => users.id, { onDelete: 'set null' }),
-  kind: text('kind').notNull().default('room'), // 'call' | 'random' | 'room'
-  status: roomStatus('status').notNull().default('open'),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  endedAt: timestamp('ended_at', { withTimezone: true })
-})
+  attemptId: uuid('attempt_id').notNull().references(() => attempts.id, { onDelete: 'cascade' }),
+  taskId: uuid('task_id').notNull().references(() => writingTasks.id, { onDelete: 'cascade' }),
+  text: text('text').notNull().default(''),
+  wordCount: integer('word_count').notNull().default(0),
+  feedback: text('feedback'),
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [uniqueIndex('essays_attempt_task_uq').on(t.attemptId, t.taskId)])
 
-// ---------- LMS: courses / modules / lessons ----------
-export const courses = pgTable('courses', {
+export const speakingResponses = pgTable('speaking_responses', {
   id: uuid('id').primaryKey().defaultRandom(),
-  title: text('title').notNull(),
-  slug: text('slug').notNull().unique(),
-  description: text('description'),
-  thumbnailUrl: text('thumbnail_url'),
-  level: text('level'), // A1..C1
-  category: text('category'), // e.g. Grammar, Vocabulary, Exam Skills
-  status: courseStatus('status').notNull().default('draft'),
-  isPremium: boolean('is_premium').notNull().default(false),
-  estimatedMinutes: integer('estimated_minutes'),
-  orderIndex: integer('order_index').notNull().default(0),
-  createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
-}, t => [index('courses_status_idx').on(t.status)])
-
-export const courseModules = pgTable('course_modules', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  courseId: uuid('course_id').notNull().references(() => courses.id, { onDelete: 'cascade' }),
-  title: text('title').notNull(),
-  summary: text('summary'),
-  orderIndex: integer('order_index').notNull().default(0),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
-}, t => [index('course_modules_course_idx').on(t.courseId)])
-
-export const lessons = pgTable('lessons', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  moduleId: uuid('module_id').notNull().references(() => courseModules.id, { onDelete: 'cascade' }),
-  title: text('title').notNull(),
-  type: lessonType('type').notNull().default('article'),
-  content: text('content'), // markdown/html body for article lessons
-  videoUrl: text('video_url'),
-  attachments: jsonb('attachments').notNull().default([]), // [{ label, url }]
-  durationMinutes: integer('duration_minutes').notNull().default(5),
-  isPreview: boolean('is_preview').notNull().default(false), // viewable without enrollment
-  orderIndex: integer('order_index').notNull().default(0),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
-}, t => [index('lessons_module_idx').on(t.moduleId)])
-
-// ---------- LMS: enrollments / progress ----------
-export const enrollments = pgTable('enrollments', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  courseId: uuid('course_id').notNull().references(() => courses.id, { onDelete: 'cascade' }),
-  status: enrollmentStatus('status').notNull().default('active'),
-  enrolledAt: timestamp('enrolled_at', { withTimezone: true }).notNull().defaultNow(),
-  completedAt: timestamp('completed_at', { withTimezone: true }),
-  lastLessonId: uuid('last_lesson_id').references(() => lessons.id, { onDelete: 'set null' })
-}, t => [
-  uniqueIndex('enrollments_user_course_uq').on(t.userId, t.courseId),
-  index('enrollments_user_idx').on(t.userId)
-])
-
-export const lessonProgress = pgTable('lesson_progress', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  lessonId: uuid('lesson_id').notNull().references(() => lessons.id, { onDelete: 'cascade' }),
-  courseId: uuid('course_id').notNull().references(() => courses.id, { onDelete: 'cascade' }),
-  completed: boolean('completed').notNull().default(false),
-  completedAt: timestamp('completed_at', { withTimezone: true }),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
-}, t => [
-  uniqueIndex('lesson_progress_user_lesson_uq').on(t.userId, t.lessonId),
-  index('lesson_progress_user_course_idx').on(t.userId, t.courseId)
-])
-
-// ---------- community ----------
-// Posts and replies are soft-deleted (`deletedAt`) so removing a post never
-// orphans its replies, and a removed reply keeps the thread's numbering intact.
-export const communityPosts = pgTable('community_posts', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  title: text('title'),
-  body: text('body').notNull(),
-  attachments: jsonb('attachments').notNull().default([]), // [{ type: 'image'|'audio', url }]
-  replyCount: integer('reply_count').notNull().default(0),
-  likeCount: integer('like_count').notNull().default(0),
-  deletedAt: timestamp('deleted_at', { withTimezone: true }),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
-}, t => [
-  index('community_posts_created_idx').on(t.createdAt),
-  index('community_posts_user_idx').on(t.userId)
-])
-
-// One row per (user, post). `likeCount` above is the denormalized tally, kept in
-// step with this table inside the same transaction as the insert/delete.
-export const communityPostLikes = pgTable('community_post_likes', {
-  postId: uuid('post_id').notNull().references(() => communityPosts.id, { onDelete: 'cascade' }),
-  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
-}, t => [
-  uniqueIndex('community_post_likes_uq').on(t.postId, t.userId),
-  index('community_post_likes_user_idx').on(t.userId)
-])
-
-export const communityReplies = pgTable('community_replies', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  postId: uuid('post_id').notNull().references(() => communityPosts.id, { onDelete: 'cascade' }),
-  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  body: text('body').notNull(),
-  attachments: jsonb('attachments').notNull().default([]),
-  deletedAt: timestamp('deleted_at', { withTimezone: true }),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
-}, t => [index('community_replies_post_idx').on(t.postId, t.createdAt)])
+  attemptId: uuid('attempt_id').notNull().references(() => attempts.id, { onDelete: 'cascade' }),
+  partId: uuid('part_id').notNull().references(() => speakingParts.id, { onDelete: 'cascade' }),
+  audioRef: text('audio_ref').notNull(),
+  durationSeconds: integer('duration_seconds'),
+  createdAt: created()
+}, t => [uniqueIndex('speaking_responses_attempt_part_uq').on(t.attemptId, t.partId)])
 
 // ---------- relations ----------
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
-  attempts: many(attempts),
-  subscriptions: many(subscriptions),
-  transactions: many(transactions),
-  enrollments: many(enrollments)
+  attempts: many(attempts)
 }))
 export const testsRelations = relations(tests, ({ many }) => ({ sections: many(sections) }))
 export const sectionsRelations = relations(sections, ({ one, many }) => ({
   test: one(tests, { fields: [sections.testId], references: [tests.id] }),
-  parts: many(parts)
+  items: many(sectionItems)
 }))
-export const partsRelations = relations(parts, ({ one, many }) => ({
-  section: one(sections, { fields: [parts.sectionId], references: [sections.id] }),
-  questions: many(questions)
+export const sectionItemsRelations = relations(sectionItems, ({ one }) => ({
+  section: one(sections, { fields: [sectionItems.sectionId], references: [sections.id] }),
+  part: one(parts, { fields: [sectionItems.partId], references: [parts.id] }),
+  writingTask: one(writingTasks, { fields: [sectionItems.writingTaskId], references: [writingTasks.id] }),
+  speakingPart: one(speakingParts, { fields: [sectionItems.speakingPartId], references: [speakingParts.id] })
 }))
-export const questionsRelations = relations(questions, ({ one }) => ({
-  part: one(parts, { fields: [questions.partId], references: [parts.id] })
+export const partsRelations = relations(parts, ({ many }) => ({ groups: many(questionGroups) }))
+export const questionGroupsRelations = relations(questionGroups, ({ one, many }) => ({
+  part: one(parts, { fields: [questionGroups.partId], references: [parts.id] }),
+  items: many(questionItems)
+}))
+export const questionItemsRelations = relations(questionItems, ({ one }) => ({
+  group: one(questionGroups, { fields: [questionItems.groupId], references: [questionGroups.id] })
+}))
+export const speakingPartsRelations = relations(speakingParts, ({ many }) => ({ questions: many(speakingQuestions) }))
+export const speakingQuestionsRelations = relations(speakingQuestions, ({ one }) => ({
+  part: one(speakingParts, { fields: [speakingQuestions.partId], references: [speakingParts.id] })
 }))
 export const attemptsRelations = relations(attempts, ({ one, many }) => ({
   user: one(users, { fields: [attempts.userId], references: [users.id] }),
   test: one(tests, { fields: [attempts.testId], references: [tests.id] }),
   section: one(sections, { fields: [attempts.sectionId], references: [sections.id] }),
-  answers: many(answers)
+  answers: many(answers),
+  essays: many(essays),
+  speaking: many(speakingResponses)
 }))
 export const answersRelations = relations(answers, ({ one }) => ({
   attempt: one(attempts, { fields: [answers.attemptId], references: [attempts.id] }),
-  question: one(questions, { fields: [answers.questionId], references: [questions.id] })
+  item: one(questionItems, { fields: [answers.itemId], references: [questionItems.id] })
 }))
-export const coursesRelations = relations(courses, ({ many }) => ({
-  modules: many(courseModules),
-  enrollments: many(enrollments)
+export const essaysRelations = relations(essays, ({ one }) => ({
+  attempt: one(attempts, { fields: [essays.attemptId], references: [attempts.id] }),
+  task: one(writingTasks, { fields: [essays.taskId], references: [writingTasks.id] })
 }))
-export const courseModulesRelations = relations(courseModules, ({ one, many }) => ({
-  course: one(courses, { fields: [courseModules.courseId], references: [courses.id] }),
-  lessons: many(lessons)
-}))
-export const lessonsRelations = relations(lessons, ({ one }) => ({
-  module: one(courseModules, { fields: [lessons.moduleId], references: [courseModules.id] })
-}))
-export const enrollmentsRelations = relations(enrollments, ({ one }) => ({
-  user: one(users, { fields: [enrollments.userId], references: [users.id] }),
-  course: one(courses, { fields: [enrollments.courseId], references: [courses.id] })
-}))
-export const lessonProgressRelations = relations(lessonProgress, ({ one }) => ({
-  user: one(users, { fields: [lessonProgress.userId], references: [users.id] }),
-  lesson: one(lessons, { fields: [lessonProgress.lessonId], references: [lessons.id] }),
-  course: one(courses, { fields: [lessonProgress.courseId], references: [courses.id] })
-}))
-export const communityPostsRelations = relations(communityPosts, ({ one, many }) => ({
-  author: one(users, { fields: [communityPosts.userId], references: [users.id] }),
-  replies: many(communityReplies),
-  likes: many(communityPostLikes)
-}))
-export const communityPostLikesRelations = relations(communityPostLikes, ({ one }) => ({
-  post: one(communityPosts, { fields: [communityPostLikes.postId], references: [communityPosts.id] }),
-  user: one(users, { fields: [communityPostLikes.userId], references: [users.id] })
-}))
-export const communityRepliesRelations = relations(communityReplies, ({ one }) => ({
-  post: one(communityPosts, { fields: [communityReplies.postId], references: [communityPosts.id] }),
-  author: one(users, { fields: [communityReplies.userId], references: [users.id] })
+export const speakingResponsesRelations = relations(speakingResponses, ({ one }) => ({
+  attempt: one(attempts, { fields: [speakingResponses.attemptId], references: [attempts.id] }),
+  part: one(speakingParts, { fields: [speakingResponses.partId], references: [speakingParts.id] })
 }))

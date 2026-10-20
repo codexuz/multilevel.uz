@@ -17,10 +17,6 @@ export default defineEventHandler(async (event) => {
     learningDuration: u.learningDuration,
     targetLevel: u.targetLevel,
     targetScore: u.targetScore,
-    onboarded: u.onboarded,
-    points: u.points,
-    coins: u.coins,
-    streakCount: u.streakCount,
-    isPremium: await hasActivePremium(u.id)
+    onboarded: u.onboarded
   }
 })

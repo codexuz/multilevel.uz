@@ -1,47 +1,70 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'admin', middleware: 'staff' })
+definePageMeta({ middleware: 'staff' })
+useSeoMeta({ title: 'Overview', robots: 'noindex' })
 
-const { data: stats } = await useFetch<{
-  tests: number
-  published: number
-  pendingGrading: number
-  students: number
-  courses: number
-  enrollments: number
-}>('/api/admin/stats')
-
-const cards = computed(() => [
-  { label: 'Total tests', value: stats.value?.tests ?? 0, icon: 'i-lucide-clipboard-list', to: '/admin/tests' },
-  { label: 'Published', value: stats.value?.published ?? 0, icon: 'i-lucide-globe', to: '/admin/tests' },
-  { label: 'Courses', value: stats.value?.courses ?? 0, icon: 'i-lucide-graduation-cap', to: '/admin/courses' },
-  { label: 'Enrollments', value: stats.value?.enrollments ?? 0, icon: 'i-lucide-user-check', to: '/admin/courses' },
-  { label: 'Awaiting grading', value: stats.value?.pendingGrading ?? 0, icon: 'i-lucide-check-check', to: '/admin/grading' },
-  { label: 'Students', value: stats.value?.students ?? 0, icon: 'i-lucide-users', to: '/admin/users' }
-])
+const { data: stats } = await useFetch<{ tests: number, published: number, pendingMarking: number, students: number, attempts: number }>('/api/admin/stats')
+const { isAdmin } = useMe()
 </script>
 
 <template>
-  <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold">
-        Overview
-      </h1>
+  <AppPage
+    title="Overview"
+    icon="i-lucide-layout-dashboard"
+  >
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+      <StatTile
+        label="Tests"
+        :value="stats?.tests ?? 0"
+        icon="i-lucide-files"
+        color="neutral"
+      />
+      <StatTile
+        label="Published"
+        :value="stats?.published ?? 0"
+        icon="i-lucide-globe"
+        color="success"
+      />
+      <StatTile
+        label="To mark"
+        :value="stats?.pendingMarking ?? 0"
+        icon="i-lucide-pen-line"
+        color="warning"
+      />
+      <StatTile
+        label="Students"
+        :value="stats?.students ?? 0"
+        icon="i-lucide-users"
+        color="primary"
+      />
+      <StatTile
+        label="Saved attempts"
+        :value="stats?.attempts ?? 0"
+        icon="i-lucide-clipboard-list"
+        color="neutral"
+      />
+    </div>
+    <div class="flex flex-wrap gap-2">
       <UButton
-        to="/admin/tests/new"
-        icon="i-lucide-plus"
-        label="New test"
+        v-if="isAdmin"
+        to="/builder"
+        label="Test builder"
+        icon="i-lucide-blocks"
+      />
+      <UButton
+        to="/marking"
+        label="Marking"
+        icon="i-lucide-pen-line"
+        color="neutral"
+        variant="outline"
+      />
+      <UButton
+        v-if="isAdmin"
+        to="/admin/users"
+        label="Users"
+        icon="i-lucide-users"
+        color="neutral"
+        variant="outline"
       />
     </div>
-
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <UPageCard
-        v-for="c in cards"
-        :key="c.label"
-        :to="c.to"
-        :icon="c.icon"
-        :title="String(c.value)"
-        :description="c.label"
-      />
-    </div>
-  </div>
+  </AppPage>
 </template>

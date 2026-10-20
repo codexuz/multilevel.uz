@@ -1,6 +1,6 @@
 /**
  * Simple microphone recorder built on MediaRecorder. Produces an audio Blob that
- * can be uploaded to S3 via useS3Upload.
+ * can be uploaded with uploadFile (services/http).
  *
  * While recording it also samples the input level (`levels`) so a caller can
  * draw a live waveform.

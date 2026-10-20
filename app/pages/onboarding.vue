@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const route = useRoute()
 const { me, refresh } = useMe()
 const toast = useToast()
 
@@ -108,7 +109,7 @@ async function submit() {
       }
     })
     await refresh()
-    await navigateTo('/dashboard')
+    await navigateTo(typeof route.query.next === 'string' && route.query.next.startsWith('/') && !route.query.next.startsWith('//') ? route.query.next : '/tests')
   } catch {
     toast.add({ title: 'Could not save', color: 'error' })
   } finally {
