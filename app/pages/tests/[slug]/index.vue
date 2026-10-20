@@ -85,45 +85,53 @@ useHead({
     back="/tests"
   >
     <div class="flex flex-col gap-6 max-w-5xl">
-      <div class="flex flex-col gap-2">
-        <h1 class="text-2xl font-semibold text-highlighted">
-          {{ t.title }}
-        </h1>
-        <p class="text-muted">
-          {{ description }}
-        </p>
-        <div class="flex flex-wrap gap-1.5">
-          <UBadge
-            label="Multilevel"
-            color="primary"
-            variant="subtle"
-          />
-          <UBadge
-            v-if="t.access === 'PREMIUM'"
-            label="Premium"
-            icon="i-lucide-sparkles"
-            color="primary"
-            variant="solid"
-          />
-          <UBadge
-            v-if="t.mode === 'MOCK'"
-            label="Mock format"
-            color="warning"
-            variant="subtle"
-          />
-          <UBadge
-            v-if="t.category"
-            :label="categoryLabel(t.category)"
-            color="neutral"
-            variant="outline"
-          />
-          <UBadge
+      <!-- The test's tile, large: the same colours as in the list -->
+      <div
+        class="relative overflow-hidden rounded-xl bg-gradient-to-br p-5 sm:p-8 text-white"
+        :class="tileGradient(t.slug)"
+      >
+        <div class="relative z-1 flex flex-col gap-3 max-w-2xl">
+          <div class="flex flex-wrap gap-1.5 text-[11px] font-semibold uppercase tracking-wide">
+            <span class="rounded-sm bg-white/20 px-1.5 py-0.5">Multilevel</span>
+            <span
+              v-if="t.access === 'PREMIUM'"
+              class="rounded-sm bg-white/20 px-1.5 py-0.5 flex items-center gap-1"
+            ><UIcon
+              name="i-lucide-sparkles"
+              class="size-3"
+            />Premium</span>
+            <span
+              v-else
+              class="rounded-sm bg-white/20 px-1.5 py-0.5"
+            >Free</span>
+            <span
+              v-if="t.mode === 'MOCK'"
+              class="rounded-sm bg-white/20 px-1.5 py-0.5"
+            >Mock exam</span>
+            <span
+              v-if="t.category"
+              class="rounded-sm bg-white/20 px-1.5 py-0.5"
+            >{{ categoryLabel(t.category) }}</span>
+          </div>
+          <h1 class="text-2xl sm:text-4xl font-bold text-balance max-w-[85%] sm:max-w-none">
+            {{ t.title }}
+          </h1>
+          <p class="text-white/85 text-pretty max-w-[85%] sm:max-w-xl">
+            {{ description }}
+          </p>
+          <p
             v-if="t.source"
-            :label="t.source"
-            color="neutral"
-            variant="outline"
-          />
+            class="text-xs text-white/70"
+          >
+            {{ t.source }}
+          </p>
         </div>
+        <img
+          :src="tileArt(t.slug)"
+          alt=""
+          class="pointer-events-none absolute -bottom-4 -right-3 size-28 sm:size-44 drop-shadow-2xl"
+          aria-hidden="true"
+        >
       </div>
 
       <BillingPaywall
@@ -149,10 +157,13 @@ useHead({
         >
           <div class="flex items-center justify-between gap-2">
             <div class="flex items-center gap-2">
-              <UIcon
-                :name="SKILL_META[s.skill as keyof typeof SKILL_META].icon"
-                class="size-5 text-primary"
-              />
+              <div class="size-10 shrink-0 rounded-xl bg-elevated grid place-items-center">
+                <img
+                  :src="SKILL_ART[s.skill]"
+                  alt=""
+                  class="size-6"
+                >
+              </div>
               <h2 class="font-semibold text-highlighted">
                 {{ SKILL_META[s.skill as keyof typeof SKILL_META].label }}
               </h2>

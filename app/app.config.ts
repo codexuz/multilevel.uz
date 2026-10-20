@@ -1,13 +1,12 @@
 /**
- * Nuxt UI dressed in the manner of HeroUI v3, kept restrained: white surfaces on soft shadows over
- * a grey canvas, hairline-ringed fields, segmented tabs, and modest corners on the standard scale
- * (--ui-radius 0.25rem): 8px controls, 12px cards and overlays, 6px badges. On a phone, modals open
- * as sheets from the bottom. The tokens live in assets/css/main.css.
+ * Nuxt UI dressed in the manner of SmallTalk2Me: white cards drawn with a hairline border, light
+ * grey inner panels, bordered fields that turn indigo on focus, an indigo primary and a near-black
+ * neutral for strong secondary actions ("Retake"), grey segmented tabs, 8px controls and 12px
+ * cards. On a phone, modals open as sheets from the bottom. The tokens live in assets/css/main.css.
  */
-const surface = 'bg-default shadow-surface ring-0'
-const overlay = 'bg-default shadow-overlay ring-0 dark:ring-1 dark:ring-default'
-// Fields keep a hairline ring: on the white paper of an exam a shadow alone is too faint to find.
-const field = 'text-highlighted bg-(--ui-field) shadow-field ring ring-inset ring-default'
+const surface = 'bg-default ring ring-default'
+const overlay = 'bg-default shadow-overlay ring-0'
+const field = 'text-highlighted bg-(--ui-field) ring ring-inset ring-accented hover:ring-(--ui-text-dimmed)/50'
 
 export default defineAppConfig({
   ui: {
@@ -21,10 +20,12 @@ export default defineAppConfig({
         base: 'rounded-lg font-medium transition-[color,background-color,transform,box-shadow] duration-150 active:not-disabled:scale-[0.98] touch-manipulation'
       },
       compoundVariants: [
-        { color: 'neutral', variant: 'outline', class: 'ring-0 bg-default shadow-surface hover:bg-elevated dark:ring-1 dark:ring-default' }
+        { color: 'neutral', variant: 'outline', class: 'ring-accented bg-default hover:bg-elevated' },
+        { color: 'neutral', variant: 'soft', class: 'bg-elevated hover:bg-accented' }
       ]
     },
     badge: {
+      slots: { base: 'font-semibold' },
       variants: {
         size: {
           xs: { base: 'rounded-sm' }, sm: { base: 'rounded-sm' }, md: { base: 'rounded-md' }, lg: { base: 'rounded-md' }, xl: { base: 'rounded-md' }
@@ -42,15 +43,15 @@ export default defineAppConfig({
         variant: {
           outline: { root: `${surface} divide-y divide-default` },
           subtle: { root: `${surface} divide-y divide-default` },
-          soft: { root: 'bg-elevated/60 divide-y divide-default' }
+          soft: { root: 'bg-elevated divide-y divide-default' }
         }
       }
     },
     alert: {
       slots: { root: 'rounded-xl' },
       compoundVariants: [
-        { variant: 'subtle', class: { root: 'ring-0 shadow-surface' } },
-        { variant: 'outline', class: { root: 'ring-0 bg-default shadow-surface' } }
+        { variant: 'subtle', class: { root: 'ring-0' } },
+        { variant: 'outline', class: { root: 'bg-default' } }
       ]
     },
     input: {
@@ -74,10 +75,10 @@ export default defineAppConfig({
       variants: { variant: { outline: field } }
     },
     tabs: {
-      slots: { trigger: 'rounded-md' },
+      slots: { trigger: 'rounded-md font-medium' },
       variants: {
         variant: {
-          pill: { list: 'bg-elevated rounded-lg', indicator: 'rounded-md shadow-surface' }
+          pill: { list: 'bg-elevated rounded-lg', indicator: 'rounded-md shadow-[0_1px_2px_rgb(10_8_18/0.08),0_0_0_1px_rgb(10_8_18/0.04)]' }
         }
       },
       compoundVariants: [
@@ -86,9 +87,9 @@ export default defineAppConfig({
       ]
     },
     navigationMenu: {
-      slots: { link: 'before:rounded-lg py-2' },
+      slots: { link: 'before:rounded-lg py-2 font-medium' },
       compoundVariants: [
-        { variant: 'pill', active: true, highlight: false, class: { link: 'before:bg-default before:shadow-surface dark:before:bg-elevated' } }
+        { variant: 'pill', active: true, highlight: false, class: { link: 'text-primary before:bg-primary/8', linkLeadingIcon: 'text-primary' } }
       ]
     },
     dropdownMenu: { slots: { content: `rounded-xl p-1 ${overlay}`, item: 'before:rounded-md' } },
@@ -96,12 +97,12 @@ export default defineAppConfig({
     tooltip: { slots: { content: 'rounded-md ring-0 shadow-overlay' } },
     toast: { slots: { root: 'rounded-xl ring-0 shadow-overlay' } },
     modal: {
-      slots: { content: 'divide-y-0', header: 'border-0 pb-0', footer: 'border-0 pt-0' },
+      slots: { content: 'divide-y-0', header: 'border-0 pb-0', title: 'text-lg', footer: 'border-0 pt-0' },
       variants: {
         fullscreen: {
           false: {
             content: [
-              'rounded-xl shadow-overlay ring-0 dark:ring-1 dark:ring-default',
+              'rounded-xl shadow-overlay ring-0',
               // A sheet from the bottom on a phone.
               'max-sm:inset-x-0 max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:translate-x-0 max-sm:translate-y-0 max-sm:w-full max-sm:max-w-none max-sm:rounded-b-none max-sm:pb-[env(safe-area-inset-bottom)]'
             ]
@@ -110,6 +111,7 @@ export default defineAppConfig({
       }
     },
     slideover: { slots: { content: 'ring-0 shadow-overlay' } },
+    accordion: { slots: { trigger: 'font-semibold text-highlighted py-4', body: 'text-muted' } },
     table: {
       slots: { th: 'text-muted font-medium text-xs uppercase tracking-wide' }
     },
@@ -117,14 +119,14 @@ export default defineAppConfig({
     dashboardPanel: {
       slots: {
         root: 'bg-canvas lg:not-last:border-e-0',
-        body: 'p-4 sm:p-6 pb-24 lg:pb-8'
+        body: 'p-4 sm:p-6 lg:p-8 pb-24 lg:pb-10'
       }
     },
     dashboardNavbar: {
-      slots: { root: 'border-b border-default bg-canvas/85 backdrop-blur-xl sticky top-0 z-10', title: 'text-base font-semibold tracking-tight' }
+      slots: { root: 'border-b border-default bg-canvas/90 backdrop-blur-xl sticky top-0 z-10', title: 'text-base font-semibold' }
     },
     dashboardToolbar: {
-      slots: { root: 'border-b border-default bg-canvas px-4 sm:px-6 py-1 [scrollbar-width:none]' }
+      slots: { root: 'border-b border-default bg-canvas px-4 sm:px-6 lg:px-8 py-1 [scrollbar-width:none]' }
     },
     dashboardSidebar: {
       slots: {

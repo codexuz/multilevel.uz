@@ -75,8 +75,14 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
           color="primary"
           variant="subtle"
         />
-        <h1 class="text-2xl sm:text-4xl font-semibold tracking-tight text-highlighted text-balance">
-          Prepare with every test, and know why every answer is right
+        <img
+          src="/illustrations/gem.svg"
+          alt=""
+          class="size-16 drop-shadow-lg"
+          aria-hidden="true"
+        >
+        <h1 class="text-2xl sm:text-4xl font-bold text-highlighted text-balance">
+          Prepare with <span class="text-accent">every test</span>, and know why every answer is right
         </h1>
         <p class="text-muted max-w-2xl text-pretty">
           Free tests stay free. Premium opens the whole library and the explanations; marking credits get your Writing and Speaking marked by an examiner.
@@ -100,9 +106,16 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
           :ui="{ body: 'flex flex-col gap-4 h-full' }"
         >
           <div class="flex items-center justify-between gap-2">
-            <p class="font-semibold text-highlighted">
-              {{ durationText(p.durationDays) }}
-            </p>
+            <div class="flex items-center gap-2.5">
+              <img
+                :src="p.durationDays >= 90 ? '/illustrations/crown.svg' : p.durationDays >= 30 ? '/illustrations/gem.svg' : '/illustrations/star.svg'"
+                alt=""
+                class="size-8"
+              >
+              <p class="font-semibold text-highlighted">
+                {{ durationText(p.durationDays) }}
+              </p>
+            </div>
             <UBadge
               v-if="p.featured"
               label="Most popular"
@@ -112,7 +125,7 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
             />
           </div>
           <div>
-            <p class="text-3xl font-semibold tracking-tight text-highlighted tabular-nums">
+            <p class="text-3xl font-bold text-highlighted tabular-nums">
               {{ fmtUzs(p.priceUzs) }}
             </p>
             <p
@@ -175,11 +188,12 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
             :key="p.id"
             :ui="{ body: 'flex items-center gap-4' }"
           >
-            <div class="size-10 rounded-lg bg-primary/10 text-primary grid place-items-center shrink-0">
-              <UIcon
-                name="i-lucide-pen-line"
-                class="size-5"
-              />
+            <div class="size-12 rounded-xl bg-elevated grid place-items-center shrink-0">
+              <img
+                src="/illustrations/writing.svg"
+                alt=""
+                class="size-7"
+              >
             </div>
             <div class="min-w-0 flex-1">
               <p class="font-medium text-highlighted">
@@ -255,7 +269,7 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
             { label: 'How long does marking take?', content: 'Usually within 24 hours. You get a notification when your Writing or Speaking is marked.' },
             { label: 'Something went wrong with a payment', content: `Write to us on Telegram (${telegramHandle}) with your account email and we will sort it out.` }
           ]"
-          class="rounded-xl bg-default shadow-surface px-4"
+          class="rounded-xl ring ring-default px-5"
         />
       </section>
     </div>

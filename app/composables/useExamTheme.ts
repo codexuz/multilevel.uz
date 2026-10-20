@@ -15,7 +15,7 @@ interface Palette {
 }
 
 const PALETTES: Record<ContrastMode, Palette> = {
-  'black-on-white': { bg: '#f9fafb', panel: '#ffffff', elevated: '#f1f5f9', text: '#1a202c', muted: '#718096', border: '#e2e8f0', accent: '#007aff', inverted: '#ffffff' },
+  'black-on-white': { bg: '#f9fafb', panel: '#ffffff', elevated: '#f1f5f9', text: '#1a202c', muted: '#718096', border: '#e2e8f0', accent: '#636eee', inverted: '#ffffff' },
   'white-on-black': { bg: '#111111', panel: '#1a1a2e', elevated: '#2d3748', text: '#e2e8f0', muted: '#a0aec0', border: '#2d3748', accent: '#63b3ed', inverted: '#111111' },
   'yellow-on-black': { bg: '#111111', panel: '#1a1a1a', elevated: '#2a2a2a', text: '#f6c543', muted: '#d4a843', border: '#333333', accent: '#f6c543', inverted: '#111111' }
 }
@@ -56,7 +56,7 @@ export function provideExamTheme() {
       // The paper keeps its own colours whatever the site's mode: fields and their shadow follow it.
       '--ui-field': isDark.value ? p.elevated : p.panel,
       '--ui-segment': isDark.value ? p.border : p.panel,
-      '--field-shadow': isDark.value ? 'none' : '0 2px 4px 0 rgb(0 0 0 / 0.04), 0 1px 2px 0 rgb(0 0 0 / 0.06), 0 0 1px 0 rgb(0 0 0 / 0.06)',
+      '--field-shadow': 'none',
       'fontSize': `${FONT_SCALE[textSize.value]}rem`
     }
   })

@@ -127,7 +127,7 @@ function leave() {
         icon="i-lucide-send"
         label="Submit"
         aria-label="Submit"
-        color="error"
+        color="neutral"
         :ui="{ label: 'max-sm:hidden' }"
         @click="() => { confirmOpen = true }"
       />

@@ -66,12 +66,11 @@ function again() {
           />
         </template>
         <template v-else-if="order?.status === 'PAID'">
-          <div class="size-12 rounded-full bg-success/10 text-success grid place-items-center">
-            <UIcon
-              name="i-lucide-check"
-              class="size-6"
-            />
-          </div>
+          <img
+            src="/illustrations/party.svg"
+            alt=""
+            class="size-16 drop-shadow-lg"
+          >
           <h1 class="text-lg font-semibold text-highlighted">
             Payment received
           </h1>

@@ -8,9 +8,14 @@ const { data: purchases } = await useFetch<Order[]>('/api/me/orders', { default:
 
 const { data } = await useFetch<{ items: { skill: string, score: number | null, status: string }[], total: number }>('/api/me/attempts', { query: { limit: 100 } })
 const best = computed(() => {
-  const out: Record<string, number> = {}
-  for (const a of data.value?.items ?? []) if (a.score != null) out[a.skill] = Math.max(out[a.skill] ?? 0, a.score)
+  const out: Partial<Record<'LISTENING' | 'READING' | 'WRITING' | 'SPEAKING', number>> = {}
+  for (const a of data.value?.items ?? []) if (a.score != null) out[a.skill as keyof typeof out] = Math.max(out[a.skill as keyof typeof out] ?? 0, a.score)
   return out
+})
+/** The level across the skills taken: from the average of their best scores. */
+const overall = computed(() => {
+  const scores = Object.values(best.value)
+  return scores.length ? cefrOf(scores.reduce((a, b) => a + b, 0) / scores.length) : null
 })
 </script>
 
@@ -36,16 +41,52 @@ const best = computed(() => {
         </div>
       </div>
 
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatTile
-          v-for="skill in (['LISTENING', 'READING', 'WRITING', 'SPEAKING'] as const)"
-          :key="skill"
-          :label="`Best ${SKILL_META[skill].label}`"
-          :value="best[skill] != null ? `${best[skill]} / 75` : '—'"
-          :icon="SKILL_META[skill].icon"
+      <!-- Your level, as SmallTalk2Me shows it -->
+      <UCard>
+        <div class="flex items-center justify-between gap-3 mb-2">
+          <div class="flex items-center gap-2">
+            <UBadge
+              :label="overall ?? '—'"
+              color="primary"
+              variant="solid"
+            />
+            <span class="font-semibold text-highlighted">Your level</span>
+          </div>
+          <span class="text-xs text-muted">Best score in each skill</span>
+        </div>
+        <div class="grid sm:grid-cols-[1fr_1fr] gap-4 items-center">
+          <LevelRadar :scores="best" />
+          <ul class="grid grid-cols-2 sm:grid-cols-1 gap-2">
+            <li
+              v-for="skill in (['LISTENING', 'READING', 'WRITING', 'SPEAKING'] as const)"
+              :key="skill"
+              class="flex items-center gap-3 rounded-lg bg-elevated px-3 py-2.5"
+            >
+              <img
+                :src="SKILL_ART[skill]"
+                alt=""
+                class="size-7 shrink-0"
+              >
+              <div class="min-w-0">
+                <p class="text-xs text-muted">
+                  {{ SKILL_META[skill].label }}
+                </p>
+                <p class="font-semibold text-highlighted tabular-nums">
+                  {{ best[skill] != null ? `${best[skill]} / 75` : 'Not yet' }}
+                </p>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <UButton
+          to="/tests"
+          :label="data?.total ? 'Take another test' : 'Take your first test'"
           color="neutral"
+          size="lg"
+          block
+          class="mt-4"
         />
-      </div>
+      </UCard>
 
       <UCard>
         <template #header>
@@ -145,21 +186,6 @@ const best = computed(() => {
           </div>
         </dl>
       </UCard>
-
-      <div class="flex gap-2">
-        <UButton
-          to="/results"
-          label="My results"
-          icon="i-lucide-chart-column"
-        />
-        <UButton
-          to="/tests"
-          label="Take a test"
-          icon="i-lucide-clipboard-list"
-          color="neutral"
-          variant="outline"
-        />
-      </div>
     </div>
   </AppPage>
 </template>

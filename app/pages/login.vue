@@ -1,6 +1,7 @@
 <script setup lang="ts">
-// The erp-lms IELTS app's sign-in card (layouts/auth.vue there). Signing in is optional: tests are
-// open to everyone, an account keeps the results and sends Writing and Speaking to an examiner.
+// Signing in, in the manner of SmallTalk2Me's sign-up card: the logo, a big title with a 3D
+// illustration, one clear way in. Signing in is optional: tests are open to everyone; an account
+// keeps the results and sends Writing and Speaking to an examiner.
 definePageMeta({ layout: false })
 
 const route = useRoute()
@@ -17,49 +18,82 @@ useSeoMeta({
   description: 'Sign in to keep your Multilevel practice results and have your Writing and Speaking marked by an examiner.',
   robots: 'noindex'
 })
+
+const perks = ['Keep every result and see your best', 'Writing and Speaking marked by an examiner', 'Pick up a test where you left it']
 </script>
 
 <template>
-  <UMain class="min-h-screen flex items-center justify-center px-4 py-10 bg-gradient-to-br from-primary-50 via-default to-default dark:from-primary-950/40">
-    <UPageCard class="w-full max-w-sm">
-      <div class="flex flex-col items-center text-center gap-6 py-2">
-        <AppLogo />
+  <UMain class="min-h-dvh flex flex-col items-center px-4 pt-8 pb-10 sm:justify-center bg-default">
+    <AppLogo class="mb-6" />
+    <div class="w-full max-w-md rounded-xl ring ring-default bg-default p-6 sm:p-8">
+      <div class="flex items-start justify-between gap-4">
         <div>
-          <h1 class="text-lg font-semibold text-highlighted">
-            Sign in to keep your results
+          <h1 class="text-3xl sm:text-4xl font-bold text-highlighted">
+            Sign in
           </h1>
-          <p class="text-sm text-muted mt-1">
-            Every test is free without an account. Signing in saves your scores and sends your Writing and Speaking to an examiner.
+          <p class="text-sm text-muted mt-2">
+            Every test is free without an account. Sign in to keep what you do.
           </p>
         </div>
-
-        <UAlert
-          v-if="oauthError"
-          color="error"
-          variant="subtle"
-          icon="i-lucide-triangle-alert"
-          description="Sign-in failed. Please try again."
-        />
-
-        <UButton
-          block
-          size="lg"
-          color="neutral"
-          variant="outline"
-          icon="i-simple-icons-google"
-          label="Continue with Google"
-          to="/auth/google"
-          external
-          @click="rememberNext"
-        />
-
-        <UButton
-          :to="next"
-          variant="link"
-          color="neutral"
-          label="Continue without an account"
-        />
+        <img
+          src="/illustrations/rocket.svg"
+          alt=""
+          class="size-20 sm:size-24 shrink-0 -mt-2 -me-2 drop-shadow-xl"
+          aria-hidden="true"
+        >
       </div>
-    </UPageCard>
+
+      <UAlert
+        v-if="oauthError"
+        color="error"
+        variant="subtle"
+        icon="i-lucide-triangle-alert"
+        description="Sign-in failed. Please try again."
+        class="mt-5"
+      />
+
+      <UButton
+        block
+        size="xl"
+        color="neutral"
+        variant="soft"
+        icon="i-logos-google-icon"
+        label="Continue with Google"
+        to="/auth/google"
+        external
+        class="mt-6 font-semibold"
+        @click="rememberNext"
+      />
+
+      <ul class="mt-6 flex flex-col gap-2.5">
+        <li
+          v-for="p in perks"
+          :key="p"
+          class="flex items-center gap-2.5 text-sm text-toned"
+        >
+          <UIcon
+            name="i-lucide-circle-check"
+            class="size-5 text-success shrink-0"
+          />{{ p }}
+        </li>
+      </ul>
+
+      <USeparator
+        label="or"
+        class="my-6"
+      />
+
+      <UButton
+        :to="next"
+        block
+        size="lg"
+        color="neutral"
+        variant="outline"
+        label="Continue without an account"
+      />
+    </div>
+    <p class="mt-6 text-xs text-muted text-center max-w-sm">
+      By signing in you agree to keep to fair use of the tests. We only use your Google name, email and picture.
+    </p>
   </UMain>
 </template>

@@ -165,18 +165,19 @@ const userMenu = computed<DropdownMenuItem[][]>(() => [
           v-for="t in tabBar"
           :key="t.label"
           :to="t.to"
-          class="relative flex flex-col items-center justify-center gap-1 h-14 text-[11px] font-medium transition-colors"
-          :class="tabActive(t.to) ? 'text-primary' : 'text-muted hover:text-highlighted'"
+          :aria-label="t.label"
+          :title="t.label"
+          class="relative flex flex-col items-center justify-center gap-1 h-14 transition-colors"
+          :class="tabActive(t.to) ? 'text-highlighted' : 'text-dimmed hover:text-toned'"
         >
-          <span
-            v-if="tabActive(t.to)"
-            class="absolute top-0 inset-x-6 h-0.5 rounded-b-sm bg-primary"
-          />
           <UIcon
             :name="t.icon"
-            class="size-5"
+            class="size-6"
           />
-          <span class="truncate">{{ t.label }}</span>
+          <span
+            class="h-0.5 w-5 rounded-full transition-colors"
+            :class="tabActive(t.to) ? 'bg-inverted' : 'bg-transparent'"
+          />
         </NuxtLink>
       </div>
     </nav>

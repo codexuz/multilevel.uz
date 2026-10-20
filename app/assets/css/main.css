@@ -2,77 +2,80 @@
 @import "@nuxt/ui";
 
 @theme static {
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Roboto', ui-sans-serif, system-ui, -apple-system, sans-serif;
 
-  --color-brand-50: #e6f3ff;
-  --color-brand-100: #b3daff;
-  --color-brand-200: #80c2ff;
-  --color-brand-300: #4da9ff;
-  --color-brand-400: #1a91ff;
-  --color-brand-500: #007aff;
-  --color-brand-600: #0062cc;
-  --color-brand-700: #004999;
-  --color-brand-800: #003166;
-  --color-brand-900: #001833;
-  --color-brand-950: #000c1a;
+  /* SmallTalk2Me's indigo (#636EEE) as the brand scale. */
+  --color-brand-50: #eff0fe;
+  --color-brand-100: #e0e2fd;
+  --color-brand-200: #c7cafb;
+  --color-brand-300: #a5aaf7;
+  --color-brand-400: #8389f2;
+  --color-brand-500: #636eee;
+  --color-brand-600: #4f57de;
+  --color-brand-700: #4146c2;
+  --color-brand-800: #363a9c;
+  --color-brand-900: #30347b;
+  --color-brand-950: #1e1f48;
 }
 
 /*
- * In the manner of HeroUI v3: a grey canvas with white surfaces on soft shadows, hairline borders
- * where structure needs them, and modest corners. Colours are HeroUI's default theme (zinc
- * neutrals); the brand blue stays the accent. Dark mode drops the shadows, as HeroUI does.
+ * In the manner of SmallTalk2Me: a white page, near-black type, indigo for what matters, cards
+ * drawn with a hairline border rather than a shadow, light grey panels inside them, and colour
+ * kept for the signature pieces (the score card, the test tiles, the 3D illustrations).
  */
 @theme inline {
   --color-canvas: var(--ui-canvas);
   --shadow-surface: var(--surface-shadow);
   --shadow-overlay: var(--overlay-shadow);
   --shadow-field: var(--field-shadow);
+  --shadow-glow: var(--glow-shadow);
 }
 
 :root {
   --ui-radius: 0.25rem;
-  --ui-canvas: oklch(0.9702 0 0);
-  --ui-bg: oklch(100% 0 0);
-  --ui-bg-muted: oklch(0.9702 0 0);
-  --ui-bg-elevated: oklch(0.9524 0.0013 286.37);
-  --ui-bg-accented: oklch(0.9373 0.0013 286.37);
-  --ui-border: oklch(92% 0.004 286.32);
-  --ui-border-muted: oklch(94% 0.004 286.32);
-  --ui-border-accented: oklch(88% 0.004 286.32);
-  --ui-text-dimmed: oklch(0.66 0.012 286);
-  --ui-text-muted: oklch(0.5517 0.0138 285.94);
-  --ui-text-toned: oklch(0.42 0.01 286);
-  --ui-text: oklch(0.2103 0.0059 285.89);
-  --ui-text-highlighted: oklch(0.2103 0.0059 285.89);
+  --ui-canvas: #ffffff;
+  --ui-bg: #ffffff;
+  --ui-bg-muted: #f8f8fb;
+  --ui-bg-elevated: #f3f4f7;
+  --ui-bg-accented: #e9eaf0;
+  --ui-border: #e8e9ef;
+  --ui-border-muted: #f0f1f5;
+  --ui-border-accented: #d9dbe3;
+  --ui-text-dimmed: #9b9ca8;
+  --ui-text-muted: #6c6d7a;
+  --ui-text-toned: #3d3e4a;
+  --ui-text: #1b1a24;
+  --ui-text-highlighted: #0a0812;
   --ui-header-height: 3.75rem;
-  --ui-field: oklch(100% 0 0);
-  --ui-segment: oklch(100% 0 0);
+  --ui-field: #ffffff;
+  --ui-segment: #ffffff;
 
-  --surface-shadow: 0 2px 4px 0 rgb(0 0 0 / 0.04), 0 1px 2px 0 rgb(0 0 0 / 0.06), 0 0 1px 0 rgb(0 0 0 / 0.06);
-  --overlay-shadow: 0 2px 8px 0 rgb(0 0 0 / 0.06), 0 -6px 12px 0 rgb(0 0 0 / 0.03), 0 14px 28px 0 rgb(0 0 0 / 0.08);
-  --field-shadow: 0 2px 4px 0 rgb(0 0 0 / 0.04), 0 1px 2px 0 rgb(0 0 0 / 0.06), 0 0 1px 0 rgb(0 0 0 / 0.06);
+  --surface-shadow: 0 0 0 0 transparent;
+  --overlay-shadow: 0 12px 32px -8px rgb(10 8 18 / 0.16), 0 0 0 1px rgb(10 8 18 / 0.06);
+  --field-shadow: 0 0 0 0 transparent;
+  /* The soft indigo glow SmallTalk2Me puts under its floating chips. */
+  --glow-shadow: 0 8px 24px -6px rgb(88 112 245 / 0.45);
 }
 
 .dark {
-  --ui-canvas: oklch(12% 0.005 285.823);
-  --ui-bg: oklch(0.2103 0.0059 285.89);
-  --ui-bg-muted: oklch(0.18 0.005 286);
-  --ui-bg-elevated: oklch(0.257 0.0037 286.14);
-  --ui-bg-accented: oklch(0.2721 0.0024 247.91);
-  --ui-border: oklch(28% 0.006 286.033);
-  --ui-border-muted: oklch(25% 0.006 286.033);
-  --ui-border-accented: oklch(32% 0.006 286.033);
-  --ui-text-dimmed: oklch(58% 0.015 286);
-  --ui-text-muted: oklch(70.5% 0.015 286.067);
-  --ui-text-toned: oklch(82% 0.01 286);
-  --ui-text: oklch(0.9911 0 0);
-  --ui-text-highlighted: oklch(0.9911 0 0);
-  --ui-field: oklch(0.257 0.0037 286.14);
-  --ui-segment: oklch(0.3 0.004 286);
+  --ui-canvas: #0d0d14;
+  --ui-bg: #14141d;
+  --ui-bg-muted: #111119;
+  --ui-bg-elevated: #1c1c27;
+  --ui-bg-accented: #252532;
+  --ui-border: #262633;
+  --ui-border-muted: #1f1f2a;
+  --ui-border-accented: #33334a;
+  --ui-text-dimmed: #6f7084;
+  --ui-text-muted: #9a9bb0;
+  --ui-text-toned: #c9cad8;
+  --ui-text: #e9e9f2;
+  --ui-text-highlighted: #ffffff;
+  --ui-field: #1c1c27;
+  --ui-segment: #2a2a38;
 
-  --surface-shadow: 0 0 0 0 transparent;
-  --overlay-shadow: 0 0 1px 0 rgb(255 255 255 / 0.3) inset;
-  --field-shadow: 0 0 0 0 transparent;
+  --overlay-shadow: 0 12px 32px -8px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.08);
+  --glow-shadow: 0 8px 24px -6px rgb(99 110 238 / 0.35);
 }
 
 body {
@@ -80,10 +83,19 @@ body {
   -webkit-tap-highlight-color: transparent;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-feature-settings: "cv11", "ss01";
 }
 
-h1, h2, h3 { letter-spacing: -0.015em; }
+h1, h2, h3 { letter-spacing: -0.01em; }
+
+/* A word in a heading set in the accent, as SmallTalk2Me does ("Over 3 million people use …"). */
+.text-accent { color: var(--ui-primary); }
+
+/* The soft indigo and cyan haze behind a hero. */
+.hero-glow {
+  background:
+    radial-gradient(60% 70% at 20% 30%, color-mix(in oklab, var(--ui-primary) 16%, transparent), transparent 70%),
+    radial-gradient(50% 60% at 85% 40%, rgb(125 211 252 / 0.22), transparent 70%);
+}
 
 /* Room for the phone tab bar and the home indicator. */
 .pb-safe { padding-bottom: env(safe-area-inset-bottom); }

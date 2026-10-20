@@ -9,16 +9,19 @@ const route = useRoute()
 const copy = computed(() => ({
   premium: {
     icon: 'i-lucide-lock-keyhole',
+    art: '/illustrations/locked.svg',
     title: 'This test is part of Premium',
     description: 'Premium opens every test in the library and the explanation behind every answer.'
   },
   credit: {
     icon: 'i-lucide-pen-line',
+    art: '/illustrations/writing.svg',
     title: 'Have an examiner mark it',
     description: 'One marking credit gets this section a score out of 75 and written feedback from an examiner. Your answers are kept here meanwhile.'
   },
   explanations: {
     icon: 'i-lucide-lightbulb',
+    art: '/illustrations/bulb.svg',
     title: props.count ? `${props.count} explanations are waiting in Premium` : 'Explanations are part of Premium',
     description: 'See why each answer is right, with the line in the passage that gives it away.'
   }
@@ -41,12 +44,11 @@ const to = computed(() => `/pricing?from=${encodeURIComponent(route.fullPath)}${
     class="max-w-md w-full mx-auto"
   >
     <div class="flex flex-col items-center text-center gap-3 py-2">
-      <div class="size-12 rounded-xl bg-primary/10 text-primary grid place-items-center">
-        <UIcon
-          :name="copy.icon"
-          class="size-6"
-        />
-      </div>
+      <img
+        :src="copy.art"
+        alt=""
+        class="size-16 drop-shadow-lg"
+      >
       <div class="space-y-1">
         <h2 class="text-lg font-semibold text-highlighted">
           {{ copy.title }}

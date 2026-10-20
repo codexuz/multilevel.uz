@@ -32,10 +32,10 @@ useSeoMeta({
   >
     <div class="flex flex-col gap-4">
       <div>
-        <h1 class="text-2xl font-semibold text-highlighted">
-          Multilevel practice tests
+        <h1 class="text-2xl sm:text-3xl font-bold text-highlighted">
+          Multilevel <span class="text-accent">practice tests</span>
         </h1>
-        <p class="text-muted">
+        <p class="text-muted mt-1">
           Every test is free. Listening and Reading are checked the moment you finish; sign in to keep your results.
         </p>
       </div>

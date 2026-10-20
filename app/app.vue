@@ -16,7 +16,7 @@ useHead(() => ({
   },
   meta: [
     { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
-    { name: 'theme-color', content: '#007aff' }
+    { name: 'theme-color', content: '#636eee' }
   ],
   link: [
     { rel: 'icon', href: '/favicon.ico' },
