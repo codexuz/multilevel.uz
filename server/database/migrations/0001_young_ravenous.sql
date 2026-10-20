@@ -1,1 +1,0 @@
-ALTER TABLE "sections" ADD COLUMN "video_explanation_url" text;

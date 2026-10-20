@@ -24,14 +24,17 @@ ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=3004
 
-# Nitro bundles its own node_modules into .output, so that's all we need.
+# Nitro bundles its own node_modules into .output, so that's all we need, plus the SQL
+# migrations the server applies on start (server/plugins/migrate.ts).
 COPY --from=build --chown=node:node /app/.output ./.output
+COPY --from=build --chown=node:node /app/server/database/migrations ./server/database/migrations
 
 USER node
 EXPOSE 3004
 
 # Simple container-level liveness check against the health endpoint.
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+# The start period covers applying migrations; requests wait for them.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
   CMD wget -qO- http://127.0.0.1:3004/api/health || exit 1
 
 CMD ["node", ".output/server/index.mjs"]

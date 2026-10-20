@@ -1,1 +1,0 @@
-ALTER TABLE "attempts" ADD COLUMN "part_number" integer;

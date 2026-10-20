@@ -37,7 +37,7 @@ and `erp-lms/ielts-test` import/export format, set to the Multilevel format.
 | Every test marked Free, checked instantly with score, CEFR level and the answer key | Premium tests (their pages stay public and indexed) and the explanations in every review | One Writing or Speaking section marked by an examiner |
 
 - Plans live in the `plans` table and are edited on `/admin/plans`; the first five come from
-  migration 0007 (prices are a starting guess). A plan gives days of Premium, credits, or both.
+  the first migration (prices are a starting guess). A plan gives days of Premium, credits, or both.
   Buying while Premium runs adds the new days after the current ones; nothing renews by itself.
 - Tests are Free or Premium (Builder → test → Details → Access).
 - **Click.uz**: set `CLICK_SERVICE_ID`, `CLICK_MERCHANT_ID` and `CLICK_SECRET_KEY` (and optionally
@@ -69,7 +69,7 @@ Raw Listening and Reading scores convert to 0–75 with the official tables
 ```bash
 npm ci
 cp .env.example .env   # fill in the values
-npm run db:migrate     # creates the tables
+npm run db:migrate     # creates the tables (the server also does this when it starts)
 npm run db:seed        # optional: loads examples/multilevel-practice-test-1.json, published
 npm run dev            # http://localhost:3000
 ```
@@ -87,6 +87,23 @@ update users set role = 'admin' where email = 'you@example.com';
 ```
 
 Admins manage roles from `/admin/users`.
+
+## Database migrations
+
+Migrations live in `server/database/migrations` and are applied when the server starts
+(`server/plugins/migrate.ts`), so a deploy brings the database up to date by itself: whatever
+has not run yet runs, in order, in one transaction, and requests wait until it is done. If a
+migration fails, the server exits, the deploy's health check fails, and the old version keeps
+running.
+
+To change the schema, edit `server/database/schema.ts`, run `npm run db:generate`, review the
+new SQL file, and commit it with the code that needs it. Never edit a migration that has been
+deployed; add a new one.
+
+- `DB_MIGRATE=false` turns migrating on start off (then run `npm run db:migrate` yourself).
+- A database that already has tables but none of this app's migrations is refused. Use an empty
+  database, or set `DB_DROP_LEGACY_TABLES=true` for one deploy to drop everything in it and start
+  fresh (it does nothing once the first migration is recorded; remove it afterwards).
 
 ## Development
 
