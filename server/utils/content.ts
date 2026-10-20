@@ -221,3 +221,38 @@ export function readiness(test: any): Readiness {
   }
   return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] }
 }
+
+// ─── Practising one part ─────────────────────────────────────────────────────────────────
+
+/** A section item's number as candidates know it: Listening or Reading part, Writing task, Speaking part. */
+export const itemNumber = (item: any): number | null => item.part?.partNumber ?? item.writingTask?.taskNumber ?? item.speakingPart?.partNumber ?? null
+
+/** The section with only part `n` in it, to sit and mark on its own; null when it has no such part. */
+export function pickPart(section: any, n: number) {
+  const item = (section.items ?? []).find((i: any) => itemNumber(i) === n)
+  return item ? { ...section, items: [item] } : null
+}
+
+/**
+ * How long one part gets: its own time if the author set one; for Listening and Reading its share
+ * of the section's time by questions (at least five minutes); for a Writing task the usual minutes.
+ */
+export function partSeconds(section: any) {
+  const item = section.items?.[0]
+  if (item?.part?.timeLimitMinutes) return item.part.timeLimitMinutes * 60
+  if (item?.writingTask) return (item.writingTask.suggestedMinutes ?? (item.writingTask.taskNumber === 1 ? 15 : item.writingTask.taskNumber === 2 ? 20 : 25)) * 60
+  if (item?.part) {
+    const questions = (item.part.groups ?? []).reduce((n: number, g: any) => n + (g.items?.length ?? 0), 0)
+    const format = FORMAT[section.skill as 'LISTENING' | 'READING']
+    const whole = section.durationSeconds ?? OFFICIAL_SECONDS[section.skill as Skill]
+    return Math.max(300, Math.round((whole * questions) / (format?.questions ?? 35) / 60) * 60)
+  }
+  return section.durationSeconds ?? OFFICIAL_SECONDS[section.skill as Skill]
+}
+
+/** One part's paper: the part alone, its own recording rather than the whole section's, its time. */
+export function paperPart(section: any) {
+  const paper = paperSection(section)
+  const own = paper.parts[0]?.audioUrl
+  return { ...paper, seconds: partSeconds(section), audioUrl: own ? null : paper.audioUrl }
+}

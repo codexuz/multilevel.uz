@@ -377,6 +377,84 @@ export async function deleteSpeakingPart(id: string) {
 
 // ─── Tests ───────────────────────────────────────────────────────────────────────────────
 
+const SKILL_NAMES = ['LISTENING', 'READING', 'WRITING', 'SPEAKING']
+
+/**
+ * The catalogue's filters on tests: has a section in a skill, has questions of a type, is a full
+ * test (all four skills), free or premium.
+ */
+function catalogFilters(query: Body) {
+  const skill = SKILL_NAMES.includes(String(query.skill)) ? String(query.skill) : null
+  const type = query.type && IELTS_QUESTION_TYPES[String(query.type)] ? String(query.type) : null
+  return [
+    skill ? sql`exists (select 1 from ${sections} s join ${sectionItems} si on si.section_id = s.id where s.test_id = ${tests.id} and s.skill = ${skill})` : undefined,
+    type ? sql`exists (select 1 from ${sections} s join ${sectionItems} si on si.section_id = s.id join ${questionGroups} g on g.part_id = si.part_id where s.test_id = ${tests.id} and g.type = ${type})` : undefined,
+    query.full === '1' || query.full === 'true'
+      ? sql`(select count(distinct s.skill) from ${sections} s where s.test_id = ${tests.id} and exists (select 1 from ${sectionItems} si where si.section_id = s.id)) = 4`
+      : undefined,
+    query.access === 'FREE' || query.access === 'PREMIUM' ? eq(tests.access, String(query.access)) : undefined
+  ]
+}
+
+/**
+ * The parts of published tests, each to practise on its own: Listening and Reading parts, Writing
+ * tasks and Speaking parts, with what they hold. Filtered by skill, number, question type and words.
+ */
+export async function listPracticeParts(query: Body) {
+  const db = useDb()
+  const { page, limit, offset } = paging(query, 60)
+  const skill = SKILL_NAMES.includes(String(query.skill)) ? String(query.skill) : null
+  const number = Number(query.part) || null
+  const type = query.type && IELTS_QUESTION_TYPES[String(query.type)] ? String(query.type) : null
+  const search = query.search?.trim()
+  const itemNo = sql<number>`coalesce(${parts.partNumber}, ${writingTasks.taskNumber}, ${speakingParts.partNumber})`
+  const where = and(
+    eq(tests.status, 'PUBLISHED'),
+    skill ? eq(sections.skill, skill) : undefined,
+    number ? sql`${itemNo} = ${number}` : undefined,
+    type ? sql`exists (select 1 from ${questionGroups} g where g.part_id = ${sectionItems.partId} and g.type = ${type})` : undefined,
+    query.access === 'FREE' || query.access === 'PREMIUM' ? eq(tests.access, String(query.access)) : undefined,
+    search ? or(ilike(parts.title, `%${search}%`), ilike(writingTasks.title, `%${search}%`), ilike(speakingParts.title, `%${search}%`), ilike(tests.title, `%${search}%`)) : undefined
+  )
+  const base = () => db.select().from(sectionItems)
+    .innerJoin(sections, eq(sections.id, sectionItems.sectionId))
+    .innerJoin(tests, eq(tests.id, sections.testId))
+    .leftJoin(parts, eq(parts.id, sectionItems.partId))
+    .leftJoin(writingTasks, eq(writingTasks.id, sectionItems.writingTaskId))
+    .leftJoin(speakingParts, eq(speakingParts.id, sectionItems.speakingPartId))
+  const [rows, [total]] = await Promise.all([
+    base().where(where).orderBy(desc(tests.publishedAt), sections.position, sectionItems.position).limit(limit).offset(offset),
+    db.select({ n: count() }).from(sectionItems)
+      .innerJoin(sections, eq(sections.id, sectionItems.sectionId))
+      .innerJoin(tests, eq(tests.id, sections.testId))
+      .leftJoin(parts, eq(parts.id, sectionItems.partId))
+      .leftJoin(writingTasks, eq(writingTasks.id, sectionItems.writingTaskId))
+      .leftJoin(speakingParts, eq(speakingParts.id, sectionItems.speakingPartId))
+      .where(where)
+  ])
+  // What each Listening or Reading part asks: its question types and how many questions.
+  const partIds = rows.map(r => r.parts?.id).filter((id): id is string => !!id)
+  const groups = partIds.length
+    ? await db.select({ partId: questionGroups.partId, type: questionGroups.type, n: count(questionItems.id) }).from(questionGroups)
+        .leftJoin(questionItems, eq(questionItems.groupId, questionGroups.id))
+        .where(inArray(questionGroups.partId, partIds)).groupBy(questionGroups.partId, questionGroups.type)
+    : []
+  const items = rows.map((r) => {
+    const own = groups.filter(g => g.partId === r.parts?.id)
+    return {
+      id: r.section_items.id,
+      skill: r.sections.skill,
+      number: r.parts?.partNumber ?? r.writing_tasks?.taskNumber ?? r.speaking_parts?.partNumber ?? null,
+      title: r.parts?.title ?? r.writing_tasks?.title ?? r.speaking_parts?.title ?? null,
+      questions: own.reduce((n, g) => n + g.n, 0),
+      types: [...new Set(own.map(g => g.type))],
+      minWords: r.writing_tasks ? minimumWordsFor(r.writing_tasks.taskNumber, r.writing_tasks.minWords) : null,
+      test: { slug: r.tests.slug, title: r.tests.title, access: r.tests.access }
+    }
+  })
+  return paged(items, total?.n ?? 0, page, limit)
+}
+
 export async function listTests(query: Body, opts: { publishedOnly?: boolean } = {}) {
   const db = useDb()
   const { page, limit, offset } = paging(query, opts.publishedOnly ? 60 : 100)
@@ -385,7 +463,8 @@ export async function listTests(query: Body, opts: { publishedOnly?: boolean } =
     opts.publishedOnly ? eq(tests.status, 'PUBLISHED') : query.status ? eq(tests.status, String(query.status)) : ne(tests.status, 'ARCHIVED'),
     query.mode ? eq(tests.mode, String(query.mode)) : undefined,
     query.category ? eq(tests.category, String(query.category)) : undefined,
-    search ? or(ilike(tests.title, `%${search}%`), ilike(tests.description, `%${search}%`)) : undefined
+    search ? or(ilike(tests.title, `%${search}%`), ilike(tests.description, `%${search}%`)) : undefined,
+    ...catalogFilters(query)
   )
   const [rows, [total]] = await Promise.all([
     db.query.tests.findMany({

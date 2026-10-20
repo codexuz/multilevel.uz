@@ -29,3 +29,19 @@ export function scoreColor(score?: number | null): 'success' | 'primary' | 'warn
   if (score >= 38) return 'warning'
   return 'error'
 }
+
+/** A part's name within its skill: "Part 3", "Task 1.2", "Part 1.1" (Speaking). */
+export function partName(skill: string, n?: number | null) {
+  if (!n) return ''
+  if (skill === 'WRITING') return writingTaskLabel(n)
+  if (skill === 'SPEAKING') return speakingPartLabel(n)
+  return `Part ${n}`
+}
+
+/** The part numbers each skill has, as the catalogue offers them. */
+export const PART_NUMBERS: Record<string, number[]> = {
+  LISTENING: [1, 2, 3, 4, 5, 6],
+  READING: [1, 2, 3, 4, 5],
+  WRITING: [1, 2, 3],
+  SPEAKING: [1, 2, 3, 4]
+}

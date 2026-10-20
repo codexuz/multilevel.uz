@@ -17,8 +17,12 @@ export default defineEventHandler(async (event) => {
   const skill = String(getRouterParam(event, 'skill')).toUpperCase()
   if (!isSkill(skill)) throw createError({ statusCode: 404, message: 'Section not found' })
   const test = await loadTest({ slug: getRouterParam(event, 'slug')! }, { publishedOnly: true })
-  const section = test.sections.find((s: any) => s.skill === skill)
-  if (!section?.items?.length) throw createError({ statusCode: 404, message: 'Section not found' })
+  const whole = test.sections.find((s: any) => s.skill === skill)
+  if (!whole?.items?.length) throw createError({ statusCode: 404, message: 'Section not found' })
+  // ?part=N: one part practised on its own, marked and saved as that part.
+  const partNumber = getQuery(event).part ? Number(getQuery(event).part) : null
+  const section = partNumber ? pickPart(whole, partNumber) : whole
+  if (!section) throw createError({ statusCode: 404, message: 'Part not found' })
 
   const body = (await readBody<SubmitBody>(event)) ?? {}
   const user = await optionalUser(event)
@@ -54,7 +58,7 @@ export default defineEventHandler(async (event) => {
     attemptId = await db.transaction(async (tx) => {
       if (needsCredit && !(await holdCredits(tx, user.id))) paymentRequired('CREDIT_REQUIRED', 'Marking by an examiner needs a marking credit')
       const [attempt] = await tx.insert(attempts).values({
-        userId: user.id, testId: test.id, sectionId: section.id, skill, mode: test.mode,
+        userId: user.id, testId: test.id, sectionId: section.id, skill, partNumber, mode: test.mode,
         status: objective ? 'GRADED' : 'SUBMITTED', startedAt, gradedAt: objective ? new Date() : null,
         correct: objective ? marked.correct : null, total: objective ? marked.total : null,
         score: objective ? marked.score : null, cefrLevel: objective ? marked.cefrLevel : null
@@ -73,6 +77,7 @@ export default defineEventHandler(async (event) => {
     id: attemptId,
     saved: !!attemptId,
     skill,
+    partNumber,
     status: objective ? 'GRADED' : attemptId ? 'SUBMITTED' : 'PRACTICE',
     test: { id: test.id, slug: test.slug, title: test.title },
     submittedAt: new Date(),

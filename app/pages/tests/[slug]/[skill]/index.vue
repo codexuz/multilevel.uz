@@ -19,13 +19,16 @@ const toast = useToast()
 const { loggedIn, isStaff, credits, refresh: refreshMe } = useMe()
 const slug = String(route.params.slug)
 const skill = String(route.params.skill).toUpperCase() as 'LISTENING' | 'READING' | 'WRITING' | 'SPEAKING'
+// ?part=N: one part practised on its own.
+const partNo = Number(route.query.part) || null
+const partQuery = partNo ? `?part=${partNo}` : ''
 
 const { data, error, status } = await useFetch<{ test: { id: string, slug: string, title: string, mode: string }, section: PaperSection & { speaking?: any[] } }>(
-  `/api/tests/${slug}/${skill.toLowerCase()}`,
+  `/api/tests/${slug}/${skill.toLowerCase()}${partQuery}`,
   { server: false }
 )
 
-useSeoMeta({ title: () => (data.value ? `${data.value.test.title} — ${SKILL_META[skill]?.label ?? 'Test'}` : 'Test'), robots: 'noindex' })
+useSeoMeta({ title: () => (data.value ? `${data.value.test.title} — ${SKILL_META[skill]?.label ?? 'Test'}${partNo ? ` ${partName(skill, partNo)}` : ''}` : 'Test'), robots: 'noindex' })
 
 const section = computed(() => data.value?.section ?? null)
 const parts = computed(() => (section.value?.parts ?? []).map(skill === 'LISTENING' ? transformListeningPart : transformReadingPart))
@@ -34,7 +37,7 @@ const partAudio = computed(() => Object.fromEntries(parts.value.map((p, i) => [i
 const seconds = computed(() => section.value?.seconds ?? 3600)
 
 // Kept in this browser as they are given: a reload or a lost connection loses nothing.
-const key = `ml.paper.${slug}.${skill}`
+const key = `ml.paper.${slug}.${skill}${partNo ? `.${partNo}` : ''}`
 const answers = ref<AnswerMap>({})
 const essays = ref<Record<string, string>>({})
 const startedAt = ref<string | null>(null)
@@ -76,7 +79,7 @@ usePreventLeave(() => !!section.value && !submitting.value && !practice.value &&
 async function handIn(extra: { recordings?: { partId: string, audioRef: string, durationSeconds?: number }[] } = {}) {
   submitting.value = true
   try {
-    const result = await $fetch<any>(`/api/tests/${slug}/${skill.toLowerCase()}/submit`, {
+    const result = await $fetch<any>(`/api/tests/${slug}/${skill.toLowerCase()}/submit${partQuery}`, {
       method: 'POST',
       body: {
         answers: answersPayload(answers.value, parts.value),

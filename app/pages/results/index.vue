@@ -2,7 +2,7 @@
 /** My saved attempts, newest first: each with its skill, score and level, opening the result. */
 useSeoMeta({ title: 'My results', robots: 'noindex' })
 
-interface Row { id: string, skill: string, status: string, test: { slug: string, title: string } | null, submittedAt: string, correct: number | null, total: number | null, score: number | null, cefrLevel: string | null }
+interface Row { id: string, skill: string, partNumber: number | null, status: string, test: { slug: string, title: string } | null, submittedAt: string, correct: number | null, total: number | null, score: number | null, cefrLevel: string | null }
 
 const page = ref(1)
 const { data, status } = await useFetch<{ items: Row[], total: number, pages: number }>('/api/me/attempts', { query: { page, limit: 20 }, lazy: true })
@@ -49,7 +49,7 @@ const { data, status } = await useFetch<{ items: Row[], total: number, pages: nu
           <div class="min-w-0 flex-1">
             <p class="font-medium text-highlighted truncate">{{ r.test?.title || 'Removed test' }}</p>
             <p class="text-xs text-muted truncate">
-              {{ skillLabel(r.skill) }} · {{ relativeTime(r.submittedAt) }}<span v-if="r.total"> · {{ r.correct }}/{{ r.total }} correct</span>
+              {{ skillLabel(r.skill) }}{{ r.partNumber ? ` ${partName(r.skill, r.partNumber)}` : '' }} · {{ relativeTime(r.submittedAt) }}<span v-if="r.total"> · {{ r.correct }}/{{ r.total }} correct</span>
             </p>
           </div>
           <div

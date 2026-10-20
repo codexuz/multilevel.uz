@@ -191,6 +191,8 @@ export const attempts = pgTable('attempts', {
   sectionId: uuid('section_id').references(() => sections.id, { onDelete: 'set null' }),
   /** The skill this attempt was (one section at a time). */
   skill: text('skill').notNull(),
+  /** Set when one part was practised on its own (Listening/Reading part, Writing task, Speaking part). */
+  partNumber: integer('part_number'),
   mode: text('mode').notNull().default('PRACTICE'),
   status: text('status').notNull().default('SUBMITTED'), // SUBMITTED (awaiting an examiner) | GRADED
   startedAt: timestamp('started_at', { withTimezone: true }),

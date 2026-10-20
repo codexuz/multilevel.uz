@@ -14,7 +14,7 @@ const objective = computed(() => skill.value === 'LISTENING' || skill.value === 
 const scored = computed(() => props.view.score != null && (objective.value || props.view.status === 'GRADED'))
 const level = computed(() => props.view.cefrLevel ?? cefrOf(props.view.score))
 const testTo = computed(() => (props.view.test ? `/tests/${props.view.test.slug}` : '/tests'))
-const againTo = computed(() => (props.view.test ? `/tests/${props.view.test.slug}/${skill.value.toLowerCase()}` : '/tests'))
+const againTo = computed(() => (props.view.test ? `/tests/${props.view.test.slug}/${skill.value.toLowerCase()}${props.view.partNumber ? `?part=${props.view.partNumber}` : ''}` : '/tests'))
 
 const LEVEL_TEXT: Record<string, string> = {
   C1: 'You use English flexibly and effectively for social, academic and professional purposes, and follow long, demanding texts.',
@@ -43,7 +43,7 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
       </div>
       <div class="min-w-0">
         <p class="text-sm font-medium text-primary">
-          {{ meta.label }}
+          {{ meta.label }}<span v-if="view.partNumber"> · {{ partName(view.skill, view.partNumber) }}</span>
         </p>
         <h1 class="text-xl sm:text-2xl font-bold text-highlighted text-balance">
           {{ view.test?.title }}

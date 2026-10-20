@@ -1,12 +1,13 @@
 import { eq } from 'drizzle-orm'
 import { answers, attempts, essays, speakingResponses, users } from '../database/schema'
-import { SECTION_WITH } from './content'
+import { SECTION_WITH, pickPart } from './content'
 
 /** An attempt as a list shows it. */
 export function attemptSummary(row: any) {
   return {
     id: row.id,
     skill: row.skill,
+    partNumber: row.partNumber ?? null,
     mode: row.mode,
     status: row.status,
     test: row.test ? { id: row.test.id, slug: row.test.slug, title: row.test.title } : null,
@@ -31,7 +32,9 @@ export async function attemptView(id: string, viewer: { id: string, role: string
   const staff = viewer.role === 'admin' || viewer.role === 'examiner'
   if (row.userId !== viewer.id && !staff) throw createError({ statusCode: 404, message: 'Attempt not found' })
 
-  const section = row.sectionId ? await db.query.sections.findFirst({ where: (s, { eq: e }) => e(s.id, row.sectionId!), with: SECTION_WITH as any }) as any : null
+  const whole = row.sectionId ? await db.query.sections.findFirst({ where: (s, { eq: e }) => e(s.id, row.sectionId!), with: SECTION_WITH as any }) as any : null
+  // A part practised on its own is reviewed as that part.
+  const section = whole && row.partNumber ? pickPart(whole, row.partNumber) : whole
   const [given, written, recorded] = await Promise.all([
     db.select().from(answers).where(eq(answers.attemptId, id)),
     db.select().from(essays).where(eq(essays.attemptId, id)),

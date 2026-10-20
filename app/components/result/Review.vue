@@ -13,6 +13,7 @@ export interface ResultView {
   id?: string | null
   saved?: boolean
   skill: string
+  partNumber?: number | null
   status: string
   test: { slug: string, title: string } | null
   score?: number | null

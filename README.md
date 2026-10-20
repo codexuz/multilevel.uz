@@ -13,6 +13,10 @@ and `erp-lms/ielts-test` import/export format, set to the Multilevel format.
 - **Open to everyone.** `/tests` and each test's page `/tests/{slug}` are rendered on the
   server with the test's title, description and structured data (Quiz, BreadcrumbList),
   and listed in `/sitemap.xml`, so search engines show a test when its title is searched.
+- **Full tests or one part at a time.** `/tests` lists full tests or single parts (Listening and
+  Reading parts, Writing tasks, Speaking parts), filtered by words, skill, part, question type and
+  "all four skills"; the filters live in the address. A part is sat at
+  `/tests/{slug}/{skill}?part=N`, with its own share of the time, and saved as that part.
 - **Checked for everyone, saved for members.** Listening and Reading are checked on the
   server when handed in. A guest sees the score, CEFR level and a full review once, and
   nothing is stored. A signed-in candidate's attempt is saved under **My results**.

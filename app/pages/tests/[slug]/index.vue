@@ -175,8 +175,15 @@ useHead({
             <li
               v-for="(p, i) in s.parts"
               :key="i"
+              class="flex items-center justify-between gap-3"
             >
-              {{ partLine(p) }}
+              <span class="min-w-0">{{ partLine(p) }}</span>
+              <NuxtLink
+                v-if="!(t.access === 'PREMIUM' && !isPremium) && (p.partNumber || p.taskNumber)"
+                :to="`/tests/${t.slug}/${String(s.skill).toLowerCase()}?part=${p.partNumber ?? p.taskNumber}`"
+                class="shrink-0 text-xs font-semibold text-primary hover:underline"
+                :aria-label="`Practise ${partLine(p)} on its own`"
+              >Practise</NuxtLink>
             </li>
           </ul>
           <p class="text-xs text-muted">
