@@ -8,10 +8,13 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Build the Nuxt app → self-contained Nitro server in /app/.output
+# Build the Nuxt app → self-contained Nitro server in /app/.output.
+# npm ci's postinstall ran `nuxt prepare` before the sources were here, leaving a .nuxt whose
+# tsconfig knows no `~` paths, so the Vue compiler cannot resolve type imports such as
+# `~/types/question-props`. Prepare again with the sources in place, then build.
 COPY . .
 ENV NODE_ENV=production
-RUN npm run build
+RUN npx nuxt prepare && npm run build
 
 # ---------- Runtime stage ----------
 FROM node:22-alpine AS runtime
