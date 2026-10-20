@@ -1,17 +1,7 @@
-import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
-import { users, sessions } from '../../database/schema'
-import { getClientIpAddress } from '../../utils/ip'
-import { signAccessToken, signRefreshToken, setAuthCookies, REFRESH_TTL_SECONDS } from '../../utils/jwt'
+import { users } from '../../database/schema'
 
 interface GoogleUser { email: string, name?: string, picture?: string, sub?: string }
-
-function deviceLabelFromUA(ua?: string): string {
-  if (!ua) return 'Unknown device'
-  const os = /Windows/.test(ua) ? 'Windows' : /Mac OS X|Macintosh/.test(ua) ? 'macOS' : /Android/.test(ua) ? 'Android' : /iPhone|iPad|iOS/.test(ua) ? 'iOS' : /Linux/.test(ua) ? 'Linux' : 'Unknown OS'
-  const browser = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'Browser'
-  return `${browser} on ${os}`
-}
 
 export default defineOAuthGoogleEventHandler({
   config: { scope: ['email', 'profile'] },
@@ -35,26 +25,8 @@ export default defineOAuthGoogleEventHandler({
         .where(eq(users.id, row.id)).returning()
     }
 
-    const ua = getRequestHeader(event, 'user-agent')
-    const ip = getClientIpAddress(event)
-
-    const [session] = await db.insert(sessions).values({
-      userId: row!.id,
-      userAgent: ua ?? null,
-      deviceLabel: deviceLabelFromUA(ua),
-      ipAddress: ip,
-      expiresAt: new Date(Date.now() + REFRESH_TTL_SECONDS * 1000)
-    }).returning()
-
-    const access = await signAccessToken(row!.id, row!.role, randomUUID())
-    const refresh = await signRefreshToken(row!.id, session!.id)
-    setAuthCookies(event, access, refresh)
-
-    // Back to the page sign-in started from (a test's result, say); only a path on this site.
-    const next = getCookie(event, 'ml_next')
-    deleteCookie(event, 'ml_next', { path: '/' })
-    const back = next && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/auth/') ? next : '/tests'
-    return sendRedirect(event, row!.onboarded ? back : `/onboarding?next=${encodeURIComponent(back)}`)
+    const signedIn = await signIn(event, row!)
+    return sendRedirect(event, afterSignIn(event, signedIn))
   },
   onError(event, error) {
     console.error('Google OAuth error:', error)

@@ -3,7 +3,8 @@ import type { Order } from '~/utils/billing'
 
 /** Who is signed in, their plan, their goals, and how their marked sections have gone. */
 useSeoMeta({ title: 'Profile', robots: 'noindex' })
-const { me, isPremium, credits } = useMe()
+const { me, isPremium, credits, refresh } = useMe()
+const toast = useToast()
 const { data: purchases } = await useFetch<Order[]>('/api/me/orders', { default: () => [] })
 
 const { data } = await useFetch<{ items: { skill: string, score: number | null, status: string }[], total: number }>('/api/me/attempts', { query: { limit: 100 } })
@@ -17,6 +18,15 @@ const overall = computed(() => {
   const scores = Object.values(best.value)
   return scores.length ? cefrOf(scores.reduce((a, b) => a + b, 0) / scores.length) : null
 })
+
+/** Linking Telegram, so this account can also sign in with it. */
+const telegram = useTelegramLogin()
+async function connectTelegram() {
+  if (await telegram.start()) {
+    await refresh()
+    toast.add({ title: 'Telegram connected', description: 'You can sign in with Telegram now.', color: 'success' })
+  }
+}
 </script>
 
 <template>
@@ -36,7 +46,7 @@ const overall = computed(() => {
             {{ me?.name || 'Your profile' }}
           </h1>
           <p class="text-muted text-sm">
-            {{ me?.email }}
+            {{ accountHandle(me) }}
           </p>
         </div>
       </div>
@@ -185,6 +195,53 @@ const overall = computed(() => {
             </dd>
           </div>
         </dl>
+      </UCard>
+
+      <UCard v-if="me?.email || me?.telegram || telegram.available.value">
+        <template #header>
+          <h2 class="font-semibold">
+            Sign-in
+          </h2>
+        </template>
+        <ul class="flex flex-col gap-3 text-sm">
+          <li
+            v-if="me?.email"
+            class="flex items-center gap-3"
+          >
+            <UIcon
+              name="i-logos-google-icon"
+              class="size-5 shrink-0"
+            />
+            <span class="flex-1 min-w-0 truncate">Google · {{ me.email }}</span>
+          </li>
+          <li
+            v-if="me?.telegram || telegram.available.value"
+            class="flex items-center gap-3"
+          >
+            <UIcon
+              name="i-logos-telegram"
+              class="size-5 shrink-0"
+            />
+            <span class="flex-1 min-w-0 truncate">
+              Telegram<template v-if="me?.telegram"> · {{ me.telegramUsername ? `@${me.telegramUsername}` : 'connected' }}</template>
+            </span>
+            <UButton
+              v-if="!me?.telegram"
+              label="Connect"
+              size="sm"
+              color="neutral"
+              variant="outline"
+              :loading="telegram.busy.value"
+              @click="connectTelegram"
+            />
+          </li>
+        </ul>
+        <p
+          v-if="telegram.error.value"
+          class="mt-3 text-sm text-error"
+        >
+          {{ telegram.error.value }}
+        </p>
       </UCard>
     </div>
   </AppPage>

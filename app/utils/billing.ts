@@ -24,7 +24,7 @@ export interface Order {
   note: string | null
   paidAt: string | null
   createdAt: string
-  user?: { id: string, name: string, email: string }
+  user?: { id: string, name: string, email: string | null, telegramUsername: string | null }
 }
 
 /** 79000 → "79 000 so'm". */

@@ -10,7 +10,10 @@ export const userRole = pgEnum('user_role', ['student', 'examiner', 'admin'])
 // ---------- users ----------
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
-  email: text('email').notNull().unique(),
+  // Google accounts have an email; Telegram accounts may have only a Telegram id.
+  email: text('email').unique(),
+  telegramId: text('telegram_id').unique(),
+  telegramUsername: text('telegram_username'),
   name: text('name'),
   avatarUrl: text('avatar_url'),
   role: userRole('role').notNull().default('student'),

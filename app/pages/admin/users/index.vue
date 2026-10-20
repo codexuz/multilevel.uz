@@ -16,7 +16,9 @@ const { me } = useMe()
 interface AdminUser {
   id: string
   name: string | null
-  email: string
+  email: string | null
+  telegramUsername: string | null
+  telegram: boolean
   avatarUrl: string | null
   role: UserRole
   banned: boolean
@@ -59,7 +61,7 @@ async function setRole(p: AdminUser, role: UserRole) {
 async function toggleBan(p: AdminUser) {
   const banning = !p.banned
   if (banning && !await confirm({
-    title: `Ban ${p.name || p.email}?`,
+    title: `Ban ${p.name || accountHandle(p)}?`,
     description: 'They will be signed out of all devices and blocked from using the app.',
     confirmLabel: 'Ban',
     color: 'error'
@@ -75,7 +77,7 @@ async function toggleBan(p: AdminUser) {
 
 async function removeUser(p: AdminUser) {
   if (!await confirm({
-    title: `Delete ${p.name || p.email}?`,
+    title: `Delete ${p.name || accountHandle(p)}?`,
     description: 'This permanently removes the account and all their attempts and results. This cannot be undone.',
     confirmLabel: 'Delete',
     color: 'error'
@@ -109,7 +111,7 @@ async function saveGrant() {
   grantSaving.value = true
   try {
     await $fetch(`/api/admin/users/${granting.value.id}/grant`, { method: 'POST', body: { plan: grant.plan, amountUzs: grant.amount, note: grant.note } })
-    toast.add({ title: 'Plan switched on', description: `${granting.value.name || granting.value.email} has it now.`, color: 'success' })
+    toast.add({ title: 'Plan switched on', description: `${granting.value.name || accountHandle(granting.value)} has it now.`, color: 'success' })
     granting.value = null
     await refresh()
   } catch (e) {
@@ -119,7 +121,7 @@ async function saveGrant() {
   }
 }
 async function endPremium(p: AdminUser) {
-  if (!await confirm({ title: `End Premium for ${p.name || p.email}?`, description: 'Premium stops now. Their orders and marking credits stay.', confirmLabel: 'End Premium', color: 'error' })) return
+  if (!await confirm({ title: `End Premium for ${p.name || accountHandle(p)}?`, description: 'Premium stops now. Their orders and marking credits stay.', confirmLabel: 'End Premium', color: 'error' })) return
   try {
     await $fetch(`/api/admin/users/${p.id}/premium`, { method: 'DELETE' })
     toast.add({ title: 'Premium ended', color: 'success' })
@@ -140,7 +142,7 @@ async function endPremium(p: AdminUser) {
         <UInput
           v-model="search"
           icon="i-lucide-search"
-          placeholder="Name or email"
+          placeholder="Name, email or @username"
           class="w-full sm:w-72"
         />
       </UDashboardToolbar>
@@ -173,7 +175,12 @@ async function endPremium(p: AdminUser) {
                 />
               </p>
               <p class="text-xs text-muted truncate">
-                {{ p.email }} · joined {{ new Date(p.createdAt).toLocaleDateString() }}
+                <UIcon
+                  v-if="p.telegram"
+                  name="i-logos-telegram"
+                  class="size-3 align-[-1px] me-0.5"
+                  aria-label="Telegram"
+                />{{ accountHandle(p) }} · joined {{ new Date(p.createdAt).toLocaleDateString() }}
               </p>
               <p class="text-xs mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
                 <span :class="p.premiumUntil ? 'text-success' : 'text-muted'">
@@ -253,7 +260,7 @@ async function endPremium(p: AdminUser) {
     <UModal
       :open="!!granting"
       title="Grant a plan"
-      :description="granting ? `For ${granting.name || granting.email} — e.g. sold on Telegram.` : ''"
+      :description="granting ? `For ${granting.name || accountHandle(granting)} — e.g. sold on Telegram.` : ''"
       @update:open="v => !v && (granting = null)"
     >
       <template #body>

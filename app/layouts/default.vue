@@ -40,7 +40,7 @@ const tabBar = computed(() => [
 ])
 const tabActive = (to: string) => (to === '/' ? route.path === '/' : route.path === to.split('?')[0] || route.path.startsWith(`${to}/`))
 
-const displayName = computed(() => me.value?.name || me.value?.email || 'Account')
+const displayName = computed(() => me.value?.name || accountHandle(me.value) || 'Account')
 
 async function logout() {
   await $fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
@@ -48,7 +48,7 @@ async function logout() {
 }
 
 const userMenu = computed<DropdownMenuItem[][]>(() => [
-  [{ type: 'label', label: displayName.value, avatar: { src: me.value?.avatarUrl ?? undefined, alt: displayName.value }, description: me.value?.email }],
+  [{ type: 'label', label: displayName.value, avatar: { src: me.value?.avatarUrl ?? undefined, alt: displayName.value }, description: accountHandle(me.value) }],
   [
     { label: 'Profile', icon: 'i-lucide-user', to: '/profile' },
     { label: 'Settings', icon: 'i-lucide-settings', to: '/settings' },

@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { answers, attempts, essays, speakingResponses, users } from '../database/schema'
 import { SECTION_WITH, pickPart } from './content'
+import { userLabel } from './sign-in'
 
 /** An attempt as a list shows it. */
 export function attemptSummary(row: any) {
@@ -11,7 +12,7 @@ export function attemptSummary(row: any) {
     mode: row.mode,
     status: row.status,
     test: row.test ? { id: row.test.id, slug: row.test.slug, title: row.test.title } : null,
-    user: row.user ? { id: row.user.id, name: row.user.name ?? row.user.email, avatarUrl: row.user.avatarUrl } : undefined,
+    user: row.user ? { id: row.user.id, name: userLabel(row.user), avatarUrl: row.user.avatarUrl } : undefined,
     startedAt: row.startedAt,
     submittedAt: row.submittedAt,
     gradedAt: row.gradedAt,
@@ -40,7 +41,7 @@ export async function attemptView(id: string, viewer: { id: string, role: string
     db.select().from(essays).where(eq(essays.attemptId, id)),
     db.select().from(speakingResponses).where(eq(speakingResponses.attemptId, id))
   ])
-  const examiner = row.examinerId ? (await db.select({ name: users.name, email: users.email }).from(users).where(eq(users.id, row.examinerId)).limit(1))[0] : null
+  const examiner = row.examinerId ? (await db.select({ name: users.name, email: users.email, telegramUsername: users.telegramUsername }).from(users).where(eq(users.id, row.examinerId)).limit(1))[0] : null
   // Explanations follow the owner's Premium (staff always see them).
   const explanations = staff || (await accessOf({ id: row.userId, role: row.user?.role ?? 'student' })).premium
   const review = section
@@ -55,7 +56,7 @@ export async function attemptView(id: string, viewer: { id: string, role: string
   return {
     ...attemptSummary(row),
     saved: true,
-    examiner: examiner ? { name: examiner.name ?? examiner.email } : null,
+    examiner: examiner ? { name: userLabel(examiner) } : null,
     recordings: recorded.map(r => ({ partId: r.partId, audioUrl: r.audioRef, durationSeconds: r.durationSeconds })),
     review: review ? { sections: [review] } : null
   }

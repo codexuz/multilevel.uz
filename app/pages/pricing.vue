@@ -51,7 +51,7 @@ onMounted(() => {
 })
 
 const telegramMessage = computed(() => telegramPlan.value
-  ? `Hello! I'd like to buy "${telegramPlan.value.name}" (${fmtUzs(telegramPlan.value.priceUzs)}) on multilevel.uz. My account: ${me.value?.email ?? ''}`
+  ? `Hello! I'd like to buy "${telegramPlan.value.name}" (${fmtUzs(telegramPlan.value.priceUzs)}) on multilevel.uz. My account: ${accountHandle(me.value) || me.value?.id || ''}`
   : '')
 const telegramHandle = computed(() => (data.value?.telegram ?? '').replace(/^https?:\/\/t\.me\//, '@'))
 async function copyMessage() {
@@ -307,7 +307,7 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
               <span class="size-6 rounded-full bg-primary/10 text-primary grid place-items-center text-xs font-semibold shrink-0">2</span>Pay the way we suggest (card transfer, Click or Payme).
             </li>
             <li class="flex gap-3">
-              <span class="size-6 rounded-full bg-primary/10 text-primary grid place-items-center text-xs font-semibold shrink-0">3</span><span>We switch the plan on for <span class="font-medium text-highlighted break-all">{{ me?.email }}</span> — usually within a few hours.</span>
+              <span class="size-6 rounded-full bg-primary/10 text-primary grid place-items-center text-xs font-semibold shrink-0">3</span><span>We switch the plan on for <span class="font-medium text-highlighted break-all">{{ accountHandle(me) || 'your account' }}</span> — usually within a few hours.</span>
             </li>
           </ol>
           <div class="rounded-lg ring ring-default px-3 py-2.5 text-sm text-toned flex gap-2 items-start">

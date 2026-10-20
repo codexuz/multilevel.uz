@@ -5,7 +5,11 @@ export type UserRole = 'student' | 'examiner' | 'admin'
 
 export interface Me {
   id: string
-  email: string
+  /** Null for an account made with Telegram. */
+  email: string | null
+  telegramUsername: string | null
+  /** Telegram is linked: the account can sign in with it. */
+  telegram: boolean
   name: string | null
   avatarUrl: string | null
   role: UserRole
@@ -34,7 +38,9 @@ export interface DeviceSessionDto {
 export interface AdminUserDto {
   id: string
   name: string | null
-  email: string
+  email: string | null
+  telegramUsername: string | null
+  telegram: boolean
   avatarUrl: string | null
   role: UserRole
   banned: boolean

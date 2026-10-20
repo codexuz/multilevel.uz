@@ -69,7 +69,7 @@ const statusItems = [{ label: 'Any status', value: 'ALL' }, { label: 'Paid', val
             {{ row.original.user?.name }}
           </p>
           <p class="text-xs text-muted">
-            {{ row.original.user?.email }}
+            {{ accountHandle(row.original.user) }}
           </p>
           <p class="md:hidden text-xs text-muted mt-0.5">
             {{ row.original.planName }}

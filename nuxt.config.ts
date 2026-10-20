@@ -45,6 +45,8 @@ export default defineNuxtConfig({
     firebaseProjectId: process.env.FIREBASE_PROJECT_ID,
     firebaseClientEmail: process.env.FIREBASE_CLIENT_EMAIL,
     firebasePrivateKey: process.env.FIREBASE_PRIVATE_KEY,
+    // Telegram sign-in (Login Widget): the bot's token from @BotFather
+    telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
     // Google OAuth (consumed by nuxt-auth-utils' defineOAuthGoogleEventHandler)
     oauth: {
       google: {

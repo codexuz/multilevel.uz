@@ -76,17 +76,42 @@ npm run dev            # http://localhost:3000
 
 `.env.example` lists every key. In short: `DATABASE_URL`, the JWT secrets,
 `NUXT_SESSION_PASSWORD`, the Google OAuth client (redirect URI `<origin>/auth/google`),
+optionally a Telegram bot for signing in with Telegram (`TELEGRAM_BOT_TOKEN`),
 S3-compatible storage (`S3_*`; uploads are stored public-read, so the bucket must allow
 public objects), `NUXT_PUBLIC_SITE_URL` (used in the sitemap and canonical links) and,
 optionally, Firebase for push.
 
-New users are students. Make yourself an admin once:
+### Signing in
 
-```sql
-update users set role = 'admin' where email = 'you@example.com';
-```
+Google, Telegram, or both: each button shows only when it is set up.
 
-Admins manage roles from `/admin/users`.
+- **Google**: `NUXT_OAUTH_GOOGLE_CLIENT_ID` / `NUXT_OAUTH_GOOGLE_CLIENT_SECRET`, with the redirect
+  URI `<origin>/auth/google`.
+- **Telegram**: create a bot with [@BotFather](https://t.me/BotFather) (`/newbot`), then
+  `/setdomain` → your site's domain (e.g. `multilevel.uz`), and set `TELEGRAM_BOT_TOKEN`.
+  Telegram's own window asks the user to confirm; the server accepts the result only if
+  Telegram signed it with that bot's token, within a day. Telegram gives no email, so such an
+  account is known by its Telegram id and username. A Google user can add Telegram on their
+  Profile (Sign-in → Connect) to sign in either way. Telegram only allows the domain set in
+  BotFather, so it cannot be tried on `localhost`; use a tunnel or the live site.
+
+### Admins
+
+New users are students. To make someone an admin:
+
+- **On deploy**: list them in `ADMIN_EMAILS` (Google emails) or `ADMIN_TELEGRAM_IDS` (numeric
+  Telegram ids; [@userinfobot](https://t.me/userinfobot) tells you yours), comma-separated.
+  They become admins the next time they sign in. Nobody is demoted by leaving the list.
+- **In the database** (for example from Coolify's terminal for the Postgres service, `psql`),
+  after they have signed in once:
+
+  ```sql
+  update users set role = 'admin' where email = 'you@example.com';
+  update users set role = 'admin' where telegram_username = 'yourname';
+  ```
+
+  Then they sign out and in again (the role is part of the sign-in token).
+- **In the app**: an admin can change anyone's role on `/admin/users`.
 
 ## Database migrations
 

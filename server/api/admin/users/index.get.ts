@@ -1,13 +1,14 @@
-import { and, count, desc, gt, ilike, inArray, or, sql } from 'drizzle-orm'
+import { and, count, desc, eq, gt, ilike, inArray, or, sql } from 'drizzle-orm'
 import { creditTransactions, subscriptions, users } from '../../../database/schema'
 
-// Users, newest first, findable by name or email, with their Premium and marking credits.
+// Users, newest first, findable by name, email, Telegram username or id, with their Premium and marking credits.
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)
   const db = useDb()
   const p = getPagination(event)
   const q = String(getQuery(event).q ?? '').trim()
-  const where = q ? or(ilike(users.email, `%${q}%`), ilike(users.name, `%${q}%`)) : undefined
+  const byId = /^[0-9a-f-]{36}$/i.test(q) ? [eq(users.id, q)] : []
+  const where = q ? or(...byId, ilike(users.email, `%${q}%`), ilike(users.name, `%${q}%`), ilike(users.telegramUsername, `%${q.replace(/^@/, '')}%`)) : undefined
 
   const [totalRow] = await db.select({ total: count() }).from(users).where(where)
   const rows = await db.select().from(users).where(where)
@@ -30,6 +31,8 @@ export default defineEventHandler(async (event) => {
     id: u.id,
     name: u.name,
     email: u.email,
+    telegramUsername: u.telegramUsername,
+    telegram: !!u.telegramId,
     avatarUrl: u.avatarUrl,
     role: u.role,
     banned: u.banned,

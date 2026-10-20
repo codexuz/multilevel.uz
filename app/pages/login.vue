@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Signing in, in the manner of SmallTalk2Me's sign-up card: the logo, a big title with a 3D
-// illustration, one clear way in. Signing in is optional: tests are open to everyone; an account
+// illustration, Google or Telegram (whichever are set up). Signing in is optional: tests are open to everyone; an account
 // keeps the results and sends Writing and Speaking to an examiner.
 definePageMeta({ layout: false })
 
@@ -8,9 +8,18 @@ const route = useRoute()
 const oauthError = computed(() => route.query.error === 'oauth')
 const next = computed(() => (typeof route.query.next === 'string' && route.query.next.startsWith('/') && !route.query.next.startsWith('//') ? route.query.next : '/tests'))
 
-/** Where to come back to after Google: kept for a few minutes, read once by the sign-in route. */
+/** Where to come back to after signing in: kept for a few minutes, read once by the sign-in route. */
 function rememberNext() {
   document.cookie = `ml_next=${encodeURIComponent(next.value)}; path=/; max-age=600; samesite=lax`
+}
+
+const telegram = useTelegramLogin()
+const showGoogle = computed(() => telegram.providers.value?.google !== false)
+async function signInWithTelegram() {
+  rememberNext()
+  const done = await telegram.start()
+  // A full load, so the whole app starts again signed in.
+  if (done) window.location.assign(done.to)
 }
 
 useSeoMeta({
@@ -52,18 +61,42 @@ const perks = ['Keep every result and see your best', 'Writing and Speaking mark
         class="mt-5"
       />
 
-      <UButton
-        block
-        size="xl"
-        color="neutral"
-        variant="soft"
-        icon="i-logos-google-icon"
-        label="Continue with Google"
-        to="/auth/google"
-        external
-        class="mt-6 font-semibold"
-        @click="rememberNext"
+      <UAlert
+        v-if="telegram.error.value"
+        color="error"
+        variant="subtle"
+        icon="i-lucide-triangle-alert"
+        :description="telegram.error.value"
+        class="mt-5"
       />
+
+      <div class="mt-6 flex flex-col gap-2.5">
+        <UButton
+          v-if="showGoogle"
+          block
+          size="xl"
+          color="neutral"
+          variant="soft"
+          icon="i-logos-google-icon"
+          label="Continue with Google"
+          to="/auth/google"
+          external
+          class="font-semibold"
+          @click="rememberNext"
+        />
+        <UButton
+          v-if="telegram.available.value"
+          block
+          size="xl"
+          color="neutral"
+          variant="soft"
+          icon="i-logos-telegram"
+          label="Continue with Telegram"
+          :loading="telegram.busy.value"
+          class="font-semibold"
+          @click="signInWithTelegram"
+        />
+      </div>
 
       <ul class="mt-6 flex flex-col gap-2.5">
         <li
@@ -93,7 +126,7 @@ const perks = ['Keep every result and see your best', 'Writing and Speaking mark
       />
     </div>
     <p class="mt-6 text-xs text-muted text-center max-w-sm">
-      By signing in you agree to keep to fair use of the tests. We only use your Google name, email and picture.
+      By signing in you agree to keep to fair use of the tests. We only use the name, email or Telegram username, and picture you sign in with.
     </p>
   </UMain>
 </template>

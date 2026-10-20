@@ -2,6 +2,7 @@ import { createHash, timingSafeEqual } from 'node:crypto'
 import { and, desc, eq, gt, sql } from 'drizzle-orm'
 import type { orders } from '../database/schema'
 import { creditTransactions, plans, subscriptions, users } from '../database/schema'
+import { userLabel } from './sign-in'
 
 /**
  * Freemium: what a user may do, and how plans are paid for. Premium (time) opens premium tests
@@ -84,10 +85,10 @@ export const planView = (p: typeof plans.$inferSelect) => ({
   durationDays: p.durationDays, credits: p.credits, featured: p.featured, active: p.active, position: p.position
 })
 
-export const orderView = (o: typeof orders.$inferSelect & { user?: { id: string, name: string | null, email: string } | null }) => ({
+export const orderView = (o: typeof orders.$inferSelect & { user?: { id: string, name: string | null, email: string | null, telegramUsername: string | null } | null }) => ({
   id: o.id, number: o.number, planName: o.planName, amountUzs: o.amountUzs, durationDays: o.durationDays, credits: o.credits,
   provider: o.provider, status: o.status, note: o.note, paidAt: o.paidAt, createdAt: o.createdAt,
-  user: o.user ? { id: o.user.id, name: o.user.name ?? o.user.email, email: o.user.email } : undefined
+  user: o.user ? { id: o.user.id, name: userLabel(o.user), email: o.user.email, telegramUsername: o.user.telegramUsername } : undefined
 })
 
 // ─── Click.uz (SHOP API) ─────────────────────────────────────────────────────────────────

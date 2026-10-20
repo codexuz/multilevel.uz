@@ -11,6 +11,8 @@ export default defineEventHandler(async (event) => {
   return {
     id: u.id,
     email: u.email,
+    telegramUsername: u.telegramUsername,
+    telegram: !!u.telegramId,
     name: u.name,
     avatarUrl: u.avatarUrl,
     role: u.role,
