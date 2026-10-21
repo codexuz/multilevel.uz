@@ -1,15 +1,18 @@
 <script setup lang="ts">
 /**
  * Asks a signed-in user who has not joined the Telegram bot to join it: a few seconds after a page
- * opens, at most once every few days. The button opens the bot with a link that connects their
+ * opens, at most once every few days, and only after the server has checked with Telegram that the
+ * bot really cannot write to them yet. The button opens the bot with a link that connects their
  * account when they press Start; the popup waits for that and closes itself.
  */
 const { me, loggedIn, refresh } = useMe()
 const toast = useToast()
 const { data: providers } = useFetch<{ telegram: { botId: string } | null }>('/api/auth/providers', { key: 'auth-providers' })
 
-const DISMISS_KEY = 'ml.tgBot.dismissedAt'
-const QUIET_DAYS = 3
+const DISMISS_KEY = 'ml.tgBot.quietUntil'
+/** "Not now": three days; after "Join the bot": a day, in case joining was not noticed. */
+const QUIET_NOT_NOW = 3 * 86_400_000
+const QUIET_AFTER_JOIN = 86_400_000
 const open = ref(false)
 const link = ref<{ url: string, username: string } | null>(null)
 const waiting = ref(false)
@@ -18,17 +21,30 @@ let pollTimer: ReturnType<typeof setTimeout> | undefined
 
 const needed = computed(() => loggedIn.value && !!me.value && !me.value.telegramBot && !!providers.value?.telegram)
 
-function dismissedRecently() {
+function quiet() {
   try {
-    const at = Number(localStorage.getItem(DISMISS_KEY))
-    return !!at && Date.now() - at < QUIET_DAYS * 86_400_000
+    return Number(localStorage.getItem(DISMISS_KEY)) > Date.now()
   } catch {
     return false
   }
 }
+function keepQuiet(ms: number) {
+  try {
+    localStorage.setItem(DISMISS_KEY, String(Date.now() + ms))
+  } catch {
+    // Private mode: it may ask again next time.
+  }
+}
+
+/** Asks the server, which asks Telegram, whether the bot can write to this user yet. */
+async function joined() {
+  const res = await $fetch<{ joined: boolean }>('/api/telegram/status').catch(() => null)
+  if (res?.joined) await refresh()
+  return !!res?.joined
+}
 
 async function show() {
-  if (!needed.value || dismissedRecently()) return
+  if (!needed.value || quiet() || await joined()) return
   link.value = await $fetch<{ url: string, username: string }>('/api/telegram/link').catch(() => null)
   if (link.value && needed.value) open.value = true
 }
@@ -45,26 +61,22 @@ onBeforeUnmount(() => {
 })
 
 /** After the bot opens: check every few seconds (for two minutes) whether Start was pressed. */
-function waitForStart(tries = 40) {
+function waitForStart(tries = 30) {
+  if (!waiting.value) keepQuiet(QUIET_AFTER_JOIN)
   waiting.value = true
   clearTimeout(pollTimer)
   pollTimer = setTimeout(async () => {
-    await refresh()
-    if (me.value?.telegramBot) {
+    if (await joined()) {
       waiting.value = false
       open.value = false
       toast.add({ title: 'Telegram connected', description: 'Your results will come to the bot.', icon: 'i-logos-telegram', color: 'success' })
     } else if (tries > 1) waitForStart(tries - 1)
     else waiting.value = false
-  }, 3000)
+  }, 4000)
 }
 
 function notNow() {
-  try {
-    localStorage.setItem(DISMISS_KEY, String(Date.now()))
-  } catch {
-    // Private mode: it may ask again next time.
-  }
+  keepQuiet(QUIET_NOT_NOW)
   clearTimeout(pollTimer)
   waiting.value = false
   open.value = false

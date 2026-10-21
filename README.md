@@ -87,9 +87,17 @@ every three days; "Not now" waits that long): **Join the bot** opens
 account (also for Google accounts) and marks them as joined; the popup closes by itself. Settings
 has the same button. Blocking the bot marks them as not joined again.
 
-For this the server sets the bot's webhook to `<site>/api/telegram/webhook` when it starts (only
-with an https `NUXT_PUBLIC_SITE_URL`; Telegram's calls carry a secret made from the bot token). Set
-`TELEGRAM_WEBHOOK=false` if the same bot's webhook is used by something else.
+Before showing the popup the server asks Telegram whether the bot can already write to the user
+(they pressed Start before, or allowed it when signing in with Telegram); if so they count as
+joined and see nothing. After "Join the bot" the popup stays away for a day even if the Start was
+not noticed.
+
+The bot's webhook goes to `<site>/api/telegram/webhook`: set on start from an https
+`NUXT_PUBLIC_SITE_URL`, and corrected to the address users are actually on when they open the join
+link (Telegram's calls carry a secret made from the bot token). An admin can see where it points
+and Telegram's last delivery error at `/api/admin/telegram` (add `?fix=1` to point it at the
+address that page was opened on). Set `TELEGRAM_WEBHOOK=false` if the same bot's webhook is used
+by something else (it cannot also be read with getUpdates).
 
 ### Earning credits
 

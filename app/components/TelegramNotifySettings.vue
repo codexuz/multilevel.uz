@@ -15,10 +15,11 @@ async function joinBot() {
   try {
     const { url } = await $fetch<{ url: string }>('/api/telegram/link')
     window.open(url, '_blank', 'noopener')
-    for (let i = 0; i < 40 && !me.value?.telegramBot; i++) {
-      await new Promise(r => setTimeout(r, 3000))
-      await refreshMe()
+    for (let i = 0; i < 30; i++) {
+      await new Promise(r => setTimeout(r, 4000))
+      if ((await $fetch<{ joined: boolean }>('/api/telegram/status').catch(() => null))?.joined) break
     }
+    await refreshMe()
   } catch {
     toast.add({ title: 'The bot is not available right now', color: 'error' })
   } finally {

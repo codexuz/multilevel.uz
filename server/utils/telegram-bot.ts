@@ -46,6 +46,56 @@ export function userOfPayload(payload: string, now = Date.now()): string | null 
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`
 }
 
+// ---------- the webhook ----------
+
+const WEBHOOK_PATH = '/api/telegram/webhook'
+export interface WebhookInfo { url: string, pending_update_count: number, last_error_date?: number, last_error_message?: string }
+
+export async function webhookInfo() {
+  const res = await telegramApi<WebhookInfo>('getWebhookInfo', {}).catch(() => null)
+  return res?.ok ? res.result ?? null : null
+}
+
+export async function setWebhook(origin: string) {
+  return telegramApi('setWebhook', { url: `${origin}${WEBHOOK_PATH}`, secret_token: webhookSecret(), allowed_updates: ['message', 'my_chat_member'] })
+}
+
+const checked = new Set<string>()
+/**
+ * Makes sure Telegram sends the bot's updates to this site at `origin` (the https address users
+ * are on), once per address per process. Corrects a webhook left pointing somewhere else, such as
+ * a site address that was not set. TELEGRAM_WEBHOOK=false leaves it alone.
+ */
+export async function ensureWebhook(origin: string) {
+  if (!telegramBotToken() || process.env.TELEGRAM_WEBHOOK === 'false' || !origin.startsWith('https://') || checked.has(origin)) return
+  checked.add(origin)
+  const info = await webhookInfo()
+  if (info?.url === `${origin}${WEBHOOK_PATH}`) return
+  const res = await setWebhook(origin).catch(e => ({ ok: false, description: e?.data?.description || e?.message }))
+  if (res.ok) console.info(`[telegram] webhook set to ${origin}${WEBHOOK_PATH}${info?.url ? ` (was ${info.url})` : ''}`)
+  else {
+    checked.delete(origin)
+    console.warn('[telegram] webhook not set:', res.description)
+  }
+}
+
+/**
+ * Whether the bot can write to this user now, asked of Telegram directly (a "typing" action, which
+ * only works once they pressed Start or let the bot write when signing in). Marks them joined if
+ * so; does not depend on the webhook.
+ */
+export async function checkBotJoined(userId: string): Promise<boolean> {
+  const db = useDb()
+  const [u] = await db.select({ telegramId: users.telegramId, joined: users.telegramBotJoined }).from(users).where(eq(users.id, userId)).limit(1)
+  if (!u) return false
+  if (u.joined) return true
+  if (!u.telegramId || !telegramBotToken()) return false
+  const res = await telegramApi('sendChatAction', { chat_id: u.telegramId, action: 'typing' }).catch(() => null)
+  if (!res?.ok) return false
+  await db.update(users).set({ telegramBotJoined: true }).where(eq(users.id, userId))
+  return true
+}
+
 /** The link that opens the bot and, on Start, joins this user to it. */
 export async function botJoinLink(userId: string) {
   const name = await botUsername()
@@ -110,5 +160,7 @@ export async function handleBotUpdate(update: Update) {
     return
   }
 
+  // Any message means the chat is open: a user we know is joined.
+  await db.update(users).set({ telegramBotJoined: true }).where(eq(users.telegramId, telegramId))
   await reply(msg.chat.id, 'I send you news about your tests: marking, AI feedback and credits. Everything else is on the site.', open)
 }
