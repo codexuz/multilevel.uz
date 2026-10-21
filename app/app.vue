@@ -20,7 +20,9 @@ useHead(() => ({
   },
   meta: [
     { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
-    { name: 'theme-color', content: '#636eee' }
+    { name: 'theme-color', content: '#636eee' },
+    // Google Search Console: proves the site is ours.
+    { name: 'google-site-verification', content: '847b6Nbqf86GGPo4Uv_ZAQlOuJhU2T2_4JT8bWQ7hUY' }
   ],
   link: [
     { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
