@@ -8,7 +8,7 @@ withDefaults(defineProps<{ collapsed?: boolean, to?: string }>(), { to: '/' })
     class="flex items-center gap-2 font-semibold text-highlighted"
   >
     <UAvatar
-      src="/logo.png"
+      src="/icon.svg"
       alt="Multilevel"
       size="sm"
       :ui="{ root: 'bg-transparent rounded-md', image: 'object-contain' }"

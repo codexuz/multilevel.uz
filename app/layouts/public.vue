@@ -171,7 +171,7 @@ const year = new Date().getFullYear()
             class="flex items-center gap-2 text-white font-semibold text-lg"
           >
             <img
-              src="/logo.png"
+              src="/icon.svg"
               alt=""
               class="size-7 rounded-md"
             >Multilevel

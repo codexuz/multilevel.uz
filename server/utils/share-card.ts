@@ -72,6 +72,9 @@ async function loadFonts() {
   return fonts
 }
 
+/** The Multilevel mark as it sits on the card: a white tile with the indigo M (public/icon.svg, reversed). */
+const MARK = `data:image/svg+xml;base64,${Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="116" fill="#fff"/><path d="M132 384 V214 L250 330 L380 150 V384" fill="none" stroke="#4f57de" stroke-width="66" stroke-linecap="round" stroke-linejoin="round"/></svg>').toString('base64')}`
+
 /** The card as a 1200×630 PNG (the size link previews use). */
 export async function renderShareCard(d: ShareData): Promise<Buffer> {
   const what = `${skillLabel(d.skill)}${d.partNumber ? ` · Part ${d.partNumber}` : ''}${d.test ? ` · ${d.test.title}` : ''}`
@@ -81,7 +84,7 @@ export async function renderShareCard(d: ShareData): Promise<Buffer> {
   }, h('div', { display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexGrow: 1, margin: '52px 64px' },
     h('div', { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
       h('div', { display: 'flex', alignItems: 'center', fontSize: 34, fontWeight: 900 },
-        h('div', { display: 'flex', width: 44, height: 44, borderRadius: 10, background: '#2ecc8f', marginRight: 14 }),
+        { type: 'img', props: { src: MARK, width: 48, height: 48, style: { marginRight: 14 } } },
         'Multilevel'),
       h('div', { display: 'flex', fontSize: 24, fontWeight: 700, padding: '8px 18px', borderRadius: 999, background: 'rgba(255,255,255,0.18)' }, 'CEFR English mock test')),
     h('div', { display: 'flex', flexDirection: 'column' },
