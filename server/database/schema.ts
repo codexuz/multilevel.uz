@@ -276,6 +276,60 @@ export const speakingResponses = pgTable('speaking_responses', {
   createdAt: created()
 }, t => [uniqueIndex('speaking_responses_attempt_part_uq').on(t.attemptId, t.partId)])
 
+// ---------- learning centres (B2B) ----------
+// A centre buys seats: each student in it has Premium while its licence runs. Its owner and teachers
+// run groups (classes) that students join with a code, set tests as assignments and follow progress.
+
+export const centres = pgTable('centres', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  /** Students the licence covers. */
+  seats: integer('seats').notNull().default(0),
+  licensedUntil: timestamp('licensed_until', { withTimezone: true }),
+  /** Teachers join the centre with this code (the owner shares it). */
+  teacherCode: text('teacher_code').notNull().unique(),
+  active: boolean('active').notNull().default(true),
+  createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: created()
+})
+
+export const centreMembers = pgTable('centre_members', {
+  centreId: uuid('centre_id').notNull().references(() => centres.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  role: text('role').notNull(), // OWNER | TEACHER | STUDENT (a student takes a seat)
+  createdAt: created()
+}, t => [primaryKey({ columns: [t.centreId, t.userId] }), index('centre_members_user_idx').on(t.userId)])
+
+export const classGroups = pgTable('class_groups', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  centreId: uuid('centre_id').notNull().references(() => centres.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  teacherId: uuid('teacher_id').references(() => users.id, { onDelete: 'set null' }),
+  /** Students join with /join/<code>. */
+  joinCode: text('join_code').notNull().unique(),
+  archived: boolean('archived').notNull().default(false),
+  createdAt: created()
+}, t => [index('class_groups_centre_idx').on(t.centreId)])
+
+export const classMembers = pgTable('class_members', {
+  groupId: uuid('group_id').notNull().references(() => classGroups.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow()
+}, t => [primaryKey({ columns: [t.groupId, t.userId] }), index('class_members_user_idx').on(t.userId)])
+
+/** A section of a test (or one part of it) a group is asked to sit; done once a member hands it in after it was set. */
+export const assignments = pgTable('assignments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  groupId: uuid('group_id').notNull().references(() => classGroups.id, { onDelete: 'cascade' }),
+  testId: uuid('test_id').notNull().references(() => tests.id, { onDelete: 'cascade' }),
+  skill: text('skill').notNull(),
+  partNumber: integer('part_number'),
+  note: text('note'),
+  dueAt: timestamp('due_at', { withTimezone: true }),
+  createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: created()
+}, t => [index('assignments_group_idx').on(t.groupId, t.createdAt)])
+
 // ---------- relations ----------
 // ---------- Billing ----------
 // What is sold: time with Premium (the whole library and every explanation) and marking credits

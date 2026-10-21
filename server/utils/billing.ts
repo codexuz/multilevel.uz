@@ -3,6 +3,7 @@ import { and, desc, eq, gt, sql } from 'drizzle-orm'
 import type { orders } from '../database/schema'
 import { creditTransactions, plans, promoCodes, promoRedemptions, subscriptions, users } from '../database/schema'
 import { userLabel } from './sign-in'
+import { hasCentreSeat } from './centres'
 
 /**
  * Freemium: what a user may do, and how plans are paid for. Premium (time) opens premium tests
@@ -21,18 +22,20 @@ export interface Access {
   credits: number
 }
 
-/** What a user has paid for now. A guest has nothing. */
+/** What a user has now (paid for, or through their learning centre). A guest has nothing. */
 export async function accessOf(user: { id: string, role: string } | null, db: Db | Tx = useDb()): Promise<Access> {
   if (!user) return { premium: false, premiumUntil: null, credits: 0 }
-  const [[sub], [balance]] = await Promise.all([
+  const [[sub], [balance], seat] = await Promise.all([
     db.select({ endsAt: subscriptions.endsAt }).from(subscriptions)
       .where(and(eq(subscriptions.userId, user.id), gt(subscriptions.endsAt, new Date())))
       .orderBy(desc(subscriptions.endsAt)).limit(1),
     db.select({ n: sql<number>`coalesce(sum(${creditTransactions.delta}), 0)::int` }).from(creditTransactions)
-      .where(eq(creditTransactions.userId, user.id))
+      .where(eq(creditTransactions.userId, user.id)),
+    hasCentreSeat(user.id, db)
   ])
   return {
-    premium: isStaffRole(user.role) || !!sub,
+    // A seat at a learning centre whose licence runs gives Premium too.
+    premium: isStaffRole(user.role) || !!sub || seat,
     premiumUntil: sub?.endsAt ?? null,
     credits: balance?.n ?? 0
   }

@@ -1,6 +1,6 @@
 // The site is open: the home page, the catalog, every test, its papers, a guest's result and Premium
 // need no sign-in. Results kept, the profile, settings and the staff pages do.
-const isPublic = (path: string) => path === '/' || path === '/login' || path === '/pricing' || path === '/earn' || path === '/live' || path.startsWith('/share/') || path === '/tests' || path.startsWith('/tests/')
+const isPublic = (path: string) => path === '/' || path === '/login' || path === '/pricing' || path === '/earn' || path === '/live' || path.startsWith('/join/') || path.startsWith('/share/') || path === '/tests' || path.startsWith('/tests/')
 
 export default defineNuxtRouteMiddleware(async (to) => {
   const { me, refresh } = useMe()

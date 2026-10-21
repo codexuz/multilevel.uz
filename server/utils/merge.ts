@@ -80,6 +80,9 @@ export async function mergeAccounts(keepId: string, otherId: string) {
     if (conflict) throw createError({ statusCode: 409, message: conflict })
 
     // Their own things.
+    // A live mock counts one section of each skill per person: if both sat the same one, the kept account's stays ranked.
+    await tx.execute(sql`update attempts set live_mock_id = null where user_id = ${otherId} and live_mock_id is not null
+      and exists (select 1 from attempts k where k.user_id = ${keepId} and k.live_mock_id = attempts.live_mock_id and k.skill = attempts.skill)`)
     for (const table of [attempts, orders, subscriptions, creditTransactions, aiReviews] as const) {
       await tx.update(table).set({ userId: keepId } as any).where(eq(table.userId, otherId))
     }
@@ -94,6 +97,14 @@ export async function mergeAccounts(keepId: string, otherId: string) {
     // Promo codes used: once per person, so a code both accounts used counts once.
     await tx.execute(sql`delete from promo_redemptions where user_id = ${otherId} and promo_code_id in (select promo_code_id from promo_redemptions where user_id = ${keepId})`)
     await tx.execute(sql`update promo_redemptions set user_id = ${keepId} where user_id = ${otherId}`)
+    // Learning centres and classes: the higher role in each centre (owner, then teacher, then student).
+    await tx.execute(sql`insert into centre_members (centre_id, user_id, role, created_at)
+      select centre_id, ${keepId}, role, created_at from centre_members where user_id = ${otherId}
+      on conflict (centre_id, user_id) do update set role = case
+        when 'OWNER' in (centre_members.role, excluded.role) then 'OWNER'
+        when 'TEACHER' in (centre_members.role, excluded.role) then 'TEACHER' else 'STUDENT' end`)
+    await tx.execute(sql`insert into class_members (group_id, user_id, joined_at) select group_id, ${keepId}, joined_at from class_members where user_id = ${otherId} on conflict do nothing`)
+    await tx.execute(sql`update class_groups set teacher_id = ${keepId} where teacher_id = ${otherId}`)
     // Unlocked tests: the ones the kept account does not have yet.
     await tx.execute(sql`insert into ${testUnlocks} (user_id, test_id, created_at) select ${keepId}, test_id, created_at from ${testUnlocks} where user_id = ${otherId} on conflict do nothing`)
     // What they did as staff, and whom they invited.

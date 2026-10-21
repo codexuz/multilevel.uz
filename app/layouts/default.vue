@@ -12,6 +12,7 @@ const mainNav = computed<NavigationMenuItem[]>(() => [
   { label: 'Tests', icon: 'i-lucide-clipboard-list', to: '/tests' },
   { label: 'Live mock', icon: 'i-lucide-trophy', to: '/live', badge: live.value ? { label: 'Live', color: 'error' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined },
   ...(loggedIn.value ? [{ label: 'My results', icon: 'i-lucide-chart-column', to: '/results' }] : []),
+  ...(me.value?.centres?.some(c => c.role !== 'STUDENT') ? [{ label: 'My centre', icon: 'i-lucide-school', to: '/centre' }] : []),
   { label: 'Premium', icon: 'i-lucide-sparkles', to: '/pricing', badge: isPremium.value ? { label: 'On', color: 'success' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined },
   { label: 'Earn credits', icon: 'i-lucide-gift', to: '/earn', badge: rewardCredits.value ? { label: String(rewardCredits.value), color: 'primary' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined }
 ])

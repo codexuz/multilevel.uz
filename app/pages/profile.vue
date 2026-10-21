@@ -54,10 +54,12 @@ async function logout() {
   await $fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
   reloadNuxtApp({ path: '/' })
 }
-const accountLinks = [
+const accountLinks = computed(() => [
+  ...(me.value?.centres?.some(c => c.role !== 'STUDENT') ? [{ label: 'My centre', description: 'Groups, students and assignments', icon: 'i-lucide-school', to: '/centre' }] : []),
+  { label: 'Live mock', description: 'One test, one leaderboard', icon: 'i-lucide-trophy', to: '/live' },
   { label: 'Earn credits', icon: 'i-lucide-gift', to: '/earn' },
   { label: 'Devices', description: 'Where you are signed in', icon: 'i-lucide-monitor-smartphone', to: '/settings' }
-]
+])
 </script>
 
 <template>
@@ -299,6 +301,8 @@ const accountLinks = [
           {{ telegram.error.value }}
         </p>
       </UCard>
+
+      <ClassCodes />
 
       <!-- On a phone: settings, staff pages and logging out, which the sidebar holds elsewhere -->
       <div class="lg:hidden flex flex-col gap-4">

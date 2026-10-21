@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { answers, attempts, essays, speakingResponses, users } from '../database/schema'
 import { SECTION_WITH, pickPart } from './content'
 import { userLabel } from './sign-in'
+import { teachesStudent } from './centres'
 
 /** An attempt as a list shows it. */
 export function attemptSummary(row: any) {
@@ -32,7 +33,8 @@ export async function attemptView(id: string, viewer: { id: string, role: string
   const row = await db.query.attempts.findFirst({ where: eq(attempts.id, id), with: { test: true, user: true } })
   if (!row) throw createError({ statusCode: 404, message: 'Attempt not found' })
   const staff = viewer.role === 'admin' || viewer.role === 'examiner'
-  if (row.userId !== viewer.id && !staff) throw createError({ statusCode: 404, message: 'Attempt not found' })
+  // A learning centre's teachers may see their students' results.
+  if (row.userId !== viewer.id && !staff && !(await teachesStudent(viewer.id, row.userId))) throw createError({ statusCode: 404, message: 'Attempt not found' })
 
   const whole = row.sectionId ? await db.query.sections.findFirst({ where: (s, { eq: e }) => e(s.id, row.sectionId!), with: SECTION_WITH as any }) as any : null
   // A part practised on its own is reviewed as that part.

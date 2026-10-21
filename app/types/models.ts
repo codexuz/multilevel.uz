@@ -33,6 +33,8 @@ export interface Me {
   unlockCost: number
   /** Premium tests opened with credits. */
   unlockedTests: string[]
+  /** Learning centres I belong to, and my role in each. */
+  centres?: { id: string, name: string, role: 'OWNER' | 'TEACHER' | 'STUDENT' }[]
 }
 
 export interface DeviceSessionDto {

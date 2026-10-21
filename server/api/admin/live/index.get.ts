@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
     m: liveMocks,
     testTitle: tests.title,
     testStatus: tests.status,
-    participants: sql<number>`(select count(distinct a.user_id)::int from attempts a where a.live_mock_id = ${liveMocks.id})`
+    participants: sql<number>`(select count(distinct a.user_id)::int from attempts a where a.live_mock_id = live_mocks.id)`
   }).from(liveMocks).leftJoin(tests, sql`${tests.id} = ${liveMocks.testId}`).orderBy(desc(liveMocks.startsAt)).limit(100)
   const now = new Date()
   return rows.map(r => ({ ...r.m, state: mockState(r.m, now), test: { title: r.testTitle, status: r.testStatus }, participants: r.participants }))

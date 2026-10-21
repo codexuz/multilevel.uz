@@ -80,6 +80,20 @@ A handed-in Writing or Speaking gets one AI review automatically, free (it does 
 allowance). On the marking page examiners see it as **AI suggests …** and can fill an empty score and
 feedback with **Use AI draft**, then change what they hear differently.
 
+### Learning centres (B2B)
+
+An admin opens a centre at `/admin/centres`: a name, its owner (their email or Telegram @username;
+they must have signed in once), seats and how long the licence runs. Everyone in a centre whose
+licence runs has Premium; each student takes a seat, and joining is refused when the seats are full.
+
+The owner and teachers work at `/centre` (teachers join with the owner's teacher code on their
+Profile). They make groups, each with a join link (`/join/CODE`, or the code on a student's Profile);
+see each student's level per skill (the average of their last three whole sections) and activity,
+and open their results; and set assignments: a section of a published test or one part of it, with
+a due date and a note. Students get a Telegram message, find the work on My results, and an
+assignment counts as done once they hand in that section after it was set. Taking a student out of
+their last group in a centre frees the seat.
+
 ### Growth dashboard
 
 `/admin/growth` (admins) shows the last 7, 30 or 90 days in Tashkent days, each figure beside the
