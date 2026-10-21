@@ -54,12 +54,15 @@ and `erp-lms/ielts-test` import/export format, set to the Multilevel format.
 
 ### AI feedback on Writing
 
-With `ANTHROPIC_API_KEY` set, Writing gets a **Get AI feedback** button: on the practice screen
-after writing, and on a handed-in Writing's result while it waits for an examiner. Claude rates
+With `OPENAI_API_KEY` set, Writing gets a **Get AI feedback** button: on the practice screen
+after writing, and on a handed-in Writing's result while it waits for an examiner. OpenAI's
+`gpt-6-luna` (a low-cost reasoning model; `AI_FEEDBACK_MODEL` and `AI_FEEDBACK_EFFORT` change the
+model and its reasoning effort, `medium` by default) rates
 each task on task achievement, organisation, vocabulary and grammar (0–5, anchored to CEFR),
 lists the corrections that matter most and rewrites one sentence a level up; the score out of 75
 is worked out from those marks (Task 1.1 counts 20%, Task 1.2 30%, Task 2 50%) and is shown as an
-estimate. It runs in the background (`ai_reviews`); the page waits for it, and a Telegram message
+estimate. The answer is structured output checked against a schema, and the essays are not stored
+by OpenAI (`store: false`). It runs in the background (`ai_reviews`); the page waits for it, and a Telegram message
 says when it is ready. Without Premium a user gets `AI_FEEDBACK_FREE_PER_MONTH` (2) a month, with
 Premium `AI_FEEDBACK_PREMIUM_PER_DAY` (10) a day; staff have no limit; failed ones do not count.
 
@@ -74,9 +77,19 @@ sharp) with the Roboto files in `server/assets/fonts` (SIL Open Font License).
 
 ### Telegram messages
 
-Users who sign in with Telegram allow the bot to write to them. The bot then tells them when
-their Writing or Speaking is marked, when their AI feedback is ready, and when an invite earns
-them credits, with a button back to the page. They can turn this off in Settings.
+The bot tells users when their Writing or Speaking is marked, when their AI feedback is ready, and
+when an invite earns them credits, with a button back to the page. They can turn this off in
+Settings.
+
+A signed-in user who has not joined the bot gets a popup a few seconds into the app (at most once
+every three days; "Not now" waits that long): **Join the bot** opens
+`t.me/<bot>?start=<signed code>`, and pressing Start there connects their Telegram to their
+account (also for Google accounts) and marks them as joined; the popup closes by itself. Settings
+has the same button. Blocking the bot marks them as not joined again.
+
+For this the server sets the bot's webhook to `<site>/api/telegram/webhook` when it starts (only
+with an https `NUXT_PUBLIC_SITE_URL`; Telegram's calls carry a secret made from the bot token). Set
+`TELEGRAM_WEBHOOK=false` if the same bot's webhook is used by something else.
 
 ### Earning credits
 

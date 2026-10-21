@@ -79,21 +79,21 @@ export async function renderShareCard(d: ShareData): Promise<Buffer> {
     width: 1200, height: 630, display: 'flex', color: 'white', fontFamily: 'Roboto',
     backgroundImage: 'linear-gradient(135deg, #4458e8 0%, #6d7ff5 55%, #9aa8ff 100%)'
   }, h('div', { display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexGrow: 1, margin: '52px 64px' },
-  h('div', { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-    h('div', { display: 'flex', alignItems: 'center', fontSize: 34, fontWeight: 900 },
-      h('div', { display: 'flex', width: 44, height: 44, borderRadius: 10, background: '#2ecc8f', marginRight: 14 }),
-      'Multilevel'),
-    h('div', { display: 'flex', fontSize: 24, fontWeight: 700, padding: '8px 18px', borderRadius: 999, background: 'rgba(255,255,255,0.18)' }, 'CEFR English mock test')),
-  h('div', { display: 'flex', flexDirection: 'column' },
-    h('div', { display: 'flex', fontSize: 40, fontWeight: 700, opacity: 0.9 }, `${d.name} scored`),
-    h('div', { display: 'flex', alignItems: 'flex-end', marginTop: 4 },
-      h('div', { display: 'flex', fontSize: 200, fontWeight: 900, lineHeight: 1 }, String(d.score)),
-      h('div', { display: 'flex', fontSize: 64, fontWeight: 700, opacity: 0.85, marginLeft: 12, marginBottom: 22 }, '/ 75'),
-      h('div', { display: 'flex', fontSize: 52, fontWeight: 900, color: '#3b4fd8', background: 'white', borderRadius: 18, padding: '10px 26px', marginLeft: 36, marginBottom: 26 }, levelLabel(d.cefrLevel))),
-    h('div', { display: 'flex', fontSize: 34, fontWeight: 400, opacity: 0.92, marginTop: 6, maxWidth: 1070 }, what.length > 64 ? `${what.slice(0, 63)}…` : what)),
-  h('div', { display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 30 },
-    h('div', { display: 'flex', fontWeight: 400 }, 'Practise free at ', h('span', { fontWeight: 700, marginLeft: 8 }, `${siteHost()}/r/${d.code}`)),
-    h('div', { display: 'flex', fontWeight: 900 }, 'Can you beat it?'))))
+    h('div', { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+      h('div', { display: 'flex', alignItems: 'center', fontSize: 34, fontWeight: 900 },
+        h('div', { display: 'flex', width: 44, height: 44, borderRadius: 10, background: '#2ecc8f', marginRight: 14 }),
+        'Multilevel'),
+      h('div', { display: 'flex', fontSize: 24, fontWeight: 700, padding: '8px 18px', borderRadius: 999, background: 'rgba(255,255,255,0.18)' }, 'CEFR English mock test')),
+    h('div', { display: 'flex', flexDirection: 'column' },
+      h('div', { display: 'flex', fontSize: 40, fontWeight: 700, opacity: 0.9 }, `${d.name} scored`),
+      h('div', { display: 'flex', alignItems: 'flex-end', marginTop: 4 },
+        h('div', { display: 'flex', fontSize: 200, fontWeight: 900, lineHeight: 1 }, String(d.score)),
+        h('div', { display: 'flex', fontSize: 64, fontWeight: 700, opacity: 0.85, marginLeft: 12, marginBottom: 22 }, '/ 75'),
+        h('div', { display: 'flex', fontSize: 52, fontWeight: 900, color: '#3b4fd8', background: 'white', borderRadius: 18, padding: '10px 26px', marginLeft: 36, marginBottom: 26 }, levelLabel(d.cefrLevel))),
+      h('div', { display: 'flex', fontSize: 34, fontWeight: 400, opacity: 0.92, marginTop: 6, maxWidth: 1070 }, what.length > 64 ? `${what.slice(0, 63)}…` : what)),
+    h('div', { display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 30 },
+      h('div', { display: 'flex', fontWeight: 400 }, 'Practise free at ', h('span', { fontWeight: 700, marginLeft: 8 }, `${siteHost()}/r/${d.code}`)),
+      h('div', { display: 'flex', fontWeight: 900 }, 'Can you beat it?'))))
 
   const svg = await satori(tree as any, { width: 1200, height: 630, fonts: await loadFonts() })
   return sharp(Buffer.from(svg)).png().toBuffer()

@@ -21,8 +21,12 @@ export async function notifyTelegram(userId: string, message: { text: string, pa
     parse_mode: 'HTML',
     link_preview_options: { is_disabled: true },
     ...(url ? { reply_markup: { inline_keyboard: [[{ text: message.button || 'Open', url }]] } } : {})
-  }).catch((e: any) => ({ ok: false, description: e?.data?.description || e?.message }))
-  if (!res.ok) console.warn('[notify] Telegram message not sent:', res.description)
+  }).catch((e: any) => ({ ok: false, error_code: e?.data?.error_code ?? e?.statusCode, description: e?.data?.description || e?.message }))
+  if (!res.ok) {
+    console.warn('[notify] Telegram message not sent:', res.description)
+    // 403: they blocked the bot (or never let it write); the site asks them to join again.
+    if ((res as { error_code?: number }).error_code === 403) await useDb().update(users).set({ telegramBotJoined: false }).where(eq(users.id, userId))
+  }
   return res.ok
 }
 

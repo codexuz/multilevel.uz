@@ -158,6 +158,10 @@ const userMenu = computed<DropdownMenuItem[][]>(() => [
 
     <slot />
 
+    <ClientOnly>
+      <TelegramBotPrompt />
+    </ClientOnly>
+
     <nav
       class="lg:hidden fixed inset-x-0 bottom-0 z-40 border-t border-default bg-default/95 backdrop-blur-xl pb-safe"
       aria-label="Main"

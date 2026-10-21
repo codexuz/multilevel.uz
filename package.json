@@ -16,7 +16,6 @@
     "db:seed": "tsx server/database/seed.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.137.0",
     "@artmizu/nuxt-prometheus": "3.0.3",
     "@aws-sdk/client-s3": "^3.1079.0",
     "@aws-sdk/s3-request-presigner": "^3.1079.0",
@@ -56,6 +55,7 @@
     "jspdf": "^3.0.4",
     "nuxt": "^4.4.8",
     "nuxt-auth-utils": "^0.5.29",
+    "openai": "^7.39.0",
     "postgres": "^3.4.9",
     "satori": "^0.63.2",
     "sharp": "^0.35.5",

@@ -1,5 +1,6 @@
-import Anthropic from '@anthropic-ai/sdk'
-import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod'
+import { createHash } from 'node:crypto'
+import OpenAI from 'openai'
+import { zodTextFormat } from 'openai/helpers/zod'
 import * as z from 'zod/v4'
 import { and, eq, gt, lt, ne, sql } from 'drizzle-orm'
 import { aiReviews, users } from '../database/schema'
@@ -8,22 +9,24 @@ import { accessOf, isStaffRole } from './billing'
 import { notifyAiReview } from './notify'
 
 /**
- * Instant AI feedback on Multilevel Writing: Claude reads each task against its prompt and gives
+ * Instant AI feedback on Multilevel Writing: an OpenAI reasoning model (gpt-6-luna by default, chosen
+ * for its low cost) reads each task against its prompt and gives
  * four criteria (0–5), the level it reads as, a comment and corrections. The score out of 75 is
  * worked out here from the criteria, so the same marks always give the same score. It is an
  * estimate; an examiner's mark stays the real thing.
  *
  * Runs in the background: the request makes a PENDING row and returns, the page polls it.
- * Needs ANTHROPIC_API_KEY. How many a user gets is set in the environment.
+ * Needs OPENAI_API_KEY. How many a user gets is set in the environment.
  */
 
-export const AI_MODEL = () => process.env.AI_FEEDBACK_MODEL || 'claude-opus-5-5'
-const EFFORT = () => (['low', 'medium', 'high', 'xhigh', 'max'] as const).find(e => e === process.env.AI_FEEDBACK_EFFORT) ?? 'high'
+export const AI_MODEL = () => process.env.AI_FEEDBACK_MODEL || 'gpt-6-luna'
+/** Reasoning effort: none, low, medium, high, xhigh or max (medium by default). */
+const EFFORT = () => (['none', 'low', 'medium', 'high', 'xhigh', 'max'] as const).find(e => e === process.env.AI_FEEDBACK_EFFORT) ?? 'medium'
 
-export const aiEnabled = () => !!(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN)
+export const aiEnabled = () => !!process.env.OPENAI_API_KEY
 
-let client: Anthropic | null = null
-const anthropic = () => (client ??= new Anthropic())
+let client: OpenAI | null = null
+const openai = () => (client ??= new OpenAI())
 
 const num = (v: string | undefined, fallback: number) => (v != null && v !== '' && Number.isFinite(Number(v)) ? Math.max(0, Math.floor(Number(v))) : fallback)
 
@@ -143,20 +146,25 @@ export function scoreFromCriteria(tasks: { taskNumber: number, criteria: Writing
   return Math.round(Math.min(1, Math.max(0, share)) * 75)
 }
 
-async function assess(tasks: AiTaskInput[]) {
-  const response = await anthropic().beta.messages.parse({
+async function assess(tasks: AiTaskInput[], userId: string) {
+  const response = await openai().responses.parse({
     model: AI_MODEL(),
-    max_tokens: 16000,
-    betas: ['server-side-fallback-2026-07-01'],
-    fallbacks: 'default',
-    thinking: { type: 'adaptive' },
-    output_config: { effort: EFFORT(), format: betaZodOutputFormat(WritingReview) },
-    system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
-    messages: [{ role: 'user', content: userMessage(tasks) }]
+    // The same instructions first on every request, so OpenAI can reuse them from its cache.
+    instructions: SYSTEM,
+    input: userMessage(tasks),
+    reasoning: { effort: EFFORT() },
+    max_output_tokens: 16000,
+    text: { format: zodTextFormat(WritingReview, 'writing_review') },
+    prompt_cache_key: 'multilevel-writing-review',
+    // Who asked, without saying who: lets OpenAI tell users apart for abuse checks.
+    safety_identifier: createHash('sha256').update(`multilevel:${userId}`).digest('hex').slice(0, 32),
+    // The essays are not kept by OpenAI after the answer.
+    store: false
   })
-  if (response.stop_reason === 'refusal') throw new Error('The assessment was declined. Please check the text and try again.')
-  if (response.stop_reason === 'max_tokens') throw new Error('The assessment was cut short. Please try again.')
-  const parsed = response.parsed_output
+  const refused = response.output.some(o => o.type === 'message' && o.content.some(c => c.type === 'refusal'))
+  if (refused) throw new Error('The assessment was declined. Please check the text and try again.')
+  if (response.status === 'incomplete') throw new Error('The assessment was cut short. Please try again.')
+  const parsed = response.output_parsed
   if (!parsed) throw new Error('The assessment came back incomplete. Please try again.')
   return { parsed, model: response.model, usage: response.usage }
 }
@@ -198,18 +206,18 @@ async function run(id: string) {
   if (!row || row.status !== 'PENDING') return
   const tasks = row.input as AiTaskInput[]
   try {
-    const { parsed, model, usage } = await assess(tasks)
+    const { parsed, model, usage } = await assess(tasks, row.userId)
     const done = finish(tasks, parsed)
     await db.update(aiReviews).set({
       status: 'DONE', result: done.result, score: done.score, cefrLevel: done.cefrLevel, model,
-      inputTokens: (usage.input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0) + (usage.cache_creation_input_tokens ?? 0),
-      outputTokens: usage.output_tokens ?? 0, completedAt: new Date()
+      inputTokens: usage?.input_tokens ?? 0,
+      outputTokens: usage?.output_tokens ?? 0, completedAt: new Date()
     }).where(eq(aiReviews.id, id))
     await notifyAiReview(row.userId, id, row.attemptId, done.score, done.cefrLevel).catch(() => {})
   } catch (e) {
-    const message = e instanceof Anthropic.RateLimitError
+    const message = e instanceof OpenAI.RateLimitError
       ? 'Many people are being assessed right now. Please try again in a minute.'
-      : e instanceof Anthropic.APIError
+      : e instanceof OpenAI.APIError
         ? 'The assessment service did not answer. Please try again.'
         : (e as Error)?.message || 'The assessment failed. Please try again.'
     console.error('[ai-writing] review failed:', e)

@@ -9,6 +9,23 @@ const { me, refresh: refreshMe } = useMe()
 
 /** Telegram messages from the bot; only for an account with Telegram connected. */
 const savingNotify = ref(false)
+const joining = ref(false)
+/** Opens the bot with a link that connects this account when Start is pressed. */
+async function joinBot() {
+  joining.value = true
+  try {
+    const { url } = await $fetch<{ url: string }>('/api/telegram/link')
+    window.open(url, '_blank', 'noopener')
+    for (let i = 0; i < 40 && !me.value?.telegramBot; i++) {
+      await new Promise(r => setTimeout(r, 3000))
+      await refreshMe()
+    }
+  } catch {
+    toast.add({ title: 'The bot is not available right now', color: 'error' })
+  } finally {
+    joining.value = false
+  }
+}
 async function setTelegramNotify(on: boolean) {
   savingNotify.value = true
   try {
@@ -46,8 +63,19 @@ async function revoke(id: string) {
               Telegram messages
             </p>
             <p class="text-sm text-muted text-pretty">
-              {{ me?.telegram ? 'When your Writing or Speaking is marked, your AI feedback is ready, or a friend you invited earns you credits.' : 'Connect Telegram on your Profile to get a message when your work is marked.' }}
+              {{ me?.telegram ? 'When your Writing or Speaking is marked, your AI feedback is ready, or a friend you invited earns you credits.' : 'Join our bot to get a message when your work is marked.' }}
             </p>
+            <UButton
+              v-if="!me?.telegramBot"
+              label="Join the bot"
+              icon="i-lucide-send"
+              size="sm"
+              color="neutral"
+              variant="outline"
+              class="mt-2"
+              :loading="joining"
+              @click="joinBot"
+            />
           </div>
           <USwitch
             :model-value="!!me?.telegram && !!me?.telegramNotify"

@@ -12,6 +12,8 @@ export interface Me {
   telegram: boolean
   /** Messages from the bot (marking done, AI feedback ready, invites). */
   telegramNotify: boolean
+  /** Has pressed Start in the bot. */
+  telegramBot: boolean
   name: string | null
   avatarUrl: string | null
   role: UserRole

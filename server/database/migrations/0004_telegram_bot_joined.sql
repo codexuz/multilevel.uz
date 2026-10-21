@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "telegram_bot_joined" boolean DEFAULT false NOT NULL;
