@@ -449,7 +449,7 @@ export async function listPracticeParts(query: Body) {
       questions: own.reduce((n, g) => n + g.n, 0),
       types: [...new Set(own.map(g => g.type))],
       minWords: r.writing_tasks ? minimumWordsFor(r.writing_tasks.taskNumber, r.writing_tasks.minWords) : null,
-      test: { slug: r.tests.slug, title: r.tests.title, access: r.tests.access }
+      test: { id: r.tests.id, slug: r.tests.slug, title: r.tests.title, access: r.tests.access }
     }
   })
   return paged(items, total?.n ?? 0, page, limit)

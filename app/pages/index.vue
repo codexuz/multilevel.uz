@@ -43,10 +43,28 @@ const faq = [
 ]
 
 const wrap = 'mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8'
+
+// Arrived through a friend's invite link (/r/<code>): say what signing up gets them.
+const route = useRoute()
+const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
 </script>
 
 <template>
   <div class="flex flex-col gap-20 sm:gap-28 pb-20 sm:pb-28">
+    <div
+      v-if="invited"
+      :class="wrap"
+      class="-mb-16 sm:-mb-24 pt-4"
+    >
+      <UAlert
+        color="primary"
+        variant="subtle"
+        icon="i-lucide-gift"
+        title="A friend invited you"
+        description="Sign up and get a free credit: it opens one Premium test for good."
+        :actions="[{ label: 'Sign up free', to: '/login?next=/earn', color: 'primary', variant: 'solid' }]"
+      />
+    </div>
     <!-- Hero -->
     <section class="relative overflow-hidden">
       <div

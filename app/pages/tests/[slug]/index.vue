@@ -5,12 +5,29 @@ definePageMeta({ guestLayout: true })
 const route = useRoute()
 const slug = String(route.params.slug)
 const config = useRuntimeConfig()
-const { loggedIn, isPremium } = useMe()
+const { loggedIn, canOpen, rewardCredits, me, refresh: refreshMe } = useMe()
+const toast = useToast()
 
 const { data: test, error } = await useFetch<any>(`/api/tests/${slug}`)
 if (error.value || !test.value) throw createError({ statusCode: 404, statusMessage: 'Test not found', fatal: true })
 
 const t = test.value
+/** A premium test this user has not opened: no Premium, not unlocked with credits. */
+const locked = computed(() => !canOpen(t))
+const cost = computed(() => me.value?.unlockCost ?? 1)
+const unlocking = ref(false)
+async function unlock() {
+  unlocking.value = true
+  try {
+    await $fetch(`/api/tests/${t.slug}/unlock`, { method: 'POST' })
+    await refreshMe()
+    toast.add({ title: 'Test opened', description: 'It is yours to take as often as you like.', color: 'success' })
+  } catch (e: any) {
+    toast.add({ title: 'Not opened', description: e?.data?.message || 'Please try again.', color: 'error' })
+  } finally {
+    unlocking.value = false
+  }
+}
 const skills = computed(() => t.sections.filter((s: any) => s.items > 0))
 const minutes = (seconds?: number | null) => (seconds ? Math.round(seconds / 60) : null)
 const summary = computed(() => skills.value.map((s: any) => SKILL_META[s.skill as keyof typeof SKILL_META].label).join(', '))
@@ -135,8 +152,33 @@ useHead({
         >
       </div>
 
+      <UCard
+        v-if="locked && loggedIn && rewardCredits >= cost"
+        :ui="{ body: 'flex flex-col sm:flex-row sm:items-center gap-4' }"
+      >
+        <img
+          src="/illustrations/locked.svg"
+          alt=""
+          class="size-12 shrink-0"
+        >
+        <div class="flex-1 min-w-0">
+          <p class="font-semibold text-highlighted">
+            Open this test with {{ cost }} {{ cost === 1 ? 'credit' : 'credits' }}
+          </p>
+          <p class="text-sm text-muted">
+            You have {{ rewardCredits }}. Once opened, it is yours for good: every section, as often as you like.
+          </p>
+        </div>
+        <UButton
+          :label="`Open for ${cost} ${cost === 1 ? 'credit' : 'credits'}`"
+          icon="i-lucide-lock-keyhole-open"
+          :loading="unlocking"
+          class="justify-center"
+          @click="unlock"
+        />
+      </UCard>
       <BillingPaywall
-        v-if="t.access === 'PREMIUM' && !isPremium"
+        v-else-if="locked"
         reason="premium"
         compact
       />
@@ -179,7 +221,7 @@ useHead({
             >
               <span class="min-w-0">{{ partLine(p) }}</span>
               <NuxtLink
-                v-if="!(t.access === 'PREMIUM' && !isPremium) && (p.partNumber || p.taskNumber)"
+                v-if="!locked && (p.partNumber || p.taskNumber)"
                 :to="`/tests/${t.slug}/${String(s.skill).toLowerCase()}?part=${p.partNumber ?? p.taskNumber}`"
                 class="shrink-0 text-xs font-semibold text-primary hover:underline"
                 :aria-label="`Practise ${partLine(p)} on its own`"
@@ -190,13 +232,15 @@ useHead({
             {{ howChecked[s.skill] }}
           </p>
           <UButton
-            v-if="t.access === 'PREMIUM' && !isPremium"
+            v-if="locked"
             class="mt-auto self-start"
-            :to="`/pricing?from=${encodeURIComponent(route.fullPath)}`"
-            label="Unlock with Premium"
+            :to="loggedIn && rewardCredits >= cost ? undefined : `/pricing?from=${encodeURIComponent(route.fullPath)}`"
+            :label="loggedIn && rewardCredits >= cost ? `Open for ${cost} ${cost === 1 ? 'credit' : 'credits'}` : 'Unlock with Premium'"
+            :loading="unlocking"
             icon="i-lucide-lock-keyhole"
             color="neutral"
             variant="outline"
+            @click="loggedIn && rewardCredits >= cost ? unlock() : undefined"
           />
           <UButton
             v-else

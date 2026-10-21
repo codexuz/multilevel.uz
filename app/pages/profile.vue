@@ -3,7 +3,7 @@ import type { Order } from '~/utils/billing'
 
 /** Who is signed in, their plan, their goals, and how their marked sections have gone. */
 useSeoMeta({ title: 'Profile', robots: 'noindex' })
-const { me, isPremium, credits, refresh } = useMe()
+const { me, isPremium, credits, rewardCredits, refresh } = useMe()
 const toast = useToast()
 const { data: purchases } = await useFetch<Order[]>('/api/me/orders', { default: () => [] })
 
@@ -130,6 +130,23 @@ async function connectTelegram() {
             </dt><dd class="font-medium tabular-nums">
               {{ credits }}
             </dd>
+          </div>
+          <div class="col-span-2 flex items-center justify-between gap-3 rounded-lg bg-elevated px-3 py-2.5">
+            <div>
+              <dt class="text-muted">
+                Credits
+              </dt><dd class="font-medium tabular-nums">
+                {{ rewardCredits }} <span class="text-muted font-normal">· open Premium tests</span>
+              </dd>
+            </div>
+            <UButton
+              to="/earn"
+              label="Earn more"
+              icon="i-lucide-gift"
+              size="sm"
+              color="neutral"
+              variant="outline"
+            />
           </div>
         </dl>
         <template

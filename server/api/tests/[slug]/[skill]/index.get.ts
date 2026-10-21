@@ -1,5 +1,6 @@
 // One section's paper, for anyone: the questions without their answers; with ?part=N, that part
-// alone, to practise on its own. A premium test's paper is for Premium only (its page stays public).
+// alone, to practise on its own. A premium test's paper is for Premium, or for whoever opened that
+// test with credits (its page stays public).
 export default defineEventHandler(async (event) => {
   const skill = String(getRouterParam(event, 'skill')).toUpperCase()
   if (!isSkill(skill)) throw createError({ statusCode: 404, message: 'Section not found' })
@@ -9,8 +10,9 @@ export default defineEventHandler(async (event) => {
   const partNumber = getQuery(event).part ? Number(getQuery(event).part) : null
   const section = partNumber ? pickPart(whole, partNumber) : whole
   if (!section) throw createError({ statusCode: 404, message: 'Part not found' })
-  if (test.access === 'PREMIUM' && !(await accessOf(await optionalUser(event))).premium) {
-    paymentRequired('PREMIUM_REQUIRED', 'This test is part of Premium')
+  if (test.access === 'PREMIUM') {
+    const user = await optionalUser(event)
+    if (!(await canOpenTest(user, test, (await accessOf(user)).premium))) paymentRequired('PREMIUM_REQUIRED', 'This test is part of Premium')
   }
   return {
     test: { id: test.id, slug: test.slug, title: test.title, mode: test.mode, access: test.access, skills: test.sections.filter((s: any) => s.items?.length).map((s: any) => s.skill) },

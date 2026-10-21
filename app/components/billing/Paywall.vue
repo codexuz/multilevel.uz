@@ -11,7 +11,7 @@ const copy = computed(() => ({
     icon: 'i-lucide-lock-keyhole',
     art: '/illustrations/locked.svg',
     title: 'This test is part of Premium',
-    description: 'Premium opens every test in the library and the explanation behind every answer.'
+    description: 'Premium opens every test in the library and the explanation behind every answer. Or open just this test with credits you earn by inviting friends.'
   },
   credit: {
     icon: 'i-lucide-pen-line',
@@ -37,7 +37,10 @@ const to = computed(() => `/pricing?from=${encodeURIComponent(route.fullPath)}${
     variant="subtle"
     :title="copy.title"
     :description="copy.description"
-    :actions="[{ label: reason === 'credit' ? 'Buy a marking' : 'See Premium', to, color: 'primary', variant: 'solid', size: 'sm' }]"
+    :actions="[
+      { label: reason === 'credit' ? 'Buy a marking' : 'See Premium', to, color: 'primary', variant: 'solid', size: 'sm' },
+      ...(reason === 'premium' ? [{ label: 'Earn free credits', to: '/earn', icon: 'i-lucide-gift', color: 'primary' as const, variant: 'outline' as const, size: 'sm' as const }] : [])
+    ]"
   />
   <UCard
     v-else
@@ -62,6 +65,14 @@ const to = computed(() => `/pricing?from=${encodeURIComponent(route.fullPath)}${
           :to="to"
           :label="reason === 'credit' ? 'Buy a marking' : 'See Premium'"
           icon="i-lucide-sparkles"
+        />
+        <UButton
+          v-if="reason === 'premium'"
+          to="/earn"
+          label="Earn free credits"
+          icon="i-lucide-gift"
+          color="neutral"
+          variant="outline"
         />
         <slot />
       </div>

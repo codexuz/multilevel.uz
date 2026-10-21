@@ -27,5 +27,8 @@ export function useMe() {
   const isAdmin = computed(() => role.value === 'admin')
   const isPremium = computed(() => !!me.value?.premium)
   const credits = computed(() => me.value?.credits ?? 0)
-  return { me, loggedIn, role, isStaff, isAdmin, isPremium, credits, refresh, pending }
+  const rewardCredits = computed(() => me.value?.rewardCredits ?? 0)
+  /** Whether a test opens for this user: free, Premium, or opened with credits. */
+  const canOpen = (test: { id?: string, access?: string }) => test.access !== 'PREMIUM' || isPremium.value || (!!test.id && !!me.value?.unlockedTests?.includes(test.id))
+  return { me, loggedIn, role, isStaff, isAdmin, isPremium, credits, rewardCredits, canOpen, refresh, pending }
 }

@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
   const body = (await readBody<SubmitBody>(event)) ?? {}
   const user = await optionalUser(event)
   const access = await accessOf(user)
-  if (test.access === 'PREMIUM' && !access.premium) paymentRequired('PREMIUM_REQUIRED', 'This test is part of Premium')
+  if (!(await canOpenTest(user, test, access.premium))) paymentRequired('PREMIUM_REQUIRED', 'This test is part of Premium')
 
   // Only this section's questions and tasks count; anything else in the body is ignored.
   const ids = itemIdsOf(section)
@@ -71,6 +71,8 @@ export default defineEventHandler(async (event) => {
       if (needsCredit) await spendCredit(tx, user.id, attempt!.id)
       return attempt!.id
     })
+    // A friend's invite pays off once they finish a test.
+    await rewardInviter(user.id).catch(e => console.error('[rewards] inviter reward failed:', e))
   }
 
   return {

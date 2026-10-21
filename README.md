@@ -52,6 +52,24 @@ and `erp-lms/ielts-test` import/export format, set to the Multilevel format.
   `/admin/users` and presses **Grant**, which records a paid order with the amount received.
 - `/admin/orders` lists every order and this month's revenue.
 
+### Earning credits
+
+Besides buying Premium, a user can open single Premium tests with **credits** they earn (not to be
+confused with marking credits, shown as "Markings"). One credit opens one Premium test for good;
+the test page offers it when they have enough. `/earn` shows the balance, the invite link and the
+tasks.
+
+- **Invite friends**: each user's link is `https://multilevel.uz/r/<code>`. A friend who opens it
+  and makes an account within 30 days on that device starts with `REWARD_REFERRED_CREDITS` (1);
+  the inviter gets `REWARD_REFERRER_CREDITS` (2) when that friend finishes their first test, at
+  most `REFERRAL_MONTHLY_CAP` (30) friends in 30 days, so made-up accounts do not pay.
+- **Join the Telegram channel**: set `TELEGRAM_CHANNEL=@yourchannel` and make the sign-in bot
+  (`TELEGRAM_BOT_TOKEN`) an **admin of the channel** (it only needs to see members). The user
+  joins, presses "I've joined — check", and the bot confirms they are in it:
+  `REWARD_TELEGRAM_CHANNEL_CREDITS` (1), once. Their account needs Telegram linked; the page
+  offers to connect it.
+- `TEST_UNLOCK_CREDITS` (1) is what one test costs. Set any reward to `0` to turn it off.
+
 ## The Multilevel format
 
 | Section | Parts | Questions | Time |

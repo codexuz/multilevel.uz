@@ -3,14 +3,15 @@ import type { DropdownMenuItem, NavigationMenuItem } from '@nuxt/ui'
 
 // The erp-lms IELTS app's shell (layouts/default.vue there), open to guests: anyone can browse and
 // take tests; signing in keeps the results, and staff get the builder and marking.
-const { me, loggedIn, isStaff, isAdmin, isPremium } = useMe()
+const { me, loggedIn, isStaff, isAdmin, isPremium, rewardCredits } = useMe()
 const colorMode = useColorMode()
 const route = useRoute()
 
 const mainNav = computed<NavigationMenuItem[]>(() => [
   { label: 'Tests', icon: 'i-lucide-clipboard-list', to: '/tests' },
   ...(loggedIn.value ? [{ label: 'My results', icon: 'i-lucide-chart-column', to: '/results' }] : []),
-  { label: 'Premium', icon: 'i-lucide-sparkles', to: '/pricing', badge: isPremium.value ? { label: 'On', color: 'success' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined }
+  { label: 'Premium', icon: 'i-lucide-sparkles', to: '/pricing', badge: isPremium.value ? { label: 'On', color: 'success' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined },
+  { label: 'Earn credits', icon: 'i-lucide-gift', to: '/earn', badge: rewardCredits.value ? { label: String(rewardCredits.value), color: 'primary' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined }
 ])
 
 const staffNav = computed<NavigationMenuItem[]>(() => [

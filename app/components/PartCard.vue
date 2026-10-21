@@ -1,10 +1,10 @@
 <script setup lang="ts">
 // One part to practise on its own: its skill and number, title, what it asks, the test it comes
-// from, and the way in. Premium parts are marked; their test's page offers Premium.
-const props = defineProps<{ part: { id: string, skill: string, number: number | null, title: string | null, questions: number, types: string[], minWords: number | null, test: { slug: string, title: string, access: string } } }>()
-const { isPremium } = useMe()
+// from, and the way in. Premium parts are marked; their test's page offers Premium or opening it with credits.
+const props = defineProps<{ part: { id: string, skill: string, number: number | null, title: string | null, questions: number, types: string[], minWords: number | null, test: { id?: string, slug: string, title: string, access: string } } }>()
+const { canOpen } = useMe()
 
-const locked = computed(() => props.part.test.access === 'PREMIUM' && !isPremium.value)
+const locked = computed(() => !canOpen(props.part.test))
 const to = computed(() => locked.value
   ? `/tests/${props.part.test.slug}`
   : `/tests/${props.part.test.slug}/${props.part.skill.toLowerCase()}?part=${props.part.number}`)

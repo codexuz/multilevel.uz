@@ -23,6 +23,12 @@ export interface Me {
   premiumUntil: string | null
   /** Writing or Speaking markings left. */
   credits: number
+  /** Credits earned (invites, the Telegram channel) that open premium tests. */
+  rewardCredits: number
+  /** Credits one premium test takes to open. */
+  unlockCost: number
+  /** Premium tests opened with credits. */
+  unlockedTests: string[]
 }
 
 export interface DeviceSessionDto {

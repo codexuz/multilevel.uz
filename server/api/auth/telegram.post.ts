@@ -31,10 +31,12 @@ export default defineEventHandler(async (event) => {
     return { linked: true, to: '/profile' }
   }
 
+  const [known] = await db.select({ id: users.id }).from(users).where(eq(users.telegramId, telegramId)).limit(1)
   const [row] = await db.insert(users)
     .values({ ...profile, telegramId, name, avatarUrl: tg.photo_url ?? null })
     .onConflictDoUpdate({ target: users.telegramId, set: profile })
     .returning()
+  if (!known) await acceptReferral(event, row!.id)
   const signedIn = await signIn(event, row!)
   return { linked: false, to: afterSignIn(event, signedIn) }
 })

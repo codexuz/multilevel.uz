@@ -1,7 +1,7 @@
-import { relations } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
 import {
   pgTable, pgEnum, uuid, text, integer, boolean, serial,
-  timestamp, jsonb, index, uniqueIndex
+  timestamp, jsonb, index, uniqueIndex, primaryKey, type AnyPgColumn
 } from 'drizzle-orm/pg-core'
 
 // ---------- Enums ----------
@@ -14,6 +14,9 @@ export const users = pgTable('users', {
   email: text('email').unique(),
   telegramId: text('telegram_id').unique(),
   telegramUsername: text('telegram_username'),
+  // referrals: the code in this user's invite link, and who invited them
+  referralCode: text('referral_code').unique(),
+  referredById: uuid('referred_by_id').references((): AnyPgColumn => users.id, { onDelete: 'set null' }),
   name: text('name'),
   avatarUrl: text('avatar_url'),
   role: userRole('role').notNull().default('student'),
@@ -309,6 +312,33 @@ export const creditTransactions = pgTable('credit_transactions', {
   attemptId: uuid('attempt_id').references(() => attempts.id, { onDelete: 'set null' }),
   createdAt: created()
 }, t => [index('credit_transactions_user_idx').on(t.userId)])
+
+// ---------- rewards: credits that open premium tests ----------
+// Earned by inviting friends and joining the Telegram channel, spent to open a premium test for
+// good. Separate from the marking credits above, which buy an examiner's time.
+export const rewardTransactions = pgTable('reward_transactions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  delta: integer('delta').notNull(),
+  reason: text('reason').notNull(), // REFERRAL | WELCOME | TELEGRAM_CHANNEL | UNLOCK | GRANT
+  /** REFERRAL: the friend whose first test earned it. */
+  referredUserId: uuid('referred_user_id').references(() => users.id, { onDelete: 'set null' }),
+  /** UNLOCK: the test it opened. */
+  testId: uuid('test_id').references(() => tests.id, { onDelete: 'set null' }),
+  createdAt: created()
+}, t => [
+  index('reward_transactions_user_idx').on(t.userId),
+  // Each friend earns their inviter once; the welcome and the channel are once per user.
+  uniqueIndex('reward_transactions_referral_uq').on(t.referredUserId).where(sql`reason = 'REFERRAL'`),
+  uniqueIndex('reward_transactions_once_uq').on(t.userId, t.reason).where(sql`reason in ('WELCOME', 'TELEGRAM_CHANNEL')`)
+])
+
+/** Premium tests a user opened with credits: theirs for good. */
+export const testUnlocks = pgTable('test_unlocks', {
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  testId: uuid('test_id').notNull().references(() => tests.id, { onDelete: 'cascade' }),
+  createdAt: created()
+}, t => [primaryKey({ columns: [t.userId, t.testId] })])
 
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),

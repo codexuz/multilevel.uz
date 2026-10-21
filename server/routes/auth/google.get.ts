@@ -19,6 +19,7 @@ export default defineOAuthGoogleEventHandler({
         name: g.name ?? null,
         avatarUrl: g.picture ?? null
       }).returning()
+      await acceptReferral(event, row!.id)
     } else if ((g.name && g.name !== row.name) || (g.picture && g.picture !== row.avatarUrl)) {
       [row] = await db.update(users)
         .set({ name: g.name ?? row.name, avatarUrl: g.picture ?? row.avatarUrl, updatedAt: new Date() })

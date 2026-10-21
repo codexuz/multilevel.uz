@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   const db = useDb()
   const [u] = await db.select().from(users).where(eq(users.id, auth.id)).limit(1)
   if (!u) throw createError({ statusCode: 404, message: 'User not found' })
-  const access = await accessOf(auth, db)
+  const [access, rewardCredits, unlockedTests] = await Promise.all([accessOf(auth, db), rewardBalance(auth.id), unlockedTestIds(auth.id)])
 
   return {
     id: u.id,
@@ -23,6 +23,9 @@ export default defineEventHandler(async (event) => {
     onboarded: u.onboarded,
     premium: access.premium,
     premiumUntil: access.premiumUntil,
-    credits: access.credits
+    credits: access.credits,
+    rewardCredits,
+    unlockCost: rewardRules().unlockCost,
+    unlockedTests
   }
 })
