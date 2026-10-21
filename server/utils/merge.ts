@@ -125,6 +125,8 @@ export async function mergeAccounts(keepId: string, otherId: string) {
       learningDuration: keep.learningDuration ?? other.learningDuration,
       targetLevel: keep.targetLevel ?? other.targetLevel,
       targetScore: keep.targetScore ?? other.targetScore,
+      examDate: keep.examDate ?? other.examDate,
+      aiBonusReviews: keep.aiBonusReviews + other.aiBonusReviews,
       updatedAt: new Date()
     }).where(eq(users.id, keepId))
     await tx.delete(users).where(eq(users.id, otherId))

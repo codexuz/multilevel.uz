@@ -65,3 +65,20 @@ export const notifyPremiumEnded = (userId: string, offer: { code: string, text: 
   path: `/pricing${offer ? `?promo=${offer.code}` : ''}`,
   button: 'Get Premium again'
 })
+
+export function notifyPlan(userId: string, kind: 'MILESTONE' | 'TODAY' | 'NUDGE', daysLeft: number, plan: { goals: { label: string, done: boolean, to: string }[], week: { practisedDays: number, aimDays: number } } | null) {
+  if (kind === 'TODAY') {
+    return notifyTelegram(userId, { text: '🍀 <b>Good luck in your exam today!</b>\nRead each task carefully, keep an eye on the time, and say a little more than you think you need to. You have prepared for this.' })
+  }
+  const next = plan?.goals.find(g => !g.done)
+  const days = `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}`
+  const head = kind === 'MILESTONE'
+    ? `📅 <b>${days} to your exam</b>`
+    : `👋 <b>Time for a little practice?</b>\n${days} to your exam, and a short session today keeps you on track.`
+  const week = plan ? `\nThis week: ${plan.week.practisedDays} of ${plan.week.aimDays} practice days.` : ''
+  return notifyTelegram(userId, {
+    text: `${head}${week}${next ? `\nNext: <b>${next.label}</b>` : ''}`,
+    path: next?.to ?? '/results',
+    button: next ? 'Start now' : 'See my plan'
+  })
+}

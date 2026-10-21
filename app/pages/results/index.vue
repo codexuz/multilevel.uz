@@ -18,7 +18,10 @@ const { data, status } = await useFetch<{ items: Row[], total: number, pages: nu
         My <span class="text-accent">results</span>
       </h1>
 
-      <ProgressInsights v-if="page === 1" />
+      <template v-if="page === 1">
+        <ExamPlan />
+        <ProgressInsights />
+      </template>
 
       <h2
         v-if="data?.items?.length"

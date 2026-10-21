@@ -1,5 +1,5 @@
 // For admins: runs a background job now instead of waiting for its time.
-const TASKS = ['reminders:premium']
+const TASKS = ['reminders:premium', 'reminders:plan']
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)

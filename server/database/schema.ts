@@ -1,7 +1,7 @@
 import { relations, sql } from 'drizzle-orm'
 import {
   pgTable, pgEnum, uuid, text, integer, boolean, serial,
-  timestamp, jsonb, index, uniqueIndex, primaryKey, type AnyPgColumn
+  timestamp, date, jsonb, index, uniqueIndex, primaryKey, type AnyPgColumn
 } from 'drizzle-orm/pg-core'
 
 // ---------- Enums ----------
@@ -32,6 +32,10 @@ export const users = pgTable('users', {
   learningDuration: text('learning_duration'), // '<6m' | '6-12m' | '1-2y' | '2y+'
   targetLevel: text('target_level'), // A1..C1
   targetScore: integer('target_score'), // 0..75
+  /** The day of the user's real exam (Tashkent date): a countdown, a weekly plan and reminders. */
+  examDate: date('exam_date', { mode: 'string' }),
+  /** The last day the bot sent a study plan reminder, so it writes at most once a day. */
+  planRemindedOn: date('plan_reminded_on', { mode: 'string' }),
   onboarded: boolean('onboarded').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()

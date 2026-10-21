@@ -80,6 +80,18 @@ A handed-in Writing or Speaking gets one AI review automatically, free (it does 
 allowance). On the marking page examiners see it as **AI suggests …** and can fill an empty score and
 feedback with **Use AI draft**, then change what they hear differently.
 
+### Exam plan
+
+On **My results** a user sets the day of their exam and a target (B1 38+, B2 51+, C1 65+). They
+get a countdown, each skill's level now (the average of their last three whole sections, or AI
+estimates for Writing and Speaking), and this week's goals: a whole section of each skill below
+target (all four in the last month), and their two weakest spots to practise. Goals tick off as they
+do them; weeks run Monday to Sunday, Tashkent time (`server/utils/study-plan.ts`).
+
+The bot writes each morning at 09:41 Tashkent (`reminders:plan`): 60, 30, 14, 7, 3 days and the day
+before the exam, good luck on the day, and a nudge after three days without practice (at most every
+three days), each naming the next goal. At most one message a day per user.
+
 ### Weak spots
 
 **My results** opens with where the user loses marks (`/api/me/insights`, `server/utils/insights.ts`):
@@ -133,7 +145,7 @@ code's uses and what it brought in.
 Every hour a background job tells users in Telegram that their Premium ends within three days, and
 again the day after it ended. `PREMIUM_RENEW_PROMO=CODE` adds that promo code to both messages (for
 users who can still use it). An admin can run the job now with
-`POST /api/admin/tasks/reminders:premium`.
+`POST /api/admin/tasks/reminders:premium` (and `reminders:plan` for exam plan reminders).
 
 ### Earning credits
 
