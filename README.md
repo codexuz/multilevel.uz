@@ -160,6 +160,24 @@ Google, Telegram, or both: each button shows only when it is set up.
   Profile (Sign-in → Connect) to sign in either way. Telegram only allows the domain set in
   BotFather, so it cannot be tried on `localhost`; use a tunnel or the live site.
 
+### One person, two accounts
+
+Telegram gives no email, so signing up once with Google and once with Telegram makes two
+accounts. They can be combined: when someone signed in to one account proves they own the other's
+Telegram or Google, the other account is merged into the one they are using (`/account/merge`,
+behind a signed one-hour token naming both accounts). Results, AI feedback, purchases, Premium,
+credits and opened tests move over, both ways of signing in open the kept account, and the other
+account is deleted. This is offered when:
+
+- on Profile, **Connect Telegram** or **Connect Google** finds that Telegram or Google already has
+  an account;
+- someone presses Start in the bot from a link made in the other account (the bot answers with a
+  **Combine my accounts** button);
+- a brand-new account is in onboarding ("Used Multilevel before with Google/Telegram?").
+
+Two accounts that each have a different Google (or a different Telegram) are not combined. To keep
+new duplicates from happening, the login page marks the way this device signed in last.
+
 ### Admins
 
 New users are students. To make someone an admin:

@@ -48,8 +48,16 @@ export function useTelegramLogin() {
       const login = window.Telegram?.Login ?? await loadWidget()
       const user = await new Promise<Record<string, unknown> | false>(resolve => login.auth({ bot_id: botId, request_access: 'write', lang: 'en' }, resolve))
       if (!user) return null
-      return await $fetch<{ linked: boolean, to: string }>('/api/auth/telegram', { method: 'POST', body: user })
+      const done = await $fetch<{ linked: boolean, to: string }>('/api/auth/telegram', { method: 'POST', body: user })
+      rememberSignIn('telegram')
+      return done
     } catch (e) {
+      // This Telegram has its own account: offer to merge it into the signed-in one.
+      const data = (e as { data?: { data?: { code?: string, mergeToken?: string } } }).data?.data
+      if (data?.code === 'ACCOUNT_EXISTS' && data.mergeToken) {
+        await navigateTo(`/account/merge?token=${encodeURIComponent(data.mergeToken)}`)
+        return null
+      }
       error.value = (e as { data?: { message?: string } }).data?.message || 'Telegram sign-in failed. Please try again.'
       return null
     } finally {

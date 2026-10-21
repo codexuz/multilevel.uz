@@ -2,6 +2,7 @@ import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
 import { and, eq, ne } from 'drizzle-orm'
 import { users } from '../database/schema'
 import { telegramApi, telegramBotToken } from './telegram'
+import { mergeToken } from './merge'
 
 /**
  * The Telegram bot's side of things: the link that joins a user to the bot (and, for a Google
@@ -139,7 +140,8 @@ export async function handleBotUpdate(update: Update) {
     if (userId) {
       const [owner] = await db.select({ id: users.id }).from(users).where(and(eq(users.telegramId, telegramId), ne(users.id, userId))).limit(1)
       if (owner) {
-        await reply(msg.chat.id, 'This Telegram account is already connected to another Multilevel account. Sign in to that one with Telegram, or use a different Telegram account here.', open)
+        // Whoever holds this Telegram started from the other account's link: offer to merge the two.
+        await reply(msg.chat.id, 'This Telegram already has its own Multilevel account. Combine it with the account you came from, so everything is in one place?', { text: 'Combine my accounts', url: `${site}/account/merge?token=${mergeToken(userId, owner.id)}` })
         return
       }
       const [user] = await db.select({ name: users.name }).from(users).where(eq(users.id, userId)).limit(1)

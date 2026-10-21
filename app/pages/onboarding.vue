@@ -3,6 +3,18 @@ const route = useRoute()
 const { me, refresh } = useMe()
 const toast = useToast()
 
+// A brand-new account may be a second one: offer to bring in the account made the other way.
+const telegram = useTelegramLogin()
+const otherWay = computed<'google' | 'telegram' | null>(() => {
+  if (me.value?.email && !me.value.telegram && telegram.available.value) return 'telegram'
+  if (me.value?.telegram && !me.value.email && telegram.providers.value?.google) return 'google'
+  return null
+})
+async function connectOther() {
+  if (otherWay.value === 'google') return connectGoogle('/onboarding')
+  if (await telegram.start()) await refresh()
+}
+
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1']
 const DURATIONS = [
   { value: '<6m', label: 'Less than 6 months', icon: 'i-lucide-seedling' },
@@ -121,6 +133,15 @@ async function submit() {
 <template>
   <UContainer class="flex min-h-[calc(100vh-8rem)] max-w-2xl items-center py-8">
     <div class="w-full space-y-6">
+      <UAlert
+        v-if="otherWay && step === 0"
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-combine"
+        :title="`Used Multilevel before with ${otherWay === 'google' ? 'Google' : 'Telegram'}?`"
+        description="Connect it to keep your earlier results, Premium and credits in this account."
+        :actions="[{ label: `Connect ${otherWay === 'google' ? 'Google' : 'Telegram'}`, color: 'neutral', variant: 'outline', loading: telegram.busy.value, onClick: connectOther }]"
+      />
       <div class="space-y-3">
         <div class="flex items-center justify-between gap-4">
           <div class="flex items-center gap-3">

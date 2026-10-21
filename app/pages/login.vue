@@ -14,6 +14,14 @@ function rememberNext() {
 }
 
 const telegram = useTelegramLogin()
+// The way this device signed in before: Google and Telegram make separate accounts until they are
+// connected, so the same button matters.
+const last = ref<'google' | 'telegram' | null>(null)
+onMounted(() => (last.value = lastSignIn()))
+function signInWithGoogle() {
+  rememberNext()
+  rememberSignIn('google')
+}
 const showGoogle = computed(() => telegram.providers.value?.google !== false)
 async function signInWithTelegram() {
   rememberNext()
@@ -82,8 +90,20 @@ const perks = ['Keep every result and see your best', 'Writing and Speaking mark
           to="/auth/google"
           external
           class="font-semibold"
-          @click="rememberNext"
-        />
+          @click="signInWithGoogle"
+        >
+          <template
+            v-if="last === 'google'"
+            #trailing
+          >
+            <UBadge
+              label="Last used"
+              color="primary"
+              variant="subtle"
+              size="sm"
+            />
+          </template>
+        </UButton>
         <UButton
           v-if="telegram.available.value"
           block
@@ -95,8 +115,26 @@ const perks = ['Keep every result and see your best', 'Writing and Speaking mark
           :loading="telegram.busy.value"
           class="font-semibold"
           @click="signInWithTelegram"
-        />
+        >
+          <template
+            v-if="last === 'telegram'"
+            #trailing
+          >
+            <UBadge
+              label="Last used"
+              color="primary"
+              variant="subtle"
+              size="sm"
+            />
+          </template>
+        </UButton>
       </div>
+      <p
+        v-if="showGoogle && telegram.available.value"
+        class="mt-3 text-xs text-muted text-pretty"
+      >
+        Signed up before? Use the same button as last time: Google and Telegram make separate accounts until you connect them on your Profile.
+      </p>
 
       <ul class="mt-6 flex flex-col gap-2.5">
         <li

@@ -22,8 +22,18 @@ const overall = computed(() => {
   return scores.length ? cefrOf(scores.reduce((a, b) => a + b, 0) / scores.length) : null
 })
 
-/** Linking Telegram, so this account can also sign in with it. */
+/**
+ * Linking Telegram or Google, so this account can also sign in with it. If that Telegram or
+ * Google already has an account of its own, the user is offered to merge it into this one.
+ */
 const telegram = useTelegramLogin()
+const googleAvailable = computed(() => !!telegram.providers.value?.google)
+const route = useRoute()
+onMounted(() => {
+  if (route.query.google === 'connected') toast.add({ title: 'Google connected', description: 'You can sign in with Google now.', color: 'success' })
+  if (route.query.google === 'other') toast.add({ title: 'Google not connected', description: 'This account already has a different Google account.', color: 'warning' })
+  if (route.query.google) navigateTo({ query: {} }, { replace: true })
+})
 async function connectTelegram() {
   if (await telegram.start()) {
     await refresh()
@@ -235,7 +245,7 @@ const accountLinks = [
         </dl>
       </UCard>
 
-      <UCard v-if="me?.email || me?.telegram || telegram.available.value">
+      <UCard v-if="me?.email || me?.telegram || telegram.available.value || googleAvailable">
         <template #header>
           <h2 class="font-semibold">
             Sign-in
@@ -243,14 +253,22 @@ const accountLinks = [
         </template>
         <ul class="flex flex-col gap-3 text-sm">
           <li
-            v-if="me?.email"
+            v-if="me?.email || googleAvailable"
             class="flex items-center gap-3"
           >
             <UIcon
               name="i-logos-google-icon"
               class="size-5 shrink-0"
             />
-            <span class="flex-1 min-w-0 truncate">Google · {{ me.email }}</span>
+            <span class="flex-1 min-w-0 truncate">Google<template v-if="me?.email"> · {{ me.email }}</template></span>
+            <UButton
+              v-if="!me?.email"
+              label="Connect"
+              size="sm"
+              color="neutral"
+              variant="outline"
+              @click="connectGoogle()"
+            />
           </li>
           <li
             v-if="me?.telegram || telegram.available.value"

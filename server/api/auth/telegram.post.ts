@@ -4,7 +4,8 @@ import { users } from '../../database/schema'
 /**
  * Signing in with Telegram: the page hands over what the Telegram Login Widget returned, and it
  * counts only if Telegram signed it with our bot. A guest is signed in (a new account the first
- * time); someone already signed in has this Telegram linked to their account instead.
+ * time); someone already signed in has this Telegram linked to their account instead. If this
+ * Telegram already has an account of its own, they are offered to merge it into the one they use.
  */
 export default defineEventHandler(async (event) => {
   if (!telegramBotId()) throw createError({ statusCode: 404, message: 'Telegram sign-in is not set up' })
@@ -19,7 +20,9 @@ export default defineEventHandler(async (event) => {
   const current = await optionalUser(event)
   if (current) {
     const [owner] = await db.select({ id: users.id }).from(users).where(eq(users.telegramId, telegramId)).limit(1)
-    if (owner && owner.id !== current.id) throw createError({ statusCode: 409, message: 'This Telegram account is already used by another account.' })
+    if (owner && owner.id !== current.id) {
+      throw createError({ statusCode: 409, message: 'This Telegram already has its own Multilevel account.', data: { code: 'ACCOUNT_EXISTS', mergeToken: mergeToken(current.id, owner.id) } })
+    }
     const [me] = await db.select().from(users).where(eq(users.id, current.id)).limit(1)
     if (!me) throw createError({ statusCode: 404, message: 'User not found' })
     await db.update(users).set({

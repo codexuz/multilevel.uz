@@ -11,6 +11,22 @@ export default defineOAuthGoogleEventHandler({
 
     const db = useDb()
 
+    // "Connect Google" from Profile: add this Google to the signed-in account, or offer to merge
+    // the account this Google already has.
+    const linking = getCookie(event, 'ml_link') === 'google'
+    deleteCookie(event, 'ml_link', { path: '/' })
+    const current = linking ? await optionalUser(event) : null
+    if (current) {
+      const [owner] = await db.select({ id: users.id }).from(users).where(eq(users.email, g.email)).limit(1)
+      if (owner && owner.id !== current.id) return sendRedirect(event, `/account/merge?token=${mergeToken(current.id, owner.id)}`)
+      if (!owner) {
+        const [me] = await db.select().from(users).where(eq(users.id, current.id)).limit(1)
+        if (me?.email) return sendRedirect(event, '/profile?google=other')
+        await db.update(users).set({ email: g.email, name: me?.name ?? g.name ?? null, avatarUrl: me?.avatarUrl ?? g.picture ?? null, updatedAt: new Date() }).where(eq(users.id, current.id))
+      }
+      return sendRedirect(event, '/profile?google=connected')
+    }
+
     // Upsert user by email
     let [row] = await db.select().from(users).where(eq(users.email, g.email)).limit(1)
     if (!row) {

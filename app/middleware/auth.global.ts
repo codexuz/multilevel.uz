@@ -13,7 +13,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (!user) return isPublic(to.path) ? undefined : navigateTo(`/login?next=${encodeURIComponent(to.fullPath)}`)
 
   // Signed in but hasn't completed onboarding: asked once, outside the open pages.
-  if (!user.onboarded && to.path !== '/onboarding' && !isPublic(to.path)) return navigateTo('/onboarding')
+  // (Combining with an older account comes first: that account may be onboarded already.)
+  if (!user.onboarded && to.path !== '/onboarding' && to.path !== '/account/merge' && !isPublic(to.path)) return navigateTo('/onboarding')
   if (user.onboarded && to.path === '/onboarding') return navigateTo('/results')
   if (to.path === '/login') return navigateTo(typeof to.query.next === 'string' && to.query.next.startsWith('/') ? to.query.next : '/tests')
 })
