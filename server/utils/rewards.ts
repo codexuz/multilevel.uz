@@ -5,6 +5,7 @@ import { rewardTransactions, testUnlocks, users } from '../database/schema'
 import { paymentRequired } from './billing'
 import { telegramApi, telegramBotToken } from './telegram'
 import { notifyInviteReward } from './notify'
+import { openMockOfTest } from './live'
 
 /**
  * Credits that open premium tests, earned instead of bought: a friend invited with your link
@@ -45,10 +46,12 @@ export async function unlockedTestIds(userId: string) {
   return rows.map(r => r.testId)
 }
 
-/** Whether this user may open this test: it is free, they have Premium, or they unlocked it. */
+/** Whether this user may open this test: it is free, they have Premium, they unlocked it, or it is a live mock now. */
 export async function canOpenTest(user: { id: string } | null, test: { id: string, access: string }, premium: boolean) {
   if (test.access !== 'PREMIUM' || premium) return true
   if (!user) return false
+  // A live mock is open to everyone signed in while it runs.
+  if (await openMockOfTest(test.id)) return true
   const [row] = await useDb().select({ testId: testUnlocks.testId }).from(testUnlocks)
     .where(and(eq(testUnlocks.userId, user.id), eq(testUnlocks.testId, test.id))).limit(1)
   return !!row

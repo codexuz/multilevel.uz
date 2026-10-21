@@ -80,6 +80,16 @@ A handed-in Writing or Speaking gets one AI review automatically, free (it does 
 allowance). On the marking page examiners see it as **AI suggests …** and can fill an empty score and
 feedback with **Use AI draft**, then change what they hear differently.
 
+### Live mock
+
+An admin schedules a live mock at `/admin/live`: a test and a window (next weekend by default;
+windows may not overlap). A draft test stays hidden until the window opens and joins the library
+when it closes; while it runs, everyone signed in can sit it, Premium or not. Each user's first whole
+section of each skill counts (`attempts.live_mock_id`); Listening and Reading are ranked on the
+leaderboard at `/live` (highest total first, then whoever finished first; names shown as first name
+and initial), Writing and Speaking go to the examiner as usual. The hourly `live:mocks` job announces
+a mock on Telegram when it opens and sends each participant their place when it closes.
+
 ### Exam plan
 
 On **My results** a user sets the day of their exam and a target (B1 38+, B2 51+, C1 65+). They
@@ -145,7 +155,7 @@ code's uses and what it brought in.
 Every hour a background job tells users in Telegram that their Premium ends within three days, and
 again the day after it ended. `PREMIUM_RENEW_PROMO=CODE` adds that promo code to both messages (for
 users who can still use it). An admin can run the job now with
-`POST /api/admin/tasks/reminders:premium` (and `reminders:plan` for exam plan reminders).
+`POST /api/admin/tasks/reminders:premium` (and `reminders:plan` for exam plan reminders, `live:mocks` for live mocks).
 
 ### Earning credits
 

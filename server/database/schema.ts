@@ -199,6 +199,22 @@ export const sectionItems = pgTable('section_items', {
   createdAt: created()
 }, t => [index('section_items_section_idx').on(t.sectionId, t.position)])
 
+// ---------- live mocks ----------
+// A test everyone sits in the same window (a weekend, say), ranked on one leaderboard. A draft test
+// stays hidden until the window opens and joins the library when it closes.
+export const liveMocks = pgTable('live_mocks', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  testId: uuid('test_id').notNull().references(() => tests.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+  endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+  /** When the bot told everyone it started, and when it told each participant their place. */
+  announcedAt: timestamp('announced_at', { withTimezone: true }),
+  resultsSentAt: timestamp('results_sent_at', { withTimezone: true }),
+  createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: created()
+}, t => [index('live_mocks_window_idx').on(t.startsAt, t.endsAt)])
+
 // ---------- attempts (signed-in users only; a guest's answers are checked and never stored) ----------
 export const attempts = pgTable('attempts', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -222,9 +238,14 @@ export const attempts = pgTable('attempts', {
   cefrLevel: text('cefr_level'),
   examinerId: uuid('examiner_id').references(() => users.id, { onDelete: 'set null' }),
   feedback: text('feedback'),
+  /** Set on a user's first whole section of each skill sat during a live mock: it counts there. */
+  liveMockId: uuid('live_mock_id').references(() => liveMocks.id, { onDelete: 'set null' }),
   createdAt: created(),
   updatedAt: updated()
-}, t => [index('attempts_user_idx').on(t.userId, t.submittedAt), index('attempts_status_idx').on(t.status)])
+}, t => [
+  index('attempts_user_idx').on(t.userId, t.submittedAt), index('attempts_status_idx').on(t.status),
+  uniqueIndex('attempts_live_mock_uq').on(t.liveMockId, t.userId, t.skill).where(sql`${t.liveMockId} is not null`)
+])
 
 export const answers = pgTable('answers', {
   id: uuid('id').primaryKey().defaultRandom(),

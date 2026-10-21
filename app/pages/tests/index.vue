@@ -112,6 +112,8 @@ useSeoMeta({
         </p>
       </div>
 
+      <LiveMockBanner />
+
       <UTabs
         v-model="view"
         :items="views"

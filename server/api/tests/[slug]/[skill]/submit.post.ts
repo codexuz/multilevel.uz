@@ -1,4 +1,5 @@
-import { answers, attempts, essays, speakingResponses } from '../../../../database/schema'
+import { and, eq, sql } from 'drizzle-orm'
+import { answers, attempts, essays, speakingResponses, users } from '../../../../database/schema'
 
 /**
  * Handing in one section. Listening and Reading are marked at once for everybody; Writing and
@@ -49,19 +50,28 @@ export default defineEventHandler(async (event) => {
   const startedAt = body.startedAt && !Number.isNaN(Date.parse(body.startedAt)) ? new Date(body.startedAt) : null
 
   let attemptId: string | null = null
+  let liveMockId: string | null = null
   if (user) {
     if (skill === 'SPEAKING' && !recordings.length) throw createError({ statusCode: 400, message: 'Record at least one answer before handing in' })
     // An examiner's time is what a marking credit pays for; staff hand in freely.
     const needsCredit = !objective && !isStaffRole(user.role)
     if (needsCredit && access.credits < 1) paymentRequired('CREDIT_REQUIRED', 'Marking by an examiner needs a marking credit')
     const db = useDb()
+    // A whole section sat during a live mock of this test counts there, the first one of each skill.
+    const mock = partNumber ? null : await openMockOfTest(test.id)
     attemptId = await db.transaction(async (tx) => {
       if (needsCredit && !(await holdCredits(tx, user.id))) paymentRequired('CREDIT_REQUIRED', 'Marking by an examiner needs a marking credit')
+      if (mock) {
+        await tx.execute(sql`select 1 from ${users} where ${users.id} = ${user.id} for update`)
+        const [before] = await tx.select({ id: attempts.id }).from(attempts)
+          .where(and(eq(attempts.liveMockId, mock.id), eq(attempts.userId, user.id), eq(attempts.skill, skill))).limit(1)
+        if (!before) liveMockId = mock.id
+      }
       const [attempt] = await tx.insert(attempts).values({
         userId: user.id, testId: test.id, sectionId: section.id, skill, partNumber, mode: test.mode,
         status: objective ? 'GRADED' : 'SUBMITTED', startedAt, gradedAt: objective ? new Date() : null,
         correct: objective ? marked.correct : null, total: objective ? marked.total : null,
-        score: objective ? marked.score : null, cefrLevel: objective ? marked.cefrLevel : null
+        score: objective ? marked.score : null, cefrLevel: objective ? marked.cefrLevel : null, liveMockId
       }).returning({ id: attempts.id })
       const rows = [...ids].filter(id => given.has(id)).map(itemId => ({ attemptId: attempt!.id, itemId, response: given.get(itemId)!, isCorrect: marked.marks.get(itemId) ?? false }))
       if (rows.length) await tx.insert(answers).values(rows)
@@ -81,6 +91,7 @@ export default defineEventHandler(async (event) => {
   return {
     id: attemptId,
     saved: !!attemptId,
+    liveMockId,
     skill,
     partNumber,
     status: objective ? 'GRADED' : attemptId ? 'SUBMITTED' : 'PRACTICE',

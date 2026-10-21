@@ -1,5 +1,6 @@
 import { and, asc, eq } from 'drizzle-orm'
 import { sections as sectionsTable, tests as testsTable } from '../database/schema'
+import { openMockOfTest } from './live'
 
 /**
  * Tests as the app reads them, in the same shapes as the erp-lms IELTS addon
@@ -62,10 +63,11 @@ function findTest(where: { id?: string, slug?: string }) {
   }) as Promise<any>
 }
 
-/** A test with everything in it, or a 404. Drafts only for staff. */
+/** A test with everything in it, or a 404. Drafts only for staff, or for everyone while a live mock of it is open. */
 export async function loadTest(where: { id?: string, slug?: string }, opts: { publishedOnly?: boolean } = {}) {
   const test = await findTest(where)
-  if (!test || (opts.publishedOnly && test.status !== 'PUBLISHED')) throw createError({ statusCode: 404, message: 'Test not found' })
+  if (!test) throw createError({ statusCode: 404, message: 'Test not found' })
+  if (opts.publishedOnly && test.status !== 'PUBLISHED' && !(await openMockOfTest(test.id))) throw createError({ statusCode: 404, message: 'Test not found' })
   return test
 }
 

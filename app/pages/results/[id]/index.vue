@@ -41,6 +41,15 @@ onBeforeUnmount(() => off?.())
       :view="data"
       :review-to="`/results/${id}/review`"
     >
+      <UAlert
+        v-if="data.liveMockId"
+        icon="i-lucide-trophy"
+        color="primary"
+        variant="subtle"
+        title="Counted in the live mock"
+        :description="data.skill === 'LISTENING' || data.skill === 'READING' ? 'This section is on the leaderboard.' : 'Writing and Speaking are marked as usual, not ranked.'"
+        :actions="[{ label: 'Leaderboard', to: `/live?mock=${data.liveMockId}`, color: 'primary', variant: 'solid' }]"
+      />
       <UCard v-if="data.status === 'GRADED' && data.feedback">
         <template #header>
           <div class="flex items-center gap-2">

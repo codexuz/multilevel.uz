@@ -21,6 +21,7 @@ export function attemptSummary(row: any) {
     total: row.total,
     score: row.score,
     cefrLevel: row.cefrLevel,
+    liveMockId: row.liveMockId ?? null,
     feedback: row.feedback
   }
 }
