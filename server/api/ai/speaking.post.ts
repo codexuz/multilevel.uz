@@ -10,7 +10,7 @@ import { aiReviews, attempts } from '../../database/schema'
 interface Body { attemptId?: string, slug?: string, part?: number | string | null, recordings?: { partId: string, audioRef: string, durationSeconds?: number }[] }
 
 export default defineEventHandler(async (event) => {
-  if (!aiEnabled()) throw createError({ statusCode: 404, message: 'AI feedback is not available' })
+  if (!speakingAiEnabled()) throw createError({ statusCode: 404, message: 'AI feedback on Speaking is not available' })
   const user = await requireUser(event)
   const body = (await readBody<Body>(event)) ?? {}
   const db = useDb()

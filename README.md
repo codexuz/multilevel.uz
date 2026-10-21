@@ -70,8 +70,9 @@ Reward bonuses an admin grants (`users.ai_bonus_reviews`) are used once the allo
 ### AI feedback on Speaking
 
 Speaking works the same way. Each recording is read from our own storage (never from an address
-the browser sends; a practice recording must be the user's own upload), transcribed with
-`gpt-transcribe` (`AI_TRANSCRIBE_MODEL`), and the transcripts are rated per part on fluency,
+the browser sends; a practice recording must be the user's own upload), transcribed by
+Deepgram (`DEEPGRAM_API_KEY`; model `nova-3`, or `DEEPGRAM_MODEL`; fillers like "um" are kept so
+hesitation shows), and the transcripts are rated per part on fluency,
 vocabulary, grammar and task achievement, with corrections and a model answer a level up. The
 score out of 75 weights Part 1.1 and 1.2 at 20% each, Part 2 and 3 at 30%. Pronunciation cannot be
 judged from a transcript, so it is left to the examiner. The page shows what was heard.

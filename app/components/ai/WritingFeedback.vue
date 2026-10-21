@@ -33,7 +33,7 @@ interface Review {
   tasks?: { taskId: string, label: string, wordCount: number, minWords: number, criteria: Record<string, number>, level: string | null, comment: string, corrections: Correction[], betterSentence: string }[]
   parts?: { partId: string, label: string, durationSeconds: number | null, transcript: string, criteria: Record<string, number>, level: string | null, comment: string, corrections: Correction[], betterAnswer: string }[]
 }
-interface Status { enabled: boolean, allowance: { limit: number | null, used: number, left: number | null, period: 'month' | 'day' | null } | null }
+interface Status { enabled: boolean, speaking?: boolean, allowance: { limit: number | null, used: number, left: number | null, period: 'month' | 'day' | null } | null }
 
 const { loggedIn, isPremium } = useMe()
 const route = useRoute()
@@ -114,7 +114,7 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? tr('common.b
 
 <template>
   <div
-    v-if="status?.enabled"
+    v-if="speaking ? status?.speaking : status?.enabled"
     class="flex flex-col gap-4"
   >
     <!-- Not asked yet -->

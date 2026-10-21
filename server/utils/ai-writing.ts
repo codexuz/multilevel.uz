@@ -327,7 +327,7 @@ export async function aiReviewView(id: string) {
  * Writing). Best effort.
  */
 export async function reviewHandedInSpeaking(attempt: { id: string, userId: string, testId: string | null }, locale?: string | null) {
-  if (!aiEnabled()) return
+  if (!speakingAiEnabled()) return
   const parts = await attemptSpeakingParts(attempt.id)
   if (!parts.length) return
   await startWritingReview({ id: attempt.userId, role: 'student' }, { attemptId: attempt.id, testId: attempt.testId, tasks: parts, skill: 'SPEAKING', free: true, locale })

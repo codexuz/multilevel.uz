@@ -39,7 +39,7 @@ interface AiDraft {
   tasks?: { taskId: string, comment: string, corrections: { original: string, corrected: string, why: string }[] }[]
   parts?: { label: string, comment: string }[]
 }
-const { data: aiStatus } = useFetch<{ enabled: boolean }>('/api/ai/status', { key: 'ai-status' })
+const { data: aiStatus } = useFetch<{ enabled: boolean, speaking?: boolean }>('/api/ai/status', { key: 'ai-status' })
 const ai = ref<AiDraft | null>(null)
 const askingAi = ref(false)
 let aiTimer: ReturnType<typeof setTimeout> | undefined
@@ -254,7 +254,7 @@ async function grade(next: boolean) {
         </template>
         <div class="grid gap-4">
           <div
-            v-if="(attempt.skill === 'WRITING' || attempt.skill === 'SPEAKING') && aiStatus?.enabled"
+            v-if="attempt.skill === 'WRITING' ? aiStatus?.enabled : attempt.skill === 'SPEAKING' && aiStatus?.speaking"
             class="rounded-lg bg-elevated p-3 text-sm"
           >
             <div

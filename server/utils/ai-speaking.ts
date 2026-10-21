@@ -1,4 +1,3 @@
-import { toFile } from 'openai'
 import { GetObjectCommand } from '@aws-sdk/client-s3'
 import * as z from 'zod/v4'
 import { zodTextFormat } from 'openai/helpers/zod'
@@ -7,16 +6,19 @@ import { asc, eq, inArray } from 'drizzle-orm'
 import { speakingParts, speakingQuestions, speakingResponses } from '../database/schema'
 import { cefrLevel } from './score'
 import { s3Bucket, s3KeyFromUrl, useS3Client } from './s3'
-import { AI_MODEL, aiEffort, languageNote, openaiClient } from './ai-writing'
+import { AI_MODEL, aiEffort, aiEnabled, languageNote, openaiClient } from './ai-writing'
 
 /**
- * Instant AI feedback on Multilevel Speaking: each recording is transcribed (gpt-transcribe by
- * default), then the reasoning model reads the transcripts against the questions and rates four
+ * Instant AI feedback on Multilevel Speaking: each recording is transcribed by Deepgram (nova-3 by
+ * default, keeping fillers like "um" so hesitation shows), then the reasoning model reads the transcripts against the questions and rates four
  * criteria per part. Pronunciation cannot be judged from a transcript, so it is left to the
  * examiner. The score out of 75 is worked out from the criteria, like Writing.
  */
 
-const TRANSCRIBE_MODEL = () => process.env.AI_TRANSCRIBE_MODEL || 'gpt-transcribe'
+const DEEPGRAM_URL = () => (process.env.DEEPGRAM_API_URL || 'https://api.deepgram.com').replace(/\/$/, '')
+const DEEPGRAM_MODEL = () => process.env.DEEPGRAM_MODEL || 'nova-3'
+/** Speaking feedback needs both: Deepgram to hear the answers, OpenAI to mark them. */
+export const speakingAiEnabled = () => aiEnabled() && !!process.env.DEEPGRAM_API_KEY
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024
 
 export interface AiSpeakingPart {
@@ -73,13 +75,22 @@ async function readRecording(audioRef: string) {
   return { bytes, name: key.split('/').pop() || 'answer.webm', type: obj.ContentType || 'audio/webm' }
 }
 
+interface DeepgramResult { results?: { channels?: { alternatives?: { transcript?: string }[] }[] } }
+
+/** One recording as text, from Deepgram's pre-recorded API (the audio is sent as it is). */
 async function transcribe(part: AiSpeakingPart) {
   const audio = await readRecording(part.audioRef)
-  const res = await openaiClient().audio.transcriptions.create({
-    file: await toFile(audio.bytes, audio.name, { type: audio.type }),
-    model: TRANSCRIBE_MODEL()
+  const query = new URLSearchParams({ model: DEEPGRAM_MODEL(), language: 'en', smart_format: 'true', filler_words: 'true' })
+  const res = await $fetch<DeepgramResult>(`${DEEPGRAM_URL()}/v1/listen?${query}`, {
+    method: 'POST',
+    headers: { 'Authorization': `Token ${process.env.DEEPGRAM_API_KEY}`, 'Content-Type': audio.type },
+    body: audio.bytes,
+    timeout: 120_000
+  }).catch((e: any) => {
+    console.error('[ai-speaking] Deepgram failed:', e?.statusCode, e?.data?.err_msg || e?.message)
+    throw new Error('The recordings could not be transcribed. Please try again.')
   })
-  return (res as { text?: string }).text?.trim() ?? ''
+  return res.results?.channels?.[0]?.alternatives?.[0]?.transcript?.trim() ?? ''
 }
 
 // ---------- the model's answer ----------
