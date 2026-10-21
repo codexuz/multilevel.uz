@@ -7,7 +7,7 @@ export function useStaffNav() {
     ...(isAdmin.value ? [{ label: 'Test builder', icon: 'i-lucide-blocks', to: '/builder' }] : []),
     ...(isStaff.value ? [{ label: 'Marking', icon: 'i-lucide-pen-line', to: '/marking' }] : []),
     ...(isAdmin.value ? [{ label: 'Users', icon: 'i-lucide-users', to: '/admin/users' }] : []),
-    ...(isAdmin.value ? [{ label: 'Orders', icon: 'i-lucide-receipt', to: '/admin/orders' }, { label: 'Plans', icon: 'i-lucide-tags', to: '/admin/plans' }, { label: 'Promo codes', icon: 'i-lucide-ticket-percent', to: '/admin/promos' }, { label: 'Live mocks', icon: 'i-lucide-trophy', to: '/admin/live' }] : []),
+    ...(isAdmin.value ? [{ label: 'Orders', icon: 'i-lucide-receipt', to: '/admin/orders' }, { label: 'Plans', icon: 'i-lucide-tags', to: '/admin/plans' }, { label: 'Promo codes', icon: 'i-lucide-ticket-percent', to: '/admin/promos' }, { label: 'Live mocks', icon: 'i-lucide-trophy', to: '/admin/live' }, { label: 'Growth', icon: 'i-lucide-trending-up', to: '/admin/growth' }] : []),
     ...(isStaff.value ? [{ label: 'Overview', icon: 'i-lucide-layout-dashboard', to: '/admin' }] : [])
   ])
 }

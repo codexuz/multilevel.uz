@@ -119,3 +119,44 @@ h1, h2, h3 { letter-spacing: -0.01em; }
 
 mark.exam-highlight { background: #fef08a; color: inherit; border-radius: 2px; padding: 0 1px; }
 mark.exam-highlight.has-note { background: #bfdbfe; }
+
+/* Charts (components/viz): the data-viz palette's roles; dark steps chosen for the dark surface. */
+.viz {
+  --viz-surface: var(--ui-bg);
+  --viz-ink: #0b0b0b;
+  --viz-ink-2: #52514e;
+  --viz-muted: #898781;
+  --viz-grid: #e1e0d9;
+  --viz-axis: #c3c2b7;
+  --viz-s1: #2a78d6;
+  --viz-s2: #eb6834;
+  --viz-s3: #1baf7a;
+  /* one blue ramp for magnitude: a low share recedes toward the surface */
+  --viz-q0: #cde2fb; --viz-q1: #9ec5f4; --viz-q2: #6da7ec; --viz-q3: #3987e5; --viz-q4: #256abf; --viz-q5: #184f95; --viz-q6: #0d366b;
+  --viz-qi0: #0b0b0b; --viz-qi1: #0b0b0b; --viz-qi2: #0b0b0b; --viz-qi3: #ffffff; --viz-qi4: #ffffff; --viz-qi5: #ffffff; --viz-qi6: #ffffff;
+}
+.dark .viz {
+  --viz-ink: #f0efec;
+  --viz-ink-2: #c3c2b7;
+  --viz-grid: #2c2c2a;
+  --viz-axis: #383835;
+  --viz-s1: #3987e5;
+  --viz-s2: #d95926;
+  --viz-s3: #199e70;
+  --viz-q0: #0d366b; --viz-q1: #104281; --viz-q2: #184f95; --viz-q3: #1c5cab; --viz-q4: #2a78d6; --viz-q5: #5598e7; --viz-q6: #86b6ef;
+  --viz-qi0: #f0efec; --viz-qi1: #f0efec; --viz-qi2: #f0efec; --viz-qi3: #f0efec; --viz-qi4: #ffffff; --viz-qi5: #0b0b0b; --viz-qi6: #0b0b0b;
+}
+.viz-tip {
+  position: absolute;
+  top: 4px;
+  z-index: 10;
+  pointer-events: none;
+  min-width: 140px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--viz-ink);
+  background: var(--ui-bg);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.12), 0 0 0 1px var(--ui-border);
+}

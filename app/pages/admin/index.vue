@@ -59,6 +59,14 @@ const { isAdmin } = useMe()
       />
       <UButton
         v-if="isAdmin"
+        to="/admin/growth"
+        label="Growth"
+        icon="i-lucide-trending-up"
+        color="neutral"
+        variant="outline"
+      />
+      <UButton
+        v-if="isAdmin"
         to="/admin/users"
         label="Users"
         icon="i-lucide-users"

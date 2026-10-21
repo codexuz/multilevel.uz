@@ -80,6 +80,14 @@ A handed-in Writing or Speaking gets one AI review automatically, free (it does 
 allowance). On the marking page examiners see it as **AI suggests …** and can fill an empty score and
 feedback with **Use AI draft**, then change what they hear differently.
 
+### Growth dashboard
+
+`/admin/growth` (admins) shows the last 7, 30 or 90 days in Tashkent days, each figure beside the
+period before: new and active users per day, revenue per day (orders that cost money), how far new
+users get (onboarding, a first test, the bot, a payment), how they signed in and how many were
+invited, weekly retention of the last eight weeks' signups, the most sat tests and revenue by plan.
+Charts are plain SVG (`app/components/viz`), with a tooltip on hover and a table under each.
+
 ### Live mock
 
 An admin schedules a live mock at `/admin/live`: a test and a window (next weekend by default;
