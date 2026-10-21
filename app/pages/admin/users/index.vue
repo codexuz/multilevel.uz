@@ -25,6 +25,8 @@ interface AdminUser {
   createdAt: string
   premiumUntil: string | null
   credits: number
+  rewardCredits: number
+  aiBonusReviews: number
 }
 const page = ref(1)
 const search = ref('')
@@ -120,6 +122,29 @@ async function saveGrant() {
     grantSaving.value = false
   }
 }
+// ─── Reward credits and extra AI reviews: support cases and giveaways ───
+const gifting = ref<AdminUser | null>(null)
+const gift = reactive({ credits: 0, aiReviews: 0 })
+const giftSaving = ref(false)
+function openGift(p: AdminUser) {
+  Object.assign(gift, { credits: 0, aiReviews: 0 })
+  gifting.value = p
+}
+async function saveGift() {
+  if (!gifting.value) return
+  giftSaving.value = true
+  try {
+    await $fetch(`/api/admin/users/${gifting.value.id}/rewards`, { method: 'POST', body: { ...gift } })
+    toast.add({ title: 'Saved', description: `${gifting.value.name || accountHandle(gifting.value)} has been told in Telegram (if connected).`, color: 'success' })
+    gifting.value = null
+    await refresh()
+  } catch (e) {
+    fail(e)
+  } finally {
+    giftSaving.value = false
+  }
+}
+
 async function endPremium(p: AdminUser) {
   if (!await confirm({ title: `End Premium for ${p.name || accountHandle(p)}?`, description: 'Premium stops now. Their orders and marking credits stay.', confirmLabel: 'End Premium', color: 'error' })) return
   try {
@@ -194,6 +219,20 @@ async function endPremium(p: AdminUser) {
                   name="i-lucide-pen-line"
                   class="size-3 align-[-1px]"
                 /> {{ creditsText(p.credits) }}</span>
+                <span
+                  v-if="p.rewardCredits"
+                  class="text-muted tabular-nums"
+                ><UIcon
+                  name="i-lucide-gift"
+                  class="size-3 align-[-1px]"
+                /> {{ p.rewardCredits }} {{ p.rewardCredits === 1 ? 'credit' : 'credits' }}</span>
+                <span
+                  v-if="p.aiBonusReviews"
+                  class="text-muted tabular-nums"
+                ><UIcon
+                  name="i-lucide-sparkles"
+                  class="size-3 align-[-1px]"
+                /> +{{ p.aiBonusReviews }} AI</span>
               </p>
             </div>
           </div>
@@ -215,6 +254,7 @@ async function endPremium(p: AdminUser) {
             />
             <UDropdownMenu
               :items="[[
+                { label: 'Credits & AI reviews', icon: 'i-lucide-gift', onSelect: () => openGift(p) },
                 ...(p.premiumUntil ? [{ label: 'End Premium', icon: 'i-lucide-circle-stop', onSelect: () => endPremium(p) }] : []),
                 ...(p.id !== me?.id ? [
                   { label: p.banned ? 'Unban' : 'Ban', icon: p.banned ? 'i-lucide-circle-check' : 'i-lucide-ban', onSelect: () => toggleBan(p) },
@@ -318,6 +358,52 @@ async function endPremium(p: AdminUser) {
             @click="saveGrant"
           />
         </div>
+      </template>
+    </UModal>
+    <UModal
+      :open="!!gifting"
+      title="Credits & AI reviews"
+      :description="gifting ? `For ${gifting.name || accountHandle(gifting)}: they have ${gifting.rewardCredits} credits and ${gifting.aiBonusReviews} extra AI reviews. Use a minus to take some back.` : ''"
+      @update:open="v => !v && (gifting = null)"
+    >
+      <template #body>
+        <form
+          class="grid gap-4"
+          @submit.prevent="saveGift"
+        >
+          <UFormField
+            label="Credits to open Premium tests"
+            help="One credit opens one Premium test for good."
+          >
+            <UInputNumber
+              v-model="gift.credits"
+              class="w-40"
+            />
+          </UFormField>
+          <UFormField
+            label="Extra AI reviews"
+            help="Used after their regular AI allowance runs out."
+          >
+            <UInputNumber
+              v-model="gift.aiReviews"
+              class="w-40"
+            />
+          </UFormField>
+          <div class="flex justify-end gap-2">
+            <UButton
+              label="Cancel"
+              color="neutral"
+              variant="ghost"
+              @click="gifting = null"
+            />
+            <UButton
+              type="submit"
+              label="Save"
+              :loading="giftSaving"
+              :disabled="!gift.credits && !gift.aiReviews"
+            />
+          </div>
+        </form>
       </template>
     </UModal>
   </AppPage>

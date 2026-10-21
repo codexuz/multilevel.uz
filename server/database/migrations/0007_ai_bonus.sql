@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "ai_bonus_reviews" integer DEFAULT 0 NOT NULL;

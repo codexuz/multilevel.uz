@@ -50,6 +50,13 @@
       "when": 1792571412665,
       "tag": "0006_promos_and_reminders",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792571940725,
+      "tag": "0007_ai_bonus",
+      "breakpoints": true
     }
   ]
 }

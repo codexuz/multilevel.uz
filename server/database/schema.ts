@@ -18,6 +18,8 @@ export const users = pgTable('users', {
   telegramNotify: boolean('telegram_notify').notNull().default(true),
   /** Pressed Start in the bot (and has not blocked it since): the bot can always write to them. */
   telegramBotJoined: boolean('telegram_bot_joined').notNull().default(false),
+  /** Extra AI reviews an admin gave, used after the regular allowance runs out. */
+  aiBonusReviews: integer('ai_bonus_reviews').notNull().default(0),
   // referrals: the code in this user's invite link, and who invited them
   referralCode: text('referral_code').unique(),
   referredById: uuid('referred_by_id').references((): AnyPgColumn => users.id, { onDelete: 'set null' }),

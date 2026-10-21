@@ -1,5 +1,5 @@
 import { and, count, desc, eq, gt, ilike, inArray, or, sql } from 'drizzle-orm'
-import { creditTransactions, subscriptions, users } from '../../../database/schema'
+import { creditTransactions, rewardTransactions, subscriptions, users } from '../../../database/schema'
 
 // Users, newest first, findable by name, email, Telegram username or id, with their Premium and marking credits.
 export default defineEventHandler(async (event) => {
@@ -24,6 +24,11 @@ export default defineEventHandler(async (event) => {
           .where(inArray(creditTransactions.userId, ids)).groupBy(creditTransactions.userId)
       ])
     : [[], []]
+  const rewardRows = ids.length
+    ? await db.select({ userId: rewardTransactions.userId, n: sql<number>`sum(${rewardTransactions.delta})::int` }).from(rewardTransactions)
+        .where(inArray(rewardTransactions.userId, ids)).groupBy(rewardTransactions.userId)
+    : []
+  const rewards = new Map(rewardRows.map(r => [r.userId, r.n]))
   const until = new Map(subs.map(s => [s.userId, s.endsAt]))
   const credits = new Map(balances.map(b => [b.userId, b.n]))
 
@@ -38,6 +43,8 @@ export default defineEventHandler(async (event) => {
     banned: u.banned,
     createdAt: u.createdAt,
     premiumUntil: until.get(u.id) ?? null,
-    credits: credits.get(u.id) ?? 0
+    credits: credits.get(u.id) ?? 0,
+    rewardCredits: rewards.get(u.id) ?? 0,
+    aiBonusReviews: u.aiBonusReviews
   })), totalRow?.total ?? 0, p)
 })

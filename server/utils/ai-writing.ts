@@ -43,11 +43,11 @@ export function aiRules() {
 type Db = ReturnType<typeof useDb>
 type Tx = Parameters<Parameters<Db['transaction']>[0]>[0]
 
-export interface AiAllowance { limit: number | null, used: number, left: number | null, period: 'month' | 'day' | null }
+export interface AiAllowance { limit: number | null, used: number, left: number | null, period: 'month' | 'day' | null, bonus: number }
 
 /** How many reviews this user has left now. Staff have no limit; failed reviews do not count. */
 export async function aiAllowance(user: { id: string, role: string }, db: Db | Tx = useDb()): Promise<AiAllowance> {
-  if (isStaffRole(user.role)) return { limit: null, used: 0, left: null, period: null }
+  if (isStaffRole(user.role)) return { limit: null, used: 0, left: null, period: null, bonus: 0 }
   const { premium } = await accessOf(user, db)
   const { freePerMonth, premiumPerDay } = aiRules()
   const period = premium ? 'day' : 'month'
@@ -56,7 +56,10 @@ export async function aiAllowance(user: { id: string, role: string }, db: Db | T
   const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(aiReviews)
     .where(and(eq(aiReviews.userId, user.id), eq(aiReviews.free, false), ne(aiReviews.status, 'FAILED'), gt(aiReviews.createdAt, since)))
   const used = row?.n ?? 0
-  return { limit, used, left: Math.max(0, limit - used), period }
+  const [u] = await db.select({ bonus: users.aiBonusReviews }).from(users).where(eq(users.id, user.id)).limit(1)
+  const bonus = u?.bonus ?? 0
+  // The regular allowance first; then reviews an admin gave.
+  return { limit, used, left: Math.max(0, limit - used) + bonus, period, bonus }
 }
 
 // ---------- what is assessed ----------
@@ -239,6 +242,9 @@ export async function startWritingReview(user: { id: string, role: string }, opt
   const id = await db.transaction(async (tx) => {
     await tx.execute(sql`select 1 from ${users} where ${users.id} = ${user.id} for update`)
     const allowance = opts.free ? null : await aiAllowance(user, tx)
+    // Past the regular allowance, a review given by an admin is used (and not counted again).
+    const fromBonus = !!allowance && allowance.left != null && allowance.left > 0 && allowance.left <= allowance.bonus
+    if (fromBonus) await tx.update(users).set({ aiBonusReviews: sql`${users.aiBonusReviews} - 1` }).where(eq(users.id, user.id))
     if (allowance?.left === 0) {
       throw createError({
         statusCode: 402,
@@ -247,7 +253,7 @@ export async function startWritingReview(user: { id: string, role: string }, opt
       })
     }
     if (opts.attemptId) await tx.delete(aiReviews).where(and(eq(aiReviews.attemptId, opts.attemptId), eq(aiReviews.status, 'FAILED')))
-    const [row] = await tx.insert(aiReviews).values({ userId: opts.ownerId ?? user.id, attemptId: opts.attemptId ?? null, testId: opts.testId, input: opts.tasks, free: !!opts.free }).returning({ id: aiReviews.id })
+    const [row] = await tx.insert(aiReviews).values({ userId: opts.ownerId ?? user.id, attemptId: opts.attemptId ?? null, testId: opts.testId, input: opts.tasks, free: !!opts.free || fromBonus }).returning({ id: aiReviews.id })
     return row!.id
   })
   // In the background: the page polls for it.
