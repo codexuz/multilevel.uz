@@ -13,6 +13,7 @@ export default defineEventHandler(async (event) => {
     email: u.email,
     telegramUsername: u.telegramUsername,
     telegram: !!u.telegramId,
+    telegramNotify: u.telegramNotify,
     name: u.name,
     avatarUrl: u.avatarUrl,
     role: u.role,

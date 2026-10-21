@@ -178,7 +178,7 @@ watch(error, (e) => {
   if (e?.statusCode === 402) premiumNeeded.value = true
 }, { immediate: true })
 const practiceNote = computed(() => (loggedIn.value
-  ? 'A marking credit gets it a score out of 75 and feedback from an examiner. Your work stays here while you get one.'
+  ? 'Get instant AI feedback below, or a marking credit gets it a score out of 75 and feedback from an examiner. Your work stays here.'
   : 'Sign in to have an examiner mark it.'))
 
 const pageError = computed(() => {
@@ -249,6 +249,11 @@ const pageError = computed(() => {
               compact
             />
           </template>
+          <AiWritingFeedback
+            :slug="slug"
+            :part="partNo"
+            :essays="essays"
+          />
           <div class="flex flex-wrap justify-center gap-2">
             <UButton
               label="Download PDF"

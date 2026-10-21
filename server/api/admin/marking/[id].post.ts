@@ -31,5 +31,6 @@ export default defineEventHandler(async (event) => {
   const label = attempt.skill === 'WRITING' ? 'Writing' : 'Speaking'
   await publishToUser(attempt.userId, { type: 'graded', attemptId: id })
   await sendPush([attempt.userId], { title: `${label} marked`, body: `Your ${label} scored ${score}/75 (${cefrLevel(score)}).`, data: { url: `/results/${id}` } }).catch(() => {})
+  await notifyMarked(attempt.userId, id, attempt.skill, score, cefrLevel(score)).catch(() => {})
   return attemptView(id, examiner)
 })

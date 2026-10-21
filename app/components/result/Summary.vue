@@ -170,6 +170,10 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
         size="lg"
         class="justify-center"
       />
+      <ResultShare
+        v-if="view.saved && view.id && scored && loggedIn"
+        :attempt-id="view.id"
+      />
       <UButton
         :to="againTo"
         label="Try again"

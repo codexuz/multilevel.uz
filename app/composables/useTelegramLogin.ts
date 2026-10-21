@@ -25,7 +25,8 @@ function loadWidget(): Promise<TelegramLoginApi> {
 /**
  * Signing in with Telegram, or linking it to the signed-in account: Telegram's own popup asks the
  * user to confirm, and the server checks Telegram's signature. Only offered when the server has a
- * bot set up. The widget loads ahead of time so the popup opens straight from the click.
+ * bot set up. The widget loads ahead of time so the popup opens straight from the click. It asks
+ * to let the bot write, so marking and AI feedback can be announced in Telegram.
  */
 export function useTelegramLogin() {
   const { data: providers } = useFetch<{ google: boolean, telegram: { botId: string } | null }>('/api/auth/providers', { key: 'auth-providers' })
@@ -45,7 +46,7 @@ export function useTelegramLogin() {
     error.value = ''
     try {
       const login = window.Telegram?.Login ?? await loadWidget()
-      const user = await new Promise<Record<string, unknown> | false>(resolve => login.auth({ bot_id: botId, lang: 'en' }, resolve))
+      const user = await new Promise<Record<string, unknown> | false>(resolve => login.auth({ bot_id: botId, request_access: 'write', lang: 'en' }, resolve))
       if (!user) return null
       return await $fetch<{ linked: boolean, to: string }>('/api/auth/telegram', { method: 'POST', body: user })
     } catch (e) {

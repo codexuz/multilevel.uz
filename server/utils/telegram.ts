@@ -46,3 +46,11 @@ export function verifyTelegramLogin(data: Partial<TelegramLogin>, now = Date.now
   if (!(age < MAX_AGE_SECONDS) || age < -300) return null
   return data as TelegramLogin
 }
+
+/** Calls the Bot API (TELEGRAM_API_URL points it elsewhere, e.g. a local Bot API server). */
+export async function telegramApi<T = unknown>(method: string, body: Record<string, unknown>): Promise<{ ok: boolean, result?: T, description?: string }> {
+  const token = telegramBotToken()
+  if (!token) return { ok: false, description: 'No bot token' }
+  const base = (process.env.TELEGRAM_API_URL || 'https://api.telegram.org').replace(/\/$/, '')
+  return $fetch<{ ok: boolean, result?: T, description?: string }>(`${base}/bot${token}/${method}`, { method: 'POST', body, timeout: 8000 })
+}

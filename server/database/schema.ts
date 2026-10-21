@@ -14,6 +14,8 @@ export const users = pgTable('users', {
   email: text('email').unique(),
   telegramId: text('telegram_id').unique(),
   telegramUsername: text('telegram_username'),
+  /** Telegram messages from the bot: marking done, AI feedback ready, an invite paid off. */
+  telegramNotify: boolean('telegram_notify').notNull().default(true),
   // referrals: the code in this user's invite link, and who invited them
   referralCode: text('referral_code').unique(),
   referredById: uuid('referred_by_id').references((): AnyPgColumn => users.id, { onDelete: 'set null' }),
@@ -332,6 +334,30 @@ export const rewardTransactions = pgTable('reward_transactions', {
   uniqueIndex('reward_transactions_referral_uq').on(t.referredUserId).where(sql`reason = 'REFERRAL'`),
   uniqueIndex('reward_transactions_once_uq').on(t.userId, t.reason).where(sql`reason in ('WELCOME', 'TELEGRAM_CHANNEL')`)
 ])
+
+// ---------- AI feedback on Writing ----------
+// An instant estimate while (or instead of) waiting for an examiner: a score out of 75, each
+// task's criteria, and corrections. Made from a saved attempt or from essays written in practice.
+export const aiReviews = pgTable('ai_reviews', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  /** The saved attempt it is for; null for practice that was not handed in. */
+  attemptId: uuid('attempt_id').references(() => attempts.id, { onDelete: 'cascade' }).unique(),
+  testId: uuid('test_id').references(() => tests.id, { onDelete: 'set null' }),
+  skill: text('skill').notNull().default('WRITING'),
+  status: text('status').notNull().default('PENDING'), // PENDING | DONE | FAILED
+  /** What was assessed: each task's prompt and the candidate's text. */
+  input: jsonb('input').notNull(),
+  result: jsonb('result'),
+  score: integer('score'),
+  cefrLevel: text('cefr_level'),
+  model: text('model'),
+  inputTokens: integer('input_tokens'),
+  outputTokens: integer('output_tokens'),
+  error: text('error'),
+  createdAt: created(),
+  completedAt: timestamp('completed_at', { withTimezone: true })
+}, t => [index('ai_reviews_user_idx').on(t.userId, t.createdAt)])
 
 /** Premium tests a user opened with credits: theirs for good. */
 export const testUnlocks = pgTable('test_unlocks', {

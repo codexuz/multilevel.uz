@@ -59,6 +59,10 @@ onBeforeUnmount(() => off?.())
           {{ data.feedback }}
         </p>
       </UCard>
+      <AiWritingFeedback
+        v-if="data.skill === 'WRITING'"
+        :attempt-id="id"
+      />
     </ResultSummary>
   </AppPage>
 </template>

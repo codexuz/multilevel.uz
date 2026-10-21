@@ -52,6 +52,32 @@ and `erp-lms/ielts-test` import/export format, set to the Multilevel format.
   `/admin/users` and presses **Grant**, which records a paid order with the amount received.
 - `/admin/orders` lists every order and this month's revenue.
 
+### AI feedback on Writing
+
+With `ANTHROPIC_API_KEY` set, Writing gets a **Get AI feedback** button: on the practice screen
+after writing, and on a handed-in Writing's result while it waits for an examiner. Claude rates
+each task on task achievement, organisation, vocabulary and grammar (0–5, anchored to CEFR),
+lists the corrections that matter most and rewrites one sentence a level up; the score out of 75
+is worked out from those marks (Task 1.1 counts 20%, Task 1.2 30%, Task 2 50%) and is shown as an
+estimate. It runs in the background (`ai_reviews`); the page waits for it, and a Telegram message
+says when it is ready. Without Premium a user gets `AI_FEEDBACK_FREE_PER_MONTH` (2) a month, with
+Premium `AI_FEEDBACK_PREMIUM_PER_DAY` (10) a day; staff have no limit; failed ones do not count.
+
+### Sharing results
+
+A scored result has **Share result**: a 1200×630 picture ("Aziz scored 58/75, B2 in Multilevel
+Reading", with the sharer's invite link), sent to Telegram, the phone's share sheet, copied, or
+saved. The link opens `/share/<token>`, whose preview is the picture and whose button takes the
+friend to the same test through the invite link. Links are signed with `JWT_ACCESS_SECRET`, so
+only results their owner shared can be opened. The picture is drawn on the server (satori +
+sharp) with the Roboto files in `server/assets/fonts` (SIL Open Font License).
+
+### Telegram messages
+
+Users who sign in with Telegram allow the bot to write to them. The bot then tells them when
+their Writing or Speaking is marked, when their AI feedback is ready, and when an invite earns
+them credits, with a button back to the page. They can turn this off in Settings.
+
 ### Earning credits
 
 Besides buying Premium, a user can open single Premium tests with **credits** they earn (not to be

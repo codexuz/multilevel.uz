@@ -10,6 +10,8 @@ export interface Me {
   telegramUsername: string | null
   /** Telegram is linked: the account can sign in with it. */
   telegram: boolean
+  /** Messages from the bot (marking done, AI feedback ready, invites). */
+  telegramNotify: boolean
   name: string | null
   avatarUrl: string | null
   role: UserRole

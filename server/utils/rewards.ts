@@ -3,7 +3,8 @@ import type { H3Event } from 'h3'
 import { and, eq, gt, sql } from 'drizzle-orm'
 import { rewardTransactions, testUnlocks, users } from '../database/schema'
 import { paymentRequired } from './billing'
-import { telegramBotToken } from './telegram'
+import { telegramApi, telegramBotToken } from './telegram'
+import { notifyInviteReward } from './notify'
 
 /**
  * Credits that open premium tests, earned instead of bought: a friend invited with your link
@@ -100,7 +101,9 @@ export async function rewardInviter(userId: string) {
   const [recent] = await db.select({ n: sql<number>`count(*)::int` }).from(rewardTransactions)
     .where(and(eq(rewardTransactions.userId, me.inviter), eq(rewardTransactions.reason, 'REFERRAL'), gt(rewardTransactions.createdAt, new Date(Date.now() - 30 * 86_400_000))))
   if ((recent?.n ?? 0) >= referralCap) return
-  await db.insert(rewardTransactions).values({ userId: me.inviter, delta: referrer, reason: 'REFERRAL', referredUserId: userId }).onConflictDoNothing()
+  const added = await db.insert(rewardTransactions).values({ userId: me.inviter, delta: referrer, reason: 'REFERRAL', referredUserId: userId })
+    .onConflictDoNothing().returning({ id: rewardTransactions.id })
+  if (added.length) await notifyInviteReward(me.inviter, referrer).catch(() => {})
 }
 
 /** Opens a premium test with credits. Returns the balance left; refuses with 402 when short. */
@@ -136,10 +139,7 @@ export async function isChannelMember(telegramId: string): Promise<boolean> {
   const channel = telegramChannel()
   const token = telegramBotToken()
   if (!channel || !token) return false
-  const res = await $fetch<{ ok: boolean, result?: { status: string, is_member?: boolean } }>(
-    `${(process.env.TELEGRAM_API_URL || 'https://api.telegram.org').replace(/\/$/, '')}/bot${token}/getChatMember`,
-    { query: { chat_id: channel.chat, user_id: telegramId }, timeout: 8000 }
-  ).catch((e) => {
+  const res = await telegramApi<{ status: string, is_member?: boolean }>('getChatMember', { chat_id: channel.chat, user_id: telegramId }).catch((e) => {
     console.error('[rewards] getChatMember failed:', e?.data?.description || e?.message)
     throw createError({ statusCode: 502, message: 'Telegram did not answer. Please try again in a minute.' })
   })
