@@ -389,12 +389,13 @@ function catalogFilters(query: Body) {
   return [
     skill ? sql`exists (select 1 from ${sections} s join ${sectionItems} si on si.section_id = s.id where s.test_id = ${tests.id} and s.skill = ${skill})` : undefined,
     type ? sql`exists (select 1 from ${sections} s join ${sectionItems} si on si.section_id = s.id join ${questionGroups} g on g.part_id = si.part_id where s.test_id = ${tests.id} and g.type = ${type})` : undefined,
-    query.full === '1' || query.full === 'true'
-      ? sql`(select count(distinct s.skill) from ${sections} s where s.test_id = ${tests.id} and exists (select 1 from ${sectionItems} si where si.section_id = s.id)) = 4`
-      : undefined,
     query.access === 'FREE' || query.access === 'PREMIUM' ? eq(tests.access, String(query.access)) : undefined
   ]
 }
+
+/** A full test: it has all four skills, each with something in it. */
+const FULL_TEST = sql`(select count(distinct s.skill) from ${sections} s where s.test_id = ${tests.id} and exists (select 1 from ${sectionItems} si where si.section_id = s.id)) = 4`
+const wantsFull = (query: Body) => query.full === '1' || query.full === 'true'
 
 /**
  * The parts of published tests, each to practise on its own: Listening and Reading parts, Writing
@@ -459,25 +460,28 @@ export async function listTests(query: Body, opts: { publishedOnly?: boolean } =
   const db = useDb()
   const { page, limit, offset } = paging(query, opts.publishedOnly ? 60 : 100)
   const search = query.search?.trim()
-  const where = and(
+  const others = and(
     opts.publishedOnly ? eq(tests.status, 'PUBLISHED') : query.status ? eq(tests.status, String(query.status)) : ne(tests.status, 'ARCHIVED'),
     query.mode ? eq(tests.mode, String(query.mode)) : undefined,
     query.category ? eq(tests.category, String(query.category)) : undefined,
     search ? or(ilike(tests.title, `%${search}%`), ilike(tests.description, `%${search}%`)) : undefined,
     ...catalogFilters(query)
   )
-  const [rows, [total]] = await Promise.all([
+  const where = wantsFull(query) ? and(others, FULL_TEST) : others
+  const [rows, [total], [full]] = await Promise.all([
     db.query.tests.findMany({
       where, limit, offset,
       orderBy: opts.publishedOnly ? [desc(tests.publishedAt)] : [desc(tests.updatedAt)],
       with: { sections: { orderBy: (t, { asc }) => [asc(t.position)], with: { items: { with: { part: { with: { groups: { with: { items: { columns: { id: true } } } } } } } } } } }
     }),
-    db.select({ n: count() }).from(tests).where(where)
+    db.select({ n: count() }).from(tests).where(where),
+    // How many of the tests the other filters allow are full tests, for the catalogue's switch.
+    db.select({ n: count() }).from(tests).where(and(others, FULL_TEST))
   ])
   const counts = !opts.publishedOnly && rows.length
     ? new Map((await db.select({ testId: attempts.testId, n: count() }).from(attempts).where(inArray(attempts.testId, rows.map(r => r.id))).groupBy(attempts.testId)).map(r => [r.testId, r.n]))
     : new Map()
-  return paged(rows.map(row => ({ ...testSummary(row), ...(opts.publishedOnly ? {} : { attempts: counts.get(row.id) ?? 0 }) })), total?.n ?? 0, page, limit)
+  return { ...paged(rows.map(row => ({ ...testSummary(row), ...(opts.publishedOnly ? {} : { attempts: counts.get(row.id) ?? 0 }) })), total?.n ?? 0, page, limit), fullTests: full?.n ?? 0 }
 }
 
 /** The whole test as its author edits it: every section, item and key. */

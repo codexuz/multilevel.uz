@@ -28,10 +28,22 @@ watch(search, (v) => {
   clearTimeout(timer)
   timer = setTimeout(() => (q.value = v.trim()), 300)
 })
-// A part number belongs to a skill; question types belong to Listening and Reading.
+// Part numbers: a skill's own (Speaking's 1.1, 1.2, 2, 3), or 1–6 across every skill.
+const partNumbers = computed(() => (skill.value === ALL ? [1, 2, 3, 4, 5, 6] : PART_NUMBERS[skill.value] ?? []))
+// Question types belong to Listening and Reading.
 watch(skill, (s) => {
-  if (s === ALL || !PART_NUMBERS[s]?.includes(Number(part.value))) part.value = ALL
+  if (part.value !== ALL && !partNumbers.value.includes(Number(part.value))) part.value = ALL
   if (s === 'WRITING' || s === 'SPEAKING') type.value = ALL
+})
+// The address can also change from outside (the Tests link, back and forward): follow it.
+watch(() => route.query, (rq) => {
+  const nextView = rq.view === 'parts' ? 'parts' : 'tests'
+  if (view.value !== nextView) view.value = nextView
+  if (q.value !== str(rq.q)) search.value = q.value = str(rq.q)
+  if (skill.value !== str(rq.skill, ALL)) skill.value = str(rq.skill, ALL)
+  if (part.value !== str(rq.part, ALL)) part.value = str(rq.part, ALL)
+  if (type.value !== str(rq.type, ALL)) type.value = str(rq.type, ALL)
+  if (full.value !== (rq.full === '1')) full.value = rq.full === '1'
 })
 watch([view, q, skill, part, type, full], () => (page.value = 1))
 watch([view, q, skill, part, type, full, page], () => router.replace({
@@ -55,11 +67,14 @@ const query = computed(() => ({
   page: page.value,
   limit: view.value === 'parts' ? 24 : 12
 }))
-const { data, status } = await useFetch<Paged<any>>(() => (view.value === 'parts' ? '/api/practice/parts' : '/api/tests'), { query })
+const { data, status } = await useFetch<Paged<any> & { fullTests?: number }>(() => (view.value === 'parts' ? '/api/practice/parts' : '/api/tests'), { query })
 
 const views = [{ label: 'Full tests', value: 'tests', icon: 'i-lucide-files' }, { label: 'By part', value: 'parts', icon: 'i-lucide-puzzle' }]
 const skillItems = [{ label: 'All skills', value: ALL }, ...(['LISTENING', 'READING', 'WRITING', 'SPEAKING'] as const).map(s => ({ label: SKILL_META[s].label, value: s, icon: SKILL_META[s].icon }))]
-const partItems = computed(() => [{ label: 'Any part', value: ALL }, ...(PART_NUMBERS[skill.value] ?? []).map(n => ({ label: partName(skill.value, n), value: String(n) }))])
+const partItems = computed(() => [{ label: 'Any part', value: ALL }, ...partNumbers.value.map(n => ({ label: skill.value === ALL ? `Part ${n}` : partName(skill.value, n), value: String(n) }))])
+/** How many tests (with the other filters) have all four skills: shown on the switch. */
+const fullTests = ref<number | null>(null)
+watch(data, d => d && view.value === 'tests' && d.fullTests != null && (fullTests.value = d.fullTests), { immediate: true })
 const typeItems = [{ label: 'All question types', value: ALL }, ...QUESTION_TYPES.map(t => ({ label: t.label, value: t.value, icon: t.icon }))]
 const typesApply = computed(() => skill.value !== 'WRITING' && skill.value !== 'SPEAKING')
 const filtered = computed(() => !!q.value || skill.value !== ALL || type.value !== ALL || (view.value === 'parts' && part.value !== ALL) || (view.value === 'tests' && full.value))
@@ -124,7 +139,6 @@ useSeoMeta({
             v-if="view === 'parts'"
             v-model="part"
             :items="partItems"
-            :disabled="skill === ALL"
             aria-label="Part"
             class="lg:w-36"
           />
@@ -141,7 +155,7 @@ useSeoMeta({
             v-if="view === 'tests'"
             v-model="full"
             label="Full tests only"
-            description="All four skills"
+            :description="`All four skills${fullTests != null ? ` · ${fullTests} ${fullTests === 1 ? 'test' : 'tests'}` : ''}`"
             class="col-span-2 sm:col-span-1 lg:ms-2"
           />
         </div>
@@ -182,10 +196,10 @@ useSeoMeta({
           class="size-14"
         >
         <p class="font-semibold text-highlighted">
-          {{ filtered ? `No ${view === 'parts' ? 'parts' : 'tests'} match these filters` : 'No tests yet' }}
+          {{ view === 'tests' && full ? 'No full tests yet' : filtered ? `No ${view === 'parts' ? 'parts' : 'tests'} match these filters` : 'No tests yet' }}
         </p>
         <p class="text-sm text-muted max-w-xs">
-          {{ filtered ? 'Try fewer filters or other words.' : 'New tests are published here.' }}
+          {{ view === 'tests' && full ? 'A full test has all four skills: Listening, Reading, Writing and Speaking. Turn off "Full tests only" to see every test.' : filtered ? 'Try fewer filters or other words.' : 'New tests are published here.' }}
         </p>
         <UButton
           v-if="filtered"
