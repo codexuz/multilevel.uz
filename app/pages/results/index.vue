@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** My saved attempts, newest first: each with its skill, score and level, opening the result. */
+/** My weak spots and progress, then my saved attempts, newest first, each opening its result. */
 useSeoMeta({ title: 'My results', robots: 'noindex' })
 
 interface Row { id: string, skill: string, partNumber: number | null, status: string, test: { slug: string, title: string } | null, submittedAt: string, correct: number | null, total: number | null, score: number | null, cefrLevel: string | null }
@@ -17,6 +17,15 @@ const { data, status } = await useFetch<{ items: Row[], total: number, pages: nu
       <h1 class="text-2xl sm:text-3xl font-bold text-highlighted">
         My <span class="text-accent">results</span>
       </h1>
+
+      <ProgressInsights v-if="page === 1" />
+
+      <h2
+        v-if="data?.items?.length"
+        class="font-semibold text-highlighted -mb-1"
+      >
+        All results
+      </h2>
 
       <div
         v-if="status === 'pending' && !data"

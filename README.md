@@ -80,6 +80,15 @@ A handed-in Writing or Speaking gets one AI review automatically, free (it does 
 allowance). On the marking page examiners see it as **AI suggests …** and can fill an empty score and
 feedback with **Use AI draft**, then change what they hear differently.
 
+### Weak spots
+
+**My results** opens with where the user loses marks (`/api/me/insights`, `server/utils/insights.ts`):
+Listening and Reading by task type and part (their answers over the last 180 days), Writing and
+Speaking by criterion and task (their last 10 AI reviews), and each skill's score over time. Up to
+four weak spots (a task type under 70% right over at least 4 questions, or the lowest criterion
+under 4/5) come with a **Practise** button for one part of a published test that has that task
+type, or that task or part: one they can open and have not done first.
+
 ### Sharing results
 
 A scored result has **Share result**: a 1200×630 picture ("Aziz scored 58/75, B2 in Multilevel
