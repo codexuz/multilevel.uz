@@ -3,10 +3,11 @@ import OpenAI from 'openai'
 import { zodTextFormat } from 'openai/helpers/zod'
 import * as z from 'zod/v4'
 import { and, eq, gt, lt, ne, sql } from 'drizzle-orm'
-import { aiReviews, users } from '../database/schema'
+import { aiReviews, essays, users, writingTasks } from '../database/schema'
 import { cefrLevel } from './score'
 import { accessOf, isStaffRole } from './billing'
 import { notifyAiReview } from './notify'
+import { minimumWordsFor } from './content'
 
 /**
  * Instant AI feedback on Multilevel Writing: an OpenAI reasoning model (gpt-6-luna by default, chosen
@@ -53,7 +54,7 @@ export async function aiAllowance(user: { id: string, role: string }, db: Db | T
   const limit = premium ? premiumPerDay : freePerMonth
   const since = new Date(Date.now() - (premium ? 1 : 30) * 86_400_000)
   const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(aiReviews)
-    .where(and(eq(aiReviews.userId, user.id), ne(aiReviews.status, 'FAILED'), gt(aiReviews.createdAt, since)))
+    .where(and(eq(aiReviews.userId, user.id), eq(aiReviews.free, false), ne(aiReviews.status, 'FAILED'), gt(aiReviews.createdAt, since)))
   const used = row?.n ?? 0
   return { limit, used, left: Math.max(0, limit - used), period }
 }
@@ -200,7 +201,7 @@ function finish(tasks: AiTaskInput[], parsed: WritingReviewResult) {
 }
 
 /** Runs a PENDING review and stores what came back (or why it failed). */
-async function run(id: string) {
+async function run(id: string, notify = true) {
   const db = useDb()
   const [row] = await db.select().from(aiReviews).where(eq(aiReviews.id, id)).limit(1)
   if (!row || row.status !== 'PENDING') return
@@ -213,7 +214,7 @@ async function run(id: string) {
       inputTokens: usage?.input_tokens ?? 0,
       outputTokens: usage?.output_tokens ?? 0, completedAt: new Date()
     }).where(eq(aiReviews.id, id))
-    await notifyAiReview(row.userId, id, row.attemptId, done.score, done.cefrLevel).catch(() => {})
+    if (notify) await notifyAiReview(row.userId, id, row.attemptId, done.score, done.cefrLevel).catch(() => {})
   } catch (e) {
     const message = e instanceof OpenAI.RateLimitError
       ? 'Many people are being assessed right now. Please try again in a minute.'
@@ -228,13 +229,17 @@ async function run(id: string) {
 /**
  * Starts a review if the user has one left: the allowance is checked and the row made under a
  * lock on the user, so two at once cannot both take the last one. Returns the review's id.
+ *
+ * `user` is who asked (their allowance is used); the review belongs to `ownerId` (the candidate,
+ * when an examiner asks for a draft). `free` skips the allowance: a review that comes with a paid
+ * marking. `notify` tells the owner in Telegram when it is ready.
  */
-export async function startWritingReview(user: { id: string, role: string }, opts: { attemptId?: string | null, testId: string | null, tasks: AiTaskInput[] }) {
+export async function startWritingReview(user: { id: string, role: string }, opts: { attemptId?: string | null, testId: string | null, tasks: AiTaskInput[], ownerId?: string, free?: boolean, notify?: boolean }) {
   const db = useDb()
   const id = await db.transaction(async (tx) => {
     await tx.execute(sql`select 1 from ${users} where ${users.id} = ${user.id} for update`)
-    const allowance = await aiAllowance(user, tx)
-    if (allowance.left === 0) {
+    const allowance = opts.free ? null : await aiAllowance(user, tx)
+    if (allowance?.left === 0) {
       throw createError({
         statusCode: 402,
         message: allowance.period === 'day' ? 'You have used today\'s AI feedback. More tomorrow.' : 'You have used this month\'s free AI feedback. Premium gives you more every day.',
@@ -242,12 +247,33 @@ export async function startWritingReview(user: { id: string, role: string }, opt
       })
     }
     if (opts.attemptId) await tx.delete(aiReviews).where(and(eq(aiReviews.attemptId, opts.attemptId), eq(aiReviews.status, 'FAILED')))
-    const [row] = await tx.insert(aiReviews).values({ userId: user.id, attemptId: opts.attemptId ?? null, testId: opts.testId, input: opts.tasks }).returning({ id: aiReviews.id })
+    const [row] = await tx.insert(aiReviews).values({ userId: opts.ownerId ?? user.id, attemptId: opts.attemptId ?? null, testId: opts.testId, input: opts.tasks, free: !!opts.free }).returning({ id: aiReviews.id })
     return row!.id
   })
   // In the background: the page polls for it.
-  void run(id)
+  void run(id, opts.notify ?? true)
   return id
+}
+
+/** The tasks of a saved Writing attempt, as a review reads them. */
+export async function attemptWritingTasks(attemptId: string): Promise<AiTaskInput[]> {
+  const rows = await useDb().select({ essay: essays, task: writingTasks }).from(essays)
+    .innerJoin(writingTasks, eq(writingTasks.id, essays.taskId)).where(eq(essays.attemptId, attemptId))
+  return rows.sort((a, b) => a.task.taskNumber - b.task.taskNumber).map(({ essay, task }) => ({
+    taskId: task.id, taskNumber: task.taskNumber, label: taskLabel(task.taskNumber), prompt: task.prompt,
+    minWords: minimumWordsFor(task.taskNumber, task.minWords), text: essay.text, wordCount: countWords(essay.text)
+  }))
+}
+
+/**
+ * A Writing handed in for an examiner gets an AI review at once, as part of the marking paid for:
+ * the candidate sees an estimate straight away and the examiner finds a draft. Best effort.
+ */
+export async function reviewHandedInWriting(attempt: { id: string, userId: string, testId: string | null }) {
+  if (!aiEnabled()) return
+  const tasks = await attemptWritingTasks(attempt.id)
+  if (!tasks.length || tasks.every(t => t.wordCount < 10)) return
+  await startWritingReview({ id: attempt.userId, role: 'student' }, { attemptId: attempt.id, testId: attempt.testId, tasks, free: true })
 }
 
 /** A review as the page shows it. Reviews left PENDING by a restart are marked failed. */

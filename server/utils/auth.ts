@@ -29,9 +29,11 @@ export async function requireUser(event: H3Event): Promise<AuthUser> {
   const [blacklisted] = await db.select().from(revokedTokens).where(eq(revokedTokens.jti, claims.jti)).limit(1)
   if (blacklisted) throw createError({ statusCode: 401, message: 'Token revoked' })
 
-  // Reject banned users immediately (PK lookup).
+  // Reject banned users immediately (PK lookup), and tokens of accounts that no longer exist
+  // (deleted, or merged into another account): those count as signed out.
   const [row] = await db.select({ banned: users.banned }).from(users).where(eq(users.id, claims.sub)).limit(1)
-  if (row?.banned) throw createError({ statusCode: 403, message: 'Account banned' })
+  if (!row) throw createError({ statusCode: 401, message: 'This account no longer exists' })
+  if (row.banned) throw createError({ statusCode: 403, message: 'Account banned' })
 
   return { id: claims.sub, role: claims.role }
 }

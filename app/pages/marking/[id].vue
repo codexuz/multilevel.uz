@@ -2,6 +2,7 @@
 /**
  * Marking one Writing or Speaking attempt: the tasks and what was written (or the recordings) on one
  * side; the score out of 75, a word for the candidate and a comment on each essay on the other.
+ * An AI draft (made when the Writing was handed in, or on request) can fill the empty fields in.
  */
 definePageMeta({ middleware: 'staff' })
 
@@ -25,6 +26,65 @@ watch(attempt, (a) => {
   feedback.value = a.feedback ?? ''
   for (const t of a.review?.sections?.[0]?.tasks ?? []) if (t.essay) essayFeedback[t.essay.id] = t.essay.feedback ?? ''
 }, { immediate: true })
+
+// ─── The AI draft ───
+interface AiDraft {
+  id: string
+  status: 'PENDING' | 'DONE' | 'FAILED'
+  score: number | null
+  cefrLevel: string | null
+  error: string | null
+  summary?: string
+  priorities?: string[]
+  tasks?: { taskId: string, comment: string, corrections: { original: string, corrected: string, why: string }[] }[]
+}
+const { data: aiStatus } = useFetch<{ enabled: boolean }>('/api/ai/status', { key: 'ai-status' })
+const ai = ref<AiDraft | null>(null)
+const askingAi = ref(false)
+let aiTimer: ReturnType<typeof setTimeout> | undefined
+async function pollAi(reviewId: string) {
+  clearTimeout(aiTimer)
+  ai.value = await $fetch<AiDraft>(`/api/ai/reviews/${reviewId}`).catch(() => ai.value)
+  if (ai.value?.status === 'PENDING') aiTimer = setTimeout(() => pollAi(reviewId), 3000)
+}
+async function loadAi() {
+  clearTimeout(aiTimer)
+  ai.value = null
+  if (attempt.value?.skill !== 'WRITING') return
+  ai.value = await $fetch<AiDraft | null>('/api/ai/reviews', { query: { attemptId: id.value } }).catch(() => null)
+  if (ai.value?.status === 'PENDING') pollAi(ai.value.id)
+}
+async function askAi() {
+  askingAi.value = true
+  try {
+    const { id: reviewId } = await $fetch<{ id: string }>('/api/ai/writing', { method: 'POST', body: { attemptId: id.value } })
+    await pollAi(reviewId)
+  } catch (e: any) {
+    toast.add({ title: 'No AI draft', description: e?.data?.message || 'Please try again.', color: 'error' })
+  } finally {
+    askingAi.value = false
+  }
+}
+onMounted(() => watch(() => attempt.value?.id, loadAi, { immediate: true }))
+onBeforeUnmount(() => clearTimeout(aiTimer))
+
+/** Fills in what is still empty from the AI draft; anything already typed is kept. */
+function useAiDraft() {
+  const d = ai.value
+  if (!d || d.status !== 'DONE') return
+  if (score.value == null && d.score != null) score.value = d.score
+  if (!feedback.value.trim()) {
+    feedback.value = [d.summary, d.priorities?.length ? `Work on first:\n${d.priorities.map(p => `- ${p}`).join('\n')}` : ''].filter(Boolean).join('\n\n')
+  }
+  for (const t of tasks.value) {
+    if (!t.essay || essayFeedback[t.essay.id]?.trim()) continue
+    const r = d.tasks?.find(x => x.taskId === t.task.id)
+    if (!r) continue
+    const fixes = r.corrections.map(c => `“${c.original}” → “${c.corrected}”: ${c.why}`)
+    essayFeedback[t.essay.id] = [r.comment, ...fixes].filter(Boolean).join('\n')
+  }
+  toast.add({ title: 'AI draft filled in', description: 'Check it and change what you see differently before saving.', color: 'info' })
+}
 
 const saving = ref(false)
 async function grade(next: boolean) {
@@ -190,6 +250,61 @@ async function grade(next: boolean) {
           </p>
         </template>
         <div class="grid gap-4">
+          <div
+            v-if="attempt.skill === 'WRITING' && aiStatus?.enabled"
+            class="rounded-lg bg-elevated p-3 text-sm"
+          >
+            <div
+              v-if="ai?.status === 'DONE'"
+              class="flex flex-col gap-2"
+            >
+              <p class="flex items-center gap-1.5 font-medium text-highlighted">
+                <UIcon
+                  name="i-lucide-sparkles"
+                  class="text-primary"
+                />AI suggests {{ ai.score }} / 75 · {{ ai.cefrLevel === 'A2' ? 'below B1' : ai.cefrLevel }}
+              </p>
+              <p
+                v-if="ai.summary"
+                class="text-muted line-clamp-3"
+              >
+                {{ ai.summary }}
+              </p>
+              <UButton
+                label="Use AI draft"
+                icon="i-lucide-wand-sparkles"
+                size="sm"
+                color="neutral"
+                variant="outline"
+                class="self-start"
+                @click="useAiDraft"
+              />
+            </div>
+            <p
+              v-else-if="ai?.status === 'PENDING'"
+              class="flex items-center gap-2 text-muted"
+            >
+              <UIcon
+                name="i-lucide-loader-circle"
+                class="animate-spin text-primary"
+              />AI is reading the essays…
+            </p>
+            <div
+              v-else
+              class="flex items-center justify-between gap-2"
+            >
+              <span class="text-muted">{{ ai?.status === 'FAILED' ? ai.error : 'No AI draft yet.' }}</span>
+              <UButton
+                label="Get AI draft"
+                icon="i-lucide-sparkles"
+                size="sm"
+                color="neutral"
+                variant="outline"
+                :loading="askingAi"
+                @click="askAi"
+              />
+            </div>
+          </div>
           <UFormField
             label="Score (0–75)"
             required

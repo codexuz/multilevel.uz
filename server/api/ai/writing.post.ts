@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import { aiReviews, attempts, essays, writingTasks } from '../../database/schema'
+import { aiReviews, attempts } from '../../database/schema'
 
 /**
  * Asks for AI feedback on Writing, either on a saved attempt ({ attemptId }) or on essays just
@@ -18,20 +18,17 @@ export default defineEventHandler(async (event) => {
   let tasks: AiTaskInput[]
   let testId: string | null
   let attemptId: string | null = null
+  let attemptOwner: string | null = null
 
   if (body.attemptId) {
     const [attempt] = await db.select().from(attempts).where(eq(attempts.id, String(body.attemptId))).limit(1)
     if (!attempt || attempt.skill !== 'WRITING' || (attempt.userId !== user.id && !isStaffRole(user.role))) throw createError({ statusCode: 404, message: 'Writing not found' })
     const [existing] = await db.select({ id: aiReviews.id, status: aiReviews.status }).from(aiReviews).where(eq(aiReviews.attemptId, attempt.id)).limit(1)
     if (existing && existing.status !== 'FAILED') return { id: existing.id, status: existing.status }
-    const rows = await db.select({ essay: essays, task: writingTasks }).from(essays)
-      .innerJoin(writingTasks, eq(writingTasks.id, essays.taskId)).where(eq(essays.attemptId, attempt.id))
-    tasks = rows.sort((a, b) => a.task.taskNumber - b.task.taskNumber).map(({ essay, task }) => ({
-      taskId: task.id, taskNumber: task.taskNumber, label: taskLabel(task.taskNumber), prompt: task.prompt,
-      minWords: minimumWordsFor(task.taskNumber, task.minWords), text: essay.text, wordCount: countWords(essay.text)
-    }))
+    tasks = await attemptWritingTasks(attempt.id)
     testId = attempt.testId
     attemptId = attempt.id
+    attemptOwner = attempt.userId
   } else {
     const test = await loadTest({ slug: String(body.slug ?? '') }, { publishedOnly: true })
     if (!(await canOpenTest(user, test, (await accessOf(user)).premium))) paymentRequired('PREMIUM_REQUIRED', 'This test is part of Premium')
@@ -51,6 +48,8 @@ export default defineEventHandler(async (event) => {
   const long = tasks.find(t => t.wordCount > MAX_WORDS)
   if (long) throw createError({ statusCode: 400, message: `${long.label} is over ${MAX_WORDS} words. Shorten it to get feedback.` })
 
-  const id = await startWritingReview(user, { attemptId, testId, tasks })
+  // An examiner asking for a draft: the review is the candidate's, free, and not announced to them.
+  const ownerId = attemptOwner && attemptOwner !== user.id ? attemptOwner : undefined
+  const id = await startWritingReview(user, { attemptId, testId, tasks, ownerId, free: !!ownerId, notify: !ownerId })
   return { id, status: 'PENDING' }
 })

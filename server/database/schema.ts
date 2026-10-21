@@ -348,6 +348,8 @@ export const aiReviews = pgTable('ai_reviews', {
   testId: uuid('test_id').references(() => tests.id, { onDelete: 'set null' }),
   skill: text('skill').notNull().default('WRITING'),
   status: text('status').notNull().default('PENDING'), // PENDING | DONE | FAILED
+  /** Came with a paid marking or was asked for by an examiner: not counted in the user's allowance. */
+  free: boolean('free').notNull().default(false),
   /** What was assessed: each task's prompt and the candidate's text. */
   input: jsonb('input').notNull(),
   result: jsonb('result'),

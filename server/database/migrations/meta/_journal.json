@@ -36,6 +36,13 @@
       "when": 1792559008823,
       "tag": "0004_telegram_bot_joined",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792570848998,
+      "tag": "0005_ai_review_free",
+      "breakpoints": true
     }
   ]
 }
