@@ -2,6 +2,8 @@
 /**
  * A page's frame. In the app (layouts/default.vue) it is a dashboard panel with a top bar; in the
  * public site (layouts/public.vue) it is a plain centred section, the back link and actions above it.
+ * On a phone the app has no drawer: the tab bar and Profile lead everywhere, so the top bar has no
+ * menu button.
  */
 defineProps<{
   title?: string
@@ -47,6 +49,7 @@ const inPublic = useInPublicLayout()
       <UDashboardNavbar
         :title="title"
         :icon="back ? undefined : icon"
+        :toggle="false"
       >
         <template
           v-if="back"

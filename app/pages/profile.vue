@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { Order } from '~/utils/billing'
 
-/** Who is signed in, their plan, their goals, and how their marked sections have gone. */
+/**
+ * Who is signed in, their plan, their goals, and how their marked sections have gone. On a phone,
+ * where there is no sidebar, also the account's settings, the staff pages, and logging out.
+ */
 useSeoMeta({ title: 'Profile', robots: 'noindex' })
 const { me, isPremium, credits, rewardCredits, refresh } = useMe()
 const toast = useToast()
@@ -27,6 +30,24 @@ async function connectTelegram() {
     toast.add({ title: 'Telegram connected', description: 'You can sign in with Telegram now.', color: 'success' })
   }
 }
+
+// ─── On a phone: what the sidebar holds on a larger screen ───
+const staffNav = useStaffNav()
+const colorMode = useColorMode()
+const dark = computed({
+  get: () => colorMode.value === 'dark',
+  set: (on: boolean) => { colorMode.preference = on ? 'dark' : 'light' }
+})
+const { confirm } = useDialogs()
+async function logout() {
+  if (!await confirm({ title: 'Log out?', description: 'You can sign in again any time.', confirmLabel: 'Log out', color: 'error' })) return
+  await $fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
+  reloadNuxtApp({ path: '/' })
+}
+const accountLinks = [
+  { label: 'Earn credits', icon: 'i-lucide-gift', to: '/earn' },
+  { label: 'Devices', description: 'Where you are signed in', icon: 'i-lucide-monitor-smartphone', to: '/settings' }
+]
 </script>
 
 <template>
@@ -260,6 +281,95 @@ async function connectTelegram() {
           {{ telegram.error.value }}
         </p>
       </UCard>
+
+      <!-- On a phone: settings, staff pages and logging out, which the sidebar holds elsewhere -->
+      <div class="lg:hidden flex flex-col gap-4">
+        <TelegramNotifySettings />
+
+        <UCard :ui="{ body: 'p-0 sm:p-0' }">
+          <div class="divide-y divide-default">
+            <NuxtLink
+              v-for="l in accountLinks"
+              :key="l.to"
+              :to="l.to"
+              class="flex items-center gap-3 px-4 py-3.5 active:bg-elevated"
+            >
+              <UIcon
+                :name="l.icon"
+                class="size-5 text-muted shrink-0"
+              />
+              <span class="flex-1 min-w-0">
+                <span class="block font-medium text-highlighted">{{ l.label }}</span>
+                <span
+                  v-if="l.description"
+                  class="block text-xs text-muted"
+                >{{ l.description }}</span>
+              </span>
+              <UBadge
+                v-if="l.to === '/earn' && rewardCredits"
+                :label="String(rewardCredits)"
+                color="primary"
+                variant="subtle"
+                size="sm"
+              />
+              <UIcon
+                name="i-lucide-chevron-right"
+                class="size-4 text-dimmed"
+              />
+            </NuxtLink>
+            <label class="flex items-center gap-3 px-4 py-3.5">
+              <UIcon
+                :name="dark ? 'i-lucide-moon' : 'i-lucide-sun'"
+                class="size-5 text-muted shrink-0"
+              />
+              <span class="flex-1 font-medium text-highlighted">Dark mode</span>
+              <USwitch
+                v-model="dark"
+                aria-label="Dark mode"
+              />
+            </label>
+          </div>
+        </UCard>
+
+        <UCard
+          v-if="staffNav.length"
+          :ui="{ body: 'p-0 sm:p-0' }"
+        >
+          <template #header>
+            <h2 class="font-semibold">
+              Staff
+            </h2>
+          </template>
+          <div class="divide-y divide-default">
+            <NuxtLink
+              v-for="l in staffNav"
+              :key="String(l.to)"
+              :to="l.to"
+              class="flex items-center gap-3 px-4 py-3.5 active:bg-elevated"
+            >
+              <UIcon
+                :name="String(l.icon)"
+                class="size-5 text-muted shrink-0"
+              />
+              <span class="flex-1 font-medium text-highlighted">{{ l.label }}</span>
+              <UIcon
+                name="i-lucide-chevron-right"
+                class="size-4 text-dimmed"
+              />
+            </NuxtLink>
+          </div>
+        </UCard>
+
+        <UButton
+          label="Log out"
+          icon="i-lucide-log-out"
+          color="error"
+          variant="soft"
+          size="lg"
+          block
+          @click="logout"
+        />
+      </div>
     </div>
   </AppPage>
 </template>
