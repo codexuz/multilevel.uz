@@ -60,7 +60,8 @@ onBeforeUnmount(() => off?.())
         </p>
       </UCard>
       <AiWritingFeedback
-        v-if="data.skill === 'WRITING'"
+        v-if="data.skill === 'WRITING' || data.skill === 'SPEAKING'"
+        :skill="data.skill"
         :attempt-id="id"
       />
     </ResultSummary>

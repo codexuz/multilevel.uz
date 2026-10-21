@@ -37,6 +37,7 @@ interface AiDraft {
   summary?: string
   priorities?: string[]
   tasks?: { taskId: string, comment: string, corrections: { original: string, corrected: string, why: string }[] }[]
+  parts?: { label: string, comment: string }[]
 }
 const { data: aiStatus } = useFetch<{ enabled: boolean }>('/api/ai/status', { key: 'ai-status' })
 const ai = ref<AiDraft | null>(null)
@@ -50,14 +51,14 @@ async function pollAi(reviewId: string) {
 async function loadAi() {
   clearTimeout(aiTimer)
   ai.value = null
-  if (attempt.value?.skill !== 'WRITING') return
+  if (attempt.value?.skill !== 'WRITING' && attempt.value?.skill !== 'SPEAKING') return
   ai.value = await $fetch<AiDraft | null>('/api/ai/reviews', { query: { attemptId: id.value } }).catch(() => null)
   if (ai.value?.status === 'PENDING') pollAi(ai.value.id)
 }
 async function askAi() {
   askingAi.value = true
   try {
-    const { id: reviewId } = await $fetch<{ id: string }>('/api/ai/writing', { method: 'POST', body: { attemptId: id.value } })
+    const { id: reviewId } = await $fetch<{ id: string }>(`/api/ai/${attempt.value?.skill === 'SPEAKING' ? 'speaking' : 'writing'}`, { method: 'POST', body: { attemptId: id.value } })
     await pollAi(reviewId)
   } catch (e: any) {
     toast.add({ title: 'No AI draft', description: e?.data?.message || 'Please try again.', color: 'error' })
@@ -74,7 +75,9 @@ function useAiDraft() {
   if (!d || d.status !== 'DONE') return
   if (score.value == null && d.score != null) score.value = d.score
   if (!feedback.value.trim()) {
-    feedback.value = [d.summary, d.priorities?.length ? `Work on first:\n${d.priorities.map(p => `- ${p}`).join('\n')}` : ''].filter(Boolean).join('\n\n')
+    // Speaking has no per-part comment boxes: each part's comment goes into the feedback.
+    const partNotes = d.parts?.length ? d.parts.map(p => `${p.label}: ${p.comment}`).join('\n') : ''
+    feedback.value = [d.summary, partNotes, d.priorities?.length ? `Work on first:\n${d.priorities.map(p => `- ${p}`).join('\n')}` : ''].filter(Boolean).join('\n\n')
   }
   for (const t of tasks.value) {
     if (!t.essay || essayFeedback[t.essay.id]?.trim()) continue
@@ -251,7 +254,7 @@ async function grade(next: boolean) {
         </template>
         <div class="grid gap-4">
           <div
-            v-if="attempt.skill === 'WRITING' && aiStatus?.enabled"
+            v-if="(attempt.skill === 'WRITING' || attempt.skill === 'SPEAKING') && aiStatus?.enabled"
             class="rounded-lg bg-elevated p-3 text-sm"
           >
             <div
@@ -287,7 +290,7 @@ async function grade(next: boolean) {
               <UIcon
                 name="i-lucide-loader-circle"
                 class="animate-spin text-primary"
-              />AI is reading the essays…
+              />{{ attempt.skill === 'SPEAKING' ? 'AI is listening to the answers…' : 'AI is reading the essays…' }}
             </p>
             <div
               v-else

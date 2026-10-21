@@ -75,6 +75,7 @@ export default defineEventHandler(async (event) => {
     await rewardInviter(user.id).catch(e => console.error('[rewards] inviter reward failed:', e))
     // Writing for an examiner: an AI estimate for the candidate now, and a draft for the examiner.
     if (skill === 'WRITING') await reviewHandedInWriting({ id: attemptId!, userId: user.id, testId: test.id }).catch(e => console.error('[ai-writing] auto review failed:', e))
+    if (skill === 'SPEAKING') await reviewHandedInSpeaking({ id: attemptId!, userId: user.id, testId: test.id }).catch(e => console.error('[ai-speaking] auto review failed:', e))
   }
 
   return {

@@ -8,6 +8,7 @@ import { cefrLevel } from './score'
 import { accessOf, isStaffRole } from './billing'
 import { notifyAiReview } from './notify'
 import { minimumWordsFor } from './content'
+import { assessSpeaking, attemptSpeakingParts, type AiSpeakingPart } from './ai-speaking'
 
 /**
  * Instant AI feedback on Multilevel Writing: an OpenAI reasoning model (gpt-6-luna by default, chosen
@@ -22,12 +23,12 @@ import { minimumWordsFor } from './content'
 
 export const AI_MODEL = () => process.env.AI_FEEDBACK_MODEL || 'gpt-6-luna'
 /** Reasoning effort: none, low, medium, high, xhigh or max (medium by default). */
-const EFFORT = () => (['none', 'low', 'medium', 'high', 'xhigh', 'max'] as const).find(e => e === process.env.AI_FEEDBACK_EFFORT) ?? 'medium'
+export const aiEffort = () => (['none', 'low', 'medium', 'high', 'xhigh', 'max'] as const).find(e => e === process.env.AI_FEEDBACK_EFFORT) ?? 'medium'
 
 export const aiEnabled = () => !!process.env.OPENAI_API_KEY
 
 let client: OpenAI | null = null
-const openai = () => (client ??= new OpenAI())
+export const openaiClient = () => (client ??= new OpenAI())
 
 const num = (v: string | undefined, fallback: number) => (v != null && v !== '' && Number.isFinite(Number(v)) ? Math.max(0, Math.floor(Number(v))) : fallback)
 
@@ -151,12 +152,12 @@ export function scoreFromCriteria(tasks: { taskNumber: number, criteria: Writing
 }
 
 async function assess(tasks: AiTaskInput[], userId: string) {
-  const response = await openai().responses.parse({
+  const response = await openaiClient().responses.parse({
     model: AI_MODEL(),
     // The same instructions first on every request, so OpenAI can reuse them from its cache.
     instructions: SYSTEM,
     input: userMessage(tasks),
-    reasoning: { effort: EFFORT() },
+    reasoning: { effort: aiEffort() },
     max_output_tokens: 16000,
     text: { format: zodTextFormat(WritingReview, 'writing_review') },
     prompt_cache_key: 'multilevel-writing-review',
@@ -208,16 +209,21 @@ async function run(id: string, notify = true) {
   const db = useDb()
   const [row] = await db.select().from(aiReviews).where(eq(aiReviews.id, id)).limit(1)
   if (!row || row.status !== 'PENDING') return
-  const tasks = row.input as AiTaskInput[]
   try {
-    const { parsed, model, usage } = await assess(tasks, row.userId)
-    const done = finish(tasks, parsed)
+    // Speaking is transcribed first; the transcripts are kept with the review's input.
+    const done = row.skill === 'SPEAKING'
+      ? await assessSpeaking(row.input as AiSpeakingPart[], row.userId)
+      : await (async () => {
+          const tasks = row.input as AiTaskInput[]
+          const { parsed, model, usage } = await assess(tasks, row.userId)
+          return { ...finish(tasks, parsed), model, usage, input: tasks }
+        })()
     await db.update(aiReviews).set({
-      status: 'DONE', result: done.result, score: done.score, cefrLevel: done.cefrLevel, model,
-      inputTokens: usage?.input_tokens ?? 0,
-      outputTokens: usage?.output_tokens ?? 0, completedAt: new Date()
+      status: 'DONE', result: done.result, score: done.score, cefrLevel: done.cefrLevel, model: done.model, input: done.input,
+      inputTokens: done.usage?.input_tokens ?? 0,
+      outputTokens: done.usage?.output_tokens ?? 0, completedAt: new Date()
     }).where(eq(aiReviews.id, id))
-    if (notify) await notifyAiReview(row.userId, id, row.attemptId, done.score, done.cefrLevel).catch(() => {})
+    if (notify) await notifyAiReview(row.userId, id, row.attemptId, done.score, done.cefrLevel, row.skill).catch(() => {})
   } catch (e) {
     const message = e instanceof OpenAI.RateLimitError
       ? 'Many people are being assessed right now. Please try again in a minute.'
@@ -237,7 +243,7 @@ async function run(id: string, notify = true) {
  * when an examiner asks for a draft). `free` skips the allowance: a review that comes with a paid
  * marking. `notify` tells the owner in Telegram when it is ready.
  */
-export async function startWritingReview(user: { id: string, role: string }, opts: { attemptId?: string | null, testId: string | null, tasks: AiTaskInput[], ownerId?: string, free?: boolean, notify?: boolean }) {
+export async function startWritingReview(user: { id: string, role: string }, opts: { attemptId?: string | null, testId: string | null, tasks: AiTaskInput[] | AiSpeakingPart[], skill?: 'WRITING' | 'SPEAKING', ownerId?: string, free?: boolean, notify?: boolean }) {
   const db = useDb()
   const id = await db.transaction(async (tx) => {
     await tx.execute(sql`select 1 from ${users} where ${users.id} = ${user.id} for update`)
@@ -253,7 +259,7 @@ export async function startWritingReview(user: { id: string, role: string }, opt
       })
     }
     if (opts.attemptId) await tx.delete(aiReviews).where(and(eq(aiReviews.attemptId, opts.attemptId), eq(aiReviews.status, 'FAILED')))
-    const [row] = await tx.insert(aiReviews).values({ userId: opts.ownerId ?? user.id, attemptId: opts.attemptId ?? null, testId: opts.testId, input: opts.tasks, free: !!opts.free || fromBonus }).returning({ id: aiReviews.id })
+    const [row] = await tx.insert(aiReviews).values({ userId: opts.ownerId ?? user.id, attemptId: opts.attemptId ?? null, testId: opts.testId, skill: opts.skill ?? 'WRITING', input: opts.tasks, free: !!opts.free || fromBonus }).returning({ id: aiReviews.id })
     return row!.id
   })
   // In the background: the page polls for it.
@@ -296,6 +302,17 @@ export async function aiReviewView(id: string) {
     id: r.id, userId: r.userId, attemptId: r.attemptId, status: r.status, score: r.score, cefrLevel: r.cefrLevel, error: r.error,
     createdAt: r.createdAt, completedAt: r.completedAt,
     ...(r.result as object | null ?? {}),
-    texts: (r.input as AiTaskInput[]).map(t => ({ taskId: t.taskId, text: t.text }))
+    texts: (r.input as (AiTaskInput | AiSpeakingPart)[]).map(t => 'taskId' in t ? { taskId: t.taskId, text: t.text } : { taskId: t.partId, text: t.transcript ?? '' })
   }
+}
+
+/**
+ * Speaking handed in for an examiner: an AI review at once, as part of the marking paid for (like
+ * Writing). Best effort.
+ */
+export async function reviewHandedInSpeaking(attempt: { id: string, userId: string, testId: string | null }) {
+  if (!aiEnabled()) return
+  const parts = await attemptSpeakingParts(attempt.id)
+  if (!parts.length) return
+  await startWritingReview({ id: attempt.userId, role: 'student' }, { attemptId: attempt.id, testId: attempt.testId, tasks: parts, skill: 'SPEAKING', free: true })
 }

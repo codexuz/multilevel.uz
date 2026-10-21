@@ -1,13 +1,24 @@
 <script setup lang="ts">
-/**
- * Instant AI feedback on Writing: an estimated score out of 75, each task's criteria, corrections
- * and a sentence written better. For a saved attempt (`attemptId`) or for essays just written in
- * practice (`slug`, `part`, `essays`), or one already asked for (`reviewId`). Asks, waits while it
- * is written (polling), then shows it.
- */
-const props = defineProps<{ attemptId?: string, reviewId?: string, slug?: string, part?: number | null, essays?: Record<string, string> }>()
+import { uploadFile } from '~/services/http'
 
-interface Criteria { taskAchievement: number, organisation: number, vocabulary: number, grammar: number }
+/**
+ * Instant AI feedback on Writing or Speaking: an estimated score out of 75, each task's (or part's)
+ * criteria, corrections and a better version. For a saved attempt (`attemptId`), for essays just
+ * written in practice (`slug`, `part`, `essays`), for answers just recorded in practice (`slug`,
+ * `part`, `recordings`, uploaded first), or one already asked for (`reviewId`). Asks, waits while
+ * it is written (polling), then shows it; Speaking shows what was heard, too.
+ */
+const props = withDefaults(defineProps<{
+  skill?: 'WRITING' | 'SPEAKING'
+  attemptId?: string
+  reviewId?: string
+  slug?: string
+  part?: number | null
+  essays?: Record<string, string>
+  recordings?: { partId: string, blob: Blob, durationSeconds: number }[]
+}>(), { skill: 'WRITING' })
+
+type Correction = { original: string, corrected: string, why: string }
 interface Review {
   id: string
   status: 'PENDING' | 'DONE' | 'FAILED'
@@ -17,7 +28,8 @@ interface Review {
   summary?: string
   strengths?: string[]
   priorities?: string[]
-  tasks?: { taskId: string, label: string, wordCount: number, minWords: number, criteria: Criteria, level: string | null, comment: string, corrections: { original: string, corrected: string, why: string }[], betterSentence: string }[]
+  tasks?: { taskId: string, label: string, wordCount: number, minWords: number, criteria: Record<string, number>, level: string | null, comment: string, corrections: Correction[], betterSentence: string }[]
+  parts?: { partId: string, label: string, durationSeconds: number | null, transcript: string, criteria: Record<string, number>, level: string | null, comment: string, corrections: Correction[], betterAnswer: string }[]
 }
 interface Status { enabled: boolean, allowance: { limit: number | null, used: number, left: number | null, period: 'month' | 'day' | null } | null }
 
@@ -52,13 +64,22 @@ onMounted(async () => {
   }
 })
 
+async function practiceBody() {
+  if (props.skill === 'WRITING') return { slug: props.slug, part: props.part ?? null, essays: Object.entries(props.essays ?? {}).map(([taskId, text]) => ({ taskId, text: text ?? '' })) }
+  // Recorded in the browser: uploaded first, so the server can read them from storage.
+  const recordings = []
+  for (const r of props.recordings ?? []) {
+    const file = await uploadFile(new File([r.blob], `speaking-${r.partId}.webm`, { type: r.blob.type || 'audio/webm' }), { purpose: 'recording' })
+    recordings.push({ partId: r.partId, audioRef: file.url, durationSeconds: r.durationSeconds })
+  }
+  return { slug: props.slug, part: props.part ?? null, recordings }
+}
+
 async function start() {
   starting.value = true
   try {
-    const body = props.attemptId
-      ? { attemptId: props.attemptId }
-      : { slug: props.slug, part: props.part ?? null, essays: Object.entries(props.essays ?? {}).map(([taskId, text]) => ({ taskId, text: text ?? '' })) }
-    const { id } = await $fetch<{ id: string }>('/api/ai/writing', { method: 'POST', body })
+    const body = props.attemptId ? { attemptId: props.attemptId } : await practiceBody()
+    const { id } = await $fetch<{ id: string }>(`/api/ai/${props.skill === 'SPEAKING' ? 'speaking' : 'writing'}`, { method: 'POST', body })
     review.value = { id, status: 'PENDING', score: null, cefrLevel: null, error: null }
     poll(id)
   } catch (e: any) {
@@ -75,12 +96,17 @@ const leftText = computed(() => {
   if (!a || a.left == null) return ''
   return `${a.left} of ${a.limit} left ${a.period === 'day' ? 'today' : 'this month'}`
 })
-const CRITERIA: { key: keyof Criteria, label: string }[] = [
-  { key: 'taskAchievement', label: 'Task achievement' },
-  { key: 'organisation', label: 'Organisation' },
-  { key: 'vocabulary', label: 'Vocabulary' },
-  { key: 'grammar', label: 'Grammar' }
-]
+const speaking = computed(() => !!review.value?.parts || props.skill === 'SPEAKING')
+const CRITERIA = computed(() => speaking.value
+  ? [{ key: 'fluency', label: 'Fluency' }, { key: 'vocabulary', label: 'Vocabulary' }, { key: 'grammar', label: 'Grammar' }, { key: 'taskAchievement', label: 'Task achievement' }]
+  : [{ key: 'taskAchievement', label: 'Task achievement' }, { key: 'organisation', label: 'Organisation' }, { key: 'vocabulary', label: 'Vocabulary' }, { key: 'grammar', label: 'Grammar' }])
+/** Tasks or parts, alike: what each card shows. */
+const items = computed(() => review.value?.parts
+  ? review.value.parts.map(p => ({ id: p.partId, label: p.label, level: p.level, criteria: p.criteria, comment: p.comment, corrections: p.corrections, better: p.betterAnswer, meta: p.durationSeconds ? `${p.durationSeconds}s` : '', warn: false, transcript: p.transcript }))
+  : (review.value?.tasks ?? []).map(t => ({ id: t.taskId, label: t.label, level: t.level, criteria: t.criteria, comment: t.comment, corrections: t.corrections, better: t.betterSentence, meta: `${t.wordCount} / ${t.minWords}+ words`, warn: t.wordCount < t.minWords, transcript: null as string | null })))
+const intro = computed(() => speaking.value
+  ? 'An estimated score out of 75 from what you said: how each part did on fluency, vocabulary, grammar and the task, with corrections. About a minute.'
+  : 'An estimated score out of 75, how each task did on the four criteria, and the corrections that matter most. About a minute.')
 const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? 'Below B1' : l ? `CEFR ${l}` : '')
 </script>
 
@@ -103,7 +129,7 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? 'Below B1' :
             Instant AI feedback
           </p>
           <p class="text-sm text-muted text-pretty">
-            {{ review?.status === 'FAILED' ? review.error : 'An estimated score out of 75, how each task did on the four criteria, and the corrections that matter most. About a minute.' }}
+            {{ review?.status === 'FAILED' ? review.error : intro }}
           </p>
           <p
             v-if="loggedIn && leftText"
@@ -234,8 +260,8 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? 'Below B1' :
       </UCard>
 
       <UCard
-        v-for="t in review.tasks"
-        :key="t.taskId"
+        v-for="t in items"
+        :key="t.id"
       >
         <template #header>
           <div class="flex items-center gap-2">
@@ -249,8 +275,8 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? 'Below B1' :
             />
             <span
               class="ms-auto text-xs tabular-nums"
-              :class="t.wordCount < t.minWords ? 'text-warning' : 'text-muted'"
-            >{{ t.wordCount }} / {{ t.minWords }}+ words</span>
+              :class="t.warn ? 'text-warning' : 'text-muted'"
+            >{{ t.meta }}</span>
           </div>
         </template>
         <div class="flex flex-col gap-4">
@@ -267,7 +293,7 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? 'Below B1' :
               <div class="h-1.5 rounded-full bg-elevated overflow-hidden">
                 <div
                   class="h-full rounded-full bg-primary"
-                  :style="{ width: `${t.criteria[c.key] * 20}%` }"
+                  :style="{ width: `${(t.criteria[c.key] ?? 0) * 20}%` }"
                 />
               </div>
             </li>
@@ -275,6 +301,17 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? 'Below B1' :
           <p class="text-sm text-toned text-pretty">
             {{ t.comment }}
           </p>
+          <details
+            v-if="t.transcript"
+            class="rounded-lg ring ring-default px-3 py-2 text-sm"
+          >
+            <summary class="cursor-pointer text-xs font-semibold text-muted">
+              What we heard
+            </summary>
+            <p class="mt-2 text-toned leading-6">
+              {{ t.transcript }}
+            </p>
+          </details>
           <div v-if="t.corrections.length">
             <p class="text-xs font-semibold text-muted mb-2">
               Corrections
@@ -300,14 +337,14 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? 'Below B1' :
             </ul>
           </div>
           <div
-            v-if="t.betterSentence"
+            v-if="t.better"
             class="rounded-lg bg-elevated px-4 py-3"
           >
             <p class="text-xs font-semibold text-muted mb-1">
               One step up
             </p>
             <p class="text-sm text-highlighted font-serif leading-6">
-              {{ t.betterSentence }}
+              {{ t.better }}
             </p>
           </div>
         </div>

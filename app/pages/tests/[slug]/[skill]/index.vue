@@ -351,6 +351,12 @@ const pageError = computed(() => {
               compact
             />
           </template>
+          <AiWritingFeedback
+            skill="SPEAKING"
+            :slug="slug"
+            :part="partNo"
+            :recordings="recordings"
+          />
           <UCard
             v-for="r in recordings"
             :key="r.partId"

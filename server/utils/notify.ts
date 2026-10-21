@@ -39,8 +39,8 @@ export const notifyMarked = (userId: string, attemptId: string, skill: string, s
   button: 'See the feedback'
 })
 
-export const notifyAiReview = (userId: string, reviewId: string, attemptId: string | null, score: number, cefr: string) => notifyTelegram(userId, {
-  text: `✨ <b>Your AI feedback is ready</b>\nEstimated Writing score: <b>${score}/75</b> (${level(cefr)}), with corrections for each task.`,
+export const notifyAiReview = (userId: string, reviewId: string, attemptId: string | null, score: number, cefr: string, skill = 'WRITING') => notifyTelegram(userId, {
+  text: `✨ <b>Your AI feedback is ready</b>\nEstimated ${skillWord(skill)} score: <b>${score}/75</b> (${level(cefr)}), with corrections for each ${skill === 'SPEAKING' ? 'part' : 'task'}.`,
   path: attemptId ? `/results/${attemptId}` : `/feedback/${reviewId}`,
   button: 'Read it'
 })

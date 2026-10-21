@@ -65,6 +65,20 @@ estimate. The answer is structured output checked against a schema, and the essa
 by OpenAI (`store: false`). It runs in the background (`ai_reviews`); the page waits for it, and a Telegram message
 says when it is ready. Without Premium a user gets `AI_FEEDBACK_FREE_PER_MONTH` (2) a month, with
 Premium `AI_FEEDBACK_PREMIUM_PER_DAY` (10) a day; staff have no limit; failed ones do not count.
+Reward bonuses an admin grants (`users.ai_bonus_reviews`) are used once the allowance runs out.
+
+### AI feedback on Speaking
+
+Speaking works the same way. Each recording is read from our own storage (never from an address
+the browser sends; a practice recording must be the user's own upload), transcribed with
+`gpt-transcribe` (`AI_TRANSCRIBE_MODEL`), and the transcripts are rated per part on fluency,
+vocabulary, grammar and task achievement, with corrections and a model answer a level up. The
+score out of 75 weights Part 1.1 and 1.2 at 20% each, Part 2 and 3 at 30%. Pronunciation cannot be
+judged from a transcript, so it is left to the examiner. The page shows what was heard.
+
+A handed-in Writing or Speaking gets one AI review automatically, free (it does not count toward the
+allowance). On the marking page examiners see it as **AI suggests …** and can fill an empty score and
+feedback with **Use AI draft**, then change what they hear differently.
 
 ### Sharing results
 
