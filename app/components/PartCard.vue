@@ -3,16 +3,17 @@
 // from, and the way in. Premium parts are marked; their test's page offers Premium or opening it with credits.
 const props = defineProps<{ part: { id: string, skill: string, number: number | null, title: string | null, questions: number, types: string[], minWords: number | null, test: { id?: string, slug: string, title: string, access: string } } }>()
 const { canOpen } = useMe()
+const { t } = useI18n()
 
 const locked = computed(() => !canOpen(props.part.test))
 const to = computed(() => locked.value
   ? `/tests/${props.part.test.slug}`
   : `/tests/${props.part.test.slug}/${props.part.skill.toLowerCase()}?part=${props.part.number}`)
-const label = computed(() => `${SKILL_META[props.part.skill as keyof typeof SKILL_META]?.label} · ${partName(props.part.skill, props.part.number)}`)
+const label = computed(() => `${skillLabel(props.part.skill)} · ${partName(props.part.skill, props.part.number)}`)
 const title = computed(() => (props.part.title ?? '').replace(/^(Task|Part) [\d.]+\s*[—-]\s*/, '') || label.value)
 const asks = computed(() => props.part.questions
-  ? `${props.part.questions} questions${props.part.types.length ? ` · ${props.part.types.map(questionTypeLabel).join(', ')}` : ''}`
-  : props.part.minWords ? `At least ${props.part.minWords} words` : props.part.skill === 'SPEAKING' ? 'Record your answers' : '')
+  ? `${t('common.questions', { n: props.part.questions }, props.part.questions)}${props.part.types.length ? ` · ${props.part.types.map(questionTypeLabel).join(', ')}` : ''}`
+  : props.part.minWords ? t('tests.atLeastWords', { n: props.part.minWords }) : props.part.skill === 'SPEAKING' ? t('tests.recordAnswers') : '')
 </script>
 
 <template>
@@ -45,9 +46,9 @@ const asks = computed(() => props.part.questions
         class="text-xs text-muted line-clamp-2"
       >{{ asks }}</p>
       <div class="mt-1.5 flex items-center justify-between gap-2">
-        <p class="text-xs text-dimmed truncate">From {{ part.test.title }}</p>
+        <p class="text-xs text-dimmed truncate">{{ t('tests.from', { title: part.test.title }) }}</p>
         <span class="shrink-0 text-sm font-semibold text-primary flex items-center gap-1 group-hover:gap-1.5 transition-all">
-          {{ locked ? 'Unlock' : 'Practise' }}<UIcon
+          {{ locked ? t('tests.unlock') : t('tests.practise') }}<UIcon
             name="i-lucide-arrow-right"
             class="size-4"
           />

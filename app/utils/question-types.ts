@@ -20,7 +20,7 @@ export const QUESTION_TYPES: { value: IELTSQuestionType, label: string, icon: st
   { value: 'PLAN_MAP_LABELLING', label: 'Plan / Map Labelling', icon: 'i-lucide-map' }
 ]
 
-export const questionTypeLabel = (t?: string) => QUESTION_TYPES.find(q => q.value === t)?.label ?? t?.replace(/_/g, ' ') ?? ''
+export const questionTypeLabel = (t?: string) => (t ? i18nT(`qtype.${t}`, {}, QUESTION_TYPES.find(q => q.value === t)?.label ?? t.replace(/_/g, ' ')) : '')
 export const questionTypeIcon = (t?: string) => QUESTION_TYPES.find(q => q.value === t)?.icon ?? 'i-lucide-help-circle'
 
 /** Every type uses sub-questions except MULTIPLE_CHOICE (options only). */
@@ -137,7 +137,7 @@ export const CATEGORY_ITEMS = [
   { label: 'Practice book', value: 'BOOK' },
   { label: 'Custom', value: 'CUSTOM' }
 ]
-export const categoryLabel = (value?: string | null) => CATEGORY_ITEMS.find(c => c.value === value)?.label ?? ''
+export const categoryLabel = (value?: string | null) => (value ? i18nT(`category.${value}`, {}, CATEGORY_ITEMS.find(c => c.value === value)?.label ?? '') : '')
 export const DIFFICULTY_ITEMS = [{ label: 'Easy', value: 'EASY' }, { label: 'Medium', value: 'MEDIUM' }, { label: 'Hard', value: 'HARD' }]
 
 export const SKILL_META = {

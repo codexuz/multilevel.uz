@@ -151,11 +151,27 @@ export function scoreFromCriteria(tasks: { taskNumber: number, criteria: Writing
   return Math.round(Math.min(1, Math.max(0, share)) * 75)
 }
 
-async function assess(tasks: AiTaskInput[], userId: string) {
+const LANGUAGE: Record<string, string> = { uz: 'Uzbek (Latin script)', ru: 'Russian' }
+/**
+ * Comments in the reader's language: the explanations are for them, while what they wrote and how
+ * it should read stay in English. Added after the shared instructions, which stay cacheable.
+ */
+export const languageNote = (locale: string | null | undefined) => (LANGUAGE[locale ?? '']
+  ? `\n\nWrite every comment, the summary, the strengths, the priorities and each correction's "why" in ${LANGUAGE[locale!]}, in simple words a learner understands. Keep "original", "corrected" and the model sentence or answer in English, exactly as English text.`
+  : '')
+
+/** The language a review is written in: the one asked for, else the owner's chosen language. */
+async function reviewLocale(asked: string | null | undefined, ownerId: string) {
+  if (asked === 'en' || asked === 'uz' || asked === 'ru') return asked
+  const [u] = await useDb().select({ locale: users.locale }).from(users).where(eq(users.id, ownerId)).limit(1)
+  return u?.locale ?? null
+}
+
+async function assess(tasks: AiTaskInput[], userId: string, locale: string | null) {
   const response = await openaiClient().responses.parse({
     model: AI_MODEL(),
     // The same instructions first on every request, so OpenAI can reuse them from its cache.
-    instructions: SYSTEM,
+    instructions: SYSTEM + languageNote(locale),
     input: userMessage(tasks),
     reasoning: { effort: aiEffort() },
     max_output_tokens: 16000,
@@ -212,10 +228,10 @@ async function run(id: string, notify = true) {
   try {
     // Speaking is transcribed first; the transcripts are kept with the review's input.
     const done = row.skill === 'SPEAKING'
-      ? await assessSpeaking(row.input as AiSpeakingPart[], row.userId)
+      ? await assessSpeaking(row.input as AiSpeakingPart[], row.userId, row.locale)
       : await (async () => {
           const tasks = row.input as AiTaskInput[]
-          const { parsed, model, usage } = await assess(tasks, row.userId)
+          const { parsed, model, usage } = await assess(tasks, row.userId, row.locale)
           return { ...finish(tasks, parsed), model, usage, input: tasks }
         })()
     await db.update(aiReviews).set({
@@ -243,7 +259,7 @@ async function run(id: string, notify = true) {
  * when an examiner asks for a draft). `free` skips the allowance: a review that comes with a paid
  * marking. `notify` tells the owner in Telegram when it is ready.
  */
-export async function startWritingReview(user: { id: string, role: string }, opts: { attemptId?: string | null, testId: string | null, tasks: AiTaskInput[] | AiSpeakingPart[], skill?: 'WRITING' | 'SPEAKING', ownerId?: string, free?: boolean, notify?: boolean }) {
+export async function startWritingReview(user: { id: string, role: string }, opts: { attemptId?: string | null, testId: string | null, tasks: AiTaskInput[] | AiSpeakingPart[], skill?: 'WRITING' | 'SPEAKING', ownerId?: string, free?: boolean, notify?: boolean, locale?: string | null }) {
   const db = useDb()
   const id = await db.transaction(async (tx) => {
     await tx.execute(sql`select 1 from ${users} where ${users.id} = ${user.id} for update`)
@@ -259,7 +275,7 @@ export async function startWritingReview(user: { id: string, role: string }, opt
       })
     }
     if (opts.attemptId) await tx.delete(aiReviews).where(and(eq(aiReviews.attemptId, opts.attemptId), eq(aiReviews.status, 'FAILED')))
-    const [row] = await tx.insert(aiReviews).values({ userId: opts.ownerId ?? user.id, attemptId: opts.attemptId ?? null, testId: opts.testId, skill: opts.skill ?? 'WRITING', input: opts.tasks, free: !!opts.free || fromBonus }).returning({ id: aiReviews.id })
+    const [row] = await tx.insert(aiReviews).values({ userId: opts.ownerId ?? user.id, attemptId: opts.attemptId ?? null, testId: opts.testId, skill: opts.skill ?? 'WRITING', input: opts.tasks, free: !!opts.free || fromBonus, locale: await reviewLocale(opts.locale, opts.ownerId ?? user.id) }).returning({ id: aiReviews.id })
     return row!.id
   })
   // In the background: the page polls for it.
@@ -281,11 +297,11 @@ export async function attemptWritingTasks(attemptId: string): Promise<AiTaskInpu
  * A Writing handed in for an examiner gets an AI review at once, as part of the marking paid for:
  * the candidate sees an estimate straight away and the examiner finds a draft. Best effort.
  */
-export async function reviewHandedInWriting(attempt: { id: string, userId: string, testId: string | null }) {
+export async function reviewHandedInWriting(attempt: { id: string, userId: string, testId: string | null }, locale?: string | null) {
   if (!aiEnabled()) return
   const tasks = await attemptWritingTasks(attempt.id)
   if (!tasks.length || tasks.every(t => t.wordCount < 10)) return
-  await startWritingReview({ id: attempt.userId, role: 'student' }, { attemptId: attempt.id, testId: attempt.testId, tasks, free: true })
+  await startWritingReview({ id: attempt.userId, role: 'student' }, { attemptId: attempt.id, testId: attempt.testId, tasks, free: true, locale })
 }
 
 /** A review as the page shows it. Reviews left PENDING by a restart are marked failed. */
@@ -310,9 +326,9 @@ export async function aiReviewView(id: string) {
  * Speaking handed in for an examiner: an AI review at once, as part of the marking paid for (like
  * Writing). Best effort.
  */
-export async function reviewHandedInSpeaking(attempt: { id: string, userId: string, testId: string | null }) {
+export async function reviewHandedInSpeaking(attempt: { id: string, userId: string, testId: string | null }, locale?: string | null) {
   if (!aiEnabled()) return
   const parts = await attemptSpeakingParts(attempt.id)
   if (!parts.length) return
-  await startWritingReview({ id: attempt.userId, role: 'student' }, { attemptId: attempt.id, testId: attempt.testId, tasks: parts, skill: 'SPEAKING', free: true })
+  await startWritingReview({ id: attempt.userId, role: 'student' }, { attemptId: attempt.id, testId: attempt.testId, tasks: parts, skill: 'SPEAKING', free: true, locale })
 }

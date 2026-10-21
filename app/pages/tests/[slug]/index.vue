@@ -7,6 +7,7 @@ const slug = String(route.params.slug)
 const config = useRuntimeConfig()
 const { loggedIn, canOpen, rewardCredits, me, refresh: refreshMe } = useMe()
 const toast = useToast()
+const { t: tr } = useI18n()
 
 const { data: test, error } = await useFetch<any>(`/api/tests/${slug}`)
 if (error.value || !test.value) throw createError({ statusCode: 404, statusMessage: 'Test not found', fatal: true })
@@ -21,42 +22,38 @@ async function unlock() {
   try {
     await $fetch(`/api/tests/${t.slug}/unlock`, { method: 'POST' })
     await refreshMe()
-    toast.add({ title: 'Test opened', description: 'It is yours to take as often as you like.', color: 'success' })
+    toast.add({ title: tr('test.opened'), description: tr('test.openedText'), color: 'success' })
   } catch (e: any) {
-    toast.add({ title: 'Not opened', description: e?.data?.message || 'Please try again.', color: 'error' })
+    toast.add({ title: tr('test.notOpened'), description: e?.data?.message || tr('test.tryAgain'), color: 'error' })
   } finally {
     unlocking.value = false
   }
 }
 const skills = computed(() => t.sections.filter((s: any) => s.items > 0))
 const minutes = (seconds?: number | null) => (seconds ? Math.round(seconds / 60) : null)
-const summary = computed(() => skills.value.map((s: any) => SKILL_META[s.skill as keyof typeof SKILL_META].label).join(', '))
-const description = t.description || `Free Multilevel (CEFR) practice test: ${summary.value}. Check your answers instantly, with or without an account.`
+const summary = computed(() => skills.value.map((s: any) => skillLabel(s.skill)).join(', '))
+const description = computed(() => t.description || tr('test.description', { skills: summary.value }))
 const siteUrl = String(config.public.siteUrl || 'https://multilevel.uz').replace(/\/$/, '')
 const url = `${siteUrl}/tests/${t.slug}`
 
 const partLine = (p: any) => p.kind === 'part'
-  ? `Part ${p.partNumber}${p.title ? ` — ${p.title}` : ''} · ${p.questions} questions`
+  ? `${tr('part.part', { n: p.partNumber })}${p.title ? ` — ${p.title}` : ''} · ${tr('common.questions', { n: p.questions }, p.questions)}`
   : p.kind === 'task'
-    ? `${writingTaskLabel(p.taskNumber)}${p.title ? ` — ${p.title.replace(/^Task [\d.]+\s*[—-]\s*/, '')}` : ''} · ${p.minWords}+ words`
+    ? `${writingTaskLabel(p.taskNumber)}${p.title ? ` — ${p.title.replace(/^Task [\d.]+\s*[—-]\s*/, '')}` : ''} · ${tr('test.minWords', { n: p.minWords })}`
     : `${speakingPartLabel(p.partNumber)}${p.title ? ` — ${p.title.replace(/^Part [\d.]+\s*[—-]\s*/, '')}` : ''}`
 
-const howChecked: Record<string, string> = {
-  LISTENING: 'Checked instantly, with the answer key and explanations.',
-  READING: 'Checked instantly, with the answer key and explanations.',
-  WRITING: 'Write it in the real format and download it as PDF or Word. Signed in, an examiner marks it.',
-  SPEAKING: 'Record your answers and listen back. Signed in, an examiner marks them.'
-}
+const howChecked = (skill: string) => tr(`test.how.${skill}`)
+const creditsText = (n: number) => tr('test.credits', { n }, n)
 
 useSeoMeta({
   title: t.title,
-  description,
+  description: () => description.value,
   ogTitle: t.title,
-  ogDescription: description,
+  ogDescription: () => description.value,
   ogUrl: url,
   ogType: 'article',
   twitterTitle: t.title,
-  twitterDescription: description
+  twitterDescription: () => description.value
 })
 useHead({
   link: [{ rel: 'canonical', href: url }],
@@ -67,7 +64,7 @@ useHead({
         '@context': 'https://schema.org',
         '@type': 'Quiz',
         'name': t.title,
-        'description': description,
+        'description': description.value,
         'url': url,
         'inLanguage': 'en',
         'educationalLevel': 'CEFR B1–C1',
@@ -121,11 +118,11 @@ useHead({
             <span
               v-else
               class="rounded-sm bg-white/20 px-1.5 py-0.5"
-            >Free</span>
+            >{{ tr('common.free') }}</span>
             <span
               v-if="t.mode === 'MOCK'"
               class="rounded-sm bg-white/20 px-1.5 py-0.5"
-            >Mock exam</span>
+            >{{ tr('tests.mockExam') }}</span>
             <span
               v-if="t.category"
               class="rounded-sm bg-white/20 px-1.5 py-0.5"
@@ -163,14 +160,14 @@ useHead({
         >
         <div class="flex-1 min-w-0">
           <p class="font-semibold text-highlighted">
-            Open this test with {{ cost }} {{ cost === 1 ? 'credit' : 'credits' }}
+            {{ tr('test.openWith', { credits: creditsText(cost) }) }}
           </p>
           <p class="text-sm text-muted">
-            You have {{ rewardCredits }}. Once opened, it is yours for good: every section, as often as you like.
+            {{ tr('test.openWithText', { n: rewardCredits }) }}
           </p>
         </div>
         <UButton
-          :label="`Open for ${cost} ${cost === 1 ? 'credit' : 'credits'}`"
+          :label="tr('test.openFor', { credits: creditsText(cost) })"
           icon="i-lucide-lock-keyhole-open"
           :loading="unlocking"
           class="justify-center"
@@ -187,9 +184,9 @@ useHead({
         color="info"
         variant="subtle"
         icon="i-lucide-info"
-        title="No account needed"
-        description="Take any section now: your Listening and Reading are checked straight away. Sign in to keep your results and have Writing and Speaking marked by an examiner."
-        :actions="[{ label: 'Sign in', to: `/login?next=${encodeURIComponent(route.fullPath)}`, color: 'info', variant: 'outline' }]"
+        :title="tr('test.noAccount')"
+        :description="tr('test.noAccountText')"
+        :actions="[{ label: tr('nav.signIn'), to: `/login?next=${encodeURIComponent(route.fullPath)}`, color: 'info', variant: 'outline' }]"
       />
 
       <div class="grid sm:grid-cols-2 gap-4">
@@ -208,10 +205,10 @@ useHead({
                 >
               </div>
               <h2 class="font-semibold text-highlighted">
-                {{ SKILL_META[s.skill as keyof typeof SKILL_META].label }}
+                {{ skillLabel(s.skill) }}
               </h2>
             </div>
-            <span class="text-sm text-muted">{{ minutes(s.durationSeconds) }} min{{ s.questions ? ` · ${s.questions} questions` : '' }}</span>
+            <span class="text-sm text-muted">{{ tr('common.minutes', { n: minutes(s.durationSeconds) }) }}{{ s.questions ? ` · ${tr('common.questions', { n: s.questions }, s.questions)}` : '' }}</span>
           </div>
           <ul class="text-sm text-toned flex flex-col gap-1">
             <li
@@ -224,18 +221,18 @@ useHead({
                 v-if="!locked && (p.partNumber || p.taskNumber)"
                 :to="`/tests/${t.slug}/${String(s.skill).toLowerCase()}?part=${p.partNumber ?? p.taskNumber}`"
                 class="shrink-0 text-xs font-semibold text-primary hover:underline"
-                :aria-label="`Practise ${partLine(p)} on its own`"
-              >Practise</NuxtLink>
+                :aria-label="tr('test.practiseAlone', { part: partLine(p) })"
+              >{{ tr('tests.practise') }}</NuxtLink>
             </li>
           </ul>
           <p class="text-xs text-muted">
-            {{ howChecked[s.skill] }}
+            {{ howChecked(s.skill) }}
           </p>
           <UButton
             v-if="locked"
             class="mt-auto self-start"
             :to="loggedIn && rewardCredits >= cost ? undefined : `/pricing?from=${encodeURIComponent(route.fullPath)}`"
-            :label="loggedIn && rewardCredits >= cost ? `Open for ${cost} ${cost === 1 ? 'credit' : 'credits'}` : 'Unlock with Premium'"
+            :label="loggedIn && rewardCredits >= cost ? tr('test.openFor', { credits: creditsText(cost) }) : tr('test.unlockPremium')"
             :loading="unlocking"
             icon="i-lucide-lock-keyhole"
             color="neutral"
@@ -246,7 +243,7 @@ useHead({
             v-else
             class="mt-auto self-start"
             :to="`/tests/${t.slug}/${String(s.skill).toLowerCase()}`"
-            :label="`Start ${SKILL_META[s.skill as keyof typeof SKILL_META].label}`"
+            :label="tr('test.startSkill', { skill: skillLabel(s.skill) })"
             icon="i-lucide-play"
           />
         </UCard>

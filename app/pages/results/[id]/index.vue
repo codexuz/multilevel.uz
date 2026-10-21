@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import type { ResultView } from '~/components/result/Review.vue'
 
+const { t } = useI18n()
+
 /** A saved attempt: its score, or that it is with an examiner, and the examiner's word once marked. */
 const route = useRoute()
 const id = String(route.params.id)
 const { data, error, refresh } = await useFetch<ResultView & Record<string, any>>(`/api/attempts/${id}`)
-useSeoMeta({ title: () => (data.value?.test?.title ? `Result — ${data.value.test.title}` : 'Result'), robots: 'noindex' })
+useSeoMeta({ title: () => (data.value?.test?.title ? `${t('review.result')} — ${data.value.test.title}` : t('review.result')), robots: 'noindex' })
 
 // Marked while the page is open: the user-events plugin raises this.
 const nuxtApp = useNuxtApp()
@@ -17,13 +19,13 @@ onBeforeUnmount(() => off?.())
 
 <template>
   <AppPage
-    title="Result"
+    :title="t('review.result')"
     icon="i-lucide-award"
   >
     <template #actions>
       <UButton
         to="/results"
-        label="My results"
+        :label="t('nav.results')"
         icon="i-lucide-chart-column"
         color="neutral"
         variant="ghost"
@@ -32,9 +34,9 @@ onBeforeUnmount(() => off?.())
     <UEmpty
       v-if="error"
       icon="i-lucide-file-question"
-      title="Result not found"
-      description="It may have been removed, or it belongs to someone else."
-      :actions="[{ label: 'My results', to: '/results' }]"
+      :title="t('results.notFound')"
+      :description="t('results.notFoundText')"
+      :actions="[{ label: t('nav.results'), to: '/results' }]"
     />
     <ResultSummary
       v-else-if="data"
@@ -46,9 +48,9 @@ onBeforeUnmount(() => off?.())
         icon="i-lucide-trophy"
         color="primary"
         variant="subtle"
-        title="Counted in the live mock"
-        :description="data.skill === 'LISTENING' || data.skill === 'READING' ? 'This section is on the leaderboard.' : 'Writing and Speaking are marked as usual, not ranked.'"
-        :actions="[{ label: 'Leaderboard', to: `/live?mock=${data.liveMockId}`, color: 'primary', variant: 'solid' }]"
+        :title="t('results.liveCounted')"
+        :description="data.skill === 'LISTENING' || data.skill === 'READING' ? t('results.liveRanked') : t('results.liveNotRanked')"
+        :actions="[{ label: t('live.leaderboard'), to: `/live?mock=${data.liveMockId}`, color: 'primary', variant: 'solid' }]"
       />
       <UCard v-if="data.status === 'GRADED' && data.feedback">
         <template #header>

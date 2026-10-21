@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { AnswerMap, PartData } from '~/types/exam'
 
+const { t } = useI18n()
+
 const props = withDefaults(defineProps<{
   parts: PartData[]
   reviewMinutes?: number
@@ -98,8 +100,8 @@ function submit() {
       <template #content>
         <UEmpty
           icon="i-lucide-headphones"
-          title="You will be listening to an audio clip during this test."
-          description="Make sure your speakers or headphones are working properly. To continue, click Play."
+          :title="t('exam.audioCheck')"
+          :description="t('exam.audioCheckText')"
           size="lg"
           :actions="[{ label: 'Play', icon: 'i-lucide-play', color: 'error', size: 'lg', class: 'px-8', onClick: () => begin(true) }]"
           class="py-10"
@@ -126,7 +128,7 @@ function submit() {
         <UBadge
           v-if="noReplay"
           icon="i-lucide-volume-x"
-          label="Recording already played"
+          :label="t('exam.played')"
           color="neutral"
           variant="subtle"
           size="sm"
@@ -136,7 +138,7 @@ function submit() {
         <UBadge
           v-if="audioPlaying"
           icon="i-lucide-volume-2"
-          label="Audio playing"
+          :label="t('exam.playing')"
           color="error"
           variant="subtle"
           size="sm"
@@ -145,7 +147,7 @@ function submit() {
         <UBadge
           v-else-if="session.running.value"
           icon="i-lucide-hourglass"
-          label="Review time"
+          :label="t('exam.reviewTime')"
           color="warning"
           variant="subtle"
           size="sm"
@@ -183,7 +185,7 @@ function submit() {
     <ExamNotesSlideover
       v-model:open="notesOpen"
       v-model="notes"
-      title="Notes"
+      :title="t('exam.notes')"
     />
   </ExamShell>
 </template>

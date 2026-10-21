@@ -11,6 +11,7 @@ const AXES = [
   { key: 'SPEAKING', label: 'Speaking', x: 0, y: 1 },
   { key: 'LISTENING', label: 'Listening', x: -1, y: 0 }
 ] as const
+const { t } = useI18n()
 const R = 70
 const C = 110
 const point = (a: { x: number, y: number }, share: number) => `${C + a.x * R * share},${C + a.y * R * share}`
@@ -24,7 +25,7 @@ const labelAt = (a: { x: number, y: number }) => ({ x: C + a.x * (R + 26), y: C 
     viewBox="-28 0 276 220"
     class="w-full max-w-72 mx-auto"
     role="img"
-    :aria-label="AXES.map(a => `${a.label} ${scores[a.key] ?? 'not taken'}`).join(', ')"
+    :aria-label="AXES.map(a => `${skillLabel(a.key)} ${scores[a.key] ?? t('common.notTaken')}`).join(', ')"
   >
     <polygon
       v-for="(r, i) in rings"
@@ -60,7 +61,7 @@ const labelAt = (a: { x: number, y: number }) => ({ x: C + a.x * (R + 26), y: C 
         class="fill-(--ui-text-muted)"
         font-size="10"
         font-weight="500"
-      >{{ a.label }}</text>
+      >{{ skillLabel(a.key) }}</text>
       <text
         y="12"
         class="fill-(--ui-text-highlighted)"

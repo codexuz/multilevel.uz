@@ -3,6 +3,7 @@
  * Sharing a scored result: a picture of it with the sharer's invite link, sent to Telegram, the
  * phone's share sheet (as the picture where it can be), copied as a link, or saved.
  */
+const { t } = useI18n()
 const props = defineProps<{ attemptId: string }>()
 const toast = useToast()
 
@@ -19,7 +20,7 @@ async function start() {
     share.value ??= await $fetch<Share>(`/api/attempts/${props.attemptId}/share`, { method: 'POST' })
     open.value = true
   } catch (e: any) {
-    toast.add({ title: 'Cannot share this yet', description: e?.data?.message || 'Please try again.', color: 'warning' })
+    toast.add({ title: t('share.cannot'), description: e?.data?.message || t('test.tryAgain'), color: 'warning' })
   } finally {
     loading.value = false
   }
@@ -41,7 +42,7 @@ async function nativeShare() {
     const withFile = file && navigator.canShare?.({ files: [file] })
     await navigator.share(withFile
       ? { files: [file!], text: `${share.value.text} ${share.value.url}` }
-      : { title: 'My Multilevel result', text: share.value.text, url: share.value.url })
+      : { title: t('share.myResult'), text: share.value.text, url: share.value.url })
   } catch {
     // Closed without sharing.
   }
@@ -51,9 +52,9 @@ async function copy() {
   if (!share.value) return
   try {
     await navigator.clipboard.writeText(`${share.value.text} ${share.value.url}`)
-    toast.add({ title: 'Copied', icon: 'i-lucide-check', color: 'success' })
+    toast.add({ title: t('common.copied'), icon: 'i-lucide-check', color: 'success' })
   } catch {
-    toast.add({ title: 'Copy the link from the box', color: 'neutral' })
+    toast.add({ title: t('share.copyFromBox'), color: 'neutral' })
   }
 }
 
@@ -64,14 +65,14 @@ async function download() {
     a.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   } catch {
-    toast.add({ title: 'Could not save the picture', color: 'error' })
+    toast.add({ title: t('share.saveFailed'), color: 'error' })
   }
 }
 </script>
 
 <template>
   <UButton
-    label="Share result"
+    :label="t('share.share')"
     icon="i-lucide-share-2"
     color="neutral"
     variant="outline"
@@ -82,8 +83,8 @@ async function download() {
   />
   <UModal
     v-model:open="open"
-    title="Share your result"
-    description="Friends who join through it start with a free credit, and you earn credits when they finish a test."
+    :title="t('share.title')"
+    :description="t('share.text')"
   >
     <template #body>
       <div
@@ -111,7 +112,7 @@ async function download() {
           <UButton
             v-if="canShare"
             icon="i-lucide-share"
-            label="More…"
+            :label="t('share.more')"
             color="neutral"
             variant="soft"
             class="justify-center"
@@ -119,7 +120,7 @@ async function download() {
           />
           <UButton
             icon="i-lucide-copy"
-            label="Copy link"
+            :label="t('share.copyLink')"
             color="neutral"
             variant="soft"
             class="justify-center"
@@ -127,7 +128,7 @@ async function download() {
           />
           <UButton
             icon="i-lucide-download"
-            label="Save picture"
+            :label="t('share.savePicture')"
             color="neutral"
             variant="soft"
             class="justify-center"

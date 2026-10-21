@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { QuestionGroup, QuestionItem } from '~/types/ielts'
 
+const { t } = useI18n()
+
 /**
  * One marked question group, drawn the way the candidate saw it: the answers back in the gaps,
  * the options with the chosen and the right one marked, and — when the key is shown — the
@@ -96,10 +98,10 @@ const notes = computed(() => (props.showKey ? items.value.filter(i => explanatio
     <div>
       <p class="font-semibold text-highlighted">
         <template v-if="range[1] !== range[0]">
-          Questions {{ range[0] }}–{{ range[1] }}
+          {{ t('review.questionsN', { from: range[0], to: range[1] }) }}
         </template>
         <template v-else>
-          Question {{ range[0] }}
+          {{ t('review.questionN', { n: range[0] }) }}
         </template>
         <span class="ms-2 text-xs font-normal text-muted uppercase tracking-wide">{{ questionTypeLabel(type) }}</span>
       </p>
@@ -153,7 +155,7 @@ const notes = computed(() => (props.showKey ? items.value.filter(i => explanatio
       :ui="{ body: 'p-3 sm:p-3 space-y-1 text-sm' }"
     >
       <p class="font-semibold mb-1">
-        Options
+        {{ t('review.options') }}
       </p>
       <p
         v-for="o in optionBox"
@@ -352,7 +354,7 @@ const notes = computed(() => (props.showKey ? items.value.filter(i => explanatio
                 v-if="showKey && !item.isCorrect && item.acceptedAnswers?.length"
                 class="text-success"
               >
-                Correct: <strong>{{ item.acceptedAnswers.map(k => describeKey(group, k)).join(' / ') }}</strong>
+                {{ t('review.correct') }} <strong>{{ item.acceptedAnswers.map(k => describeKey(group, k)).join(' / ') }}</strong>
               </p>
             </div>
           </template>
@@ -362,7 +364,7 @@ const notes = computed(() => (props.showKey ? items.value.filter(i => explanatio
             icon="i-lucide-lightbulb"
             color="warning"
             variant="subtle"
-            title="Explanation"
+            :title="t('review.explanation')"
             :ui="{ description: 'text-xs' }"
           >
             <template #description>
@@ -420,7 +422,7 @@ const notes = computed(() => (props.showKey ? items.value.filter(i => explanatio
       icon="i-lucide-lightbulb"
       color="warning"
       variant="subtle"
-      title="Explanation"
+      :title="t('review.explanation')"
     >
       <template #description>
         <div

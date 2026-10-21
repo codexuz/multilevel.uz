@@ -50,6 +50,6 @@ export default defineEventHandler(async (event) => {
 
   // An examiner asking for a draft: the review is the candidate's, free, and not announced to them.
   const ownerId = attemptOwner && attemptOwner !== user.id ? attemptOwner : undefined
-  const id = await startWritingReview(user, { attemptId, testId, tasks, ownerId, free: !!ownerId, notify: !ownerId })
+  const id = await startWritingReview(user, { attemptId, testId, tasks, ownerId, free: !!ownerId, notify: !ownerId, locale: ownerId ? null : getCookie(event, 'lang') })
   return { id, status: 'PENDING' }
 })

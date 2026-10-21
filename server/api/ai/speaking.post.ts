@@ -47,6 +47,6 @@ export default defineEventHandler(async (event) => {
   }
   if (!parts.length) throw createError({ statusCode: 400, message: 'Record at least one answer first.' })
 
-  const id = await startWritingReview(user, { attemptId, testId, tasks: parts, skill: 'SPEAKING', ownerId, free: !!ownerId, notify: !ownerId })
+  const id = await startWritingReview(user, { attemptId, testId, tasks: parts, skill: 'SPEAKING', ownerId, free: !!ownerId, notify: !ownerId, locale: ownerId ? null : getCookie(event, 'lang') })
   return { id, status: 'PENDING' }
 })

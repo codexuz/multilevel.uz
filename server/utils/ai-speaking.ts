@@ -7,7 +7,7 @@ import { asc, eq, inArray } from 'drizzle-orm'
 import { speakingParts, speakingQuestions, speakingResponses } from '../database/schema'
 import { cefrLevel } from './score'
 import { s3Bucket, s3KeyFromUrl, useS3Client } from './s3'
-import { AI_MODEL, aiEffort, openaiClient } from './ai-writing'
+import { AI_MODEL, aiEffort, languageNote, openaiClient } from './ai-writing'
 
 /**
  * Instant AI feedback on Multilevel Speaking: each recording is transcribed (gpt-transcribe by
@@ -173,12 +173,12 @@ function finish(parts: AiSpeakingPart[], parsed: SpeakingReviewResult) {
 }
 
 /** Transcribes the recordings and assesses them. Returns the transcripts too, to keep with the review. */
-export async function assessSpeaking(parts: AiSpeakingPart[], userId: string) {
+export async function assessSpeaking(parts: AiSpeakingPart[], userId: string, locale: string | null = null) {
   const heard = await Promise.all(parts.map(async p => ({ ...p, transcript: p.transcript ?? await transcribe(p) })))
   if (heard.every(p => !p.transcript)) throw new Error('Nothing could be heard in the recordings. Check your microphone and try again.')
   const response = await openaiClient().responses.parse({
     model: AI_MODEL(),
-    instructions: SYSTEM,
+    instructions: SYSTEM + languageNote(locale),
     input: userMessage(heard),
     reasoning: { effort: aiEffort() },
     max_output_tokens: 16000,

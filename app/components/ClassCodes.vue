@@ -1,5 +1,6 @@
 <script setup lang="ts">
 /** Joining a class with the code a teacher gave, or a centre as a teacher with its teacher code. */
+const { t } = useI18n()
 const toast = useToast()
 const router = useRouter()
 const { refresh } = useMe()
@@ -17,10 +18,10 @@ async function joinAsTeacher() {
   try {
     const c = await $fetch<{ name: string }>('/api/centres/teacher-join', { method: 'POST', body: { code: teacherCode.value } })
     await refresh()
-    toast.add({ title: `You teach at ${c.name} now`, color: 'success' })
+    toast.add({ title: t('classes.teachNow', { name: c.name }), color: 'success' })
     await router.push('/centre')
   } catch (e) {
-    toast.add({ title: 'Not joined', description: errorMessage(e), color: 'error' })
+    toast.add({ title: t('classes.notJoined'), description: errorMessage(e), color: 'error' })
   } finally {
     busy.value = false
   }
@@ -36,7 +37,7 @@ async function joinAsTeacher() {
           class="size-5 text-primary"
         />
         <h2 class="font-semibold text-highlighted">
-          Learning centre
+          {{ t('classes.centre') }}
         </h2>
       </div>
     </template>
@@ -46,24 +47,24 @@ async function joinAsTeacher() {
       @submit.prevent="joinClass"
     >
       <p class="text-sm text-muted">
-        Studying at a centre? Enter the class code your teacher gave you.
+        {{ t('classes.studentText') }}
       </p>
       <div class="flex gap-2">
         <UInput
           v-model="classCode"
-          placeholder="Class code"
+          :placeholder="t('classes.classCode')"
           :ui="{ base: 'uppercase font-mono' }"
           class="flex-1"
-          aria-label="Class code"
+          :aria-label="t('classes.classCode')"
         />
         <UButton
           type="submit"
-          label="Join"
+          :label="t('classes.join')"
           :disabled="!classCode.trim()"
         />
       </div>
       <UButton
-        label="I am a teacher"
+        :label="t('classes.iTeach')"
         variant="link"
         color="neutral"
         size="xs"
@@ -77,25 +78,25 @@ async function joinAsTeacher() {
       @submit.prevent="joinAsTeacher"
     >
       <p class="text-sm text-muted">
-        Enter the teacher code your centre's owner shared.
+        {{ t('classes.teacherText') }}
       </p>
       <div class="flex gap-2">
         <UInput
           v-model="teacherCode"
-          placeholder="Teacher code"
+          :placeholder="t('classes.teacherCode')"
           :ui="{ base: 'uppercase font-mono' }"
           class="flex-1"
-          aria-label="Teacher code"
+          :aria-label="t('classes.teacherCode')"
         />
         <UButton
           type="submit"
-          label="Join as teacher"
+          :label="t('classes.joinTeacher')"
           :loading="busy"
           :disabled="!teacherCode.trim()"
         />
       </div>
       <UButton
-        label="I am a student"
+        :label="t('classes.iStudy')"
         variant="link"
         color="neutral"
         size="xs"

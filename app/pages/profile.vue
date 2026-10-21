@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import type { Order } from '~/utils/billing'
 
+const { t } = useI18n()
+
 /**
  * Who is signed in, their plan, their goals, and how their marked sections have gone. On a phone,
  * where there is no sidebar, also the account's settings, the staff pages, and logging out.
  */
-useSeoMeta({ title: 'Profile', robots: 'noindex' })
+useSeoMeta({ title: () => t('nav.profile'), robots: 'noindex' })
 const { me, isPremium, credits, rewardCredits, refresh } = useMe()
 const toast = useToast()
 const { data: purchases } = await useFetch<Order[]>('/api/me/orders', { default: () => [] })
@@ -30,14 +32,14 @@ const telegram = useTelegramLogin()
 const googleAvailable = computed(() => !!telegram.providers.value?.google)
 const route = useRoute()
 onMounted(() => {
-  if (route.query.google === 'connected') toast.add({ title: 'Google connected', description: 'You can sign in with Google now.', color: 'success' })
-  if (route.query.google === 'other') toast.add({ title: 'Google not connected', description: 'This account already has a different Google account.', color: 'warning' })
+  if (route.query.google === 'connected') toast.add({ title: t('profile.googleConnected'), description: t('profile.googleConnectedText'), color: 'success' })
+  if (route.query.google === 'other') toast.add({ title: t('profile.googleNot'), description: t('profile.googleNotText'), color: 'warning' })
   if (route.query.google) navigateTo({ query: {} }, { replace: true })
 })
 async function connectTelegram() {
   if (await telegram.start()) {
     await refresh()
-    toast.add({ title: 'Telegram connected', description: 'You can sign in with Telegram now.', color: 'success' })
+    toast.add({ title: t('bot.connected'), description: t('profile.telegramConnectedText'), color: 'success' })
   }
 }
 
@@ -50,21 +52,21 @@ const dark = computed({
 })
 const { confirm } = useDialogs()
 async function logout() {
-  if (!await confirm({ title: 'Log out?', description: 'You can sign in again any time.', confirmLabel: 'Log out', color: 'error' })) return
+  if (!await confirm({ title: t('profile.logOutSure'), description: t('profile.logOutText'), confirmLabel: t('nav.logOut'), color: 'error' })) return
   await $fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
   reloadNuxtApp({ path: '/' })
 }
 const accountLinks = computed(() => [
-  ...(me.value?.centres?.some(c => c.role !== 'STUDENT') ? [{ label: 'My centre', description: 'Groups, students and assignments', icon: 'i-lucide-school', to: '/centre' }] : []),
-  { label: 'Live mock', description: 'One test, one leaderboard', icon: 'i-lucide-trophy', to: '/live' },
-  { label: 'Earn credits', icon: 'i-lucide-gift', to: '/earn' },
-  { label: 'Devices', description: 'Where you are signed in', icon: 'i-lucide-monitor-smartphone', to: '/settings' }
+  ...(me.value?.centres?.some(c => c.role !== 'STUDENT') ? [{ label: t('nav.centre'), description: t('profile.centreText'), icon: 'i-lucide-school', to: '/centre' }] : []),
+  { label: t('nav.live'), description: t('profile.liveText'), icon: 'i-lucide-trophy', to: '/live' },
+  { label: t('nav.earn'), icon: 'i-lucide-gift', to: '/earn' },
+  { label: t('profile.devices'), description: t('profile.devicesText'), icon: 'i-lucide-monitor-smartphone', to: '/settings' }
 ])
 </script>
 
 <template>
   <AppPage
-    title="Profile"
+    :title="t('nav.profile')"
     icon="i-lucide-user"
   >
     <div class="flex flex-col gap-6 max-w-3xl">
@@ -93,9 +95,9 @@ const accountLinks = computed(() => [
               color="primary"
               variant="solid"
             />
-            <span class="font-semibold text-highlighted">Your level</span>
+            <span class="font-semibold text-highlighted">{{ t('profile.yourLevel') }}</span>
           </div>
-          <span class="text-xs text-muted">Best score in each skill</span>
+          <span class="text-xs text-muted">{{ t('profile.bestScore') }}</span>
         </div>
         <div class="grid sm:grid-cols-[1fr_1fr] gap-4 items-center">
           <LevelRadar :scores="best" />
@@ -112,10 +114,10 @@ const accountLinks = computed(() => [
               >
               <div class="min-w-0">
                 <p class="text-xs text-muted">
-                  {{ SKILL_META[skill].label }}
+                  {{ skillLabel(skill) }}
                 </p>
                 <p class="font-semibold text-highlighted tabular-nums">
-                  {{ best[skill] != null ? `${best[skill]} / 75` : 'Not yet' }}
+                  {{ best[skill] != null ? `${best[skill]} / 75` : t('common.notYet') }}
                 </p>
               </div>
             </li>
@@ -123,7 +125,7 @@ const accountLinks = computed(() => [
         </div>
         <UButton
           to="/tests"
-          :label="data?.total ? 'Take another test' : 'Take your first test'"
+          :label="data?.total ? t('profile.another') : t('profile.first')"
           color="neutral"
           size="lg"
           block
@@ -138,11 +140,11 @@ const accountLinks = computed(() => [
               <UIcon
                 name="i-lucide-sparkles"
                 class="text-primary"
-              />Plan
+              />{{ t('profile.plan') }}
             </h2>
             <UButton
               to="/pricing"
-              :label="isPremium ? 'Extend' : 'Get Premium'"
+              :label="isPremium ? t('profile.extend') : t('profile.getPremium')"
               size="sm"
               :variant="isPremium ? 'outline' : 'solid'"
               :color="isPremium ? 'neutral' : 'primary'"
@@ -154,12 +156,12 @@ const accountLinks = computed(() => [
             <dt class="text-muted">
               Premium
             </dt><dd class="font-medium">
-              {{ isPremium ? (me?.premiumUntil ? `Until ${formatDate(me.premiumUntil)}` : 'On') : 'Free plan' }}
+              {{ isPremium ? (me?.premiumUntil ? t('profile.until', { date: formatDate(me.premiumUntil) }) : t('nav.on')) : t('profile.freePlan') }}
             </dd>
           </div>
           <div>
             <dt class="text-muted">
-              Markings left
+              {{ t('profile.markingsLeft') }}
             </dt><dd class="font-medium tabular-nums">
               {{ credits }}
             </dd>
@@ -167,14 +169,14 @@ const accountLinks = computed(() => [
           <div class="col-span-2 flex items-center justify-between gap-3 rounded-lg bg-elevated px-3 py-2.5">
             <div>
               <dt class="text-muted">
-                Credits
+                {{ t('profile.credits') }}
               </dt><dd class="font-medium tabular-nums">
-                {{ rewardCredits }} <span class="text-muted font-normal">· open Premium tests</span>
+                {{ rewardCredits }} <span class="text-muted font-normal">· {{ t('profile.openPremium') }}</span>
               </dd>
             </div>
             <UButton
               to="/earn"
-              label="Earn more"
+              :label="t('profile.earnMore')"
               icon="i-lucide-gift"
               size="sm"
               color="neutral"
@@ -187,7 +189,7 @@ const accountLinks = computed(() => [
           #footer
         >
           <p class="text-xs font-medium text-muted mb-2">
-            Purchases
+            {{ t('profile.purchases') }}
           </p>
           <ul class="divide-y divide-default text-sm">
             <li
@@ -199,7 +201,7 @@ const accountLinks = computed(() => [
               <span class="text-muted tabular-nums max-sm:hidden">{{ formatDate(o.paidAt || o.createdAt) }}</span>
               <span class="tabular-nums">{{ fmtUzs(o.amountUzs) }}</span>
               <UBadge
-                :label="ORDER_STATUS[o.status].label"
+                :label="t(`orderStatus.${o.status}`)"
                 :color="ORDER_STATUS[o.status].color"
                 variant="subtle"
                 size="sm"
@@ -212,34 +214,34 @@ const accountLinks = computed(() => [
       <UCard>
         <template #header>
           <h2 class="font-semibold">
-            Goals
+            {{ t('profile.goals') }}
           </h2>
         </template>
         <dl class="grid grid-cols-2 gap-4 text-sm">
           <div>
             <dt class="text-muted">
-              Current level
+              {{ t('profile.currentLevel') }}
             </dt><dd class="font-medium">
               {{ me?.currentLevel || '—' }}
             </dd>
           </div>
           <div>
             <dt class="text-muted">
-              Target
+              {{ t('plan.target') }}
             </dt><dd class="font-medium">
               {{ me?.targetLevel || (me?.targetScore != null ? `${me.targetScore} / 75` : '—') }}
             </dd>
           </div>
           <div>
             <dt class="text-muted">
-              Learning for
+              {{ t('profile.learningFor') }}
             </dt><dd class="font-medium">
-              {{ me?.learningDuration || '—' }}
+              {{ me?.learningDuration ? t(`profile.duration.${me.learningDuration}`) : '—' }}
             </dd>
           </div>
           <div>
             <dt class="text-muted">
-              Sections taken
+              {{ t('profile.sections') }}
             </dt><dd class="font-medium">
               {{ data?.total ?? 0 }}
             </dd>
@@ -250,7 +252,7 @@ const accountLinks = computed(() => [
       <UCard v-if="me?.email || me?.telegram || telegram.available.value || googleAvailable">
         <template #header>
           <h2 class="font-semibold">
-            Sign-in
+            {{ t('profile.signIn') }}
           </h2>
         </template>
         <ul class="flex flex-col gap-3 text-sm">
@@ -265,7 +267,7 @@ const accountLinks = computed(() => [
             <span class="flex-1 min-w-0 truncate">Google<template v-if="me?.email"> · {{ me.email }}</template></span>
             <UButton
               v-if="!me?.email"
-              label="Connect"
+              :label="t('profile.connect')"
               size="sm"
               color="neutral"
               variant="outline"
@@ -281,11 +283,11 @@ const accountLinks = computed(() => [
               class="size-5 shrink-0"
             />
             <span class="flex-1 min-w-0 truncate">
-              Telegram<template v-if="me?.telegram"> · {{ me.telegramUsername ? `@${me.telegramUsername}` : 'connected' }}</template>
+              Telegram<template v-if="me?.telegram"> · {{ me.telegramUsername ? `@${me.telegramUsername}` : t('profile.connected') }}</template>
             </span>
             <UButton
               v-if="!me?.telegram"
-              label="Connect"
+              :label="t('profile.connect')"
               size="sm"
               color="neutral"
               variant="outline"
@@ -339,15 +341,23 @@ const accountLinks = computed(() => [
                 class="size-4 text-dimmed"
               />
             </NuxtLink>
+            <div class="flex items-center gap-3 px-4 py-2.5">
+              <UIcon
+                name="i-lucide-languages"
+                class="size-5 text-muted shrink-0"
+              />
+              <span class="flex-1 font-medium text-highlighted">{{ t('lang.label') }}</span>
+              <LanguageSwitcher />
+            </div>
             <label class="flex items-center gap-3 px-4 py-3.5">
               <UIcon
                 :name="dark ? 'i-lucide-moon' : 'i-lucide-sun'"
                 class="size-5 text-muted shrink-0"
               />
-              <span class="flex-1 font-medium text-highlighted">Dark mode</span>
+              <span class="flex-1 font-medium text-highlighted">{{ t('nav.darkMode') }}</span>
               <USwitch
                 v-model="dark"
-                aria-label="Dark mode"
+                :aria-label="t('nav.darkMode')"
               />
             </label>
           </div>
@@ -359,7 +369,7 @@ const accountLinks = computed(() => [
         >
           <template #header>
             <h2 class="font-semibold">
-              Staff
+              {{ t('nav.staff') }}
             </h2>
           </template>
           <div class="divide-y divide-default">
@@ -383,7 +393,7 @@ const accountLinks = computed(() => [
         </UCard>
 
         <UButton
-          label="Log out"
+          :label="t('nav.logOut')"
           icon="i-lucide-log-out"
           color="error"
           variant="soft"

@@ -2,6 +2,7 @@
 // Signing in, in the manner of SmallTalk2Me's sign-up card: the logo, a big title with a 3D
 // illustration, Google or Telegram (whichever are set up). Signing in is optional: tests are open to everyone; an account
 // keeps the results and sends Writing and Speaking to an examiner.
+const { t } = useI18n()
 definePageMeta({ layout: false })
 
 const route = useRoute()
@@ -31,25 +32,28 @@ async function signInWithTelegram() {
 }
 
 useSeoMeta({
-  title: 'Sign in',
-  description: 'Sign in to keep your Multilevel practice results and have your Writing and Speaking marked by an examiner.',
+  title: () => t('nav.signIn'),
+  description: () => t('login.seo'),
   robots: 'noindex'
 })
 
-const perks = ['Keep every result and see your best', 'Writing and Speaking marked by an examiner', 'Pick up a test where you left it']
+const perks = computed(() => [t('login.perk1'), t('login.perk2'), t('login.perk3')])
 </script>
 
 <template>
   <UMain class="min-h-dvh flex flex-col items-center px-4 pt-8 pb-10 sm:justify-center bg-default">
-    <AppLogo class="mb-6" />
+    <div class="mb-6 flex items-center gap-3">
+      <AppLogo />
+      <LanguageSwitcher size="xs" />
+    </div>
     <div class="w-full max-w-md rounded-xl ring ring-default bg-default p-6 sm:p-8">
       <div class="flex items-start justify-between gap-4">
         <div>
           <h1 class="text-3xl sm:text-4xl font-bold text-highlighted">
-            Sign in
+            {{ t('nav.signIn') }}
           </h1>
           <p class="text-sm text-muted mt-2">
-            Every test is free without an account. Sign in to keep what you do.
+            {{ t('login.intro') }}
           </p>
         </div>
         <img
@@ -65,7 +69,7 @@ const perks = ['Keep every result and see your best', 'Writing and Speaking mark
         color="error"
         variant="subtle"
         icon="i-lucide-triangle-alert"
-        description="Sign-in failed. Please try again."
+        :description="t('login.failed')"
         class="mt-5"
       />
 
@@ -86,7 +90,7 @@ const perks = ['Keep every result and see your best', 'Writing and Speaking mark
           color="neutral"
           variant="soft"
           icon="i-logos-google-icon"
-          label="Continue with Google"
+          :label="t('login.google')"
           to="/auth/google"
           external
           class="font-semibold"
@@ -97,7 +101,7 @@ const perks = ['Keep every result and see your best', 'Writing and Speaking mark
             #trailing
           >
             <UBadge
-              label="Last used"
+              :label="t('login.lastUsed')"
               color="primary"
               variant="subtle"
               size="sm"
@@ -111,7 +115,7 @@ const perks = ['Keep every result and see your best', 'Writing and Speaking mark
           color="neutral"
           variant="soft"
           icon="i-logos-telegram"
-          label="Continue with Telegram"
+          :label="t('login.telegram')"
           :loading="telegram.busy.value"
           class="font-semibold"
           @click="signInWithTelegram"
@@ -121,7 +125,7 @@ const perks = ['Keep every result and see your best', 'Writing and Speaking mark
             #trailing
           >
             <UBadge
-              label="Last used"
+              :label="t('login.lastUsed')"
               color="primary"
               variant="subtle"
               size="sm"
@@ -133,7 +137,7 @@ const perks = ['Keep every result and see your best', 'Writing and Speaking mark
         v-if="showGoogle && telegram.available.value"
         class="mt-3 text-xs text-muted text-pretty"
       >
-        Signed up before? Use the same button as last time: Google and Telegram make separate accounts until you connect them on your Profile.
+        {{ t('login.sameButton') }}
       </p>
 
       <ul class="mt-6 flex flex-col gap-2.5">
@@ -150,7 +154,7 @@ const perks = ['Keep every result and see your best', 'Writing and Speaking mark
       </ul>
 
       <USeparator
-        label="or"
+        :label="t('common.or')"
         class="my-6"
       />
 
@@ -160,11 +164,11 @@ const perks = ['Keep every result and see your best', 'Writing and Speaking mark
         size="lg"
         color="neutral"
         variant="outline"
-        label="Continue without an account"
+        :label="t('login.guest')"
       />
     </div>
     <p class="mt-6 text-xs text-muted text-center max-w-sm">
-      By signing in you agree to keep to fair use of the tests. We only use the name, email or Telegram username, and picture you sign in with.
+      {{ t('login.terms') }}
     </p>
   </UMain>
 </template>

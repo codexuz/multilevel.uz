@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /** My weak spots and progress, then my saved attempts, newest first, each opening its result. */
-useSeoMeta({ title: 'My results', robots: 'noindex' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('nav.results'), robots: 'noindex' })
 
 interface Row { id: string, skill: string, partNumber: number | null, status: string, test: { slug: string, title: string } | null, submittedAt: string, correct: number | null, total: number | null, score: number | null, cefrLevel: string | null }
 
@@ -10,13 +11,20 @@ const { data, status } = await useFetch<{ items: Row[], total: number, pages: nu
 
 <template>
   <AppPage
-    title="My results"
+    :title="t('nav.results')"
     icon="i-lucide-chart-column"
   >
     <div class="flex flex-col gap-4 max-w-3xl w-full">
-      <h1 class="text-2xl sm:text-3xl font-bold text-highlighted">
-        My <span class="text-accent">results</span>
-      </h1>
+      <i18n-t
+        keypath="results.title"
+        tag="h1"
+        scope="global"
+        class="text-2xl sm:text-3xl font-bold text-highlighted"
+      >
+        <template #accent>
+          <span class="text-accent">{{ t('results.titleAccent') }}</span>
+        </template>
+      </i18n-t>
 
       <template v-if="page === 1">
         <MyAssignments />
@@ -28,7 +36,7 @@ const { data, status } = await useFetch<{ items: Row[], total: number, pages: nu
         v-if="data?.items?.length"
         class="font-semibold text-highlighted -mb-1"
       >
-        All results
+        {{ t('results.all') }}
       </h2>
 
       <div
@@ -62,7 +70,7 @@ const { data, status } = await useFetch<{ items: Row[], total: number, pages: nu
           <div class="min-w-0 flex-1">
             <p class="font-medium text-highlighted truncate">{{ r.test?.title || 'Removed test' }}</p>
             <p class="text-xs text-muted truncate">
-              {{ skillLabel(r.skill) }}{{ r.partNumber ? ` ${partName(r.skill, r.partNumber)}` : '' }} · {{ relativeTime(r.submittedAt) }}<span v-if="r.total"> · {{ r.correct }}/{{ r.total }} correct</span>
+              {{ skillLabel(r.skill) }}{{ r.partNumber ? ` ${partName(r.skill, r.partNumber)}` : '' }} · {{ relativeTime(r.submittedAt) }}<span v-if="r.total"> · {{ t('results.correctOf', { correct: r.correct, total: r.total }) }}</span>
             </p>
           </div>
           <div
@@ -71,7 +79,7 @@ const { data, status } = await useFetch<{ items: Row[], total: number, pages: nu
           >
             <p class="text-lg font-bold text-highlighted tabular-nums leading-none">{{ fmtScore(r.score) }}<span class="text-xs font-medium text-muted">/75</span></p>
             <UBadge
-              :label="(r.cefrLevel ?? cefrOf(r.score)) === 'A2' ? 'Below B1' : (r.cefrLevel ?? cefrOf(r.score))!"
+              :label="(r.cefrLevel ?? cefrOf(r.score)) === 'A2' ? t('common.belowB1') : (r.cefrLevel ?? cefrOf(r.score))!"
               :color="scoreColor(r.score)"
               variant="soft"
               size="sm"
@@ -80,7 +88,7 @@ const { data, status } = await useFetch<{ items: Row[], total: number, pages: nu
           </div>
           <UBadge
             v-else
-            label="With an examiner"
+            :label="t('result.withExaminer')"
             color="warning"
             variant="soft"
             size="sm"
@@ -103,14 +111,14 @@ const { data, status } = await useFetch<{ items: Row[], total: number, pages: nu
           class="size-16"
         >
         <p class="font-semibold text-highlighted">
-          No results yet
+          {{ t('results.none') }}
         </p>
         <p class="text-sm text-muted max-w-xs">
-          Take a test while signed in and every result is kept here.
+          {{ t('results.noneText') }}
         </p>
         <UButton
           to="/tests"
-          label="Browse tests"
+          :label="t('results.browse')"
           class="mt-1"
         />
       </div>

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { AnswerMap, PartData } from '~/types/exam'
 
+const { t } = useI18n()
+
 type NavPart = { id: string, partLabel: string, questions?: PartData['questions'], totalQuestions?: number }
 
 const props = defineProps<{
@@ -78,7 +80,7 @@ function answeredCount(part: NavPart) {
         variant="ghost"
         class="rounded-full"
         :disabled="canPrev === false"
-        aria-label="Previous"
+        :aria-label="t('exam.previous')"
         @click="emit('prev')"
       />
       <UButton
@@ -87,7 +89,7 @@ function answeredCount(part: NavPart) {
         variant="ghost"
         class="rounded-full"
         :disabled="canNext === false"
-        aria-label="Next"
+        :aria-label="t('exam.next')"
         @click="emit('next')"
       />
     </div>

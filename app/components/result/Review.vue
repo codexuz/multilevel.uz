@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { ReviewSection } from '~/types/ielts'
 
+const { t } = useI18n()
+
 /**
  * The marked paper, full screen, the way it was sat (pages/results/[id]/review.vue in the erp-lms
  * IELTS app): Reading with the passage beside the questions and the key's lines marked in it,
@@ -51,7 +53,7 @@ const highlighted = computed(() => {
 })
 const instruction = computed(() => {
   if (!items.value.length) return undefined
-  return `Questions ${items.value[0]!.number}–${items.value[items.value.length - 1]!.number} · ${correct.value} of ${items.value.length} correct`
+  return t('review.questionsRange', { from: items.value[0]!.number, to: items.value[items.value.length - 1]!.number, correct: correct.value, total: items.value.length })
 })
 const audioUrl = computed(() => mediaUrl(part.value?.audioUrl || section.value?.audioUrl) || null)
 const transcriptUrl = computed(() => mediaUrl(part.value?.transcriptUrl) || null)
@@ -90,13 +92,13 @@ const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') 
     <ReviewHeader
       v-model:show-key="showKey"
       :back="back"
-      :title="view.test?.title ?? 'Review'"
+      :title="view.test?.title ?? t('review.review')"
       :hide-toggle="section.skill === 'WRITING' || section.skill === 'SPEAKING'"
     >
       <template #center>
         <UBadge
           :icon="skillMeta.icon"
-          :label="skillMeta.label"
+          :label="skillLabel(section.skill)"
           :color="skillMeta.color"
           variant="soft"
         />
@@ -121,10 +123,10 @@ const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') 
         name="i-lucide-lightbulb"
         class="size-4 text-primary shrink-0"
       />
-      <span class="text-toned flex-1 min-w-48">{{ section.locked }} explanations, and where each answer is in the passage, come with Premium.</span>
+      <span class="text-toned flex-1 min-w-48">{{ t('review.lockedExplanations', { n: section.locked }, section.locked) }}</span>
       <UButton
         :to="`/pricing?from=${encodeURIComponent(route.fullPath)}`"
-        label="See Premium"
+        :label="t('home.seePremium')"
         size="xs"
       />
     </div>
@@ -132,7 +134,7 @@ const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') 
     <!-- Listening and Reading -->
     <template v-if="(section.skill === 'LISTENING' || section.skill === 'READING') && part">
       <ExamPartHeader
-        :label="`${skillMeta.label} Part ${part.partNumber}${part.title ? ` — ${part.title}` : ''}`"
+        :label="`${skillLabel(section.skill)} ${t('part.part', { n: part.partNumber })}${part.title ? ` — ${part.title}` : ''}`"
         :instruction="instruction"
       >
         <template #badges>
@@ -160,7 +162,7 @@ const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') 
         v-if="(section.skill === 'READING' && part.passage) || (section.skill === 'LISTENING' && transcriptUrl)"
         :key="part.id"
         v-model:pane="pane"
-        :labels="[section.skill === 'LISTENING' ? 'Transcript' : 'Passage', 'Questions']"
+        :labels="[section.skill === 'LISTENING' ? t('review.transcript') : t('review.passage'), t('review.questions')]"
       >
         <template #first>
           <ReviewTranscriptPanel
@@ -240,7 +242,7 @@ const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') 
                   />
                   <span class="text-sm font-semibold">{{ writingTaskLabel(task.task.taskNumber) }}</span>
                   <UBadge
-                    :label="`At least ${task.task.minWords} words`"
+                    :label="t('tests.atLeastWords', { n: task.task.minWords })"
                     color="neutral"
                     variant="outline"
                     size="sm"
@@ -270,7 +272,7 @@ const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') 
                   <span class="text-sm font-semibold">Your response</span>
                   <UBadge
                     v-if="essay"
-                    :label="`${essay.wordCount} words`"
+                    :label="t('common.words', { n: essay.wordCount }, essay.wordCount)"
                     :color="essay.wordCount < task.task.minWords ? 'warning' : 'primary'"
                     variant="soft"
                     size="sm"
@@ -287,7 +289,7 @@ const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') 
               <UEmpty
                 v-else
                 icon="i-lucide-file-x"
-                title="Nothing was written for this task"
+                :title="t('review.nothingWritten')"
                 variant="naked"
                 size="sm"
               />
@@ -295,7 +297,7 @@ const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') 
                 v-if="essay && essay.wordCount < task.task.minWords"
                 class="mt-3 text-xs text-warning"
               >
-                Under the {{ task.task.minWords }}-word minimum — an examiner marks this down.
+                {{ t('review.underMinimum', { n: task.task.minWords }) }}
               </p>
             </UCard>
           </div>
@@ -372,7 +374,7 @@ const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') 
               v-else
               class="text-sm text-muted"
             >
-              No recording for this part.
+              {{ t('review.noRecording') }}
             </p>
           </UCard>
         </div>

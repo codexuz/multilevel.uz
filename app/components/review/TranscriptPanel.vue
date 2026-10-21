@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { Cue } from '~/utils/review'
 
+const { t } = useI18n()
+
 /**
  * The recording with its transcript. A timed transcript (WebVTT or SRT) follows the audio and a
  * line can be clicked to hear it; a plain text one is shown as it is; a PDF or Word file opens
@@ -110,7 +112,7 @@ function fmt(s: number) {
     >
       <UButton
         :icon="playing ? 'i-lucide-pause' : 'i-lucide-play'"
-        :aria-label="playing ? 'Pause' : 'Play'"
+        :aria-label="playing ? t('review.pause') : t('review.play')"
         variant="ghost"
         size="sm"
         square
@@ -118,7 +120,7 @@ function fmt(s: number) {
       />
       <UButton
         icon="i-lucide-rotate-ccw"
-        aria-label="Back to the start"
+        :aria-label="t('review.toStart')"
         color="neutral"
         variant="ghost"
         size="sm"
@@ -150,7 +152,7 @@ function fmt(s: number) {
       </p>
       <div class="flex items-center gap-2 mb-3">
         <UBadge
-          label="Transcript"
+          :label="t('review.transcript')"
           color="secondary"
           variant="subtle"
           size="sm"
@@ -159,7 +161,7 @@ function fmt(s: number) {
           v-if="transcriptUrl"
           :to="transcriptUrl"
           target="_blank"
-          label="Open file"
+          :label="t('review.openFile')"
           icon="i-lucide-external-link"
           size="xs"
           color="neutral"
@@ -179,18 +181,18 @@ function fmt(s: number) {
       <UEmpty
         v-else-if="!transcriptUrl"
         icon="i-lucide-file-x"
-        title="No transcript for this part"
+        :title="t('review.noTranscript')"
         variant="naked"
         size="sm"
       />
       <UEmpty
         v-else-if="!readable || failed"
         icon="i-lucide-file-text"
-        :title="failed ? 'The transcript could not be shown here' : 'The transcript is a document'"
-        description="Open it in a new tab to read along."
+        :title="failed ? t('review.transcriptFailed') : t('review.transcriptDoc')"
+        :description="t('review.transcriptOpen')"
         variant="naked"
         size="sm"
-        :actions="[{ label: 'Open transcript', icon: 'i-lucide-external-link', to: transcriptUrl, target: '_blank', color: 'neutral', variant: 'outline' }]"
+        :actions="[{ label: t('review.openTranscript'), icon: 'i-lucide-external-link', to: transcriptUrl, target: '_blank', color: 'neutral', variant: 'outline' }]"
       />
       <p
         v-else-if="text"

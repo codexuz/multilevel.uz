@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /** A class's join link: shows the group and centre; joining takes a seat there, which gives Premium. */
-useSeoMeta({ title: 'Join a class', robots: 'noindex' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('join.title'), robots: 'noindex' })
 
 const route = useRoute()
 const toast = useToast()
@@ -14,9 +15,9 @@ async function join() {
   try {
     await $fetch(`/api/join/${code.value}`, { method: 'POST' })
     await Promise.all([refresh(), refreshMe()])
-    toast.add({ title: `You joined ${data.value?.group.name}`, description: 'Premium is on while you are in the class.', color: 'success' })
+    toast.add({ title: t('join.joined', { name: data.value?.group.name }), description: t('join.joinedText'), color: 'success' })
   } catch (e) {
-    toast.add({ title: 'Could not join', description: errorMessage(e), color: 'error' })
+    toast.add({ title: t('join.couldNot'), description: errorMessage(e), color: 'error' })
   } finally {
     joining.value = false
   }
@@ -25,16 +26,16 @@ async function join() {
 
 <template>
   <AppPage
-    title="Join a class"
+    :title="t('join.title')"
     icon="i-lucide-school"
   >
     <div class="w-full max-w-md mx-auto py-6">
       <UEmpty
         v-if="error"
         icon="i-lucide-circle-help"
-        title="No class has that code"
-        description="Check the link or the code with your teacher."
-        :actions="[{ label: 'Browse tests', to: '/tests' }]"
+        :title="t('join.noClass')"
+        :description="t('join.noClassText')"
+        :actions="[{ label: t('results.browse'), to: '/tests' }]"
       />
       <UCard
         v-else-if="data"
@@ -54,31 +55,31 @@ async function join() {
         </h1>
         <template v-if="data.member">
           <UBadge
-            label="You are in this class"
+            :label="t('join.inClass')"
             color="success"
             variant="subtle"
             icon="i-lucide-check"
           />
           <p class="text-sm text-muted">
-            Your teacher's work shows on My results, and every test is open to you.
+            {{ t('join.inClassText') }}
           </p>
           <UButton
             to="/results"
-            label="See my work"
+            :label="t('join.seeWork')"
           />
         </template>
         <template v-else-if="!data.open">
           <p class="text-sm text-muted">
-            The class is full or the centre's licence has ended. Ask your teacher.
+            {{ t('join.full') }}
           </p>
         </template>
         <template v-else>
           <p class="text-sm text-muted">
-            Join to get the work your teacher sets, and Premium for every test while you are in the class.
+            {{ t('join.why') }}
           </p>
           <UButton
             v-if="loggedIn"
-            label="Join the class"
+            :label="t('join.join')"
             icon="i-lucide-log-in"
             size="lg"
             :loading="joining"
@@ -87,7 +88,7 @@ async function join() {
           <UButton
             v-else
             :to="`/login?next=${encodeURIComponent(route.fullPath)}`"
-            label="Sign in to join"
+            :label="t('join.signIn')"
             icon="i-lucide-log-in"
             size="lg"
           />

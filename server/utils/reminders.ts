@@ -1,6 +1,7 @@
 import { and, between, desc, eq, gte, isNotNull, isNull, lt, or, sql } from 'drizzle-orm'
 import { attempts, subscriptions, users } from '../database/schema'
 import { daysBetween, planOf, tashkentToday } from './study-plan'
+import type { Locale } from './messages'
 
 /**
  * Premium about to end, and just ended: one Telegram message each, for a user's latest stretch of
@@ -10,10 +11,12 @@ import { daysBetween, planOf, tashkentToday } from './study-plan'
 
 const latestStretch = sql`not exists (select 1 from subscriptions later where later.user_id = ${subscriptions.userId} and later.ends_at > ${subscriptions.endsAt})`
 
+/** The renewal offer, worded in whichever language the message is sent in. */
 async function renewOffer(userId: string) {
   const code = process.env.PREMIUM_RENEW_PROMO
   if (!code) return null
-  return usablePromo(code, userId).then(p => ({ code: p.code, text: promoText(p) })).catch(() => null)
+  const promo = await usablePromo(code, userId).catch(() => null)
+  return promo ? (l: Locale) => ({ code: promo.code, text: promoText(promo, l) }) : null
 }
 
 export async function sendPremiumReminders(now = new Date()) {

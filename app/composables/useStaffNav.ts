@@ -3,11 +3,12 @@ import type { NavigationMenuItem } from '@nuxt/ui'
 /** The staff pages this user may open: in the sidebar, and on Profile on a phone. */
 export function useStaffNav() {
   const { isStaff, isAdmin } = useMe()
+  const { t } = useI18n()
   return computed<NavigationMenuItem[]>(() => [
-    ...(isAdmin.value ? [{ label: 'Test builder', icon: 'i-lucide-blocks', to: '/builder' }] : []),
-    ...(isStaff.value ? [{ label: 'Marking', icon: 'i-lucide-pen-line', to: '/marking' }] : []),
-    ...(isAdmin.value ? [{ label: 'Users', icon: 'i-lucide-users', to: '/admin/users' }] : []),
-    ...(isAdmin.value ? [{ label: 'Orders', icon: 'i-lucide-receipt', to: '/admin/orders' }, { label: 'Plans', icon: 'i-lucide-tags', to: '/admin/plans' }, { label: 'Promo codes', icon: 'i-lucide-ticket-percent', to: '/admin/promos' }, { label: 'Live mocks', icon: 'i-lucide-trophy', to: '/admin/live' }, { label: 'Growth', icon: 'i-lucide-trending-up', to: '/admin/growth' }, { label: 'Centres', icon: 'i-lucide-school', to: '/admin/centres' }] : []),
-    ...(isStaff.value ? [{ label: 'Overview', icon: 'i-lucide-layout-dashboard', to: '/admin' }] : [])
+    ...(isAdmin.value ? [{ label: t('nav.staffBuilder'), icon: 'i-lucide-blocks', to: '/builder' }] : []),
+    ...(isStaff.value ? [{ label: t('nav.staffMarking'), icon: 'i-lucide-pen-line', to: '/marking' }] : []),
+    ...(isAdmin.value ? [{ label: t('nav.staffUsers'), icon: 'i-lucide-users', to: '/admin/users' }] : []),
+    ...(isAdmin.value ? [{ label: t('nav.staffOrders'), icon: 'i-lucide-receipt', to: '/admin/orders' }, { label: t('nav.staffPlans'), icon: 'i-lucide-tags', to: '/admin/plans' }, { label: t('nav.staffPromos'), icon: 'i-lucide-ticket-percent', to: '/admin/promos' }, { label: t('nav.staffLive'), icon: 'i-lucide-trophy', to: '/admin/live' }, { label: t('nav.staffGrowth'), icon: 'i-lucide-trending-up', to: '/admin/growth' }, { label: t('nav.staffCentres'), icon: 'i-lucide-school', to: '/admin/centres' }] : []),
+    ...(isStaff.value ? [{ label: t('nav.staffOverview'), icon: 'i-lucide-layout-dashboard', to: '/admin' }] : [])
   ])
 }

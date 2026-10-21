@@ -18,6 +18,8 @@ export const users = pgTable('users', {
   telegramNotify: boolean('telegram_notify').notNull().default(true),
   /** Pressed Start in the bot (and has not blocked it since): the bot can always write to them. */
   telegramBotJoined: boolean('telegram_bot_joined').notNull().default(false),
+  /** The interface language they chose (en, uz, ru): the bot writes to them in it. */
+  locale: text('locale'),
   /** Extra AI reviews an admin gave, used after the regular allowance runs out. */
   aiBonusReviews: integer('ai_bonus_reviews').notNull().default(0),
   // referrals: the code in this user's invite link, and who invited them
@@ -460,6 +462,8 @@ export const rewardTransactions = pgTable('reward_transactions', {
 // task's criteria, and corrections. Made from a saved attempt or from essays written in practice.
 export const aiReviews = pgTable('ai_reviews', {
   id: uuid('id').primaryKey().defaultRandom(),
+  /** The language the comments are written in (en, uz, ru); corrections stay in English. */
+  locale: text('locale'),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   /** The saved attempt it is for; null for practice that was not handed in. */
   attemptId: uuid('attempt_id').references(() => attempts.id, { onDelete: 'cascade' }).unique(),

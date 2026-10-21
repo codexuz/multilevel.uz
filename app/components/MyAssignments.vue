@@ -1,5 +1,6 @@
 <script setup lang="ts">
 /** The work a student's groups set them: what is still to do first, with due dates; hidden outside a class. */
+const { t } = useI18n()
 interface Item {
   id: string
   skill: string
@@ -29,10 +30,10 @@ const overdue = (i: Item) => !i.mine && !!i.dueAt && new Date(i.dueAt) < new Dat
           class="size-5 text-primary"
         />
         <h2 class="font-semibold text-highlighted flex-1">
-          From your {{ data.groups.length === 1 ? 'class' : 'classes' }}
+          {{ t('work.fromClass', data.groups.length) }}
         </h2>
         <UBadge
-          :label="todo ? `${todo} to do` : 'All done'"
+          :label="todo ? t('work.toDo', { n: todo }) : t('work.allDone')"
           :color="todo ? 'warning' : 'success'"
           variant="subtle"
         />
@@ -45,7 +46,7 @@ const overdue = (i: Item) => !i.mine && !!i.dueAt && new Date(i.dueAt) < new Dat
       v-if="!items.length"
       class="text-sm text-muted px-6 py-5"
     >
-      No work set yet.
+      {{ t('work.none') }}
     </p>
     <ul class="divide-y divide-default">
       <li
@@ -69,13 +70,13 @@ const overdue = (i: Item) => !i.mine && !!i.dueAt && new Date(i.dueAt) < new Dat
             class="text-xs truncate"
             :class="overdue(i) ? 'text-error' : 'text-muted'"
           >
-            {{ i.group }}{{ i.dueAt ? ` · due ${formatDate(i.dueAt, true)}` : '' }}{{ i.note ? ` · ${i.note}` : '' }}
+            {{ i.group }}{{ i.dueAt ? ` · ${t('work.due', { date: formatDate(i.dueAt, true) })}` : '' }}{{ i.note ? ` · ${i.note}` : '' }}
           </p>
         </div>
         <UButton
           v-if="i.mine"
           :to="`/results/${i.mine.attemptId}`"
-          :label="i.mine.score != null ? `${i.mine.score}/75` : 'Handed in'"
+          :label="i.mine.score != null ? `${i.mine.score}/75` : t('work.handedIn')"
           size="xs"
           color="neutral"
           variant="outline"
@@ -83,7 +84,7 @@ const overdue = (i: Item) => !i.mine && !!i.dueAt && new Date(i.dueAt) < new Dat
         <UButton
           v-else-if="i.to"
           :to="i.to"
-          label="Start"
+          :label="t('common.start')"
           size="xs"
           trailing-icon="i-lucide-arrow-right"
         />

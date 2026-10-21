@@ -1,9 +1,16 @@
 <script setup lang="ts">
+import type { SpotNumbers } from '~/composables/useSpotText'
 /**
  * The user's exam plan: the day of their exam and their target, a countdown, where each skill stands,
  * and this week's goals (ticked off by what they do). Without a date, it asks for one.
  */
-interface Goal { key: string, label: string, detail: string, done: boolean, to: string }
+const { t } = useI18n()
+const { spotLabel, spotDetail } = useSpotText()
+const goalLabel = (g: Goal) => (g.kind === 'SECTION' ? t('plan.goalSection', { skill: skillLabel(g.skill) }) : t('plan.goalPractise', { skill: skillLabel(g.skill), what: spotLabel(g.kind, g.focus?.key ?? '') }))
+const goalDetail = (g: Goal) => (g.kind === 'SECTION'
+  ? (g.score == null ? t('plan.noScore') : t('plan.nowAbout', { score: g.score, target: g.target ?? '' }))
+  : spotDetail(g.kind, g.skill, g.focus ?? { key: '' }))
+interface Goal { key: string, kind: 'SECTION' | 'TYPE' | 'CRITERION', skill: string, label: string, detail: string, done: boolean, to: string, score?: number | null, target?: number, focus?: SpotNumbers }
 interface Plan {
   examDate: string | null
   daysLeft: number | null
@@ -38,16 +45,16 @@ async function save(examDate: string | null = form.examDate || null) {
   try {
     plan.value = await $fetch<Plan>('/api/me/plan', { method: 'PATCH', body: { examDate, targetLevel: form.targetLevel } })
     editing.value = false
-    toast.add({ title: examDate ? 'Your plan is ready' : 'Exam date removed', color: 'success' })
+    toast.add({ title: examDate ? t('plan.ready') : t('plan.removed'), color: 'success' })
   } catch (e) {
-    toast.add({ title: 'Not saved', description: errorMessage(e), color: 'error' })
+    toast.add({ title: t('common.notSaved'), description: errorMessage(e), color: 'error' })
   } finally {
     saving.value = false
   }
 }
 
 const examDay = computed(() => (plan.value?.examDate
-  ? new Date(`${plan.value.examDate}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
+  ? new Date(`${plan.value.examDate}T00:00:00`).toLocaleDateString(intlLocale(), { weekday: 'long', day: 'numeric', month: 'long' })
   : ''))
 const levelColor = (score: number | null) => {
   const target = plan.value?.targetScore ?? 51
@@ -73,23 +80,23 @@ const remindersOff = computed(() => !me.value?.telegram || !me.value?.telegramNo
             class="size-5 text-primary"
           />
           <h2 class="font-semibold text-highlighted">
-            When is your exam?
+            {{ t('plan.when') }}
           </h2>
         </div>
         <p class="text-sm text-muted mt-1">
-          Set the day and your target for a countdown, a plan for each week and reminders on Telegram.
+          {{ t('plan.whenText') }}
         </p>
       </div>
       <div class="flex flex-wrap items-end gap-3">
-        <UFormField label="Exam day">
+        <UFormField :label="t('plan.examDay')">
           <UInput
             v-model="form.examDate"
             type="date"
             :min="today"
-            aria-label="Exam day"
+            :aria-label="t('plan.examDay')"
           />
         </UFormField>
-        <UFormField label="Target">
+        <UFormField :label="t('plan.target')">
           <UFieldGroup>
             <UButton
               v-for="l in LEVELS"
@@ -102,7 +109,7 @@ const remindersOff = computed(() => !me.value?.telegram || !me.value?.telegramNo
           </UFieldGroup>
         </UFormField>
         <UButton
-          label="Make my plan"
+          :label="t('plan.make')"
           icon="i-lucide-sparkles"
           :loading="saving"
           :disabled="!form.examDate"
@@ -122,15 +129,15 @@ const remindersOff = computed(() => !me.value?.telegram || !me.value?.telegramNo
             {{ plan.daysLeft }}
           </p>
           <p class="text-xs font-medium mt-1">
-            {{ plan.daysLeft === 1 ? 'day' : 'days' }}
+            {{ t('plan.days', plan.daysLeft ?? 0) }}
           </p>
         </div>
         <div class="flex-1 min-w-0">
           <h2 class="font-semibold text-highlighted">
-            {{ plan.daysLeft === 0 ? 'Your exam is today. Good luck!' : 'to your exam' }}
+            {{ plan.daysLeft === 0 ? t('plan.today') : t('plan.toExam') }}
           </h2>
           <p class="text-sm text-muted">
-            {{ examDay }} · target
+            {{ examDay }} · {{ t('plan.targetWord') }}
             <span class="font-medium text-highlighted">{{ plan.targetLevel && LEVELS.some(l => l.value === plan!.targetLevel) ? `${plan.targetLevel} (${plan.targetScore}+)` : `${plan.targetScore}/75` }}</span>
           </p>
         </div>
@@ -139,7 +146,7 @@ const remindersOff = computed(() => !me.value?.telegram || !me.value?.telegramNo
           color="neutral"
           variant="ghost"
           size="sm"
-          aria-label="Change the exam day or target"
+          :aria-label="t('plan.change')"
           @click="startEdit"
         />
       </div>
@@ -172,10 +179,10 @@ const remindersOff = computed(() => !me.value?.telegram || !me.value?.telegramNo
       <div>
         <div class="flex items-center justify-between gap-2">
           <p class="text-sm font-semibold text-highlighted">
-            This week
+            {{ t('plan.thisWeek') }}
           </p>
           <p class="text-xs text-muted">
-            {{ plan.week.practisedDays }} of {{ plan.week.aimDays }} practice days · {{ doneCount }}/{{ plan.goals.length }} goals
+            {{ t('plan.weekLine', { done: plan.week.practisedDays, aim: plan.week.aimDays, goals: doneCount, of: plan.goals.length }) }}
           </p>
         </div>
         <UProgress
@@ -199,16 +206,16 @@ const remindersOff = computed(() => !me.value?.telegram || !me.value?.telegramNo
                 class="text-sm font-medium"
                 :class="g.done ? 'text-muted line-through' : 'text-highlighted'"
               >
-                {{ g.label }}
+                {{ goalLabel(g) }}
               </p>
               <p class="text-xs text-muted truncate">
-                {{ g.detail }}
+                {{ goalDetail(g) }}
               </p>
             </div>
             <UButton
               v-if="!g.done"
               :to="g.to"
-              label="Start"
+              :label="t('common.start')"
               size="xs"
               color="neutral"
               variant="outline"
@@ -226,21 +233,21 @@ const remindersOff = computed(() => !me.value?.telegram || !me.value?.telegramNo
           name="i-simple-icons-telegram"
           class="size-3.5 shrink-0"
         />
-        <span v-if="!me?.telegram">Sign in with Telegram too to get reminders before your exam.</span>
-        <span v-else>Reminders are off. <ULink
+        <span v-if="!me?.telegram">{{ t('plan.telegramToo') }}</span>
+        <span v-else>{{ t('plan.remindersOff') }} <ULink
           to="/settings"
           class="text-primary"
-        >Turn on Telegram messages</ULink> to get them.</span>
+        >{{ t('plan.turnOn') }}</ULink></span>
       </p>
     </UCard>
 
     <UModal
       v-model:open="editing"
-      title="Your exam"
+      :title="t('plan.yourExam')"
     >
       <template #body>
         <div class="grid gap-4">
-          <UFormField label="Exam day">
+          <UFormField :label="t('plan.examDay')">
             <UInput
               v-model="form.examDate"
               type="date"
@@ -248,7 +255,7 @@ const remindersOff = computed(() => !me.value?.telegram || !me.value?.telegramNo
               class="w-full"
             />
           </UFormField>
-          <UFormField label="Target">
+          <UFormField :label="t('plan.target')">
             <UFieldGroup>
               <UButton
                 v-for="l in LEVELS"
@@ -262,14 +269,14 @@ const remindersOff = computed(() => !me.value?.telegram || !me.value?.telegramNo
           </UFormField>
           <div class="flex justify-between gap-2">
             <UButton
-              label="Remove the date"
+              :label="t('plan.removeDate')"
               color="error"
               variant="ghost"
               :disabled="saving"
               @click="save(null)"
             />
             <UButton
-              label="Save"
+              :label="t('common.save')"
               :loading="saving"
               :disabled="!form.examDate"
               @click="save()"

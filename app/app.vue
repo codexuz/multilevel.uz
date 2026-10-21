@@ -1,17 +1,21 @@
 <script setup lang="ts">
+import { en, ru, uz } from '@nuxt/ui/locale'
+
 const route = useRoute()
 const config = useRuntimeConfig()
+const { t, locale } = useI18n()
+const uiLocale = computed(() => ({ en, uz, ru }[locale.value as 'en' | 'uz' | 'ru'] ?? en))
 
 const siteName = 'Multilevel'
-const title = 'Multilevel - English Exam Prep'
-const description = 'Free Multilevel (CEFR) English practice tests: Listening, Reading, Writing and Speaking. Check your answers instantly, with or without an account.'
+const title = computed(() => t('site.title'))
+const description = computed(() => t('site.description'))
 const siteUrl = computed(() => String(config.public.siteUrl || 'https://multilevel.uz').replace(/\/$/, ''))
 const canonicalUrl = computed(() => `${siteUrl.value}${route.path === '/' ? '/' : route.path}`)
 const socialImage = computed(() => `${siteUrl.value}/logo.png`)
 
 useHead(() => ({
   titleTemplate: (pageTitle?: string | null) => {
-    if (!pageTitle || pageTitle === title) return title
+    if (!pageTitle || pageTitle === title.value) return title.value
     return `${pageTitle} | ${siteName}`
   },
   meta: [
@@ -24,7 +28,7 @@ useHead(() => ({
     { rel: 'canonical', href: canonicalUrl.value }
   ],
   htmlAttrs: {
-    lang: 'en'
+    lang: locale.value
   },
   script: [
     {
@@ -34,7 +38,7 @@ useHead(() => ({
         '@type': 'WebSite',
         'name': siteName,
         'url': siteUrl.value,
-        'description': description
+        'description': description.value
       })
     }
   ]
@@ -57,7 +61,7 @@ useSeoMeta({
 </script>
 
 <template>
-  <UApp>
+  <UApp :locale="uiLocale">
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>

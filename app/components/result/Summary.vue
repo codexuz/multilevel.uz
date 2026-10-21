@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { ResultView } from './Review.vue'
 
+const { t } = useI18n()
+
 /**
  * What a section came to, in the manner of SmallTalk2Me's result: the score on a blue card with
  * what the CEFR level means, how each part went, and what to do next. For a guest, how to keep it.
@@ -9,25 +11,19 @@ const props = defineProps<{ view: ResultView & { correct?: number | null, total?
 const { loggedIn } = useMe()
 
 const skill = computed(() => props.view.skill as keyof typeof SKILL_META)
-const meta = computed(() => SKILL_META[skill.value])
 const objective = computed(() => skill.value === 'LISTENING' || skill.value === 'READING')
 const scored = computed(() => props.view.score != null && (objective.value || props.view.status === 'GRADED'))
 const level = computed(() => props.view.cefrLevel ?? cefrOf(props.view.score))
 const testTo = computed(() => (props.view.test ? `/tests/${props.view.test.slug}` : '/tests'))
 const againTo = computed(() => (props.view.test ? `/tests/${props.view.test.slug}/${skill.value.toLowerCase()}${props.view.partNumber ? `?part=${props.view.partNumber}` : ''}` : '/tests'))
 
-const LEVEL_TEXT: Record<string, string> = {
-  C1: 'You use English flexibly and effectively for social, academic and professional purposes, and follow long, demanding texts.',
-  B2: 'You interact with fluency and spontaneity and understand the main ideas of complex texts. C1 starts at 65.',
-  B1: 'You deal with most everyday situations and understand the main points of clear, standard English. B2 starts at 51.',
-  A2: 'You understand sentences and common expressions on familiar topics. B1, the first level the exam certifies, starts at 38.'
-}
+const levelText = (l: string) => t(`result.level.${l}`)
 
 /** How each part went: what to keep doing and what to work on. */
 const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? []).map((p: any) => {
   const items = p.groups.flatMap((g: any) => g.items)
   const right = items.filter((i: any) => i.isCorrect).length
-  return { label: `Part ${p.partNumber}${p.title ? ` — ${p.title}` : ''}`, right, total: items.length, share: items.length ? right / items.length : 0 }
+  return { label: `${t('part.part', { n: p.partNumber })}${p.title ? ` — ${p.title}` : ''}`, right, total: items.length, share: items.length ? right / items.length : 0 }
 }).filter((p: any) => p.total))
 </script>
 
@@ -43,7 +39,7 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
       </div>
       <div class="min-w-0">
         <p class="text-sm font-medium text-primary">
-          {{ meta.label }}<span v-if="view.partNumber"> · {{ partName(view.skill, view.partNumber) }}</span>
+          {{ skillLabel(view.skill) }}<span v-if="view.partNumber"> · {{ partName(view.skill, view.partNumber) }}</span>
         </p>
         <h1 class="text-xl sm:text-2xl font-bold text-highlighted text-balance">
           {{ view.test?.title }}
@@ -54,14 +50,14 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
     <!-- The score -->
     <UCard v-if="scored">
       <p class="text-center font-semibold text-highlighted mb-3">
-        Your score
+        {{ t('home.yourScore') }}
       </p>
       <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#5870f5] to-[#8b9cff] px-6 py-7 text-center text-white">
         <p class="text-6xl font-bold tabular-nums leading-none">
           {{ fmtScore(view.score) }}<span class="text-2xl font-semibold opacity-80"> / 75</span>
         </p>
         <p class="mt-2 font-medium">
-          {{ level === 'A2' ? 'Below B1' : `CEFR ${level}` }}
+          {{ level === 'A2' ? t('common.belowB1') : `CEFR ${level}` }}
         </p>
         <img
           src="/illustrations/star.svg"
@@ -74,7 +70,7 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
         v-if="level"
         class="mt-4 text-sm text-toned text-pretty"
       >
-        {{ LEVEL_TEXT[level] }}
+        {{ levelText(level) }}
       </p>
       <div
         v-if="objective"
@@ -82,7 +78,7 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
       >
         <div class="rounded-lg bg-elevated px-4 py-3">
           <p class="text-xs text-muted">
-            Correct answers
+            {{ t('result.correct') }}
           </p>
           <p class="text-lg font-semibold text-highlighted tabular-nums">
             {{ view.correct ?? 0 }} / {{ view.total ?? 0 }}
@@ -90,7 +86,7 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
         </div>
         <div class="rounded-lg bg-elevated px-4 py-3">
           <p class="text-xs text-muted">
-            Time
+            {{ t('result.time') }}
           </p>
           <p class="text-lg font-semibold text-highlighted">
             {{ minutesText(view.durationSeconds) }}
@@ -109,12 +105,12 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
         >
         <div>
           <p class="font-semibold text-highlighted">
-            {{ view.saved ? 'With an examiner' : 'Practice only' }}
+            {{ view.saved ? t('result.withExaminer') : t('result.practiceOnly') }}
           </p>
           <p class="text-sm text-muted text-pretty">
             {{ view.saved
-              ? `Your ${meta.label} is saved and waiting for an examiner. The score and feedback appear here once it is marked — usually within 24 hours.`
-              : `${meta.label} is marked by an examiner. Sign in and hand it in to have it marked; this practice is not saved.` }}
+              ? t('result.waitingText', { skill: skillLabel(view.skill) })
+              : t('result.practiceText', { skill: skillLabel(view.skill) }) }}
           </p>
         </div>
       </div>
@@ -123,7 +119,7 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
     <!-- How each part went -->
     <UCard v-if="partsWent.length">
       <p class="font-semibold text-highlighted mb-3">
-        How each part went
+        {{ t('result.partsWent') }}
       </p>
       <ul class="flex flex-col gap-2.5">
         <li
@@ -147,9 +143,9 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
       color="neutral"
       variant="subtle"
       icon="i-lucide-cloud-off"
-      title="This result is not saved"
-      description="You are not signed in, so this result is shown once and kept nowhere. Sign in to keep your results and see your progress."
-      :actions="[{ label: 'Sign in', to: `/login?next=${encodeURIComponent(testTo)}`, color: 'neutral', variant: 'outline' }]"
+      :title="t('result.notSaved')"
+      :description="t('result.notSavedText')"
+      :actions="[{ label: t('nav.signIn'), to: `/login?next=${encodeURIComponent(testTo)}`, color: 'neutral', variant: 'outline' }]"
     />
 
     <BillingPaywall
@@ -165,7 +161,7 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
       <UButton
         v-if="view.review?.sections?.length"
         :to="reviewTo"
-        :label="objective ? 'Review answers' : 'See your answers'"
+        :label="objective ? t('result.reviewAnswers') : t('result.seeAnswers')"
         icon="i-lucide-list-checks"
         size="lg"
         class="justify-center"
@@ -176,7 +172,7 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
       />
       <UButton
         :to="againTo"
-        label="Try again"
+        :label="t('common.tryAgain')"
         icon="i-lucide-rotate-ccw"
         color="neutral"
         size="lg"
@@ -184,7 +180,7 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
       />
       <UButton
         :to="testTo"
-        label="Back to the test"
+        :label="t('sit.backToTest')"
         color="neutral"
         variant="ghost"
         size="lg"
@@ -193,7 +189,7 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
       <UButton
         v-if="loggedIn"
         to="/results"
-        label="My results"
+        :label="t('nav.results')"
         color="neutral"
         variant="ghost"
         size="lg"

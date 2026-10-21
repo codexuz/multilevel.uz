@@ -6,6 +6,7 @@ const props = defineProps<{ test: { slug: string, title: string, description?: s
 
 const skills = computed(() => props.test.sections.filter(s => (s.items ?? 1) > 0))
 const questions = computed(() => skills.value.reduce((n, s) => n + (s.questions ?? 0), 0))
+const { t } = useI18n()
 const minutes = computed(() => Math.round(skills.value.reduce((n, s) => n + (s.durationSeconds ?? 0), 0) / 60))
 </script>
 
@@ -16,7 +17,7 @@ const minutes = computed(() => Math.round(skills.value.reduce((n, s) => n + (s.d
     :class="tileGradient(test.slug)"
   >
     <div class="flex items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-wide">
-      <span class="rounded-sm bg-white/20 px-1.5 py-0.5">{{ test.mode === 'MOCK' ? 'Mock exam' : 'B1–C1' }}</span>
+      <span class="rounded-sm bg-white/20 px-1.5 py-0.5">{{ test.mode === 'MOCK' ? t('tests.mockExam') : 'B1–C1' }}</span>
       <span
         v-if="test.access === 'PREMIUM'"
         class="flex items-center gap-1"
@@ -27,7 +28,7 @@ const minutes = computed(() => Math.round(skills.value.reduce((n, s) => n + (s.d
       <span
         v-else
         class="text-white/80"
-      >Free</span>
+      >{{ t('common.free') }}</span>
     </div>
     <h3 class="relative z-1 max-w-[80%] text-lg font-semibold leading-snug line-clamp-2">
       {{ test.title }}
@@ -39,9 +40,9 @@ const minutes = computed(() => Math.round(skills.value.reduce((n, s) => n + (s.d
       {{ test.description }}
     </p>
     <div class="relative z-1 mt-auto flex flex-wrap items-center gap-x-1.5 gap-y-0.5 max-w-[70%] text-[11px] text-white/85">
-      <span>{{ skills.map(s => SKILL_META[s.skill as keyof typeof SKILL_META]?.label).join(' · ') }}</span>
-      <span v-if="questions">· {{ questions }} questions</span>
-      <span v-if="minutes">· {{ minutes }} min</span>
+      <span>{{ skills.map(s => skillLabel(s.skill)).join(' · ') }}</span>
+      <span v-if="questions">· {{ t('common.questions', { n: questions }, questions) }}</span>
+      <span v-if="minutes">· {{ t('common.minutes', { n: minutes }) }}</span>
     </div>
     <img
       :src="tileArt(test.slug)"

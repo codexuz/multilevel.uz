@@ -3,6 +3,7 @@
  * Telegram messages from the bot: whether they are on, and the way to join the bot (which also
  * connects Telegram to a Google account). On Settings, and on Profile on a phone.
  */
+const { t } = useI18n()
 const toast = useToast()
 const { me, refresh: refreshMe } = useMe()
 
@@ -21,7 +22,7 @@ async function joinBot() {
     }
     await refreshMe()
   } catch {
-    toast.add({ title: 'The bot is not available right now', color: 'error' })
+    toast.add({ title: t('bot.unavailable'), color: 'error' })
   } finally {
     joining.value = false
   }
@@ -32,7 +33,7 @@ async function setTelegramNotify(on: boolean) {
     await $fetch('/api/me/notifications', { method: 'PATCH', body: { telegram: on } })
     await refreshMe()
   } catch {
-    toast.add({ title: 'Not saved', description: 'Please try again.', color: 'error' })
+    toast.add({ title: t('common.notSaved'), description: t('test.tryAgain'), color: 'error' })
   } finally {
     savingNotify.value = false
   }
@@ -48,14 +49,14 @@ async function setTelegramNotify(on: boolean) {
       />
       <div class="flex-1 min-w-0">
         <p class="font-medium">
-          Telegram messages
+          {{ t('bot.messages') }}
         </p>
         <p class="text-sm text-muted text-pretty">
-          {{ me?.telegram ? 'When your Writing or Speaking is marked, your AI feedback is ready, or a friend you invited earns you credits.' : 'Join our bot to get a message when your work is marked.' }}
+          {{ me?.telegram ? t('bot.messagesText') : t('bot.messagesJoin') }}
         </p>
         <UButton
           v-if="!me?.telegramBot"
-          label="Join the bot"
+          :label="t('bot.join')"
           icon="i-lucide-send"
           size="sm"
           color="neutral"
@@ -69,7 +70,7 @@ async function setTelegramNotify(on: boolean) {
         :model-value="!!me?.telegram && !!me?.telegramNotify"
         :disabled="!me?.telegram"
         :loading="savingNotify"
-        aria-label="Telegram messages"
+        :aria-label="t('bot.messages')"
         @update:model-value="setTelegramNotify"
       />
     </div>

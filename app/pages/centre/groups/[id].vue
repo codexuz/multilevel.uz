@@ -3,7 +3,8 @@
  * One group for its teachers: the join link, each student's level per skill and activity (opening
  * their results), and assignments with who has done them.
  */
-useSeoMeta({ title: 'Group', robots: 'noindex' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('centre.group'), robots: 'noindex' })
 
 interface Student { id: string, name: string, avatarUrl: string | null, joinedAt: string, attempts: number, lastActive: string | null, level: Record<string, number | null> }
 interface AssignmentRow { id: string, skill: string, partNumber: number | null, note: string | null, dueAt: string | null, createdAt: string, test: { slug: string, title: string } | null, to: string | null, done: number, of: number, average: number | null }
@@ -16,13 +17,13 @@ const config = useRuntimeConfig()
 const site = String(config.public.siteUrl || '').replace(/\/$/, '')
 const id = computed(() => String(route.params.id))
 const { data, refresh, error } = await useFetch<GroupView>(() => `/api/groups/${id.value}`)
-useSeoMeta({ title: () => data.value?.name ?? 'Group' })
+useSeoMeta({ title: () => data.value?.name ?? t('centre.group') })
 
 const SKILLS = ['LISTENING', 'READING', 'WRITING', 'SPEAKING']
 const tab = ref<'students' | 'assignments'>('students')
 const tabs = computed(() => [
-  { label: `Students (${data.value?.students.length ?? 0})`, value: 'students', icon: 'i-lucide-users' },
-  { label: `Assignments (${data.value?.assignments.length ?? 0})`, value: 'assignments', icon: 'i-lucide-list-checks' }
+  { label: t('centre.studentsTab', { n: data.value?.students.length ?? 0 }), value: 'students', icon: 'i-lucide-users' },
+  { label: t('centre.assignmentsTab', { n: data.value?.assignments.length ?? 0 }), value: 'assignments', icon: 'i-lucide-list-checks' }
 ])
 const levelColor = (s: number | null) => (s == null ? 'text-dimmed' : s >= 65 ? 'text-success' : s >= 51 ? 'text-primary' : s >= 38 ? 'text-warning' : 'text-error')
 
@@ -38,25 +39,25 @@ async function patch(body: Record<string, unknown>, done: string) {
     toast.add({ title: done, color: 'success' })
     await refresh()
   } catch (e) {
-    toast.add({ title: 'Not changed', description: errorMessage(e), color: 'error' })
+    toast.add({ title: t('centre.notChanged'), description: errorMessage(e), color: 'error' })
   }
 }
 function rename() {
-  const n = prompt('Group name', data.value?.name)
-  if (n?.trim()) patch({ name: n }, 'Renamed')
+  const n = prompt(t('centre.groupName'), data.value?.name)
+  if (n?.trim()) patch({ name: n }, t('centre.renamed'))
 }
 const menu = computed(() => [[
-  { label: 'Rename', icon: 'i-lucide-pencil', onSelect: rename },
-  { label: 'New join code', icon: 'i-lucide-refresh-cw', onSelect: () => patch({ newCode: true }, 'New code made: the old link no longer works') },
-  { label: data.value?.archived ? 'Bring back' : 'Archive', icon: 'i-lucide-archive', onSelect: () => patch({ archived: !data.value?.archived }, data.value?.archived ? 'Back in the list' : 'Archived') }
+  { label: t('centre.rename'), icon: 'i-lucide-pencil', onSelect: rename },
+  { label: t('centre.newCode'), icon: 'i-lucide-refresh-cw', onSelect: () => patch({ newCode: true }, t('centre.newCodeDone')) },
+  { label: data.value?.archived ? t('centre.bringBack') : t('centre.archive'), icon: 'i-lucide-archive', onSelect: () => patch({ archived: !data.value?.archived }, data.value?.archived ? t('centre.backInList') : t('centre.archived')) }
 ]])
 async function removeStudent(s: Student) {
-  if (!confirm(`Take ${s.name} out of this group? Their seat is freed if they are in no other group.`)) return
+  if (!confirm(t('centre.removeStudentSure', { name: s.name }))) return
   try {
     await $fetch(`/api/groups/${id.value}/students/${s.id}`, { method: 'DELETE' })
     await refresh()
   } catch (e) {
-    toast.add({ title: 'Not removed', description: errorMessage(e), color: 'error' })
+    toast.add({ title: t('centre.notRemoved'), description: errorMessage(e), color: 'error' })
   }
 }
 
@@ -69,7 +70,7 @@ const skillItems = computed(() => {
   const t = testList.value?.items.find(x => x.id === form.value?.testId)
   return SKILLS.filter(s => !t || t.sections.some(x => x.skill === s && x.items)).map(s => ({ label: skillLabel(s), value: s }))
 })
-const partItems = computed(() => [{ label: 'The whole section', value: 0 }, ...(PART_NUMBERS[form.value?.skill ?? ''] ?? []).map(n => ({ label: partName(form.value!.skill, n), value: n }))])
+const partItems = computed(() => [{ label: t('centre.wholeSection'), value: 0 }, ...(PART_NUMBERS[form.value?.skill ?? ''] ?? []).map(n => ({ label: partName(form.value!.skill, n), value: n }))])
 watch(() => form.value?.testId, () => {
   if (form.value && !skillItems.value.some(s => s.value === form.value!.skill)) form.value.skill = skillItems.value[0]?.value ?? 'READING'
 })
@@ -83,12 +84,12 @@ async function assign() {
   saving.value = true
   try {
     await $fetch(`/api/groups/${id.value}/assignments`, { method: 'POST', body: { testId: f.testId, skill: f.skill, partNumber: f.part || null, dueAt: f.dueAt ? new Date(f.dueAt).toISOString() : null, note: f.note } })
-    toast.add({ title: 'Assignment set', description: 'Students with Telegram got a message.', color: 'success' })
+    toast.add({ title: t('centre.assignmentSet'), description: t('centre.assignmentSetText'), color: 'success' })
     form.value = null
     tab.value = 'assignments'
     await refresh()
   } catch (e) {
-    toast.add({ title: 'Not set', description: errorMessage(e), color: 'error' })
+    toast.add({ title: t('centre.notSet'), description: errorMessage(e), color: 'error' })
   } finally {
     saving.value = false
   }
@@ -100,12 +101,12 @@ async function openAssignment(a: AssignmentRow) {
   try {
     detail.value = await $fetch<Detail>(`/api/assignments/${a.id}`)
   } catch (e) {
-    toast.add({ title: 'Could not open it', description: errorMessage(e), color: 'error' })
+    toast.add({ title: t('centre.couldNotOpen'), description: errorMessage(e), color: 'error' })
   }
 }
 async function removeAssignment(a: AssignmentRow) {
-  if (!confirm('Remove this assignment? What students handed in stays in their results.')) return
-  await $fetch(`/api/assignments/${a.id}`, { method: 'DELETE' }).catch(e => toast.add({ title: 'Not removed', description: errorMessage(e), color: 'error' }))
+  if (!confirm(t('centre.removeAssignmentSure'))) return
+  await $fetch(`/api/assignments/${a.id}`, { method: 'DELETE' }).catch(e => toast.add({ title: t('centre.notRemoved'), description: errorMessage(e), color: 'error' }))
   detail.value = null
   await refresh()
 }
@@ -121,14 +122,14 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
     <template #actions>
       <UButton
         to="/centre"
-        label="Centre"
+        :label="t('centre.centre')"
         icon="i-lucide-arrow-left"
         color="neutral"
         variant="ghost"
       />
       <UButton
         v-if="data && !data.archived"
-        label="Set work"
+        :label="t('centre.setWork')"
         icon="i-lucide-plus"
         @click="startAssign"
       />
@@ -137,8 +138,8 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
     <UEmpty
       v-if="error"
       icon="i-lucide-users"
-      title="Group not found"
-      :actions="[{ label: 'My centre', to: '/centre' }]"
+      :title="t('centre.groupNotFound')"
+      :actions="[{ label: t('nav.centre'), to: '/centre' }]"
     />
 
     <div
@@ -161,7 +162,7 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
             icon="i-lucide-ellipsis"
             color="neutral"
             variant="outline"
-            aria-label="Group options"
+            :aria-label="t('centre.groupOptions')"
           />
         </UDropdownMenu>
       </div>
@@ -173,17 +174,17 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
       >
         <div class="flex-1 min-w-0">
           <p class="text-sm font-medium text-highlighted">
-            Students join with this link
+            {{ t('centre.joinWithLink') }}
           </p>
           <p class="text-xs text-muted truncate">
-            {{ site }}/join/{{ data.joinCode }} · or the code <span class="font-mono font-semibold">{{ data.joinCode }}</span> on their Profile
+            {{ site }}/join/{{ data.joinCode }} · {{ t('centre.orCode') }} <span class="font-mono font-semibold">{{ data.joinCode }}</span>
           </p>
         </div>
         <UButton
-          label="Copy link"
+          :label="t('share.copyLink')"
           icon="i-lucide-link"
           size="sm"
-          @click="copy(`${site}/join/${data.joinCode}`, 'Join link copied')"
+          @click="copy(`${site}/join/${data.joinCode}`, t('centre.joinLinkCopied'))"
         />
       </UCard>
 
@@ -199,8 +200,8 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
         <UEmpty
           v-if="!data.students.length"
           icon="i-lucide-user-plus"
-          title="No students yet"
-          description="Share the join link with the class."
+          :title="t('centre.noStudents')"
+          :description="t('centre.noStudentsText')"
         />
         <div
           v-else
@@ -210,7 +211,7 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
             <thead class="bg-elevated/50 text-xs text-muted">
               <tr>
                 <th class="text-left font-medium px-4 py-2">
-                  Student
+                  {{ t('centre.student') }}
                 </th>
                 <th
                   v-for="s in SKILLS"
@@ -220,10 +221,10 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
                   {{ skillLabel(s) }}
                 </th>
                 <th class="text-right font-medium px-3 py-2">
-                  Tests
+                  {{ t('nav.tests') }}
                 </th>
                 <th class="text-right font-medium px-3 py-2">
-                  Last active
+                  {{ t('centre.lastActive') }}
                 </th>
                 <th class="w-10" />
               </tr>
@@ -255,7 +256,7 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
                   {{ s.attempts }}
                 </td>
                 <td class="text-right px-3 py-2.5 text-muted whitespace-nowrap">
-                  {{ s.lastActive ? relativeTime(s.lastActive) : 'Not yet' }}
+                  {{ s.lastActive ? relativeTime(s.lastActive) : t('common.notYet') }}
                 </td>
                 <td class="px-2">
                   <UButton
@@ -263,7 +264,7 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
                     size="xs"
                     color="neutral"
                     variant="ghost"
-                    :aria-label="`Take ${s.name} out of the group`"
+                    :aria-label="t('centre.removeStudent', { name: s.name })"
                     @click="removeStudent(s)"
                   />
                 </td>
@@ -271,7 +272,7 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
             </tbody>
           </table>
           <p class="text-xs text-muted px-4 py-2 border-t border-default">
-            Scores out of 75: the average of each student's last three whole sections.
+            {{ t('centre.scoresNote') }}
           </p>
         </div>
       </template>
@@ -281,9 +282,9 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
         <UEmpty
           v-if="!data.assignments.length"
           icon="i-lucide-list-checks"
-          title="No assignments yet"
-          description="Set a section of a test, or one part, with a due date. Students get a Telegram message."
-          :actions="data.archived ? [] : [{ label: 'Set work', icon: 'i-lucide-plus', onClick: startAssign }]"
+          :title="t('centre.noAssignments')"
+          :description="t('centre.noAssignmentsText')"
+          :actions="data.archived ? [] : [{ label: t('centre.setWork'), icon: 'i-lucide-plus', onClick: startAssign }]"
         />
         <div
           v-else
@@ -303,13 +304,13 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
             >
             <div class="flex-1 min-w-0">
               <p class="font-medium text-highlighted truncate">
-                {{ what(a) }} · {{ a.test?.title ?? 'Removed test' }}
+                {{ what(a) }} · {{ a.test?.title ?? t('centre.removedTest') }}
               </p>
               <p
                 class="text-xs truncate"
                 :class="overdue(a) ? 'text-error' : 'text-muted'"
               >
-                {{ a.dueAt ? `Due ${formatDate(a.dueAt, true)}` : 'No due date' }}{{ a.note ? ` · ${a.note}` : '' }}
+                {{ a.dueAt ? t('centre.due', { date: formatDate(a.dueAt, true) }) : t('centre.noDue') }}{{ a.note ? ` · ${a.note}` : '' }}
               </p>
             </div>
             <div class="text-right shrink-0">
@@ -317,7 +318,7 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
                 {{ a.done }}/{{ a.of }}
               </p>
               <p class="text-xs text-muted">
-                {{ a.average != null ? `avg ${a.average}` : 'done' }}
+                {{ a.average != null ? t('centre.avg', { n: a.average }) : t('centre.doneWord') }}
               </p>
             </div>
           </button>
@@ -328,7 +329,7 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
     <!-- New assignment -->
     <UModal
       :open="!!form"
-      title="Set work"
+      :title="t('centre.setWork')"
       @update:open="v => !v && (form = null)"
     >
       <template #body>
@@ -337,17 +338,17 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
           class="grid gap-4"
           @submit.prevent="assign"
         >
-          <UFormField label="Test">
+          <UFormField :label="t('sit.test')">
             <USelectMenu
               v-model="form.testId"
               :items="testItems"
               value-key="value"
-              placeholder="Pick a test"
+              :placeholder="t('centre.pickTest')"
               class="w-full"
             />
           </UFormField>
           <div class="grid grid-cols-2 gap-3">
-            <UFormField label="Section">
+            <UFormField :label="t('centre.section')">
               <USelect
                 v-model="form.skill"
                 :items="skillItems"
@@ -355,7 +356,7 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
                 @update:model-value="form.part = 0"
               />
             </UFormField>
-            <UFormField label="Part">
+            <UFormField :label="t('part.partWord')">
               <USelect
                 v-model="form.part"
                 :items="partItems"
@@ -364,8 +365,8 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
             </UFormField>
           </div>
           <UFormField
-            label="Due"
-            help="Optional."
+            :label="t('centre.dueLabel')"
+            :help="t('centre.optional')"
           >
             <UInput
               v-model="form.dueAt"
@@ -374,26 +375,26 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
             />
           </UFormField>
           <UFormField
-            label="Note for students"
-            help="Optional."
+            :label="t('centre.noteLabel')"
+            :help="t('centre.optional')"
           >
             <UTextarea
               v-model="form.note"
               :rows="2"
               class="w-full"
-              placeholder="e.g. Time yourself, and read the explanations afterwards."
+              :placeholder="t('centre.notePlaceholder')"
             />
           </UFormField>
           <div class="flex justify-end gap-2">
             <UButton
-              label="Cancel"
+              :label="t('common.cancel')"
               color="neutral"
               variant="ghost"
               @click="form = null"
             />
             <UButton
               type="submit"
-              label="Set it"
+              :label="t('centre.setIt')"
               :loading="saving"
               :disabled="!form.testId"
             />
@@ -406,7 +407,7 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
     <UModal
       :open="!!detail"
       :title="detail ? `${what(detail)} · ${detail.test?.title ?? ''}` : ''"
-      :description="detail ? `${detail.done} of ${detail.of} done${detail.average != null ? `, average ${detail.average}/75` : ''}` : ''"
+      :description="detail ? `${t('centre.doneOf', { done: detail.done, of: detail.of })}${detail.average != null ? `, ${t('centre.average', { n: detail.average })}` : ''}` : ''"
       @update:open="v => !v && (detail = null)"
     >
       <template #body>
@@ -430,7 +431,7 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
                 <span class="text-xs text-muted">{{ relativeTime(s.handIn.at) }}</span>
                 <UButton
                   :to="`/results/${s.handIn.attemptId}`"
-                  :label="s.handIn.score != null ? `${s.handIn.score}/75` : 'With an examiner'"
+                  :label="s.handIn.score != null ? `${s.handIn.score}/75` : t('result.withExaminer')"
                   size="xs"
                   color="neutral"
                   variant="outline"
@@ -439,12 +440,12 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
               <span
                 v-else
                 class="text-xs text-muted"
-              >Not yet</span>
+              >{{ t('common.notYet') }}</span>
             </li>
           </ul>
           <div class="flex justify-between">
             <UButton
-              label="Remove assignment"
+              :label="t('centre.removeAssignment')"
               icon="i-lucide-trash-2"
               color="error"
               variant="ghost"
@@ -454,7 +455,7 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
             <UButton
               v-if="detail.to"
               :to="detail.to"
-              label="Open the test"
+              :label="t('centre.openTest')"
               icon="i-lucide-external-link"
               size="sm"
               color="neutral"

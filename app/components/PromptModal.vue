@@ -9,6 +9,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{ close: [value: string | null] }>()
+const { t } = useI18n()
 const value = ref(props.initialValue ?? '')
 </script>
 
@@ -45,13 +46,13 @@ const value = ref(props.initialValue ?? '')
     </template>
     <template #footer>
       <UButton
-        label="Cancel"
+        :label="t('common.cancel')"
         color="neutral"
         variant="outline"
         @click="emit('close', null)"
       />
       <UButton
-        :label="confirmLabel || 'Save'"
+        :label="confirmLabel || t('common.save')"
         @click="emit('close', value)"
       />
     </template>

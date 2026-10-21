@@ -80,6 +80,18 @@ A handed-in Writing or Speaking gets one AI review automatically, free (it does 
 allowance). On the marking page examiners see it as **AI suggests …** and can fill an empty score and
 feedback with **Use AI draft**, then change what they hear differently.
 
+### Languages
+
+The site is in English, Uzbek (Latin script) and Russian (`@nuxtjs/i18n`, messages in
+`i18n/locales/*.json`, Russian plural rules in `i18n/i18n.config.ts`). The address stays the same in
+every language: the choice is kept in the `lang` cookie (the browser's language on a first visit)
+and, once signed in, on the account (`users.locale`), so the bot writes to each user in their
+language (`server/utils/messages.ts`; before they choose, the bot follows their Telegram app's
+language). Dates and numbers follow the language. AI feedback is written in it too: comments,
+strengths and priorities in Uzbek or Russian, while the candidate's words and the corrections stay
+in English. The exam screens keep English instructions, as the real exam does; the admin and
+builder pages are in English.
+
 ### Learning centres (B2B)
 
 An admin opens a centre at `/admin/centres`: a name, its owner (their email or Telegram @username;

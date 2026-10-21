@@ -12,6 +12,7 @@ defineProps<{
   id?: string
 }>()
 const inPublic = useInPublicLayout()
+const { t } = useI18n()
 </script>
 
 <template>
@@ -27,7 +28,7 @@ const inPublic = useInPublicLayout()
         v-if="back"
         :to="back"
         icon="i-lucide-arrow-left"
-        label="Back"
+        :label="t('common.back')"
         color="neutral"
         variant="ghost"
         class="-ms-2"

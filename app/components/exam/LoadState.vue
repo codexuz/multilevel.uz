@@ -1,6 +1,7 @@
 <script setup lang="ts">
 defineProps<{ loading: boolean, error?: string | null, backTo?: string, backLabel?: string }>()
 const router = useRouter()
+const { t } = useI18n()
 </script>
 
 <template>
@@ -20,7 +21,7 @@ const router = useRouter()
     <UEmpty
       icon="i-lucide-circle-alert"
       :title="error"
-      :actions="[{ label: backLabel || 'Go back', icon: 'i-lucide-arrow-left', variant: 'outline', onClick: () => { if (backTo) router.push(backTo); else router.back() } }]"
+      :actions="[{ label: backLabel || t('common.goBack'), icon: 'i-lucide-arrow-left', variant: 'outline', onClick: () => { if (backTo) router.push(backTo); else router.back() } }]"
     />
   </div>
   <slot v-else />

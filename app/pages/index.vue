@@ -7,40 +7,25 @@
 definePageMeta({ layout: 'public' })
 
 const { loggedIn, me } = useMe()
+const { t } = useI18n()
 
 const { data } = await useFetch<{ items: any[], total: number }>('/api/tests', { query: { limit: 6 } })
 
 useSeoMeta({
-  title: 'Free Multilevel English mock tests',
-  description: 'Free online Multilevel (CEFR) English practice tests: Listening, Reading, Writing and Speaking in the official format, checked instantly with a score out of 75 and your CEFR level.',
-  ogTitle: 'Free Multilevel English mock tests',
-  ogDescription: 'Listening, Reading, Writing and Speaking in the official Multilevel format, checked instantly.'
+  title: () => t('home.seoTitle'),
+  description: () => t('home.seoDescription'),
+  ogTitle: () => t('home.seoTitle'),
+  ogDescription: () => t('home.seoOg')
 })
 
 const firstName = computed(() => me.value?.name?.split(' ')[0])
 
-const skills = [
-  { key: 'LISTENING', title: 'Listening', text: 'Six parts and 35 questions with the recording played as on the day, checked the moment you finish.' },
-  { key: 'READING', title: 'Reading', text: 'Five passages and 35 questions side by side, with the line that holds each answer shown in the review.' },
-  { key: 'WRITING', title: 'Writing', text: 'Task 1.1, Task 1.2 and Task 2 with a live word count. Download your answers, or have an examiner mark them.' },
-  { key: 'SPEAKING', title: 'Speaking', text: 'Four parts with preparation and speaking timers. Listen back to yourself, or send it to an examiner.' }
-]
-
-const steps = [
-  { title: 'Pick a test', text: 'Every free test opens without an account.' },
-  { title: 'Sit it as on the day', text: 'Official timing, layout and question types.' },
-  { title: 'See your score', text: 'Out of 75, with your CEFR level, in seconds.' },
-  { title: 'Review every answer', text: 'The key for each question, and why it is right.' },
-  { title: 'Track your progress', text: 'Sign in to keep every result and see your best.' }
-]
-
-const faq = [
-  { label: 'Is it really free?', content: 'Yes. Free tests open without an account and are checked instantly. Premium adds the whole library, the explanations behind every answer, and examiner marking for Writing and Speaking.' },
-  { label: 'How is my score worked out?', content: 'Listening and Reading answers are checked against the key and converted to the Multilevel scale out of 75 with the official tables. 65+ is C1, 51+ B2 and 38+ B1.' },
-  { label: 'Do I need an account?', content: 'No. Without one your answers are checked and shown once. Sign in with Google to keep your results and have Writing and Speaking marked.' },
-  { label: 'Is it like the real Multilevel exam?', content: 'The sections, timings, part structure and question types follow the official format, on a screen laid out the way the exam is.' },
-  { label: 'Does it work on my phone?', content: 'Yes. Every test works on a phone: on small screens the passage and the questions switch with one tap.' }
-]
+const skills = computed(() => ['LISTENING', 'READING', 'WRITING', 'SPEAKING'].map(key => ({ key, title: skillLabel(key), text: t(`home.skillText.${key}`) })))
+const steps = computed(() => [1, 2, 3, 4, 5].map(n => ({ title: t(`home.step${n}`), text: t(`home.step${n}Text`) })))
+const faq = computed(() => [1, 2, 3, 4, 5].map(n => ({ label: t(`home.faq${n}`), content: t(`home.faq${n}Answer`) })))
+const stats = computed(() => [
+  { n: '35 + 35', l: t('home.statQuestions') }, { n: '0–75', l: t('home.statScore') }, { n: 'A2–C1', l: t('home.statLevel') }, { n: t('home.statHours'), l: t('home.statMarked') }
+])
 
 const wrap = 'mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8'
 
@@ -60,9 +45,9 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
         color="primary"
         variant="subtle"
         icon="i-lucide-gift"
-        title="A friend invited you"
-        description="Sign up and get a free credit: it opens one Premium test for good."
-        :actions="[{ label: 'Sign up free', to: '/login?next=/earn', color: 'primary', variant: 'solid' }]"
+        :title="t('home.invitedTitle')"
+        :description="t('home.invitedText')"
+        :actions="[{ label: t('home.invitedAction'), to: '/login?next=/earn', color: 'primary', variant: 'solid' }]"
       />
     </div>
     <!-- Hero -->
@@ -80,24 +65,31 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
             v-if="loggedIn && firstName"
             class="text-sm font-semibold text-primary"
           >
-            Welcome back, {{ firstName }} 👋
+            {{ t('home.welcomeBack', { name: firstName }) }} 👋
           </p>
-          <h1 class="text-[2.1rem] leading-[1.15] sm:text-5xl lg:text-[3.4rem] font-bold text-highlighted text-balance">
-            Free <span class="text-accent">Multilevel</span> English mock tests &amp; CEFR level check
-          </h1>
+          <i18n-t
+            keypath="home.heroTitle"
+            tag="h1"
+            scope="global"
+            class="text-[2.1rem] leading-[1.15] sm:text-5xl lg:text-[3.4rem] font-bold text-highlighted text-balance"
+          >
+            <template #accent>
+              <span class="text-accent">Multilevel</span>
+            </template>
+          </i18n-t>
           <p class="text-lg text-toned max-w-xl text-pretty">
-            Listening, Reading, Writing and Speaking in the official format. Your answers are checked whether you sign in or not, with a score out of 75 and your CEFR level.
+            {{ t('home.heroText') }}
           </p>
           <div class="flex flex-wrap gap-3 max-lg:justify-center">
             <UButton
               to="/tests"
-              label="Start now"
+              :label="t('pub.startNow')"
               size="xl"
               class="px-9 rounded-full text-base font-semibold"
             />
             <UButton
               :to="loggedIn ? '/results' : '/pricing'"
-              :label="loggedIn ? 'My results' : 'See Premium'"
+              :label="loggedIn ? t('nav.results') : t('home.seePremium')"
               size="xl"
               color="neutral"
               variant="outline"
@@ -108,7 +100,7 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
             <UIcon
               name="i-lucide-circle-check"
               class="size-4 text-success"
-            />No account needed for free tests
+            />{{ t('home.noAccount') }}
           </p>
         </div>
 
@@ -140,7 +132,7 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
               B2
             </p>
             <p class="text-[10px] font-medium opacity-90">
-              Upper-int.
+              {{ t('home.upperInt') }}
             </p>
           </div>
           <div class="absolute left-[4%] bottom-[24%] -rotate-6 rounded-xl bg-default p-2 shadow-glow ring ring-default">
@@ -152,10 +144,10 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
           </div>
           <div class="absolute inset-x-[12%] bottom-[4%] rounded-xl bg-default px-4 py-2.5 text-center shadow-glow ring ring-default">
             <p class="text-[11px] text-muted">
-              Reading · Multilevel Practice Test 1
+              {{ skillLabel('READING') }} · Multilevel Practice Test 1
             </p>
             <p class="text-sm font-semibold text-highlighted">
-              58 / 75 · B2 in 41 minutes
+              {{ t('home.heroCard') }}
             </p>
           </div>
         </div>
@@ -167,12 +159,19 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
       :class="wrap"
       class="flex flex-col items-center gap-10 text-center"
     >
-      <h2 class="text-3xl sm:text-[2.6rem] leading-tight font-bold text-highlighted text-balance max-w-3xl">
-        Practise <span class="text-accent">all four skills</span> the way the Multilevel exam tests them
-      </h2>
+      <i18n-t
+        keypath="home.allFour"
+        tag="h2"
+        scope="global"
+        class="text-3xl sm:text-[2.6rem] leading-tight font-bold text-highlighted text-balance max-w-3xl"
+      >
+        <template #accent>
+          <span class="text-accent">{{ t('home.allFourAccent') }}</span>
+        </template>
+      </i18n-t>
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-8 w-full max-w-4xl">
         <div
-          v-for="stat in [{ n: '35 + 35', l: 'Listening and Reading questions' }, { n: '0–75', l: 'Score, as the exam reports it' }, { n: 'A2–C1', l: 'Your CEFR level' }, { n: '24 h', l: 'Writing and Speaking marked' }]"
+          v-for="stat in stats"
           :key="stat.l"
         >
           <p class="text-3xl sm:text-5xl font-bold text-highlighted tabular-nums">
@@ -197,11 +196,18 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
             alt=""
             class="size-12"
           >
-          <h2 class="text-2xl sm:text-4xl font-bold text-highlighted text-balance">
-            Your score, <span class="text-accent">the moment you finish</span>
-          </h2>
+          <i18n-t
+            keypath="home.f1Title"
+            tag="h2"
+            scope="global"
+            class="text-2xl sm:text-4xl font-bold text-highlighted text-balance"
+          >
+            <template #accent>
+              <span class="text-accent">{{ t('home.f1Accent') }}</span>
+            </template>
+          </i18n-t>
           <p class="text-toned text-lg text-pretty max-w-lg">
-            Listening and Reading are checked as soon as you hand in: a score out of 75 on the official scale, your CEFR level, and how each part went.
+            {{ t('home.f1Text') }}
           </p>
         </div>
         <div
@@ -209,7 +215,7 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
           aria-hidden="true"
         >
           <p class="text-center font-semibold text-highlighted mb-3">
-            Your score
+            {{ t('home.yourScore') }}
           </p>
           <div class="rounded-xl bg-gradient-to-br from-[#5870f5] to-[#8b9cff] py-7 text-center text-white">
             <p class="text-6xl font-bold leading-none">
@@ -221,7 +227,7 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
           </div>
           <ul class="mt-4 flex flex-col gap-2 text-sm">
             <li
-              v-for="(p, i) in [['Part 1 — Notices', '6/6'], ['Part 2 — Matching', '7/8'], ['Part 4 — Multiple choice', '5/9']]"
+              v-for="(p, i) in [[t('home.demoPart1'), '6/6'], [t('home.demoPart2'), '7/8'], [t('home.demoPart4'), '5/9']]"
               :key="i"
               class="flex items-center gap-3"
             >
@@ -243,11 +249,18 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
             alt=""
             class="size-12"
           >
-          <h2 class="text-2xl sm:text-4xl font-bold text-highlighted text-balance">
-            Know <span class="text-accent">why</span> every answer is right
-          </h2>
+          <i18n-t
+            keypath="home.f2Title"
+            tag="h2"
+            scope="global"
+            class="text-2xl sm:text-4xl font-bold text-highlighted text-balance"
+          >
+            <template #accent>
+              <span class="text-accent">{{ t('home.f2Accent') }}</span>
+            </template>
+          </i18n-t>
           <p class="text-toned text-lg text-pretty max-w-lg">
-            The review sets the passage beside the questions, with your answer, the key, and the line in the text that gives it away.
+            {{ t('home.f2Text') }}
           </p>
         </div>
         <div
@@ -267,7 +280,7 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
             <span class="font-semibold text-success">Monday</span>
           </div>
           <p class="mt-3 text-xs text-muted">
-            "…every day except Monday" — the passage says the library closes on Mondays.
+            {{ t('home.demoEvidence') }}
           </p>
         </div>
       </div>
@@ -279,11 +292,18 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
             alt=""
             class="size-12"
           >
-          <h2 class="text-2xl sm:text-4xl font-bold text-highlighted text-balance">
-            Writing and Speaking, <span class="text-accent">marked by an examiner</span>
-          </h2>
+          <i18n-t
+            keypath="home.f3Title"
+            tag="h2"
+            scope="global"
+            class="text-2xl sm:text-4xl font-bold text-highlighted text-balance"
+          >
+            <template #accent>
+              <span class="text-accent">{{ t('home.f3Accent') }}</span>
+            </template>
+          </i18n-t>
           <p class="text-toned text-lg text-pretty max-w-lg">
-            Write and record in the real format. Practise freely, or hand it in for an examiner's score out of 75 and written feedback, usually within a day.
+            {{ t('home.f3Text') }}
           </p>
         </div>
         <div
@@ -291,9 +311,9 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
           aria-hidden="true"
         >
           <div class="flex items-center justify-between">
-            <span class="font-semibold text-highlighted">Task 2 — Essay</span>
+            <span class="font-semibold text-highlighted">{{ t('home.demoTask') }}</span>
             <UBadge
-              label="214 words"
+              :label="t('home.demoWords')"
               color="primary"
               variant="soft"
               size="sm"
@@ -304,10 +324,10 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
           </p>
           <div class="mt-4 rounded-xl bg-elevated p-4">
             <p class="text-xs font-semibold text-muted mb-1">
-              Examiner's feedback · 56 / 75
+              {{ t('home.demoFeedback') }}
             </p>
             <p class="text-sm text-toned">
-              Clear position and well-organised paragraphs. Work on linking ideas within paragraphs and vary your sentence openings.
+              {{ t('home.demoFeedbackText') }}
             </p>
           </div>
         </div>
@@ -321,16 +341,23 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
     >
       <div class="flex items-end justify-between gap-3">
         <div>
-          <h2 class="text-2xl sm:text-3xl font-bold text-highlighted">
-            Newest <span class="text-accent">tests</span>
-          </h2>
+          <i18n-t
+            keypath="home.newest"
+            tag="h2"
+            scope="global"
+            class="text-2xl sm:text-3xl font-bold text-highlighted"
+          >
+            <template #accent>
+              <span class="text-accent">{{ t('home.newestAccent') }}</span>
+            </template>
+          </i18n-t>
           <p class="text-muted mt-1">
-            Free ones open without an account.
+            {{ t('home.newestText') }}
           </p>
         </div>
         <UButton
           to="/tests"
-          label="All tests"
+          :label="t('pub.allTests')"
           trailing-icon="i-lucide-arrow-right"
           color="neutral"
           variant="ghost"
@@ -342,16 +369,16 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
         class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
       >
         <TestCard
-          v-for="t in data.items"
-          :key="t.id"
-          :test="t"
+          v-for="test in data.items"
+          :key="test.id"
+          :test="test"
         />
       </div>
       <UEmpty
         v-else
         icon="i-lucide-clipboard-list"
-        title="Tests are on their way"
-        description="Check back soon."
+        :title="t('home.emptyTitle')"
+        :description="t('home.emptyText')"
         variant="naked"
       />
     </section>
@@ -361,9 +388,16 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
       :class="wrap"
       class="flex flex-col gap-10"
     >
-      <h2 class="text-3xl sm:text-[2.6rem] leading-tight font-bold text-highlighted text-center text-balance">
-        Why practise on <span class="text-accent">Multilevel</span>?
-      </h2>
+      <i18n-t
+        keypath="home.why"
+        tag="h2"
+        scope="global"
+        class="text-3xl sm:text-[2.6rem] leading-tight font-bold text-highlighted text-center text-balance"
+      >
+        <template #accent>
+          <span class="text-accent">Multilevel</span>
+        </template>
+      </i18n-t>
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div
           v-for="s in skills"
@@ -395,9 +429,16 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
       :class="wrap"
       class="flex flex-col gap-10 scroll-mt-24"
     >
-      <h2 class="text-3xl sm:text-[2.6rem] leading-tight font-bold text-highlighted text-center text-balance">
-        How <span class="text-accent">it works</span>
-      </h2>
+      <i18n-t
+        keypath="home.howTitle"
+        tag="h2"
+        scope="global"
+        class="text-3xl sm:text-[2.6rem] leading-tight font-bold text-highlighted text-center text-balance"
+      >
+        <template #accent>
+          <span class="text-accent">{{ t('home.howAccent') }}</span>
+        </template>
+      </i18n-t>
       <ol class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <li
           v-for="(s, i) in steps"
@@ -424,11 +465,18 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
       class="grid lg:grid-cols-[1fr_1.4fr] gap-8 items-start scroll-mt-24"
     >
       <div class="flex flex-col gap-3 max-lg:text-center max-lg:items-center">
-        <h2 class="text-3xl sm:text-[2.6rem] leading-tight font-bold text-highlighted text-balance">
-          Frequently asked <span class="text-accent">questions</span>
-        </h2>
+        <i18n-t
+          keypath="home.faqTitle"
+          tag="h2"
+          scope="global"
+          class="text-3xl sm:text-[2.6rem] leading-tight font-bold text-highlighted text-balance"
+        >
+          <template #accent>
+            <span class="text-accent">{{ t('home.faqAccent') }}</span>
+          </template>
+        </i18n-t>
         <p class="text-muted">
-          Anything else? Write to us on Telegram.
+          {{ t('home.faqMore') }}
         </p>
         <img
           src="/illustrations/chat.svg"
@@ -453,14 +501,14 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
         >
         <div class="relative max-w-xl flex flex-col gap-4">
           <h2 class="text-3xl sm:text-[2.6rem] leading-tight font-bold text-balance">
-            Ready to see your level?
+            {{ t('home.ctaTitle') }}
           </h2>
           <p class="text-white/85 text-lg">
-            Take a free test now. It takes under an hour, and your score comes the moment you finish.
+            {{ t('home.ctaText') }}
           </p>
           <UButton
             to="/tests"
-            label="Start now"
+            :label="t('pub.startNow')"
             size="xl"
             color="neutral"
             class="self-start px-9 rounded-full text-base font-semibold bg-white text-[#3f49c9] hover:bg-white/90"

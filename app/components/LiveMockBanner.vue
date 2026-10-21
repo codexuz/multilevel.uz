@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /** A strip on the Tests page while a live mock is open, or before the next one. */
+const { t } = useI18n()
 const { live, next } = useLiveMock()
-const when = (d: string) => new Date(d).toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
+const when = (d: string) => new Date(d).toLocaleString(intlLocale(), { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
 </script>
 
 <template>
@@ -19,7 +20,7 @@ const when = (d: string) => new Date(d).toLocaleString('en-GB', { weekday: 'long
       <p class="font-semibold text-highlighted truncate">
         <UBadge
           v-if="live"
-          label="Live"
+          :label="t('nav.liveBadge')"
           color="error"
           variant="solid"
           size="sm"
@@ -27,7 +28,7 @@ const when = (d: string) => new Date(d).toLocaleString('en-GB', { weekday: 'long
         />{{ (live ?? next)!.title }}
       </p>
       <p class="text-xs text-muted truncate">
-        {{ live ? `Open until ${when(live.endsAt)}: sit it and see your place on the leaderboard` : `Opens ${when(next!.startsAt)}` }}
+        {{ live ? t('live.bannerOpen', { when: when(live.endsAt) }) : t('live.bannerNext', { when: when(next!.startsAt) }) }}
       </p>
     </div>
     <UIcon

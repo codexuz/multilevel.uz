@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { uploadFile } from '~/services/http'
 
+const { t: tr } = useI18n()
+
 /**
  * Instant AI feedback on Writing or Speaking: an estimated score out of 75, each task's (or part's)
  * criteria, corrections and a better version. For a saved attempt (`attemptId`), for essays just
@@ -83,7 +85,7 @@ async function start() {
     review.value = { id, status: 'PENDING', score: null, cefrLevel: null, error: null }
     poll(id)
   } catch (e: any) {
-    toast.add({ title: 'No AI feedback yet', description: e?.data?.message || 'Please try again.', color: e?.statusCode === 402 ? 'warning' : 'error' })
+    toast.add({ title: tr('ai.noFeedback'), description: e?.data?.message || tr('test.tryAgain'), color: e?.statusCode === 402 ? 'warning' : 'error' })
     refreshStatus()
   } finally {
     starting.value = false
@@ -94,20 +96,20 @@ const left = computed(() => status.value?.allowance?.left)
 const leftText = computed(() => {
   const a = status.value?.allowance
   if (!a || a.left == null) return ''
-  return `${a.left} of ${a.limit} left ${a.period === 'day' ? 'today' : 'this month'}`
+  return a.period === 'day' ? tr('ai.leftToday', { left: a.left, limit: a.limit }) : tr('ai.leftMonth', { left: a.left, limit: a.limit })
 })
 const speaking = computed(() => !!review.value?.parts || props.skill === 'SPEAKING')
 const CRITERIA = computed(() => speaking.value
-  ? [{ key: 'fluency', label: 'Fluency' }, { key: 'vocabulary', label: 'Vocabulary' }, { key: 'grammar', label: 'Grammar' }, { key: 'taskAchievement', label: 'Task achievement' }]
-  : [{ key: 'taskAchievement', label: 'Task achievement' }, { key: 'organisation', label: 'Organisation' }, { key: 'vocabulary', label: 'Vocabulary' }, { key: 'grammar', label: 'Grammar' }])
+  ? ['fluency', 'vocabulary', 'grammar', 'taskAchievement'].map(key => ({ key, label: tr(`criterion.${key}`) }))
+  : ['taskAchievement', 'organisation', 'vocabulary', 'grammar'].map(key => ({ key, label: tr(`criterion.${key}`) })))
 /** Tasks or parts, alike: what each card shows. */
 const items = computed(() => review.value?.parts
   ? review.value.parts.map(p => ({ id: p.partId, label: p.label, level: p.level, criteria: p.criteria, comment: p.comment, corrections: p.corrections, better: p.betterAnswer, meta: p.durationSeconds ? `${p.durationSeconds}s` : '', warn: false, transcript: p.transcript }))
-  : (review.value?.tasks ?? []).map(t => ({ id: t.taskId, label: t.label, level: t.level, criteria: t.criteria, comment: t.comment, corrections: t.corrections, better: t.betterSentence, meta: `${t.wordCount} / ${t.minWords}+ words`, warn: t.wordCount < t.minWords, transcript: null as string | null })))
+  : (review.value?.tasks ?? []).map(t => ({ id: t.taskId, label: t.label, level: t.level, criteria: t.criteria, comment: t.comment, corrections: t.corrections, better: t.betterSentence, meta: tr('ai.wordsOf', { n: t.wordCount, min: t.minWords }), warn: t.wordCount < t.minWords, transcript: null as string | null })))
 const intro = computed(() => speaking.value
-  ? 'An estimated score out of 75 from what you said: how each part did on fluency, vocabulary, grammar and the task, with corrections. About a minute.'
-  : 'An estimated score out of 75, how each task did on the four criteria, and the corrections that matter most. About a minute.')
-const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? 'Below B1' : l ? `CEFR ${l}` : '')
+  ? tr('ai.introSpeaking')
+  : tr('ai.introWriting'))
+const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? tr('common.belowB1') : l ? `CEFR ${l}` : '')
 </script>
 
 <template>
@@ -126,7 +128,7 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? 'Below B1' :
         </div>
         <div class="flex-1 min-w-0">
           <p class="font-semibold text-highlighted">
-            Instant AI feedback
+            {{ tr('ai.instant') }}
           </p>
           <p class="text-sm text-muted text-pretty">
             {{ review?.status === 'FAILED' ? review.error : intro }}
@@ -141,7 +143,7 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? 'Below B1' :
         <UButton
           v-if="!loggedIn"
           :to="`/login?next=${encodeURIComponent(route.fullPath)}`"
-          label="Sign in for AI feedback"
+          :label="tr('ai.signIn')"
           icon="i-lucide-log-in"
           class="justify-center"
         />
@@ -149,7 +151,7 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? 'Below B1' :
           v-else-if="left === 0"
           :to="isPremium ? undefined : `/pricing?from=${encodeURIComponent(route.fullPath)}`"
           :disabled="isPremium"
-          :label="isPremium ? 'More tomorrow' : 'Get more with Premium'"
+          :label="isPremium ? tr('ai.moreTomorrow') : tr('ai.morePremium')"
           icon="i-lucide-sparkles"
           color="neutral"
           variant="outline"
@@ -157,7 +159,7 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? 'Below B1' :
         />
         <UButton
           v-else
-          :label="review?.status === 'FAILED' ? 'Try again' : 'Get AI feedback'"
+          :label="review?.status === 'FAILED' ? tr('common.tryAgain') : tr('ai.get')"
           icon="i-lucide-wand-sparkles"
           :loading="starting"
           class="justify-center"
@@ -175,10 +177,10 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? 'Below B1' :
         />
         <div>
           <p class="font-semibold text-highlighted">
-            Reading your writing…
+            {{ speaking ? tr('ai.listening') : tr('ai.reading') }}
           </p>
           <p class="text-sm text-muted">
-            Usually under a minute. You can stay here; it appears by itself.
+            {{ tr('ai.wait') }}
           </p>
         </div>
       </div>
@@ -192,10 +194,10 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? 'Below B1' :
             <UIcon
               name="i-lucide-sparkles"
               class="text-primary"
-            />AI feedback
+            />{{ tr('ai.feedback') }}
           </p>
           <UBadge
-            label="Estimate"
+            :label="tr('ai.estimate')"
             color="neutral"
             variant="subtle"
             size="sm"
@@ -211,7 +213,7 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? 'Below B1' :
             </p>
           </div>
           <p class="text-xs text-white/80 sm:text-right sm:max-w-44">
-            An AI estimate to guide you, not an examiner's mark.
+            {{ tr('ai.guide') }}
           </p>
         </div>
         <p
@@ -229,7 +231,7 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? 'Below B1' :
             class="rounded-lg bg-success/10 px-4 py-3"
           >
             <p class="text-xs font-semibold text-success mb-1.5">
-              Keep doing
+              {{ tr('ai.keep') }}
             </p>
             <ul class="text-sm text-toned flex flex-col gap-1 list-disc ps-4">
               <li
@@ -245,7 +247,7 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? 'Below B1' :
             class="rounded-lg bg-warning/10 px-4 py-3"
           >
             <p class="text-xs font-semibold text-warning mb-1.5">
-              Work on first
+              {{ tr('ai.workOn') }}
             </p>
             <ul class="text-sm text-toned flex flex-col gap-1 list-disc ps-4">
               <li
@@ -306,7 +308,7 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? 'Below B1' :
             class="rounded-lg ring ring-default px-3 py-2 text-sm"
           >
             <summary class="cursor-pointer text-xs font-semibold text-muted">
-              What we heard
+              {{ tr('ai.heard') }}
             </summary>
             <p class="mt-2 text-toned leading-6">
               {{ t.transcript }}
@@ -314,7 +316,7 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? 'Below B1' :
           </details>
           <div v-if="t.corrections.length">
             <p class="text-xs font-semibold text-muted mb-2">
-              Corrections
+              {{ tr('ai.corrections') }}
             </p>
             <ul class="flex flex-col divide-y divide-default rounded-lg ring ring-default">
               <li
@@ -341,7 +343,7 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? 'Below B1' :
             class="rounded-lg bg-elevated px-4 py-3"
           >
             <p class="text-xs font-semibold text-muted mb-1">
-              One step up
+              {{ tr('ai.stepUp') }}
             </p>
             <p class="text-sm text-highlighted font-serif leading-6">
               {{ t.better }}

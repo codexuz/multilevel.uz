@@ -3,7 +3,8 @@
  * A learning centre for its owner and teachers: seats and licence, the groups (each with a join link
  * for students), and for the owner the code teachers join with.
  */
-useSeoMeta({ title: 'My centre', robots: 'noindex' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('nav.centre'), robots: 'noindex' })
 
 interface CentreView {
   id: string
@@ -43,7 +44,7 @@ async function createGroup() {
     creating.value = false
     await router.push(`/centre/groups/${g.id}`)
   } catch (e) {
-    toast.add({ title: 'Not created', description: errorMessage(e), color: 'error' })
+    toast.add({ title: t('centre.notCreated'), description: errorMessage(e), color: 'error' })
   } finally {
     saving.value = false
   }
@@ -58,7 +59,7 @@ async function copy(text: string, title: string) {
 
 <template>
   <AppPage
-    title="My centre"
+    :title="t('nav.centre')"
     icon="i-lucide-school"
   >
     <template #actions>
@@ -71,7 +72,7 @@ async function copy(text: string, title: string) {
       />
       <UButton
         v-if="data"
-        label="New group"
+        :label="t('centre.newGroup')"
         icon="i-lucide-plus"
         @click="creating = true; groupName = ''"
       />
@@ -80,9 +81,9 @@ async function copy(text: string, title: string) {
     <UEmpty
       v-if="!centreId || error"
       icon="i-lucide-school"
-      title="You do not run a centre here yet"
-      description="If your centre gave you a teacher code, enter it on your Profile."
-      :actions="[{ label: 'Profile', to: '/profile' }]"
+      :title="t('centre.noCentre')"
+      :description="t('centre.noCentreText')"
+      :actions="[{ label: t('nav.profile'), to: '/profile' }]"
     />
 
     <div
@@ -94,7 +95,7 @@ async function copy(text: string, title: string) {
           {{ data.name }}
         </h1>
         <p class="text-sm text-muted mt-1">
-          {{ data.role === 'OWNER' ? 'Owner' : 'Teacher' }} · {{ data.teachers.length }} staff
+          {{ data.role === 'OWNER' ? t('centre.owner') : t('centre.teacher') }} · {{ t('centre.staff', { n: data.teachers.length }, data.teachers.length) }}
         </p>
       </div>
 
@@ -103,8 +104,8 @@ async function copy(text: string, title: string) {
         color="warning"
         variant="subtle"
         icon="i-lucide-triangle-alert"
-        title="The licence has ended"
-        description="Students no longer have Premium and nobody can join. Contact us to renew."
+        :title="t('centre.licenceEnded')"
+        :description="t('centre.licenceEndedText')"
       />
 
       <div class="grid sm:grid-cols-3 gap-3">
@@ -113,10 +114,10 @@ async function copy(text: string, title: string) {
           :ui="{ body: 'p-4' }"
         >
           <p class="text-sm text-muted">
-            Seats taken
+            {{ t('centre.seatsTaken') }}
           </p>
           <p class="text-xl font-bold text-highlighted mt-1">
-            {{ data.students }} <span class="text-sm font-normal text-muted">of {{ data.seats }}</span>
+            {{ data.students }} <span class="text-sm font-normal text-muted">{{ t('centre.ofSeats', { n: data.seats }) }}</span>
           </p>
           <UProgress
             :model-value="data.seats ? Math.min(100, (data.students / data.seats) * 100) : 0"
@@ -130,13 +131,13 @@ async function copy(text: string, title: string) {
           :ui="{ body: 'p-4' }"
         >
           <p class="text-sm text-muted">
-            Licence until
+            {{ t('centre.licenceUntil') }}
           </p>
           <p class="text-xl font-bold text-highlighted mt-1">
             {{ data.licensedUntil ? formatDate(data.licensedUntil) : '—' }}
           </p>
           <p class="text-xs text-muted mt-1">
-            Students have Premium until then.
+            {{ t('centre.premiumUntilThen') }}
           </p>
         </UCard>
         <UCard
@@ -145,7 +146,7 @@ async function copy(text: string, title: string) {
           :ui="{ body: 'p-4' }"
         >
           <p class="text-sm text-muted">
-            Teacher code
+            {{ t('classes.teacherCode') }}
           </p>
           <div class="flex items-center gap-2 mt-1">
             <span class="text-xl font-bold font-mono text-highlighted">{{ data.teacherCode }}</span>
@@ -154,32 +155,32 @@ async function copy(text: string, title: string) {
               size="xs"
               color="neutral"
               variant="ghost"
-              aria-label="Copy the teacher code"
-              @click="copy(data.teacherCode!, 'Teacher code copied')"
+              :aria-label="t('centre.copyTeacherCode')"
+              @click="copy(data.teacherCode!, t('centre.teacherCodeCopied'))"
             />
           </div>
           <p class="text-xs text-muted mt-1">
-            Teachers enter it on their Profile.
+            {{ t('centre.teachersEnter') }}
           </p>
         </UCard>
       </div>
 
       <div class="flex items-center justify-between gap-2">
         <h2 class="font-semibold text-highlighted">
-          Groups
+          {{ t('centre.groups') }}
         </h2>
         <USwitch
           v-model="showArchived"
-          label="Show archived"
+          :label="t('centre.showArchived')"
           size="sm"
         />
       </div>
       <UEmpty
         v-if="!groups.length"
         icon="i-lucide-users"
-        title="No groups yet"
-        description="Make a group for each class and share its link: students who join take a seat and get Premium."
-        :actions="[{ label: 'New group', icon: 'i-lucide-plus', onClick: () => { creating = true; groupName = '' } }]"
+        :title="t('centre.noGroups')"
+        :description="t('centre.noGroupsText')"
+        :actions="[{ label: t('centre.newGroup'), icon: 'i-lucide-plus', onClick: () => { creating = true; groupName = '' } }]"
       />
       <div class="grid sm:grid-cols-2 gap-3">
         <UCard
@@ -195,25 +196,25 @@ async function copy(text: string, title: string) {
               <span class="font-semibold text-highlighted truncate">{{ g.name }}</span>
               <UBadge
                 v-if="g.archived"
-                label="Archived"
+                :label="t('centre.archived')"
                 color="neutral"
                 variant="subtle"
                 size="sm"
               />
             </div>
             <p class="text-xs text-muted mt-1">
-              {{ g.students }} {{ g.students === 1 ? 'student' : 'students' }} · {{ g.assignments }} {{ g.assignments === 1 ? 'assignment' : 'assignments' }}{{ g.teacher ? ` · ${g.teacher}` : '' }}
+              {{ t('centre.students', { n: g.students }, g.students) }} · {{ t('centre.assignments', { n: g.assignments }, g.assignments) }}{{ g.teacher ? ` · ${g.teacher}` : '' }}
             </p>
           </NuxtLink>
           <div class="flex items-center gap-2 mt-3">
             <span class="font-mono text-sm text-toned">{{ g.joinCode }}</span>
             <UButton
-              label="Copy join link"
+              :label="t('centre.copyJoinLink')"
               icon="i-lucide-link"
               size="xs"
               color="neutral"
               variant="outline"
-              @click="copy(`${site}/join/${g.joinCode}`, 'Join link copied')"
+              @click="copy(`${site}/join/${g.joinCode}`, t('centre.joinLinkCopied'))"
             />
           </div>
         </UCard>
@@ -222,31 +223,31 @@ async function copy(text: string, title: string) {
 
     <UModal
       v-model:open="creating"
-      title="New group"
+      :title="t('centre.newGroup')"
     >
       <template #body>
         <form
           class="grid gap-4"
           @submit.prevent="createGroup"
         >
-          <UFormField label="Name">
+          <UFormField :label="t('centre.name')">
             <UInput
               v-model="groupName"
-              placeholder="e.g. B2 evening, Mon/Wed/Fri"
+              :placeholder="t('centre.namePlaceholder')"
               class="w-full"
               autofocus
             />
           </UFormField>
           <div class="flex justify-end gap-2">
             <UButton
-              label="Cancel"
+              :label="t('common.cancel')"
               color="neutral"
               variant="ghost"
               @click="creating = false"
             />
             <UButton
               type="submit"
-              label="Create"
+              :label="t('centre.create')"
               :loading="saving"
             />
           </div>

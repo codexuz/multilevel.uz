@@ -22,10 +22,10 @@ export function timeAgo(date: string | Date): string {
   // it isn't the current one.
   const d = new Date(then)
   const sameYear = d.getFullYear() === new Date().getFullYear()
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', ...(sameYear ? {} : { year: 'numeric' }) })
+  return d.toLocaleDateString(intlLocale(), { month: 'short', day: 'numeric', ...(sameYear ? {} : { year: 'numeric' }) })
 }
 
 /** Full, locale-formatted timestamp for tooltips and `<time>` labels. */
 export function fullTime(date: string | Date): string {
-  return new Date(date).toLocaleString()
+  return new Date(date).toLocaleString(intlLocale())
 }

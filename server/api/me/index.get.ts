@@ -15,6 +15,7 @@ export default defineEventHandler(async (event) => {
     telegram: !!u.telegramId,
     telegramNotify: u.telegramNotify,
     telegramBot: u.telegramBotJoined,
+    locale: u.locale,
     name: u.name,
     avatarUrl: u.avatarUrl,
     role: u.role,

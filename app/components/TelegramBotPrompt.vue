@@ -5,6 +5,7 @@
  * bot really cannot write to them yet. The button opens the bot with a link that connects their
  * account when they press Start; the popup waits for that and closes itself.
  */
+const { t } = useI18n()
 const { me, loggedIn, refresh } = useMe()
 const toast = useToast()
 const { data: providers } = useFetch<{ telegram: { botId: string } | null }>('/api/auth/providers', { key: 'auth-providers' })
@@ -69,7 +70,7 @@ function waitForStart(tries = 30) {
     if (await joined()) {
       waiting.value = false
       open.value = false
-      toast.add({ title: 'Telegram connected', description: 'Your results will come to the bot.', icon: 'i-logos-telegram', color: 'success' })
+      toast.add({ title: t('bot.connected'), description: t('bot.connectedText'), icon: 'i-logos-telegram', color: 'success' })
     } else if (tries > 1) waitForStart(tries - 1)
     else waiting.value = false
   }, 4000)
@@ -82,11 +83,11 @@ function notNow() {
   open.value = false
 }
 
-const perks = [
-  { icon: 'i-lucide-pen-line', text: 'The moment an examiner marks your Writing or Speaking' },
-  { icon: 'i-lucide-sparkles', text: 'When your AI feedback is ready' },
-  { icon: 'i-lucide-gift', text: 'When a friend you invited earns you credits' }
-]
+const perks = computed(() => [
+  { icon: 'i-lucide-pen-line', text: t('bot.perkMarked') },
+  { icon: 'i-lucide-sparkles', text: t('bot.perkAi') },
+  { icon: 'i-lucide-gift', text: t('bot.perkInvite') }
+])
 </script>
 
 <template>
@@ -107,10 +108,10 @@ const perks = [
           </div>
           <div>
             <h2 class="text-lg font-semibold text-highlighted">
-              Get your results in Telegram
+              {{ t('bot.title') }}
             </h2>
             <p class="text-sm text-muted text-pretty">
-              Join our bot{{ link ? ` @${link.username}` : '' }} and it messages you:
+              {{ t('bot.intro', { bot: link ? ` @${link.username}` : '' }) }}
             </p>
           </div>
         </div>
@@ -132,8 +133,8 @@ const perks = [
           variant="subtle"
           icon="i-lucide-loader-circle"
           :ui="{ icon: 'animate-spin' }"
-          title="Press Start in Telegram"
-          description="Then come back here: this closes by itself once you are connected."
+          :title="t('bot.pressStart')"
+          :description="t('bot.pressStartText')"
         />
         <div class="grid gap-2">
           <UButton
@@ -142,12 +143,12 @@ const perks = [
             external
             size="lg"
             icon="i-logos-telegram"
-            :label="waiting ? 'Open the bot again' : 'Join the bot'"
+            :label="waiting ? t('bot.openAgain') : t('bot.join')"
             class="justify-center"
             @click="waitForStart()"
           />
           <UButton
-            label="Not now"
+            :label="t('bot.notNow')"
             color="neutral"
             variant="ghost"
             class="justify-center"

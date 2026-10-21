@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { Plan } from '~/utils/billing'
 
+const { t } = useI18n()
+
 definePageMeta({ guestLayout: true })
 
 /**
@@ -17,11 +19,13 @@ const markingPlans = computed(() => (data.value?.plans ?? []).filter(p => p.dura
 
 useSeoMeta({
   title: 'Premium',
-  description: 'Multilevel Premium: every practice test, the explanation behind every answer, and Writing and Speaking marked by an examiner.'
+  description: () => t('pricing.seo')
 })
 
-const FREE = ['Free practice tests', 'Listening and Reading checked instantly', 'Score out of 75 and CEFR level', 'Answer key for every question', 'Writing and Speaking practice to download']
-const PREMIUM = ['Every test in the library, new ones every week', 'Why each answer is right, with the line in the passage', 'Writing and Speaking marked by an examiner (with marking credits)', 'All your results kept and compared']
+const FREE = computed(() => [1, 2, 3, 4, 5].map(n => t(`pricing.free${n}`)))
+const PREMIUM = computed(() => [1, 2, 3, 4].map(n => t(`pricing.premium${n}`)))
+/** What a code gives, in words, from its kind and value. */
+const promoWords = (p: { kind: string, value: number }) => (p.kind === 'PERCENT' ? t('pricing.promoPercent', { n: p.value }) : p.kind === 'AMOUNT' ? t('pricing.promoAmount', { sum: fmtUzs(p.value) }) : t('pricing.promoDays', { duration: durationText(p.value) }))
 
 // ─── Promo codes: typed here, or arriving as /pricing?promo=CODE ───
 interface PromoInfo { code: string, kind: 'PERCENT' | 'AMOUNT' | 'DAYS', value: number, text: string, prices: Record<string, number> }
@@ -36,7 +40,7 @@ async function applyPromo() {
     promo.value = await $fetch<PromoInfo>('/api/billing/promo', { query: { code: promoInput.value } })
   } catch (e: any) {
     promo.value = null
-    toast.add({ title: 'Promo code not applied', description: errorMessage(e), color: 'warning' })
+    toast.add({ title: t('pricing.promoNot'), description: errorMessage(e), color: 'warning' })
   } finally {
     checkingPromo.value = false
   }
@@ -56,10 +60,10 @@ async function redeemDays() {
   try {
     const { days } = await $fetch<{ days: number }>('/api/billing/promo/redeem', { method: 'POST', body: { code: promo.value.code } })
     await refreshMe()
-    toast.add({ title: 'Premium switched on', description: `${durationText(days)} of Premium added.`, color: 'success' })
+    toast.add({ title: t('pricing.switchedOnPremium'), description: t('pricing.daysAdded', { duration: durationText(days) }), color: 'success' })
     removePromo()
   } catch (e: any) {
-    toast.add({ title: 'Not redeemed', description: errorMessage(e), color: 'error' })
+    toast.add({ title: t('pricing.notRedeemed'), description: errorMessage(e), color: 'error' })
   } finally {
     redeeming.value = false
   }
@@ -83,14 +87,14 @@ async function buy(plan: Plan) {
       await refreshMe()
       buying.value = null
       removePromo()
-      toast.add({ title: 'Switched on', description: `${plan.name} is yours.`, color: 'success' })
+      toast.add({ title: t('pricing.switchedOn'), description: t('pricing.isYours', { plan: plan.name }), color: 'success' })
       return
     }
     window.location.href = order.url!
   } catch (e: any) {
     buying.value = null
     if (e?.data?.data?.code === 'TELEGRAM') telegramPlan.value = plan
-    else toast.add({ title: 'Payment could not start', description: errorMessage(e), color: 'error' })
+    else toast.add({ title: t('pricing.paymentFailed'), description: errorMessage(e), color: 'error' })
   }
 }
 
@@ -102,13 +106,13 @@ onMounted(async () => {
 })
 
 const telegramMessage = computed(() => telegramPlan.value
-  ? `Hello! I'd like to buy "${telegramPlan.value.name}" (${fmtUzs(priceOf(telegramPlan.value))}${discounted(telegramPlan.value) ? ` with code ${promo.value!.code}` : ''}) on multilevel.uz. My account: ${accountHandle(me.value) || me.value?.id || ''}`
+  ? t('pricing.telegramMessage', { plan: telegramPlan.value.name, price: fmtUzs(priceOf(telegramPlan.value)), code: discounted(telegramPlan.value) ? t('pricing.withCode', { code: promo.value!.code }) : '', account: accountHandle(me.value) || me.value?.id || '' })
   : '')
 const telegramHandle = computed(() => (data.value?.telegram ?? '').replace(/^https?:\/\/t\.me\//, '@'))
 async function copyMessage() {
   try {
     await navigator.clipboard.writeText(telegramMessage.value)
-    toast.add({ title: 'Message copied', color: 'success' })
+    toast.add({ title: t('pricing.messageCopied'), color: 'success' })
   } catch {}
 }
 
@@ -135,10 +139,17 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
           aria-hidden="true"
         >
         <h1 class="text-2xl sm:text-4xl font-bold text-highlighted text-balance">
-          Prepare with <span class="text-accent">every test</span>, and know why every answer is right
+          <i18n-t
+            keypath="pricing.title"
+            scope="global"
+          >
+            <template #accent>
+              <span class="text-accent">{{ t('pricing.titleAccent') }}</span>
+            </template>
+          </i18n-t>
         </h1>
         <p class="text-muted max-w-2xl text-pretty">
-          Free tests stay free. Premium opens the whole library and the explanations; marking credits get your Writing and Speaking marked by an examiner.
+          {{ t('pricing.intro') }}
         </p>
         <UAlert
           v-if="loggedIn && (isPremium || credits)"
@@ -146,8 +157,8 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
           color="success"
           variant="subtle"
           class="max-w-xl text-left mt-2"
-          :title="isPremium ? (me?.premiumUntil ? `Premium until ${formatDate(me.premiumUntil)}` : 'Premium is on') : 'Your marking credits'"
-          :description="`${creditsText(credits)} left. Buying more adds to what you have.`"
+          :title="isPremium ? (me?.premiumUntil ? t('pricing.premiumUntil', { date: formatDate(me.premiumUntil) }) : t('pricing.premiumOn')) : t('pricing.yourCredits')"
+          :description="t('pricing.creditsLeft', { credits: creditsText(credits) })"
         />
       </section>
 
@@ -159,16 +170,16 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
           variant="subtle"
           icon="i-lucide-ticket-percent"
           class="max-w-xl"
-          :title="`${promo.code}: ${promo.text}`"
-          :description="promo.kind === 'DAYS' ? 'Use it now: no payment needed.' : 'Applied to the prices below.'"
+          :title="`${promo.code}: ${promoWords(promo)}`"
+          :description="promo.kind === 'DAYS' ? t('pricing.useNow') : t('pricing.applied')"
           :actions="[
-            ...(promo.kind === 'DAYS' ? [{ label: `Get ${durationText(promo.value)} of Premium`, color: 'success' as const, variant: 'solid' as const, loading: redeeming, onClick: redeemDays }] : []),
-            { label: 'Remove', color: 'neutral' as const, variant: 'ghost' as const, onClick: removePromo }
+            ...(promo.kind === 'DAYS' ? [{ label: t('pricing.getDays', { duration: durationText(promo.value) }), color: 'success' as const, variant: 'solid' as const, loading: redeeming, onClick: redeemDays }] : []),
+            { label: t('common.remove'), color: 'neutral' as const, variant: 'ghost' as const, onClick: removePromo }
           ]"
         />
         <UButton
           v-else-if="!promoOpen"
-          label="Have a promo code?"
+          :label="t('pricing.havePromo')"
           icon="i-lucide-ticket-percent"
           color="neutral"
           variant="link"
@@ -181,15 +192,15 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
         >
           <UInput
             v-model="promoInput"
-            placeholder="Promo code"
-            aria-label="Promo code"
+            :placeholder="t('pricing.promoCode')"
+            :aria-label="t('pricing.promoCode')"
             class="flex-1"
             :ui="{ base: 'uppercase' }"
             autofocus
           />
           <UButton
             type="submit"
-            label="Apply"
+            :label="t('pricing.apply')"
             color="neutral"
             :loading="checkingPromo"
           />
@@ -216,7 +227,7 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
             </div>
             <UBadge
               v-if="p.featured"
-              label="Most popular"
+              :label="t('pricing.popular')"
               color="primary"
               variant="solid"
               size="sm"
@@ -236,7 +247,7 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
               v-if="perMonth(p)"
               class="text-xs text-muted mt-1"
             >
-              ≈ {{ fmtUzs(perMonth(p)) }} a month
+              ≈ {{ t('pricing.perMonth', { sum: fmtUzs(perMonth(p)) }) }}
             </p>
           </div>
           <ul class="flex flex-col gap-2 text-sm">
@@ -244,7 +255,7 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
               <UIcon
                 name="i-lucide-check"
                 class="size-4 text-primary shrink-0 mt-0.5"
-              />Every test and explanation for {{ durationText(p.durationDays) }}
+              />{{ t('pricing.everyTestFor', { duration: durationText(p.durationDays) }) }}
             </li>
             <li
               v-if="p.credits"
@@ -253,17 +264,17 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
               <UIcon
                 name="i-lucide-check"
                 class="size-4 text-primary shrink-0 mt-0.5"
-              />{{ creditsText(p.credits) }} by an examiner
+              />{{ t('pricing.byExaminer', { credits: creditsText(p.credits) }) }}
             </li>
             <li class="flex gap-2">
               <UIcon
                 name="i-lucide-check"
                 class="size-4 text-primary shrink-0 mt-0.5"
-              />Pay once — no automatic renewal
+              />{{ t('pricing.payOnce') }}
             </li>
           </ul>
           <UButton
-            :label="`Get ${durationText(p.durationDays)}`"
+            :label="t('pricing.get', { duration: durationText(p.durationDays) })"
             :variant="p.featured ? 'solid' : 'outline'"
             :color="p.featured ? 'primary' : 'neutral'"
             :loading="buying === p.code"
@@ -280,10 +291,10 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
       >
         <div>
           <h2 class="text-lg font-semibold text-highlighted">
-            Writing and Speaking markings
+            {{ t('pricing.markings') }}
           </h2>
           <p class="text-sm text-muted">
-            An examiner gives a score out of 75 and written feedback. One credit marks one section; credits do not expire.
+            {{ t('pricing.markingsText') }}
           </p>
         </div>
         <div class="grid gap-3 sm:grid-cols-2">
@@ -301,17 +312,17 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
             </div>
             <div class="min-w-0 flex-1">
               <p class="font-medium text-highlighted">
-                {{ p.name }}
+                {{ creditsText(p.credits) }}
               </p>
               <p class="text-sm text-muted tabular-nums">
                 <span
                   v-if="discounted(p)"
                   class="line-through me-1"
-                >{{ fmtUzs(p.priceUzs) }}</span>{{ fmtUzs(priceOf(p)) }}<span v-if="p.credits > 1"> · {{ fmtUzs(Math.round(priceOf(p) / p.credits)) }} each</span>
+                >{{ fmtUzs(p.priceUzs) }}</span>{{ fmtUzs(priceOf(p)) }}<span v-if="p.credits > 1"> · {{ t('pricing.each', { sum: fmtUzs(Math.round(priceOf(p) / p.credits)) }) }}</span>
               </p>
             </div>
             <UButton
-              label="Buy"
+              :label="t('pricing.buy')"
               color="neutral"
               variant="outline"
               :loading="buying === p.code"
@@ -325,7 +336,7 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
         <UCard>
           <template #header>
             <p class="font-semibold text-highlighted">
-              Free
+              {{ t('common.free') }}
             </p>
           </template>
           <ul class="flex flex-col gap-2.5 text-sm">
@@ -347,7 +358,7 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
               <UIcon
                 name="i-lucide-sparkles"
                 class="text-primary"
-              />Premium adds
+              />{{ t('pricing.premiumAdds') }}
             </p>
           </template>
           <ul class="flex flex-col gap-2.5 text-sm">
@@ -367,14 +378,14 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
 
       <section class="flex flex-col gap-3">
         <h2 class="text-lg font-semibold text-highlighted">
-          Questions
+          {{ t('review.questions') }}
         </h2>
         <UAccordion
           :items="[
-            { label: 'How do I pay?', content: data?.click ? 'With Click: Uzcard or Humo, in the Click app or on its page. Premium starts the moment the payment goes through.' : `Message us on Telegram (${telegramHandle}); we tell you how to pay and switch your plan on for your account.` },
-            { label: 'Does it renew automatically?', content: 'No. You pay once for the time you choose. Buying again while Premium runs adds the new time after the current one ends.' },
-            { label: 'How long does marking take?', content: 'Usually within 24 hours. You get a notification when your Writing or Speaking is marked.' },
-            { label: 'Something went wrong with a payment', content: `Write to us on Telegram (${telegramHandle}) with your account email and we will sort it out.` }
+            { label: t('pricing.q1'), content: data?.click ? t('pricing.a1Click') : t('pricing.a1Telegram', { handle: telegramHandle }) },
+            { label: t('pricing.q2'), content: t('pricing.a2') },
+            { label: t('pricing.q3'), content: t('pricing.a3') },
+            { label: t('pricing.q4'), content: t('pricing.a4', { handle: telegramHandle }) }
           ]"
           class="rounded-xl ring ring-default px-5"
         />
@@ -383,7 +394,7 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
 
     <UModal
       :open="!!telegramPlan"
-      title="Buy on Telegram"
+      :title="t('pricing.buyTelegram')"
       @update:open="v => !v && (telegramPlan = null)"
     >
       <template #body>
@@ -406,13 +417,13 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
           </div>
           <ol class="flex flex-col gap-3 text-sm">
             <li class="flex gap-3">
-              <span class="size-6 rounded-full bg-primary/10 text-primary grid place-items-center text-xs font-semibold shrink-0">1</span>Send us the message below on Telegram ({{ telegramHandle }}).
+              <span class="size-6 rounded-full bg-primary/10 text-primary grid place-items-center text-xs font-semibold shrink-0">1</span>{{ t('pricing.step1', { handle: telegramHandle }) }}
             </li>
             <li class="flex gap-3">
-              <span class="size-6 rounded-full bg-primary/10 text-primary grid place-items-center text-xs font-semibold shrink-0">2</span>Pay the way we suggest (card transfer, Click or Payme).
+              <span class="size-6 rounded-full bg-primary/10 text-primary grid place-items-center text-xs font-semibold shrink-0">2</span>{{ t('pricing.step2') }}
             </li>
             <li class="flex gap-3">
-              <span class="size-6 rounded-full bg-primary/10 text-primary grid place-items-center text-xs font-semibold shrink-0">3</span><span>We switch the plan on for <span class="font-medium text-highlighted break-all">{{ accountHandle(me) || 'your account' }}</span> — usually within a few hours.</span>
+              <span class="size-6 rounded-full bg-primary/10 text-primary grid place-items-center text-xs font-semibold shrink-0">3</span><span>{{ t('pricing.step3', { account: accountHandle(me) || t('pricing.yourAccount') }) }}</span>
             </li>
           </ol>
           <div class="rounded-lg ring ring-default px-3 py-2.5 text-sm text-toned flex gap-2 items-start">
@@ -424,7 +435,7 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
               color="neutral"
               variant="ghost"
               size="sm"
-              aria-label="Copy the message"
+              :aria-label="t('pricing.copyMessage')"
               @click="copyMessage"
             />
           </div>
@@ -433,7 +444,7 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
       <template #footer>
         <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 w-full">
           <UButton
-            label="Close"
+            :label="t('common.close')"
             color="neutral"
             variant="ghost"
             block
@@ -443,7 +454,7 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
           <UButton
             :to="telegramLink(data?.telegram ?? '', telegramMessage)"
             target="_blank"
-            label="Open Telegram"
+            :label="t('pricing.openTelegram')"
             icon="i-simple-icons-telegram"
             block
             class="sm:w-auto"

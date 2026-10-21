@@ -5,16 +5,18 @@ import type { DropdownMenuItem, NavigationMenuItem } from '@nuxt/ui'
 // take tests; signing in keeps the results, and staff get the builder and marking.
 const { me, loggedIn, isPremium, rewardCredits } = useMe()
 const { live } = useLiveMock()
+const { t } = useI18n()
+const { locale, languages, choose } = useLanguage()
 const colorMode = useColorMode()
 const route = useRoute()
 
 const mainNav = computed<NavigationMenuItem[]>(() => [
-  { label: 'Tests', icon: 'i-lucide-clipboard-list', to: '/tests' },
-  { label: 'Live mock', icon: 'i-lucide-trophy', to: '/live', badge: live.value ? { label: 'Live', color: 'error' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined },
-  ...(loggedIn.value ? [{ label: 'My results', icon: 'i-lucide-chart-column', to: '/results' }] : []),
-  ...(me.value?.centres?.some(c => c.role !== 'STUDENT') ? [{ label: 'My centre', icon: 'i-lucide-school', to: '/centre' }] : []),
-  { label: 'Premium', icon: 'i-lucide-sparkles', to: '/pricing', badge: isPremium.value ? { label: 'On', color: 'success' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined },
-  { label: 'Earn credits', icon: 'i-lucide-gift', to: '/earn', badge: rewardCredits.value ? { label: String(rewardCredits.value), color: 'primary' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined }
+  { label: t('nav.tests'), icon: 'i-lucide-clipboard-list', to: '/tests' },
+  { label: t('nav.live'), icon: 'i-lucide-trophy', to: '/live', badge: live.value ? { label: t('nav.liveBadge'), color: 'error' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined },
+  ...(loggedIn.value ? [{ label: t('nav.results'), icon: 'i-lucide-chart-column', to: '/results' }] : []),
+  ...(me.value?.centres?.some(c => c.role !== 'STUDENT') ? [{ label: t('nav.centre'), icon: 'i-lucide-school', to: '/centre' }] : []),
+  { label: t('nav.premium'), icon: 'i-lucide-sparkles', to: '/pricing', badge: isPremium.value ? { label: t('nav.on'), color: 'success' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined },
+  { label: t('nav.earn'), icon: 'i-lucide-gift', to: '/earn', badge: rewardCredits.value ? { label: String(rewardCredits.value), color: 'primary' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined }
 ])
 
 const staffNav = useStaffNav()
@@ -26,19 +28,19 @@ const nearestTo = computed(() => [...mainNav.value, ...staffNav.value]
 const mark = (items: NavigationMenuItem[]) => items.map(i => ({ ...i, active: String(i.to) === nearestTo.value }))
 
 const bottomLinks = computed<NavigationMenuItem[]>(() => loggedIn.value
-  ? [{ label: 'Profile', icon: 'i-lucide-user', to: '/profile' }, { label: 'Settings', icon: 'i-lucide-settings', to: '/settings' }]
+  ? [{ label: t('nav.profile'), icon: 'i-lucide-user', to: '/profile' }, { label: t('nav.settings'), icon: 'i-lucide-settings', to: '/settings' }]
   : [])
 
 // The phone's tab bar: the places a candidate goes most, one tap away (staff pages stay in the menu).
 const tabBar = computed(() => [
-  { label: 'Tests', icon: 'i-lucide-clipboard-list', to: '/tests' },
+  { label: t('nav.tests'), icon: 'i-lucide-clipboard-list', to: '/tests' },
   ...(loggedIn.value
-    ? [{ label: 'Results', icon: 'i-lucide-chart-column', to: '/results' }, { label: 'Premium', icon: 'i-lucide-sparkles', to: '/pricing' }, { label: 'Profile', icon: 'i-lucide-circle-user', to: '/profile' }]
-    : [{ label: 'Sign in', icon: 'i-lucide-log-in', to: `/login?next=${encodeURIComponent(route.fullPath)}` }])
+    ? [{ label: t('nav.resultsShort'), icon: 'i-lucide-chart-column', to: '/results' }, { label: t('nav.premium'), icon: 'i-lucide-sparkles', to: '/pricing' }, { label: t('nav.profile'), icon: 'i-lucide-circle-user', to: '/profile' }]
+    : [{ label: t('nav.signIn'), icon: 'i-lucide-log-in', to: `/login?next=${encodeURIComponent(route.fullPath)}` }])
 ])
 const tabActive = (to: string) => (to === '/' ? route.path === '/' : route.path === to.split('?')[0] || route.path.startsWith(`${to}/`))
 
-const displayName = computed(() => me.value?.name || accountHandle(me.value) || 'Account')
+const displayName = computed(() => me.value?.name || accountHandle(me.value) || t('nav.account'))
 
 async function logout() {
   await $fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
@@ -48,10 +50,15 @@ async function logout() {
 const userMenu = computed<DropdownMenuItem[][]>(() => [
   [{ type: 'label', label: displayName.value, avatar: { src: me.value?.avatarUrl ?? undefined, alt: displayName.value }, description: accountHandle(me.value) }],
   [
-    { label: 'Profile', icon: 'i-lucide-user', to: '/profile' },
-    { label: 'Settings', icon: 'i-lucide-settings', to: '/settings' },
+    { label: t('nav.profile'), icon: 'i-lucide-user', to: '/profile' },
+    { label: t('nav.settings'), icon: 'i-lucide-settings', to: '/settings' },
     {
-      label: colorMode.value === 'dark' ? 'Light mode' : 'Dark mode',
+      label: t('lang.label'),
+      icon: 'i-lucide-languages',
+      children: languages.value.map(l => ({ label: l.name, type: 'checkbox' as const, checked: locale.value === l.code, onUpdateChecked: () => choose(l.code) }))
+    },
+    {
+      label: colorMode.value === 'dark' ? t('nav.lightMode') : t('nav.darkMode'),
       icon: colorMode.value === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon',
       onSelect: (e: Event) => {
         e.preventDefault()
@@ -59,7 +66,7 @@ const userMenu = computed<DropdownMenuItem[][]>(() => [
       }
     }
   ],
-  [{ label: 'Log out', icon: 'i-lucide-log-out', color: 'error', onSelect: () => logout() }]
+  [{ label: t('nav.logOut'), icon: 'i-lucide-log-out', color: 'error', onSelect: () => logout() }]
 ])
 </script>
 
@@ -97,7 +104,7 @@ const userMenu = computed<DropdownMenuItem[][]>(() => [
             v-if="!collapsed"
             class="px-2.5 pt-4 pb-1 text-xs font-medium text-dimmed"
           >
-            Staff
+            {{ t('nav.staff') }}
           </p>
           <UNavigationMenu
             :collapsed="collapsed"
@@ -141,14 +148,17 @@ const userMenu = computed<DropdownMenuItem[][]>(() => [
           <UButton
             :to="`/login?next=${encodeURIComponent(route.fullPath)}`"
             icon="i-lucide-log-in"
-            :label="collapsed ? undefined : 'Sign in'"
+            :label="collapsed ? undefined : t('nav.signIn')"
             :square="collapsed"
             block
           />
-          <UColorModeButton
+          <div
             v-if="!collapsed"
-            class="self-center"
-          />
+            class="flex items-center justify-center gap-1"
+          >
+            <LanguageSwitcher size="xs" />
+            <UColorModeButton />
+          </div>
         </div>
       </template>
     </UDashboardSidebar>
@@ -161,25 +171,25 @@ const userMenu = computed<DropdownMenuItem[][]>(() => [
 
     <nav
       class="lg:hidden fixed inset-x-0 bottom-0 z-40 border-t border-default bg-default/95 backdrop-blur-xl pb-safe"
-      aria-label="Main"
+      :aria-label="t('nav.main')"
     >
       <div class="mx-auto max-w-lg grid grid-flow-col auto-cols-fr">
         <NuxtLink
-          v-for="t in tabBar"
-          :key="t.label"
-          :to="t.to"
-          :aria-label="t.label"
-          :title="t.label"
+          v-for="tab in tabBar"
+          :key="tab.label"
+          :to="tab.to"
+          :aria-label="tab.label"
+          :title="tab.label"
           class="relative flex flex-col items-center justify-center gap-1 h-14 transition-colors"
-          :class="tabActive(t.to) ? 'text-highlighted' : 'text-dimmed hover:text-toned'"
+          :class="tabActive(tab.to) ? 'text-highlighted' : 'text-dimmed hover:text-toned'"
         >
           <UIcon
-            :name="t.icon"
+            :name="tab.icon"
             class="size-6"
           />
           <span
             class="h-0.5 w-5 rounded-full transition-colors"
-            :class="tabActive(t.to) ? 'bg-inverted' : 'bg-transparent'"
+            :class="tabActive(tab.to) ? 'bg-inverted' : 'bg-transparent'"
           />
         </NuxtLink>
       </div>

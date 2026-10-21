@@ -6,9 +6,10 @@ import type { LiveMock } from '~/composables/useLiveMock'
  * on one leaderboard as people hand in. Shows the mock open now (or the next one) and a leaderboard,
  * the current one or, with ?mock=ID, an earlier one.
  */
+const { t } = useI18n()
 useSeoMeta({
-  title: 'Live Multilevel mock',
-  description: 'Sit the same Multilevel mock as everyone else this week and see your place on the leaderboard.'
+  title: () => t('live.seoTitle'),
+  description: () => t('live.seoText')
 })
 
 interface Row { rank: number, name: string, total: number, scores: Record<string, number>, you: boolean }
@@ -41,7 +42,7 @@ function countdown(to: string) {
   const m = Math.floor((s % 3600) / 60)
   return d ? `${d}d ${h}h ${m}m` : `${h}h ${m}m ${s % 60}s`
 }
-const when = (d: string) => new Date(d).toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
+const when = (d: string) => new Date(d).toLocaleString(intlLocale(), { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
 const doneOf = (skill: string) => data.value?.board?.done.find(d => d.skill === skill)
 const showingLive = computed(() => !!data.value?.shown && data.value.shown.id === data.value.live?.id)
 const medal = (rank: number) => ({ 1: '🥇', 2: '🥈', 3: '🥉' } as Record<number, string>)[rank] ?? String(rank)
@@ -50,7 +51,7 @@ const rankedSkills = computed(() => (data.value?.shown?.skills ?? []).filter(s =
 
 <template>
   <AppPage
-    title="Live mock"
+    :title="t('nav.live')"
     icon="i-lucide-trophy"
   >
     <div class="flex flex-col gap-5 max-w-3xl w-full">
@@ -66,7 +67,7 @@ const rankedSkills = computed(() => (data.value?.shown?.skills ?? []).filter(s =
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
             <UBadge
-              label="Live now"
+              :label="t('live.now')"
               color="error"
               variant="solid"
               size="sm"
@@ -76,13 +77,13 @@ const rankedSkills = computed(() => (data.value?.shown?.skills ?? []).filter(s =
               {{ data.live.title }}
             </h2>
             <p class="text-sm text-white/80">
-              {{ data.live.test?.title }} · ends {{ when(data.live.endsAt) }}
+              {{ data.live.test?.title }} · {{ t('live.ends', { when: when(data.live.endsAt) }) }}
             </p>
           </div>
           <ClientOnly>
             <div class="text-right shrink-0">
               <p class="text-xs text-white/70">
-                Ends in
+                {{ t('live.endsIn') }}
               </p>
               <p class="text-lg font-bold tabular-nums">
                 {{ countdown(data.live.endsAt) }}
@@ -106,13 +107,13 @@ const rankedSkills = computed(() => (data.value?.shown?.skills ?? []).filter(s =
                 {{ skillLabel(skill) }}
               </p>
               <p class="text-xs text-white/70">
-                {{ RANKED.includes(skill) ? 'Ranked' : 'Marked as usual, not ranked' }}
+                {{ RANKED.includes(skill) ? t('live.ranked') : t('live.notRanked') }}
               </p>
             </div>
             <UButton
               v-if="doneOf(skill)"
               :to="`/results/${doneOf(skill)!.attemptId}`"
-              :label="doneOf(skill)!.score != null ? `${doneOf(skill)!.score}/75` : 'Handed in'"
+              :label="doneOf(skill)!.score != null ? `${doneOf(skill)!.score}/75` : t('work.handedIn')"
               icon="i-lucide-check"
               size="sm"
               color="neutral"
@@ -121,7 +122,7 @@ const rankedSkills = computed(() => (data.value?.shown?.skills ?? []).filter(s =
             <UButton
               v-else
               :to="loggedIn ? `/tests/${data.live.test?.slug}/${skill.toLowerCase()}` : `/login?next=${encodeURIComponent('/live')}`"
-              :label="loggedIn ? 'Start' : 'Sign in'"
+              :label="loggedIn ? t('common.start') : t('nav.signIn')"
               trailing-icon="i-lucide-arrow-right"
               size="sm"
               color="neutral"
@@ -130,8 +131,7 @@ const rankedSkills = computed(() => (data.value?.shown?.skills ?? []).filter(s =
           </div>
         </div>
         <p class="text-xs text-white/75">
-          Your first try of each section counts, so sit it when you have the time. Listening and Reading
-          are marked at once and ranked; Writing and Speaking go to an examiner as usual.
+          {{ t('live.firstTry') }}
         </p>
       </div>
 
@@ -146,17 +146,17 @@ const rankedSkills = computed(() => (data.value?.shown?.skills ?? []).filter(s =
           </div>
           <div class="flex-1 min-w-0">
             <p class="text-xs text-muted">
-              {{ data.live ? 'After this one' : 'Next live mock' }}
+              {{ data.live ? t('live.afterThis') : t('live.next') }}
             </p>
             <p class="font-semibold text-highlighted">
               {{ data.next.title }}
             </p>
             <p class="text-sm text-muted">
-              Opens {{ when(data.next.startsAt) }}<ClientOnly> · in {{ countdown(data.next.startsAt) }}</ClientOnly>
+              {{ t('live.bannerNext', { when: when(data.next.startsAt) }) }}<ClientOnly> · {{ t('live.in', { time: countdown(data.next.startsAt) }) }}</ClientOnly>
             </p>
           </div>
           <p class="text-xs text-muted sm:max-w-48">
-            The bot tells you on Telegram when it opens.
+            {{ t('live.botTells') }}
           </p>
         </div>
       </UCard>
@@ -170,15 +170,14 @@ const rankedSkills = computed(() => (data.value?.shown?.skills ?? []).filter(s =
           class="size-12 text-primary"
         />
         <p class="font-semibold text-highlighted">
-          No live mock scheduled yet
+          {{ t('live.none') }}
         </p>
         <p class="text-sm text-muted max-w-sm">
-          Every so often everyone sits the same test in the same weekend and is ranked on one leaderboard.
-          The bot tells you on Telegram when the next one opens.
+          {{ t('live.noneText') }}
         </p>
         <UButton
           to="/tests"
-          label="Practise meanwhile"
+          :label="t('live.meanwhile')"
           class="mt-1"
         />
       </div>
@@ -192,16 +191,16 @@ const rankedSkills = computed(() => (data.value?.shown?.skills ?? []).filter(s =
           <div class="flex items-center justify-between gap-2">
             <div class="min-w-0">
               <h2 class="font-semibold text-highlighted">
-                {{ showingLive ? 'Leaderboard' : 'Final results' }}
+                {{ showingLive ? t('live.leaderboard') : t('live.final') }}
               </h2>
               <p class="text-xs text-muted truncate">
-                {{ data.shown.title }} · {{ data.board.participants }} {{ data.board.participants === 1 ? 'person' : 'people' }}
-                · {{ rankedSkills.map(s => skillLabel(s)).join(' + ') }}, out of {{ rankedSkills.length * 75 }}
+                {{ data.shown.title }} · {{ t('live.people', { n: data.board.participants }, data.board.participants) }}
+                · {{ t('live.outOf', { skills: rankedSkills.map(s => skillLabel(s)).join(' + '), max: rankedSkills.length * 75 }) }}
               </p>
             </div>
             <UBadge
               v-if="data.board.me"
-              :label="`You: #${data.board.me.rank}`"
+              :label="t('live.you', { rank: data.board.me.rank })"
               color="primary"
               variant="soft"
             />
@@ -211,7 +210,7 @@ const rankedSkills = computed(() => (data.value?.shown?.skills ?? []).filter(s =
           v-if="!data.board.top.length"
           class="text-sm text-muted text-center px-6 py-10"
         >
-          Nobody has handed in yet. Be the first!
+          {{ t('live.nobody') }}
         </p>
         <ol
           v-else
@@ -230,7 +229,7 @@ const rankedSkills = computed(() => (data.value?.shown?.skills ?? []).filter(s =
             <span
               class="flex-1 min-w-0 truncate"
               :class="r.you ? 'font-semibold text-highlighted' : 'text-default'"
-            >{{ r.name }}{{ r.you ? ' (you)' : '' }}</span>
+            >{{ r.name }}{{ r.you ? ` (${t('live.youWord')})` : '' }}</span>
             <span
               v-for="s in rankedSkills"
               :key="s"

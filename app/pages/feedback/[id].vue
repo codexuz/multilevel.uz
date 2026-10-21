@@ -1,12 +1,13 @@
 <script setup lang="ts">
 /** One AI review, opened again later (from the Telegram message, say). */
-useSeoMeta({ title: 'AI feedback', robots: 'noindex' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('ai.feedback'), robots: 'noindex' })
 const route = useRoute()
 </script>
 
 <template>
   <AppPage
-    title="AI feedback"
+    :title="t('ai.feedback')"
     icon="i-lucide-sparkles"
   >
     <div class="max-w-3xl w-full flex flex-col gap-4">

@@ -17,7 +17,23 @@ const MIN_ANSWERS = 4
 const WEAK_SHARE = 0.7
 
 export interface Practise { slug: string, title: string, skill: string, part: number, done: boolean, locked: boolean }
-export interface Focus { skill: string, kind: 'TYPE' | 'CRITERION', key: string, label: string, detail: string, practise: Practise | null }
+/**
+ * A weak spot. Pages word it from the numbers in their own language: a task type's share right over
+ * `total` questions, or a criterion's average out of 5 and the task or part that was lowest.
+ * `label` and `detail` are the English wording.
+ */
+export interface Focus {
+  skill: string
+  kind: 'TYPE' | 'CRITERION'
+  key: string
+  label: string
+  detail: string
+  practise: Practise | null
+  share?: number
+  total?: number
+  average?: number
+  taskNumber?: number | null
+}
 
 const WRITING_CRITERIA = { taskAchievement: 'Task achievement', organisation: 'Organisation', vocabulary: 'Vocabulary', grammar: 'Grammar' } as Record<string, string>
 const SPEAKING_CRITERIA = { fluency: 'Fluency', vocabulary: 'Vocabulary', grammar: 'Grammar', taskAchievement: 'Task achievement' } as Record<string, string>
@@ -164,11 +180,11 @@ export async function insightsOf(user: { id: string, role: string }) {
 
   // The weak spots worth practising, weakest first: up to two task types per skill, and the lowest
   // criterion of Writing and Speaking with the task or part that held it back.
-  type Spot = Omit<Focus, 'practise'> & { share: number, part?: number }
+  type Spot = Omit<Focus, 'practise'> & { rank: number, part?: number }
   const spots: Spot[] = []
   for (const s of skills) {
     for (const t of s.types.filter(t => t.total >= MIN_ANSWERS && t.share / 100 < WEAK_SHARE).slice(0, 2)) {
-      spots.push({ skill: s.skill, kind: 'TYPE', key: t.type, label: t.label, detail: `${t.share}% right over ${t.total} questions`, share: t.share / 100 })
+      spots.push({ skill: s.skill, kind: 'TYPE', key: t.type, label: t.label, detail: `${t.share}% right over ${t.total} questions`, rank: t.share / 100, share: t.share, total: t.total })
     }
   }
   for (const [skill, stats] of [['WRITING', writing], ['SPEAKING', speaking]] as const) {
@@ -178,15 +194,15 @@ export async function insightsOf(user: { id: string, role: string }) {
     if (low.average >= 4) continue
     const task = stats.tasks.length ? stats.tasks.reduce((a, b) => (b.average < a.average ? b : a)) : null
     spots.push({
-      skill, kind: 'CRITERION', key: low.key, label: low.label, share: low.average / 5,
+      skill, kind: 'CRITERION', key: low.key, label: low.label, rank: low.average / 5, average: low.average, taskNumber: task?.number ?? null,
       detail: `${low.average}/5 on average${task ? `; ${task.label} was your lowest` : ''}`,
       // Without a task to point at, the longest one: Task 2, or Part 3.
       part: task?.number ?? (skill === 'WRITING' ? 3 : 4)
     })
   }
-  const top = spots.sort((a, b) => a.share - b.share).slice(0, 4)
+  const top = spots.sort((a, b) => a.rank - b.rank).slice(0, 4)
   const practise = await Promise.all(top.map(f => practiseFor(pick, f.skill, f.kind === 'TYPE' ? { type: f.key } : { part: f.part! })))
-  const focus: Focus[] = top.map(({ share: _share, part: _part, ...f }, i) => ({ ...f, practise: practise[i] ?? null }))
+  const focus: Focus[] = top.map(({ rank: _rank, part: _part, ...f }, i) => ({ ...f, practise: practise[i] ?? null }))
 
   return {
     skills,

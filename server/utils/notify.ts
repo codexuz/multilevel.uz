@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { users } from '../database/schema'
 import { telegramApi, telegramBotToken } from './telegram'
+import { MSG, asLocale, criterionLabel, typeLabel, type Locale, type Offer } from './messages'
 
 /**
  * Messages from the Telegram bot to a user who signed in with Telegram (they allowed the bot to
@@ -10,17 +11,21 @@ import { telegramApi, telegramBotToken } from './telegram'
 
 const siteUrl = () => String(useRuntimeConfig().public.siteUrl || 'https://multilevel.uz').replace(/\/$/, '')
 
-export async function notifyTelegram(userId: string, message: { text: string, path?: string, button?: string }) {
+type Message = { text: string, path?: string, button?: string }
+
+/** Sends a message, built in the user's language when `message` is a function of it. */
+export async function notifyTelegram(userId: string, message: Message | ((l: Locale) => Message)) {
   if (!telegramBotToken()) return false
-  const [u] = await useDb().select({ telegramId: users.telegramId, notify: users.telegramNotify }).from(users).where(eq(users.id, userId)).limit(1)
+  const [u] = await useDb().select({ telegramId: users.telegramId, notify: users.telegramNotify, locale: users.locale }).from(users).where(eq(users.id, userId)).limit(1)
   if (!u?.telegramId || !u.notify) return false
-  const url = message.path ? `${siteUrl()}${message.path}` : null
+  const m = typeof message === 'function' ? message(asLocale(u.locale)) : message
+  const url = m.path ? `${siteUrl()}${m.path}` : null
   const res = await telegramApi('sendMessage', {
     chat_id: u.telegramId,
-    text: message.text,
+    text: m.text,
     parse_mode: 'HTML',
     link_preview_options: { is_disabled: true },
-    ...(url ? { reply_markup: { inline_keyboard: [[{ text: message.button || 'Open', url }]] } } : {})
+    ...(url ? { reply_markup: { inline_keyboard: [[{ text: m.button || MSG.open[asLocale(u.locale)], url }]] } } : {})
   }).catch((e: any) => ({ ok: false, error_code: e?.data?.error_code ?? e?.statusCode, description: e?.data?.description || e?.message }))
   if (!res.ok) {
     console.warn('[notify] Telegram message not sent:', res.description)
@@ -30,55 +35,41 @@ export async function notifyTelegram(userId: string, message: { text: string, pa
   return res.ok
 }
 
-const skillWord = (skill: string) => (skill === 'WRITING' ? 'Writing' : skill === 'SPEAKING' ? 'Speaking' : skill.charAt(0) + skill.slice(1).toLowerCase())
-const level = (l: string) => (l === 'A2' || l === 'A1' ? 'below B1' : l)
+export const notifyMarked = (userId: string, attemptId: string, skill: string, score: number, cefr: string) => notifyTelegram(userId, l => ({
+  text: MSG.marked(l, skill, score, cefr), path: `/results/${attemptId}`, button: MSG.markedButton[l]
+}))
 
-export const notifyMarked = (userId: string, attemptId: string, skill: string, score: number, cefr: string) => notifyTelegram(userId, {
-  text: `✅ <b>Your ${skillWord(skill)} is marked</b>\nScore: <b>${score}/75</b> (${level(cefr)}). The examiner's feedback is waiting for you.`,
-  path: `/results/${attemptId}`,
-  button: 'See the feedback'
-})
+export const notifyAiReview = (userId: string, reviewId: string, attemptId: string | null, score: number, cefr: string, skill = 'WRITING') => notifyTelegram(userId, l => ({
+  text: MSG.aiReview(l, skill, score, cefr), path: attemptId ? `/results/${attemptId}` : `/feedback/${reviewId}`, button: MSG.aiReviewButton[l]
+}))
 
-export const notifyAiReview = (userId: string, reviewId: string, attemptId: string | null, score: number, cefr: string, skill = 'WRITING') => notifyTelegram(userId, {
-  text: `✨ <b>Your AI feedback is ready</b>\nEstimated ${skillWord(skill)} score: <b>${score}/75</b> (${level(cefr)}), with corrections for each ${skill === 'SPEAKING' ? 'part' : 'task'}.`,
-  path: attemptId ? `/results/${attemptId}` : `/feedback/${reviewId}`,
-  button: 'Read it'
-})
+export const notifyInviteReward = (userId: string, credits: number) => notifyTelegram(userId, l => ({
+  text: MSG.inviteReward(l, credits), path: '/earn', button: MSG.inviteRewardButton[l]
+}))
 
-export const notifyInviteReward = (userId: string, credits: number) => notifyTelegram(userId, {
-  text: `🎁 <b>+${credits} ${credits === 1 ? 'credit' : 'credits'}</b>\nA friend you invited finished their first test. Use credits to open Premium tests.`,
-  path: '/earn',
-  button: 'See my credits'
-})
+/** A promo offer is worded in the user's language when it is sent. */
+type OfferOf = ((l: Locale) => Offer) | null
 
-const dayName = (d: Date) => d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Tashkent' })
-const offerLine = (offer: { code: string, text: string } | null) => (offer ? `\nUse code <b>${offer.code}</b> for ${offer.text}.` : '')
+export const notifyPremiumEnding = (userId: string, endsAt: Date, offer: OfferOf) => notifyTelegram(userId, l => ({
+  text: MSG.premiumEnding(l, endsAt, offer?.(l) ?? null), path: `/pricing${offer ? `?promo=${offer(l).code}` : ''}`, button: MSG.premiumEndingButton[l]
+}))
 
-export const notifyPremiumEnding = (userId: string, endsAt: Date, offer: { code: string, text: string } | null) => notifyTelegram(userId, {
-  text: `⏳ <b>Your Premium ends on ${dayName(endsAt)}</b>\nExtend it to keep every test and every explanation.${offerLine(offer)}`,
-  path: `/pricing${offer ? `?promo=${offer.code}` : ''}`,
-  button: 'Extend Premium'
-})
+export const notifyPremiumEnded = (userId: string, offer: OfferOf) => notifyTelegram(userId, l => ({
+  text: MSG.premiumEnded(l, offer?.(l) ?? null), path: `/pricing${offer ? `?promo=${offer(l).code}` : ''}`, button: MSG.premiumEndedButton[l]
+}))
 
-export const notifyPremiumEnded = (userId: string, offer: { code: string, text: string } | null) => notifyTelegram(userId, {
-  text: `Your Premium has ended. Your results are kept, and the free tests are still yours.${offerLine(offer)}`,
-  path: `/pricing${offer ? `?promo=${offer.code}` : ''}`,
-  button: 'Get Premium again'
-})
+interface PlanGoal { kind: 'SECTION' | 'TYPE' | 'CRITERION', skill: string, focus?: { key: string }, done: boolean, to: string }
 
-export function notifyPlan(userId: string, kind: 'MILESTONE' | 'TODAY' | 'NUDGE', daysLeft: number, plan: { goals: { label: string, done: boolean, to: string }[], week: { practisedDays: number, aimDays: number } } | null) {
-  if (kind === 'TODAY') {
-    return notifyTelegram(userId, { text: '🍀 <b>Good luck in your exam today!</b>\nRead each task carefully, keep an eye on the time, and say a little more than you think you need to. You have prepared for this.' })
-  }
-  const next = plan?.goals.find(g => !g.done)
-  const days = `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}`
-  const head = kind === 'MILESTONE'
-    ? `📅 <b>${days} to your exam</b>`
-    : `👋 <b>Time for a little practice?</b>\n${days} to your exam, and a short session today keeps you on track.`
-  const week = plan ? `\nThis week: ${plan.week.practisedDays} of ${plan.week.aimDays} practice days.` : ''
-  return notifyTelegram(userId, {
-    text: `${head}${week}${next ? `\nNext: <b>${next.label}</b>` : ''}`,
-    path: next?.to ?? '/results',
-    button: next ? 'Start now' : 'See my plan'
+export function notifyPlan(userId: string, kind: 'MILESTONE' | 'TODAY' | 'NUDGE', daysLeft: number, plan: { goals: PlanGoal[], week: { practisedDays: number, aimDays: number } } | null) {
+  return notifyTelegram(userId, (l) => {
+    if (kind === 'TODAY') return { text: MSG.planToday[l] }
+    const next = plan?.goals.find(g => !g.done)
+    const what = next?.kind === 'TYPE' ? typeLabel(l, next.focus?.key ?? '') : next?.kind === 'CRITERION' ? criterionLabel(l, next.focus?.key ?? '') : ''
+    const label = next ? (next.kind === 'SECTION' ? MSG.goalSection(l, next.skill) : MSG.goalPractise(l, next.skill, what)) : null
+    return {
+      text: `${kind === 'MILESTONE' ? MSG.planMilestone(l, daysLeft) : MSG.planNudge(l, daysLeft)}${plan ? MSG.planWeek(l, plan.week.practisedDays, plan.week.aimDays) : ''}${label ? MSG.planNext(l, label) : ''}`,
+      path: next?.to ?? '/results',
+      button: next ? MSG.planStart[l] : MSG.planSee[l]
+    }
   })
 }

@@ -1,3 +1,4 @@
+import type { Locale } from './messages'
 import { and, eq, sql } from 'drizzle-orm'
 import { orders, promoCodes, promoRedemptions } from '../database/schema'
 import { fulfilOrder } from './billing'
@@ -42,10 +43,13 @@ export function priceWithPromo(promo: Promo | null, price: number) {
 }
 
 /** How the code reads to a buyer: "20% off", "15 000 so'm off", "7 days of Premium". */
-export function promoText(promo: Promo) {
-  if (promo.kind === 'PERCENT') return `${promo.value}% off`
-  if (promo.kind === 'AMOUNT') return `${promo.value.toLocaleString('ru-RU').replace(/,/g, ' ')} so'm off`
-  return `${promo.value} ${promo.value === 1 ? 'day' : 'days'} of Premium`
+/** What a code gives, in words: "20% off", "7 days of Premium" (in Uzbek and Russian too). */
+export function promoText(promo: Promo, l: Locale = 'en') {
+  const sum = promo.value.toLocaleString('ru-RU').replace(/\s|,/g, ' ')
+  if (promo.kind === 'PERCENT') return ({ en: `${promo.value}% off`, uz: `${promo.value}% chegirma`, ru: `скидка ${promo.value}%` })[l]
+  if (promo.kind === 'AMOUNT') return ({ en: `${sum} so'm off`, uz: `${sum} so‘m chegirma`, ru: `скидка ${sum} сум` })[l]
+  const n = promo.value
+  return ({ en: `${n} ${n === 1 ? 'day' : 'days'} of Premium`, uz: `${n} kunlik Premium`, ru: `Premium на ${n} ${n % 10 === 1 && n % 100 !== 11 ? 'день' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'дня' : 'дней'}` })[l]
 }
 
 export const promoView = (p: Promo) => ({ code: p.code, kind: p.kind, value: p.value, planCodes: p.planCodes, endsAt: p.endsAt, text: promoText(p) })

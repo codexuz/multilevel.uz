@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const props = withDefaults(defineProps<{
   initialSeconds: number
   running: boolean
@@ -19,10 +20,10 @@ const router = useRouter()
 const saveState = inject(SAVE_STATE, null)
 const saveBadge = computed(() => {
   switch (saveState?.value) {
-    case 'saved': return { label: 'Saved', icon: 'i-lucide-cloud-check', class: 'text-muted' }
+    case 'saved': return { label: t('exam.saved'), icon: 'i-lucide-cloud-check', class: 'text-muted' }
     case 'pending':
-    case 'saving': return { label: 'Saving…', icon: 'i-lucide-cloud-upload', class: 'text-muted' }
-    case 'offline': return { label: 'Offline — answers kept on this computer', icon: 'i-lucide-cloud-off', class: 'text-warning' }
+    case 'saving': return { label: t('exam.saving'), icon: 'i-lucide-cloud-upload', class: 'text-muted' }
+    case 'offline': return { label: t('exam.offline'), icon: 'i-lucide-cloud-off', class: 'text-warning' }
     default: return null
   }
 })
@@ -74,8 +75,8 @@ function leave() {
     <div class="flex items-center gap-2 min-w-0">
       <UButton
         icon="i-lucide-arrow-left"
-        label="Back"
-        aria-label="Back"
+        :label="t('common.back')"
+        :aria-label="t('common.back')"
         color="neutral"
         variant="ghost"
         :ui="{ label: 'max-sm:hidden' }"
@@ -114,7 +115,7 @@ function leave() {
       />
       <UButton
         v-if="!started"
-        label="Start"
+        :label="t('common.start')"
         color="error"
         class="px-5"
         @click="emit('start')"
@@ -125,13 +126,13 @@ function leave() {
       <UButton
         v-if="started && canSubmit"
         icon="i-lucide-send"
-        label="Submit"
-        aria-label="Submit"
+        :label="t('exam.submit')"
+        :aria-label="t('exam.submit')"
         color="neutral"
         :ui="{ label: 'max-sm:hidden' }"
         @click="() => { confirmOpen = true }"
       />
-      <UTooltip :text="fullscreen ? 'Exit fullscreen' : 'Fullscreen'">
+      <UTooltip :text="fullscreen ? t('exam.exitFullscreen') : t('exam.fullscreen')">
         <UButton
           :icon="fullscreen ? 'i-lucide-minimize-2' : 'i-lucide-maximize-2'"
           color="neutral"
@@ -140,7 +141,7 @@ function leave() {
           @click="toggleFullscreen"
         />
       </UTooltip>
-      <UTooltip text="Notes">
+      <UTooltip :text="t('exam.notes')">
         <UButton
           icon="i-lucide-message-square-text"
           color="neutral"
@@ -148,7 +149,7 @@ function leave() {
           @click="emit('notes')"
         />
       </UTooltip>
-      <UTooltip text="Options">
+      <UTooltip :text="t('exam.options')">
         <UButton
           icon="i-lucide-menu"
           color="neutral"
@@ -162,26 +163,26 @@ function leave() {
 
     <UModal
       v-model:open="leaveOpen"
-      title="Leave test"
+      :title="t('exam.leaveTest')"
       :ui="{ content: 'max-w-sm', footer: 'justify-end' }"
     >
       <template #body>
         <UEmpty
           icon="i-lucide-triangle-alert"
-          title="Are you sure you want to leave this test?"
-          description="Your progress may not be saved."
+          :title="t('exam.leaveSure')"
+          :description="t('exam.leaveText')"
           variant="naked"
         />
       </template>
       <template #footer>
         <UButton
-          label="Cancel"
+          :label="t('common.cancel')"
           color="neutral"
           variant="outline"
           @click="() => { leaveOpen = false }"
         />
         <UButton
-          label="Leave"
+          :label="t('exam.leave')"
           icon="i-lucide-arrow-left"
           color="error"
           @click="leave"
@@ -191,26 +192,26 @@ function leave() {
 
     <UModal
       v-model:open="confirmOpen"
-      title="Submit test"
+      :title="t('exam.submitTest')"
       :ui="{ content: 'max-w-sm', footer: 'justify-end' }"
     >
       <template #body>
         <UEmpty
           icon="i-lucide-triangle-alert"
-          title="Are you sure you want to submit your test?"
-          description="You won't be able to change your answers after submission."
+          :title="t('exam.submitSure')"
+          :description="t('exam.submitText')"
           variant="naked"
         />
       </template>
       <template #footer>
         <UButton
-          label="Cancel"
+          :label="t('common.cancel')"
           color="neutral"
           variant="outline"
           @click="() => { confirmOpen = false }"
         />
         <UButton
-          label="Confirm submit"
+          :label="t('exam.confirmSubmit')"
           icon="i-lucide-send"
           color="error"
           @click="confirmOpen = false; emit('submit')"

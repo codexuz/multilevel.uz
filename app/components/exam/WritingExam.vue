@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { WritingPartData } from '~/utils/exam-transform'
 
+const { t } = useI18n()
+
 const props = withDefaults(defineProps<{
   parts: WritingPartData[]
   timerMinutes?: number
@@ -110,7 +112,7 @@ const subtitle = computed(() => [
             autocomplete="off"
             autocorrect="off"
             autocapitalize="off"
-            placeholder="Start writing your answer here…"
+            :placeholder="t('exam.startWriting')"
             @update:model-value="setEssay(String($event))"
           />
           <div class="flex justify-end mt-2">
@@ -137,7 +139,7 @@ const subtitle = computed(() => [
     <ExamNotesSlideover
       v-model:open="notesOpen"
       v-model="notes"
-      title="Notes"
+      :title="t('exam.notes')"
     />
   </ExamShell>
 </template>

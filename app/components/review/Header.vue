@@ -1,5 +1,6 @@
 <script setup lang="ts">
 /** The review's top bar: back to the result, what is being reviewed, the key switch and full screen. */
+const { t } = useI18n()
 defineProps<{ back: string, title?: string | null, hideToggle?: boolean }>()
 const showKey = defineModel<boolean>('showKey', { default: true })
 
@@ -15,7 +16,7 @@ function toggleFullscreen() {
       <UButton
         :to="back"
         icon="i-lucide-arrow-left"
-        label="Result"
+        :label="t('review.result')"
         color="neutral"
         variant="ghost"
         :ui="{ label: 'max-sm:hidden' }"
@@ -37,7 +38,7 @@ function toggleFullscreen() {
         v-if="!hideToggle"
         v-model="showKey"
         color="warning"
-        label="Show correct answers"
+        :label="t('review.showCorrect')"
         :ui="{ label: 'max-sm:sr-only' }"
       />
       <slot name="right" />
@@ -45,7 +46,7 @@ function toggleFullscreen() {
         icon="i-lucide-maximize-2"
         color="neutral"
         variant="ghost"
-        aria-label="Full screen"
+        :aria-label="t('exam.fullscreen')"
         class="max-sm:hidden"
         @click="toggleFullscreen"
       />

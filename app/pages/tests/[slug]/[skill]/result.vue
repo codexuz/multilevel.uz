@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { ResultView } from '~/components/result/Review.vue'
 
+const { t } = useI18n()
+
 definePageMeta({ guestLayout: true })
 
 /**
@@ -10,7 +12,7 @@ definePageMeta({ guestLayout: true })
 const route = useRoute()
 const slug = String(route.params.slug)
 const skill = String(route.params.skill).toUpperCase()
-useSeoMeta({ title: 'Your result', robots: 'noindex' })
+useSeoMeta({ title: () => t('results.yourResult'), robots: 'noindex' })
 
 const view = ref<(ResultView & Record<string, any>) | null>(null)
 const ready = ref(false)
@@ -24,7 +26,7 @@ onMounted(() => {
 
 <template>
   <AppPage
-    title="Result"
+    :title="t('review.result')"
     icon="i-lucide-award"
   >
     <div
@@ -44,9 +46,9 @@ onMounted(() => {
     <UEmpty
       v-else
       icon="i-lucide-cloud-off"
-      title="No result to show"
-      description="A result for a guest is shown once, in the tab where the test was taken. Sign in to keep your results."
-      :actions="[{ label: 'Back to the test', to: `/tests/${slug}` }, { label: 'Sign in', to: `/login?next=${encodeURIComponent(`/tests/${slug}`)}`, color: 'neutral', variant: 'outline' }]"
+      :title="t('results.noResult')"
+      :description="t('results.noResultText')"
+      :actions="[{ label: t('sit.backToTest'), to: `/tests/${slug}` }, { label: t('nav.signIn'), to: `/login?next=${encodeURIComponent(`/tests/${slug}`)}`, color: 'neutral', variant: 'outline' }]"
     />
   </AppPage>
 </template>

@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, isNotNull, isNull, sql } from 'drizzle-orm'
 import { aiReviews, attempts, sections, tests, users } from '../database/schema'
-import { insightsOf } from './insights'
+import { type Focus, insightsOf } from './insights'
 
 /**
  * The user's exam plan: days left to their exam, where each skill stands against their target, and
@@ -28,7 +28,22 @@ export const targetScoreOf = (u: { targetScore: number | null, targetLevel: stri
 /** Practice days a week to aim for: more as the exam gets closer. */
 export const daysPerWeek = (daysLeft: number | null) => (daysLeft == null || daysLeft > 60 ? 3 : daysLeft > 30 ? 4 : daysLeft > 14 ? 5 : 6)
 
-export interface Goal { key: string, label: string, detail: string, done: boolean, to: string }
+/**
+ * A goal of the week: a whole section (`score` now and the `target`), or a weak spot to practise
+ * (`focus`, as insights give it). Pages word it in their language; `label` and `detail` are English.
+ */
+export interface Goal {
+  key: string
+  kind: 'SECTION' | 'TYPE' | 'CRITERION'
+  skill: string
+  label: string
+  detail: string
+  done: boolean
+  to: string
+  score?: number | null
+  target?: number
+  focus?: Pick<Focus, 'key' | 'share' | 'total' | 'average' | 'taskNumber'>
+}
 
 const skillWord = (s: string) => s.charAt(0) + s.slice(1).toLowerCase()
 
@@ -83,7 +98,7 @@ export async function planOf(user: { id: string, role: string }, now = Date.now(
     ? behind
     : behind.filter(s => gap(s) > 0).concat(behind.filter(s => gap(s) <= 0)).slice(0, Math.max(2, behind.filter(s => gap(s) > 0).length))
   const goals: Goal[] = toSit.map(s => ({
-    key: `section-${s}`,
+    key: `section-${s}`, kind: 'SECTION', skill: s, score: level[s].score, target,
     label: `A whole ${skillWord(s)} section`,
     detail: level[s].score == null ? 'No score yet: see where you stand' : `Now about ${level[s].score}/75, aiming for ${target}`,
     done: week.some(a => a.skill === s && a.partNumber == null),
@@ -93,7 +108,8 @@ export async function planOf(user: { id: string, role: string }, now = Date.now(
     if (!f.practise) continue
     const p = f.practise
     goals.push({
-      key: `focus-${f.skill}-${f.key}`,
+      key: `focus-${f.skill}-${f.key}`, kind: f.kind, skill: f.skill,
+      focus: { key: f.key, share: f.share, total: f.total, average: f.average, taskNumber: f.taskNumber },
       label: `Practise ${skillWord(f.skill)}: ${f.label}`,
       detail: f.detail,
       done: week.some(a => a.skill === p.skill && a.partNumber === p.part)

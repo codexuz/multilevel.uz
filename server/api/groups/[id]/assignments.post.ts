@@ -2,9 +2,6 @@ import { eq } from 'drizzle-orm'
 import { assignments, classMembers } from '../../../database/schema'
 
 const SKILL_WORD: Record<string, string> = { LISTENING: 'Listening', READING: 'Reading', WRITING: 'Writing', SPEAKING: 'Speaking' }
-const partName = (skill: string, n: number) => (skill === 'WRITING'
-  ? ({ 1: 'Task 1.1', 2: 'Task 1.2', 3: 'Task 2' } as Record<number, string>)[n]
-  : skill === 'SPEAKING' ? ({ 1: 'Part 1.1', 2: 'Part 1.2', 3: 'Part 2', 4: 'Part 3' } as Record<number, string>)[n] : undefined) ?? `Part ${n}`
 
 // Sets the group a section of a published test (or one part of it), with an optional due date and
 // note, and tells each student on Telegram.
@@ -25,11 +22,9 @@ export default defineEventHandler(async (event) => {
 
   const [a] = await useDb().insert(assignments).values({ groupId: group.id, testId: test.id, skill, partNumber, dueAt, note, createdById: user.id }).returning()
   const members = await useDb().select({ userId: classMembers.userId }).from(classMembers).where(eq(classMembers.groupId, group.id))
-  const what = `${SKILL_WORD[skill]}${partNumber ? ` ${partName(skill, partNumber)}` : ''} of ${test.title}`
-  const due = dueAt ? `\nDue ${dueAt.toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent' })}.` : ''
   const path = `/tests/${test.slug}/${skill.toLowerCase()}${partNumber ? `?part=${partNumber}` : ''}`
   for (const m of members) {
-    await notifyTelegram(m.userId, { text: `📚 <b>New work from ${group.name}</b>\n${what}.${due}${note ? `\n\n${note.replace(/[<>&]/g, '')}` : ''}`, path, button: 'Start' }).catch(() => false)
+    await notifyTelegram(m.userId, l => ({ text: MSG.newWork(l, group.name, MSG.workWhat(l, skill, partNumber, test.title), dueAt, note), path, button: MSG.start[l] })).catch(() => false)
   }
   return a
 })

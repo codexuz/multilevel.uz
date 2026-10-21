@@ -10,7 +10,8 @@ export default defineNuxtConfig({
     '@nuxt/ui',
     'nuxt-auth-utils',
     '@nuxtjs/robots',
-    '@nuxtjs/sitemap'
+    '@nuxtjs/sitemap',
+    '@nuxtjs/i18n'
   ],
   devtools: {
     enabled: true
@@ -94,8 +95,8 @@ export default defineNuxtConfig({
   },
 
   compatibilityDate: '2026-06-30',
-  // Background jobs on a timer (server/tasks): Premium reminders and exam plan
-  // reminders. Times are UTC (Tashkent is UTC+5).
+  // Background jobs on a timer (server/tasks): Premium and exam plan reminders, and live mocks.
+  // Times are UTC (Tashkent is UTC+5).
   nitro: {
     experimental: { tasks: true },
     scheduledTasks: {
@@ -123,6 +124,19 @@ export default defineNuxtConfig({
         braceStyle: '1tbs'
       }
     }
+  },
+  // English, Uzbek (Latin) and Russian. The address stays the same in every language: the choice is
+  // kept in a cookie (the browser's language on a first visit) and on the account, for the bot's messages.
+  i18n: {
+    strategy: 'no_prefix',
+    defaultLocale: 'en',
+    locales: [
+      { code: 'en', language: 'en-GB', name: 'English', file: 'en.json' },
+      { code: 'uz', language: 'uz-Latn-UZ', name: 'O‘zbekcha', file: 'uz.json' },
+      { code: 'ru', language: 'ru-RU', name: 'Русский', file: 'ru.json' }
+    ],
+    detectBrowserLanguage: { useCookie: true, cookieKey: 'lang', fallbackLocale: 'en' },
+    vueI18n: './i18n.config.ts'
   },
 
   sitemap: {

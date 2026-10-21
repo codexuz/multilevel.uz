@@ -5,6 +5,8 @@ import type { SpeakingRecording } from '~/components/exam/SpeakingExam.vue'
 import { uploadFile } from '~/services/http'
 import { downloadEssaysDocx, downloadEssaysPdf } from '~/utils/essay-export'
 
+const { t } = useI18n()
+
 /**
  * Sitting one section, for anyone (pages/attempt/[id].vue in the erp-lms IELTS app, without an
  * attempt kept on the server): the paper comes without keys, answers are kept in this browser as they
@@ -28,7 +30,7 @@ const { data, error, status } = await useFetch<{ test: { id: string, slug: strin
   { server: false }
 )
 
-useSeoMeta({ title: () => (data.value ? `${data.value.test.title} — ${SKILL_META[skill]?.label ?? 'Test'}${partNo ? ` ${partName(skill, partNo)}` : ''}` : 'Test'), robots: 'noindex' })
+useSeoMeta({ title: () => (data.value ? `${data.value.test.title} — ${skillLabel(skill)}${partNo ? ` ${partName(skill, partNo)}` : ''}` : t('sit.test')), robots: 'noindex' })
 
 const section = computed(() => data.value?.section ?? null)
 const parts = computed(() => (section.value?.parts ?? []).map(skill === 'LISTENING' ? transformListeningPart : transformReadingPart))
@@ -103,7 +105,7 @@ async function handIn(extra: { recordings?: { partId: string, audioRef: string, 
       else practice.value = skill === 'SPEAKING' ? 'SPEAKING' : 'WRITING'
       return
     }
-    toast.add({ title: 'Not handed in', description: e?.data?.message || e?.message || 'Check your connection and try again. Your answers are kept.', color: 'error' })
+    toast.add({ title: t('sit.notHandedIn'), description: e?.data?.message || e?.message || t('sit.notHandedInText'), color: 'error' })
     submitting.value = false
   }
 }
@@ -142,7 +144,7 @@ async function finishSpeaking(list: SpeakingRecording[]) {
     }
     await handIn({ recordings: uploaded })
   } catch (e: any) {
-    toast.add({ title: 'The recordings were not sent', description: e?.message || 'Try again.', color: 'error' })
+    toast.add({ title: t('sit.recordingsNotSent'), description: e?.message || t('common.tryAgain'), color: 'error' })
     submitting.value = false
   }
 }
@@ -157,7 +159,7 @@ async function download(kind: 'pdf' | 'docx') {
     if (kind === 'pdf') await downloadEssaysPdf(data.value!.test.title, essayExport.value)
     else await downloadEssaysDocx(data.value!.test.title, essayExport.value)
   } catch (e: any) {
-    toast.add({ title: 'Could not make the file', description: e?.message, color: 'error' })
+    toast.add({ title: t('sit.fileFailed'), description: e?.message, color: 'error' })
   } finally {
     downloading.value = null
   }
@@ -178,12 +180,12 @@ watch(error, (e) => {
   if (e?.statusCode === 402) premiumNeeded.value = true
 }, { immediate: true })
 const practiceNote = computed(() => (loggedIn.value
-  ? 'Get instant AI feedback below, or a marking credit gets it a score out of 75 and feedback from an examiner. Your work stays here.'
-  : 'Sign in to have an examiner mark it.'))
+  ? t('sit.practiceNote')
+  : t('sit.practiceNoteGuest')))
 
 const pageError = computed(() => {
   if (premiumNeeded.value) return null
-  if (error.value) return error.value.statusCode === 404 ? 'This section is not available.' : 'The paper could not be opened. Check your connection and try again.'
+  if (error.value) return error.value.statusCode === 404 ? t('sit.notAvailable') : t('sit.couldNotOpen')
   return null
 })
 </script>
@@ -196,7 +198,7 @@ const pageError = computed(() => {
     <BillingPaywall reason="premium">
       <UButton
         :to="leaveTo"
-        label="Back to the test"
+        :label="t('sit.backToTest')"
         color="neutral"
         variant="outline"
       />
@@ -207,7 +209,7 @@ const pageError = computed(() => {
     :loading="status === 'pending' || status === 'idle'"
     :error="pageError"
     :back-to="leaveTo"
-    back-label="Back to the test"
+    :back-label="t('sit.backToTest')"
   >
     <div class="h-full min-h-0 flex flex-col">
       <div
@@ -219,7 +221,7 @@ const pageError = computed(() => {
             name="i-lucide-loader-circle"
             class="size-8 animate-spin"
           />
-          <p>Handing in…</p>
+          <p>{{ t('sit.handingIn') }}</p>
         </div>
       </div>
 
@@ -231,14 +233,14 @@ const pageError = computed(() => {
         <div class="max-w-3xl mx-auto p-6 flex flex-col gap-5">
           <UEmpty
             icon="i-lucide-file-check"
-            title="Writing finished"
-            :description="`Download your answers to keep them or show a teacher. ${practiceNote}`"
+            :title="t('sit.writingFinished')"
+            :description="`${t('sit.writingFinishedText')} ${practiceNote}`"
             variant="naked"
           />
           <template v-if="loggedIn">
             <UButton
               v-if="canBeMarked"
-              label="Hand in for marking"
+              :label="t('sit.handIn')"
               icon="i-lucide-send"
               class="self-center"
               @click="() => { practice = null; handIn() }"
@@ -256,13 +258,13 @@ const pageError = computed(() => {
           />
           <div class="flex flex-wrap justify-center gap-2">
             <UButton
-              label="Download PDF"
+              :label="t('sit.downloadPdf')"
               icon="i-lucide-file-down"
               :loading="downloading === 'pdf'"
               @click="download('pdf')"
             />
             <UButton
-              label="Download Word"
+              :label="t('sit.downloadWord')"
               icon="i-lucide-file-text"
               color="neutral"
               variant="outline"
@@ -278,7 +280,7 @@ const pageError = computed(() => {
               <div class="flex items-center gap-2">
                 <span class="font-semibold">{{ e.label }}</span>
                 <UBadge
-                  :label="`${e.wordCount} words`"
+                  :label="t('common.words', { n: e.wordCount }, e.wordCount)"
                   :color="e.minWords && e.wordCount < e.minWords ? 'warning' : 'primary'"
                   variant="soft"
                   size="sm"
@@ -296,20 +298,20 @@ const pageError = computed(() => {
               v-else
               class="text-muted text-sm"
             >
-              Not written.
+              {{ t('sit.notWritten') }}
             </p>
           </UCard>
           <div class="flex flex-wrap justify-center gap-2">
             <UButton
               v-if="!loggedIn"
               :to="`/login?next=${encodeURIComponent(route.fullPath)}`"
-              label="Sign in to have it marked"
+              :label="t('sit.signInToMark')"
               icon="i-lucide-log-in"
               color="neutral"
               variant="outline"
             />
             <UButton
-              label="Write again"
+              :label="t('sit.writeAgain')"
               icon="i-lucide-rotate-ccw"
               color="neutral"
               variant="ghost"
@@ -317,7 +319,7 @@ const pageError = computed(() => {
             />
             <UButton
               :to="leaveTo"
-              label="Back to the test"
+              :label="t('sit.backToTest')"
               color="neutral"
               variant="ghost"
             />
@@ -333,14 +335,14 @@ const pageError = computed(() => {
         <div class="max-w-3xl mx-auto p-6 flex flex-col gap-4">
           <UEmpty
             icon="i-lucide-mic"
-            title="Speaking finished"
-            :description="`Listen to your answers and download them. ${practiceNote}`"
+            :title="t('sit.speakingFinished')"
+            :description="`${t('sit.speakingFinishedText')} ${practiceNote}`"
             variant="naked"
           />
           <template v-if="loggedIn">
             <UButton
               v-if="canBeMarked"
-              label="Hand in for marking"
+              :label="t('sit.handIn')"
               icon="i-lucide-send"
               class="self-center"
               @click="() => { practice = null; finishSpeaking(recordings) }"
@@ -374,7 +376,7 @@ const pageError = computed(() => {
                 icon="i-lucide-download"
                 color="neutral"
                 variant="outline"
-                aria-label="Download"
+                :aria-label="t('sit.download')"
               />
             </div>
           </UCard>
@@ -382,13 +384,13 @@ const pageError = computed(() => {
             <UButton
               v-if="!loggedIn"
               :to="`/login?next=${encodeURIComponent(route.fullPath)}`"
-              label="Sign in to have it marked"
+              :label="t('sit.signInToMark')"
               icon="i-lucide-log-in"
               color="neutral"
               variant="outline"
             />
             <UButton
-              label="Try again"
+              :label="t('common.tryAgain')"
               icon="i-lucide-rotate-ccw"
               color="neutral"
               variant="ghost"
@@ -396,7 +398,7 @@ const pageError = computed(() => {
             />
             <UButton
               :to="leaveTo"
-              label="Back to the test"
+              :label="t('sit.backToTest')"
               color="neutral"
               variant="ghost"
             />

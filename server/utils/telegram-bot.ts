@@ -3,6 +3,7 @@ import { and, eq, ne } from 'drizzle-orm'
 import { users } from '../database/schema'
 import { telegramApi, telegramBotToken } from './telegram'
 import { mergeToken } from './merge'
+import { MSG, asLocale, fromTelegram } from './messages'
 
 /**
  * The Telegram bot's side of things: the link that joins a user to the bot (and, for a Google
@@ -111,7 +112,7 @@ const reply = (chatId: number | string, text: string, button?: { text: string, u
   ...(button ? { reply_markup: { inline_keyboard: [[button]] } } : {})
 }).catch(() => null)
 
-interface TgUser { id: number, username?: string, first_name?: string, last_name?: string }
+interface TgUser { id: number, username?: string, first_name?: string, last_name?: string, language_code?: string }
 interface Update {
   message?: { from?: TgUser, chat: { id: number, type: string }, text?: string }
   my_chat_member?: { from: TgUser, chat: { id: number, type: string }, new_chat_member: { status: string } }
@@ -133,7 +134,10 @@ export async function handleBotUpdate(update: Update) {
   if (!msg?.from || msg.chat.type !== 'private') return
   const telegramId = String(msg.from.id)
   const site = siteUrl()
-  const open = { text: 'Open Multilevel', url: `${site}/tests` }
+  // The language they chose on the site, or else their Telegram app's.
+  const [known] = await db.select({ locale: users.locale }).from(users).where(eq(users.telegramId, telegramId)).limit(1)
+  const l = known?.locale ? asLocale(known.locale) : fromTelegram(msg.from.language_code) ?? 'en'
+  const open = { text: MSG.open[l], url: `${site}/tests` }
 
   if (msg.text?.startsWith('/start')) {
     const userId = userOfPayload(msg.text.split(/\s+/)[1] ?? '')
@@ -141,7 +145,7 @@ export async function handleBotUpdate(update: Update) {
       const [owner] = await db.select({ id: users.id }).from(users).where(and(eq(users.telegramId, telegramId), ne(users.id, userId))).limit(1)
       if (owner) {
         // Whoever holds this Telegram started from the other account's link: offer to merge the two.
-        await reply(msg.chat.id, 'This Telegram already has its own Multilevel account. Combine it with the account you came from, so everything is in one place?', { text: 'Combine my accounts', url: `${site}/account/merge?token=${mergeToken(userId, owner.id)}` })
+        await reply(msg.chat.id, MSG.botMergeOffer[l], { text: MSG.botMergeButton[l], url: `${site}/account/merge?token=${mergeToken(userId, owner.id)}` })
         return
       }
       const [user] = await db.select({ name: users.name }).from(users).where(eq(users.id, userId)).limit(1)
@@ -151,18 +155,16 @@ export async function handleBotUpdate(update: Update) {
         telegramId, telegramUsername: msg.from.username ?? null, telegramBotJoined: true,
         name: user.name ?? name, updatedAt: new Date()
       }).where(eq(users.id, userId))
-      await reply(msg.chat.id, '✅ <b>You are connected</b>\nThis is where you will hear the moment your Writing or Speaking is marked, when your AI feedback is ready, and when an invite earns you credits.', open)
+      await reply(msg.chat.id, MSG.botConnectedFromSite[l], open)
       return
     }
     // Start without a link from the site: a user we know is joined; anyone else is shown the way in.
     const updated = await db.update(users).set({ telegramBotJoined: true }).where(eq(users.telegramId, telegramId)).returning({ id: users.id })
-    await reply(msg.chat.id, updated.length
-      ? '✅ <b>You are connected</b>\nYou will hear here when your work is marked, your AI feedback is ready, or an invite earns you credits.'
-      : '👋 <b>Welcome to Multilevel</b>\nFree CEFR Multilevel mock tests, checked instantly. Sign in with Telegram on the site and your results will come here.', updated.length ? open : { text: 'Sign in with Telegram', url: `${site}/login` })
+    await reply(msg.chat.id, updated.length ? MSG.botConnected[l] : MSG.botWelcome[l], updated.length ? open : { text: MSG.botSignIn[l], url: `${site}/login` })
     return
   }
 
   // Any message means the chat is open: a user we know is joined.
   await db.update(users).set({ telegramBotJoined: true }).where(eq(users.telegramId, telegramId))
-  await reply(msg.chat.id, 'I send you news about your tests: marking, AI feedback and credits. Everything else is on the site.', open)
+  await reply(msg.chat.id, MSG.botOther[l], open)
 }

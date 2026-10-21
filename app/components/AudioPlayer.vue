@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const props = defineProps<{
   src: string
   fileName?: string
@@ -70,7 +71,7 @@ defineExpose({ play: () => audio.value?.play(), pause: () => audio.value?.pause(
       color="error"
       variant="subtle"
       icon="i-lucide-circle-alert"
-      title="Unable to load audio"
+      :title="t('exam.audioFailed')"
       :description="fileName"
     />
     <div

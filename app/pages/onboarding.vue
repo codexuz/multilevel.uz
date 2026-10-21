@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const route = useRoute()
 const { me, refresh } = useMe()
 const toast = useToast()
@@ -16,12 +17,12 @@ async function connectOther() {
 }
 
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1']
-const DURATIONS = [
-  { value: '<6m', label: 'Less than 6 months', icon: 'i-lucide-seedling' },
-  { value: '6-12m', label: '6-12 months', icon: 'i-lucide-sprout' },
-  { value: '1-2y', label: '1-2 years', icon: 'i-lucide-book-open-check' },
-  { value: '2y+', label: 'More than 2 years', icon: 'i-lucide-graduation-cap' }
-]
+const DURATIONS = computed(() => [
+  { value: '<6m', label: t('onboarding.d6m'), icon: 'i-lucide-seedling' },
+  { value: '6-12m', label: t('onboarding.d12m'), icon: 'i-lucide-sprout' },
+  { value: '1-2y', label: t('onboarding.d2y'), icon: 'i-lucide-book-open-check' },
+  { value: '2y+', label: t('onboarding.dMore'), icon: 'i-lucide-graduation-cap' }
+])
 
 const currentLevel = ref<string | null>(me.value?.currentLevel ?? null)
 const learningDuration = ref<string | null>(me.value?.learningDuration ?? null)
@@ -30,35 +31,16 @@ const targetScore = ref<number | null>(me.value?.targetScore ?? null)
 const step = ref(0)
 const saving = ref(false)
 
-const steps = [
-  {
-    eyebrow: 'Step 1 of 4',
-    title: 'What is your current English level?',
-    description: 'Choose the level that feels closest right now.',
-    icon: 'i-lucide-bar-chart-3'
-  },
-  {
-    eyebrow: 'Step 2 of 4',
-    title: 'How long have you been learning English?',
-    description: 'This helps us estimate your pace and practice load.',
-    icon: 'i-lucide-clock-3'
-  },
-  {
-    eyebrow: 'Step 3 of 4',
-    title: 'Which level are you aiming for?',
-    description: 'Pick a target level, or skip if you prefer a score goal.',
-    icon: 'i-lucide-flag'
-  },
-  {
-    eyebrow: 'Step 4 of 4',
-    title: 'Do you have a target score?',
-    description: 'Multilevel scores usually sit between 0 and 75.',
-    icon: 'i-lucide-target'
-  }
-]
+const ICONS = ['i-lucide-bar-chart-3', 'i-lucide-clock-3', 'i-lucide-flag', 'i-lucide-target']
+const steps = computed(() => ICONS.map((icon, i) => ({
+  eyebrow: t('onboarding.step', { n: i + 1, of: ICONS.length }),
+  title: t(`onboarding.s${i + 1}Title`),
+  description: t(`onboarding.s${i + 1}Text`),
+  icon
+})))
 
-const active = computed(() => steps[step.value]!)
-const progress = computed(() => ((step.value + 1) / steps.length) * 100)
+const active = computed(() => steps.value[step.value]!)
+const progress = computed(() => ((step.value + 1) / steps.value.length) * 100)
 const canSubmit = computed(() => !!currentLevel.value && !!learningDuration.value
   && (!!targetLevel.value || targetScore.value != null))
 const canContinue = computed(() => {
@@ -86,7 +68,7 @@ function selectTargetScore(score: number) {
 
 function next() {
   if (!canContinue.value) return
-  if (step.value < steps.length - 1) {
+  if (step.value < steps.value.length - 1) {
     step.value += 1
     return
   }
@@ -123,7 +105,7 @@ async function submit() {
     await refresh()
     await navigateTo(typeof route.query.next === 'string' && route.query.next.startsWith('/') && !route.query.next.startsWith('//') ? route.query.next : '/tests')
   } catch {
-    toast.add({ title: 'Could not save', color: 'error' })
+    toast.add({ title: t('common.notSaved'), color: 'error' })
   } finally {
     saving.value = false
   }
@@ -138,9 +120,9 @@ async function submit() {
         color="neutral"
         variant="subtle"
         icon="i-lucide-combine"
-        :title="`Used Multilevel before with ${otherWay === 'google' ? 'Google' : 'Telegram'}?`"
-        description="Connect it to keep your earlier results, Premium and credits in this account."
-        :actions="[{ label: `Connect ${otherWay === 'google' ? 'Google' : 'Telegram'}`, color: 'neutral', variant: 'outline', loading: telegram.busy.value, onClick: connectOther }]"
+        :title="t('onboarding.usedBefore', { way: otherWay === 'google' ? 'Google' : 'Telegram' })"
+        :description="t('onboarding.usedBeforeText')"
+        :actions="[{ label: t('onboarding.connect', { way: otherWay === 'google' ? 'Google' : 'Telegram' }), color: 'neutral', variant: 'outline', loading: telegram.busy.value, onClick: connectOther }]"
       />
       <div class="space-y-3">
         <div class="flex items-center justify-between gap-4">
@@ -228,7 +210,7 @@ async function submit() {
             <UButton
               color="neutral"
               variant="ghost"
-              label="I prefer a target score"
+              :label="t('onboarding.preferScore')"
               trailing-icon="i-lucide-arrow-right"
               @click="skipTargetLevel"
             />
@@ -260,7 +242,7 @@ async function submit() {
               v-if="targetLevel"
               color="neutral"
               variant="ghost"
-              label="Skip score"
+              :label="t('onboarding.skipScore')"
               @click="skipTargetScore"
             />
           </div>
@@ -272,7 +254,7 @@ async function submit() {
           color="neutral"
           variant="ghost"
           icon="i-lucide-arrow-left"
-          label="Back"
+          :label="t('common.back')"
           :disabled="step === 0 || saving"
           @click="back"
         />
@@ -280,7 +262,7 @@ async function submit() {
           size="lg"
           :loading="saving"
           :disabled="!canContinue || saving"
-          :label="step === steps.length - 1 ? 'Start learning' : 'Continue'"
+          :label="step === steps.length - 1 ? t('onboarding.startLearning') : t('common.continue')"
           trailing-icon="i-lucide-arrow-right"
           @click="next"
         />

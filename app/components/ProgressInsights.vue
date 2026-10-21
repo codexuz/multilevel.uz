@@ -1,11 +1,14 @@
 <script setup lang="ts">
+import type { SpotNumbers } from '~/composables/useSpotText'
 /**
  * Where marks are lost, from what the user has done: the weak spots to work on next (each with a
  * part to practise), and per skill the score over time and how each task type or criterion goes.
  * Hidden until there is something to show.
  */
+const { t } = useI18n()
+const { spotLabel, spotDetail } = useSpotText()
 interface Practise { slug: string, title: string, skill: string, part: number, done: boolean, locked: boolean }
-interface Focus { skill: string, kind: 'TYPE' | 'CRITERION', key: string, label: string, detail: string, practise: Practise | null }
+interface Focus extends SpotNumbers { skill: string, kind: 'TYPE' | 'CRITERION', key: string, label: string, detail: string, practise: Practise | null }
 interface Objective { skill: string, answers: number, share: number, types: { type: string, label: string, total: number, share: number }[], parts: { part: number, total: number, share: number }[] }
 interface Criteria { reviews: number, criteria: { key: string, label: string, average: number | null }[], tasks: { number: number, label: string, average: number, reviews: number }[], priorities: string[] }
 interface Insights { skills: Objective[], writing: Criteria, speaking: Criteria, trend: Record<string, { score: number, at: string }[]>, focus: Focus[] }
@@ -62,11 +65,11 @@ function change(points: { score: number }[]) {
             class="size-5 text-primary"
           />
           <h2 class="font-semibold text-highlighted">
-            Work on these next
+            {{ t('insights.workOn') }}
           </h2>
         </div>
         <p class="text-sm text-muted mt-1">
-          Where you lose the most marks lately, with a part to practise for each.
+          {{ t('insights.workOnText') }}
         </p>
       </template>
       <ul class="divide-y divide-default">
@@ -85,10 +88,10 @@ function change(points: { score: number }[]) {
             </div>
             <div class="min-w-0">
               <p class="font-medium text-highlighted">
-                {{ skillLabel(f.skill) }}: {{ f.label }}
+                {{ skillLabel(f.skill) }}: {{ spotLabel(f.kind, f.key) }}
               </p>
               <p class="text-xs text-muted">
-                {{ f.detail }}
+                {{ spotDetail(f.kind, f.skill, f) }}
               </p>
             </div>
           </div>
@@ -101,7 +104,7 @@ function change(points: { score: number }[]) {
             </span>
             <UButton
               :to="practiseLink(f.practise)"
-              :label="f.practise.done ? 'Practise again' : 'Practise'"
+              :label="f.practise.done ? t('insights.practiseAgain') : t('tests.practise')"
               :icon="f.practise.locked ? 'i-lucide-lock' : 'i-lucide-play'"
               size="sm"
               :color="f.practise.locked ? 'neutral' : 'primary'"
@@ -131,22 +134,22 @@ function change(points: { score: number }[]) {
               v-if="c.trend.length"
               class="text-xs text-muted"
             >
-              Last {{ fmtScore(c.trend[c.trend.length - 1]!.score) }}/75
+              {{ t('insights.last', { score: fmtScore(c.trend[c.trend.length - 1]!.score) }) }}
               <template v-if="change(c.trend) != null">
-                · <span :class="change(c.trend)! >= 0 ? 'text-success' : 'text-error'">{{ change(c.trend)! >= 0 ? '+' : '' }}{{ change(c.trend) }}</span> on your average before
+                · <span :class="change(c.trend)! >= 0 ? 'text-success' : 'text-error'">{{ change(c.trend)! >= 0 ? '+' : '' }}{{ change(c.trend) }}</span> {{ t('insights.onAverage') }}
               </template>
             </p>
             <p
               v-else-if="c.objective"
               class="text-xs text-muted"
             >
-              {{ c.objective.share }}% right over {{ c.objective.answers }} questions
+              {{ t('insights.typeDetail', { share: c.objective.share, total: c.objective.answers }) }}
             </p>
             <p
               v-else-if="c.criteria"
               class="text-xs text-muted"
             >
-              From {{ c.criteria.reviews }} AI {{ c.criteria.reviews === 1 ? 'review' : 'reviews' }}
+              {{ t('insights.fromReviews', { n: c.criteria.reviews }, c.criteria.reviews) }}
             </p>
           </div>
           <svg
@@ -172,16 +175,16 @@ function change(points: { score: number }[]) {
           class="mt-4 grid gap-2.5"
         >
           <div
-            v-for="t in c.objective.types.slice(0, 5)"
-            :key="t.type"
+            v-for="ty in c.objective.types.slice(0, 5)"
+            :key="ty.type"
           >
             <div class="flex justify-between text-sm">
-              <span class="text-toned truncate">{{ t.label }}</span>
-              <span class="tabular-nums text-highlighted font-medium">{{ t.share }}%<span class="text-xs text-dimmed font-normal"> · {{ t.total }}</span></span>
+              <span class="text-toned truncate">{{ questionTypeLabel(ty.type) }}</span>
+              <span class="tabular-nums text-highlighted font-medium">{{ ty.share }}%<span class="text-xs text-dimmed font-normal"> · {{ ty.total }}</span></span>
             </div>
             <UProgress
-              :model-value="t.share"
-              :color="shareColor(t.share)"
+              :model-value="ty.share"
+              :color="shareColor(ty.share)"
               size="sm"
               class="mt-1"
             />
@@ -190,7 +193,7 @@ function change(points: { score: number }[]) {
             v-if="c.objective.types.length > 5"
             class="text-xs text-dimmed"
           >
-            and {{ c.objective.types.length - 5 }} more task types you do better on
+            {{ t('insights.moreTypes', { n: c.objective.types.length - 5 }, c.objective.types.length - 5) }}
           </p>
         </div>
 
@@ -204,7 +207,7 @@ function change(points: { score: number }[]) {
           >
             <div v-if="k.average != null">
               <div class="flex justify-between text-sm">
-                <span class="text-toned">{{ k.label }}</span>
+                <span class="text-toned">{{ t(`criterion.${k.key}`) }}</span>
                 <span class="tabular-nums text-highlighted font-medium">{{ k.average }}/5</span>
               </div>
               <UProgress
@@ -220,10 +223,10 @@ function change(points: { score: number }[]) {
             class="flex flex-wrap gap-1.5"
           >
             <UBadge
-              v-for="t in c.criteria.tasks"
-              :key="t.number"
-              :label="`${t.label} ${t.average}/5`"
-              :color="markColor(t.average)"
+              v-for="tk in c.criteria.tasks"
+              :key="tk.number"
+              :label="`${partName(c.skill, tk.number)} ${tk.average}/5`"
+              :color="markColor(tk.average)"
               variant="soft"
               size="sm"
             />
@@ -233,7 +236,7 @@ function change(points: { score: number }[]) {
             class="rounded-lg bg-warning/10 px-3 py-2"
           >
             <p class="text-xs font-semibold text-warning">
-              From your last AI review
+              {{ t('insights.lastReview') }}
             </p>
             <ul class="mt-1 text-sm text-toned list-disc ps-4">
               <li

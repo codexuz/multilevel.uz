@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { AnswerMap, PartData } from '~/types/exam'
 
+const { t } = useI18n()
+
 const props = withDefaults(defineProps<{
   parts: PartData[]
   timerMinutes?: number
@@ -82,7 +84,7 @@ function submit() {
             <UEmpty
               v-else
               icon="i-lucide-file-x"
-              title="No passage content available"
+              :title="t('exam.noPassage')"
               variant="naked"
             />
           </div>
@@ -115,7 +117,7 @@ function submit() {
     <ExamNotesSlideover
       v-model:open="notesOpen"
       v-model="notes"
-      title="Notes"
+      :title="t('exam.notes')"
     />
   </ExamShell>
 </template>

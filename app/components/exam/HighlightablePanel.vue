@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const COLORS = [
   { value: '#fef08a', label: 'Yellow' },
   { value: '#bbf7d0', label: 'Green' },
@@ -47,7 +48,7 @@ function saveNote(text: string) {
         @click.stop
       >
         <template v-if="popup.highlightId">
-          <UTooltip text="Add / edit note">
+          <UTooltip :text="t('exam.editNote')">
             <UButton
               icon="i-lucide-message-square-plus"
               color="neutral"
@@ -56,7 +57,7 @@ function saveNote(text: string) {
               @mousedown.prevent.stop="openNote(popup.highlightId)"
             />
           </UTooltip>
-          <UTooltip text="Remove highlight">
+          <UTooltip :text="t('exam.removeHighlight')">
             <UButton
               icon="i-lucide-trash-2"
               color="error"
@@ -79,7 +80,7 @@ function saveNote(text: string) {
               square
               class="rounded-full size-6 p-0"
               :style="{ backgroundColor: c.value }"
-              :aria-label="`Highlight ${c.label}`"
+              :aria-label="t('exam.highlight', { colour: t(`exam.colour.${c.label}`) })"
               @mousedown.prevent.stop="addHighlight(c.value)"
             />
           </UTooltip>
@@ -87,7 +88,7 @@ function saveNote(text: string) {
             orientation="vertical"
             class="h-4 mx-1"
           />
-          <UTooltip text="Add note">
+          <UTooltip :text="t('exam.addNote')">
             <UButton
               icon="i-lucide-message-square-plus"
               color="neutral"
@@ -102,7 +103,7 @@ function saveNote(text: string) {
 
     <ExamNotesSlideover
       v-model:open="noteOpen"
-      title="Highlight note"
+      :title="t('exam.highlightNote')"
       :model-value="activeComment"
       @update:model-value="saveNote"
     />

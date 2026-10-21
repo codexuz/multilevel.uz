@@ -4,7 +4,8 @@
  * other account brings, and a confirmation. Reached from Profile's Connect buttons, onboarding, or
  * the bot when someone presses Start from the "wrong" account. The link carries a signed token.
  */
-useSeoMeta({ title: 'Combine accounts', robots: 'noindex' })
+const { t: tr } = useI18n()
+useSeoMeta({ title: () => tr('merge.title'), robots: 'noindex' })
 
 interface Preview { name: string | null, email: string | null, telegramUsername: string | null, telegram: boolean, createdAt: string, results: number, purchases: number }
 
@@ -19,21 +20,21 @@ async function merge() {
   merging.value = true
   try {
     await $fetch('/api/account/merge', { method: 'POST', body: { token } })
-    toast.add({ title: 'Accounts combined', description: 'Everything is in this account now.', color: 'success' })
+    toast.add({ title: tr('merge.done'), description: tr('merge.doneText'), color: 'success' })
     reloadNuxtApp({ path: '/profile' })
   } catch (e: any) {
-    toast.add({ title: 'Not combined', description: e?.data?.message || 'Please try again.', color: 'error' })
+    toast.add({ title: tr('merge.notDone'), description: e?.data?.message || tr('test.tryAgain'), color: 'error' })
     merging.value = false
   }
 }
 
 const otherHandle = computed(() => data.value?.other ? accountHandle(data.value.other) : '')
-const plural = (n: number, one: string) => `${n} ${n === 1 ? one : `${one}s`}`
+const plural = (n: number, one: 'result' | 'purchase') => tr(`merge.${one}s`, { n }, n)
 </script>
 
 <template>
   <AppPage
-    title="Combine accounts"
+    :title="tr('merge.title')"
     icon="i-lucide-combine"
     back="/profile"
   >
@@ -41,17 +42,24 @@ const plural = (n: number, one: string) => `${n} ${n === 1 ? one : `${one}s`}`
       <UEmpty
         v-if="error || !data?.other"
         icon="i-lucide-link-2-off"
-        title="This link cannot be used"
-        :description="error?.data?.message || 'That account no longer exists.'"
-        :actions="[{ label: 'Back to Profile', to: '/profile', color: 'neutral', variant: 'outline' }]"
+        :title="tr('merge.badLink')"
+        :description="error?.data?.message || tr('merge.gone')"
+        :actions="[{ label: tr('merge.backToProfile'), to: '/profile', color: 'neutral', variant: 'outline' }]"
       />
       <template v-else>
         <div>
           <h1 class="text-2xl sm:text-3xl font-bold text-highlighted">
-            Combine your <span class="text-accent">accounts</span>
+            <i18n-t
+              keypath="merge.heading"
+              scope="global"
+            >
+              <template #accent>
+                <span class="text-accent">{{ tr('merge.headingAccent') }}</span>
+              </template>
+            </i18n-t>
           </h1>
           <p class="text-muted mt-1 text-pretty">
-            You have a second Multilevel account. Bring it into this one, so your results, Premium and credits are in one place and both ways of signing in open it.
+            {{ tr('merge.intro') }}
           </p>
         </div>
 
@@ -63,7 +71,7 @@ const plural = (n: number, one: string) => `${n} ${n === 1 ? one : `${one}s`}`
             />
             <div class="min-w-0">
               <p class="text-xs text-muted">
-                Other account
+                {{ tr('merge.other') }}
               </p>
               <p class="font-semibold text-highlighted truncate">
                 {{ data.other.name || otherHandle }}
@@ -88,7 +96,7 @@ const plural = (n: number, one: string) => `${n} ${n === 1 ? one : `${one}s`}`
             />
             <div class="min-w-0">
               <p class="text-xs text-muted">
-                This account (kept)
+                {{ tr('merge.kept') }}
               </p>
               <p class="font-semibold text-highlighted truncate">
                 {{ me?.name || accountHandle(me) }}
@@ -105,13 +113,13 @@ const plural = (n: number, one: string) => `${n} ${n === 1 ? one : `${one}s`}`
           color="error"
           variant="subtle"
           icon="i-lucide-triangle-alert"
-          title="These two cannot be combined"
+          :title="tr('merge.cannot')"
           :description="data.conflict"
         />
         <template v-else>
           <ul class="flex flex-col gap-2 text-sm text-toned">
             <li
-              v-for="t in ['Results, AI feedback, purchases, Premium days, credits and opened tests move to this account.', 'You can sign in to this account with both Google and Telegram.', 'The other account is removed. This cannot be undone.']"
+              v-for="t in [tr('merge.point1'), tr('merge.point2'), tr('merge.point3')]"
               :key="t"
               class="flex gap-2.5"
             >
@@ -123,7 +131,7 @@ const plural = (n: number, one: string) => `${n} ${n === 1 ? one : `${one}s`}`
           </ul>
           <div class="grid gap-2 sm:flex">
             <UButton
-              label="Combine accounts"
+              :label="tr('merge.title')"
               icon="i-lucide-combine"
               size="lg"
               :loading="merging"
@@ -132,7 +140,7 @@ const plural = (n: number, one: string) => `${n} ${n === 1 ? one : `${one}s`}`
             />
             <UButton
               to="/profile"
-              label="Keep them apart"
+              :label="tr('merge.keepApart')"
               color="neutral"
               variant="ghost"
               size="lg"

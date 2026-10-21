@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import type { Order } from '~/utils/billing'
 
+const { t } = useI18n()
+
 /**
  * Back from Click. Click tells this site about the payment separately (Complete), so the order is
  * asked about until it is paid or cancelled, for up to a couple of minutes.
  */
-useSeoMeta({ title: 'Payment', robots: 'noindex' })
+useSeoMeta({ title: () => t('payment.title'), robots: 'noindex' })
 const route = useRoute()
 const { refresh: refreshMe } = useMe()
 const id = String(route.query.order ?? '')
@@ -42,7 +44,7 @@ function again() {
 
 <template>
   <AppPage
-    title="Payment"
+    :title="t('payment.title')"
     icon="i-lucide-credit-card"
   >
     <UCard class="max-w-md w-full mx-auto mt-4 sm:mt-10">
@@ -53,14 +55,14 @@ function again() {
             class="size-10 text-muted"
           />
           <h1 class="text-lg font-semibold text-highlighted">
-            We could not find this order
+            {{ t('payment.notFound') }}
           </h1>
           <p class="text-sm text-muted">
-            If you paid, your plan appears on your profile within a minute. Otherwise write to us on Telegram.
+            {{ t('payment.notFoundText') }}
           </p>
           <UButton
             to="/profile"
-            label="Go to your profile"
+            :label="t('payment.toProfile')"
             color="neutral"
             variant="outline"
           />
@@ -72,20 +74,20 @@ function again() {
             class="size-16 drop-shadow-lg"
           >
           <h1 class="text-lg font-semibold text-highlighted">
-            Payment received
+            {{ t('payment.received') }}
           </h1>
           <p class="text-sm text-muted">
-            {{ order.planName }} is on your account now. Thank you!
+            {{ t('payment.receivedText', { plan: order.planName }) }}
           </p>
           <div class="flex flex-wrap justify-center gap-2 pt-1">
             <UButton
               to="/tests"
-              label="Go to tests"
+              :label="t('payment.toTests')"
               icon="i-lucide-clipboard-list"
             />
             <UButton
               to="/profile"
-              label="Your plan"
+              :label="t('payment.yourPlan')"
               color="neutral"
               variant="outline"
             />
@@ -97,14 +99,14 @@ function again() {
             class="size-10 text-error"
           />
           <h1 class="text-lg font-semibold text-highlighted">
-            The payment did not go through
+            {{ t('payment.failed') }}
           </h1>
           <p class="text-sm text-muted">
-            Nothing was charged for order #{{ order.number }}. You can try again.
+            {{ t('payment.failedText', { n: order.number }) }}
           </p>
           <UButton
             to="/pricing"
-            label="Back to plans"
+            :label="t('payment.backToPlans')"
           />
         </template>
         <template v-else-if="gaveUp">
@@ -113,13 +115,13 @@ function again() {
             class="size-10 text-warning"
           />
           <h1 class="text-lg font-semibold text-highlighted">
-            Still waiting for Click
+            {{ t('payment.waiting') }}
           </h1>
           <p class="text-sm text-muted">
-            If you finished paying, it can take a little longer to arrive. Your plan switches on by itself when it does.
+            {{ t('payment.waitingText') }}
           </p>
           <UButton
-            label="Check again"
+            :label="t('payment.checkAgain')"
             icon="i-lucide-refresh-cw"
             @click="again"
           />
@@ -130,10 +132,10 @@ function again() {
             class="size-10 text-primary animate-spin"
           />
           <h1 class="text-lg font-semibold text-highlighted">
-            Confirming your payment…
+            {{ t('payment.confirming') }}
           </h1>
           <p class="text-sm text-muted">
-            This takes a few seconds. Please keep this page open.
+            {{ t('payment.confirmingText') }}
           </p>
         </template>
       </div>

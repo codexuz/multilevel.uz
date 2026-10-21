@@ -10,7 +10,7 @@ export const ATTEMPT_STATUS: Record<AttemptStatus, { label: string, color: 'info
   ABANDONED: { label: 'Abandoned', color: 'neutral' }
 }
 
-export const skillLabel = (skill?: string | null) => (skill ? SKILL_META[skill as Skill]?.label ?? skill : 'Full test')
+export const skillLabel = (skill?: string | null) => (skill ? i18nT(`skill.${skill}`, {}, SKILL_META[skill as Skill]?.label ?? skill) : i18nT('skill.FULL', {}, 'Full test'))
 
 /** What an attempt covered, in words: "Full test", "Reading", "Listening Part 2", "Writing Task 1". */
 export function attemptScopeLabel(a: Pick<AttemptSummary, 'scope' | 'skill' | 'part' | 'writingTask'>) {
@@ -24,15 +24,17 @@ export function attemptScopeLabel(a: Pick<AttemptSummary, 'scope' | 'skill' | 'p
 export function minutesText(seconds?: number | null) {
   if (!seconds) return '—'
   const m = Math.round(seconds / 60)
-  return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`
+  const unit = (n: number, u: 'minute' | 'hour') => new Intl.NumberFormat(intlLocale(), { style: 'unit', unit: u, unitDisplay: 'short' }).format(n)
+  return m < 60 ? unit(m, 'minute') : `${unit(Math.floor(m / 60), 'hour')} ${unit(m % 60, 'minute')}`
 }
 
 export function relativeTime(value?: string | null) {
   if (!value) return ''
   const diff = (Date.now() - new Date(value).getTime()) / 1000
-  if (diff < 60) return 'just now'
-  if (diff < 3600) return `${Math.floor(diff / 60)} min ago`
-  if (diff < 86400) return `${Math.floor(diff / 3600)} h ago`
-  if (diff < 7 * 86400) return `${Math.floor(diff / 86400)} d ago`
+  const rtf = new Intl.RelativeTimeFormat(intlLocale(), { numeric: 'auto', style: 'short' })
+  if (diff < 60) return rtf.format(0, 'second')
+  if (diff < 3600) return rtf.format(-Math.floor(diff / 60), 'minute')
+  if (diff < 86400) return rtf.format(-Math.floor(diff / 3600), 'hour')
+  if (diff < 7 * 86400) return rtf.format(-Math.floor(diff / 86400), 'day')
   return formatDate(value)
 }

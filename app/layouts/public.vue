@@ -7,17 +7,18 @@
 provide(PUBLIC_LAYOUT, true)
 
 const { me, loggedIn } = useMe()
+const { t } = useI18n()
 const route = useRoute()
 const config = useRuntimeConfig()
 const menuOpen = ref(false)
 watch(() => route.fullPath, () => (menuOpen.value = false))
 
-const links = [
-  { label: 'Tests', to: '/tests' },
-  { label: 'Premium', to: '/pricing' },
-  { label: 'How it works', to: '/#how' },
-  { label: 'FAQ', to: '/#faq' }
-]
+const links = computed(() => [
+  { label: t('nav.tests'), to: '/tests' },
+  { label: t('nav.premium'), to: '/pricing' },
+  { label: t('pub.how'), to: '/#how' },
+  { label: t('pub.faq'), to: '/#faq' }
+])
 const isActive = (to: string) => !to.includes('#') && (route.path === to || route.path.startsWith(`${to}/`))
 const signInTo = computed(() => `/login?next=${encodeURIComponent(route.path === '/' ? '/tests' : route.fullPath)}`)
 const social = config.public.socialLinks as { telegramUrl: string, youtubeUrl: string }
@@ -32,7 +33,7 @@ const year = new Date().getFullYear()
 
         <nav
           class="hidden md:flex items-center gap-1 ms-4"
-          aria-label="Main"
+          :aria-label="t('nav.main')"
         >
           <NuxtLink
             v-for="l in links"
@@ -49,24 +50,24 @@ const year = new Date().getFullYear()
           <template v-if="loggedIn">
             <UButton
               to="/results"
-              label="My results"
+              :label="t('nav.results')"
               color="neutral"
               variant="ghost"
               class="hidden sm:inline-flex font-semibold"
             />
             <UButton
               to="/tests"
-              label="Open app"
+              :label="t('pub.openApp')"
               class="rounded-full px-5 font-semibold hidden sm:inline-flex"
             />
             <NuxtLink
               to="/profile"
               class="shrink-0"
-              aria-label="Profile"
+              :aria-label="t('nav.profile')"
             >
               <UAvatar
                 :src="me?.avatarUrl || undefined"
-                :alt="me?.name || 'Profile'"
+                :alt="me?.name || t('nav.profile')"
                 size="md"
               />
             </NuxtLink>
@@ -74,23 +75,24 @@ const year = new Date().getFullYear()
           <template v-else>
             <UButton
               :to="signInTo"
-              label="Sign in"
+              :label="t('nav.signIn')"
               color="neutral"
               variant="outline"
               class="rounded-full px-5 font-semibold ring-2 ring-inverted/90 hidden sm:inline-flex"
             />
             <UButton
               to="/tests"
-              label="Start now"
+              :label="t('pub.startNow')"
               class="rounded-full px-5 font-semibold"
             />
           </template>
+          <LanguageSwitcher class="hidden sm:inline-flex" />
           <UButton
             icon="i-lucide-menu"
             color="neutral"
             variant="ghost"
             class="md:hidden"
-            aria-label="Open menu"
+            :aria-label="t('pub.openMenu')"
             @click="menuOpen = true"
           />
         </div>
@@ -101,12 +103,12 @@ const year = new Date().getFullYear()
       v-model:open="menuOpen"
       side="right"
       :ui="{ content: 'max-w-xs' }"
-      title="Menu"
+      :title="t('pub.menu')"
     >
       <template #body>
         <nav
           class="flex flex-col gap-1"
-          aria-label="Main"
+          :aria-label="t('nav.main')"
         >
           <NuxtLink
             v-for="l in links"
@@ -119,17 +121,18 @@ const year = new Date().getFullYear()
           </NuxtLink>
         </nav>
         <USeparator class="my-4" />
+        <LanguageSwitcher class="mb-3" />
         <div class="flex flex-col gap-2">
           <template v-if="loggedIn">
             <UButton
               to="/tests"
-              label="Open app"
+              :label="t('pub.openApp')"
               size="lg"
               block
             />
             <UButton
               to="/results"
-              label="My results"
+              :label="t('nav.results')"
               color="neutral"
               variant="outline"
               size="lg"
@@ -139,13 +142,13 @@ const year = new Date().getFullYear()
           <template v-else>
             <UButton
               to="/tests"
-              label="Start now"
+              :label="t('pub.startNow')"
               size="lg"
               block
             />
             <UButton
               :to="signInTo"
-              label="Sign in"
+              :label="t('nav.signIn')"
               color="neutral"
               variant="outline"
               size="lg"
@@ -174,7 +177,7 @@ const year = new Date().getFullYear()
             >Multilevel
           </NuxtLink>
           <p class="text-sm max-w-xs">
-            Free Multilevel (CEFR) English mock tests, checked instantly, with a score out of 75 and your level.
+            {{ t('pub.footerAbout') }}
           </p>
           <div class="flex gap-2">
             <UButton
@@ -199,23 +202,23 @@ const year = new Date().getFullYear()
         </div>
         <div>
           <p class="text-sm font-semibold text-white mb-3">
-            Practise
+            {{ t('pub.practise') }}
           </p>
           <ul class="flex flex-col gap-2 text-sm">
             <li>
               <NuxtLink
                 to="/tests"
                 class="hover:text-white"
-              >All tests</NuxtLink>
+              >{{ t('pub.allTests') }}</NuxtLink>
             </li>
             <li
-              v-for="s in ['Listening', 'Reading', 'Writing', 'Speaking']"
+              v-for="s in ['LISTENING', 'READING', 'WRITING', 'SPEAKING']"
               :key="s"
             >
               <NuxtLink
-                to="/tests"
+                :to="`/tests?skill=${s}`"
                 class="hover:text-white"
-              >{{ s }}</NuxtLink>
+              >{{ skillLabel(s) }}</NuxtLink>
             </li>
           </ul>
         </div>
@@ -234,19 +237,19 @@ const year = new Date().getFullYear()
               <NuxtLink
                 to="/#how"
                 class="hover:text-white"
-              >How it works</NuxtLink>
+              >{{ t('pub.how') }}</NuxtLink>
             </li>
             <li>
               <NuxtLink
                 to="/#faq"
                 class="hover:text-white"
-              >FAQ</NuxtLink>
+              >{{ t('pub.faq') }}</NuxtLink>
             </li>
           </ul>
         </div>
         <div>
           <p class="text-sm font-semibold text-white mb-3">
-            Account
+            {{ t('nav.account') }}
           </p>
           <ul class="flex flex-col gap-2 text-sm">
             <template v-if="loggedIn">
@@ -254,20 +257,20 @@ const year = new Date().getFullYear()
                 <NuxtLink
                   to="/results"
                   class="hover:text-white"
-                >My results</NuxtLink>
+                >{{ t('nav.results') }}</NuxtLink>
               </li>
               <li>
                 <NuxtLink
                   to="/profile"
                   class="hover:text-white"
-                >Profile</NuxtLink>
+                >{{ t('nav.profile') }}</NuxtLink>
               </li>
             </template>
             <li v-else>
               <NuxtLink
                 :to="signInTo"
                 class="hover:text-white"
-              >Sign in</NuxtLink>
+              >{{ t('nav.signIn') }}</NuxtLink>
             </li>
             <li>
               <a
@@ -275,7 +278,7 @@ const year = new Date().getFullYear()
                 target="_blank"
                 rel="noopener"
                 class="hover:text-white"
-              >Contact us</a>
+              >{{ t('pub.contact') }}</a>
             </li>
           </ul>
         </div>

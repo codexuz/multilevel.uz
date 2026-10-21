@@ -78,6 +78,20 @@
       "when": 1792576074802,
       "tag": "0010_centres",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792577397968,
+      "tag": "0011_user_locale",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792579519099,
+      "tag": "0012_ai_review_locale",
+      "breakpoints": true
     }
   ]
 }

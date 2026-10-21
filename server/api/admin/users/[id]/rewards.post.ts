@@ -24,7 +24,6 @@ export default defineEventHandler(async (event) => {
     if (aiReviews) await tx.update(users).set({ aiBonusReviews: bonus }).where(eq(users.id, id))
     return { credits: balance + credits, aiBonusReviews: bonus }
   })
-  const gifts = [credits > 0 && `${credits} ${credits === 1 ? 'credit' : 'credits'} to open Premium tests`, aiReviews > 0 && `${aiReviews} extra AI ${aiReviews === 1 ? 'review' : 'reviews'}`].filter(Boolean)
-  if (gifts.length) await notifyTelegram(id, { text: `🎁 <b>A gift from Multilevel</b>\nYou received ${gifts.join(' and ')}.`, path: credits > 0 ? '/earn' : '/tests', button: 'Open Multilevel' }).catch(() => {})
+  if (credits > 0 || aiReviews > 0) await notifyTelegram(id, l => ({ text: MSG.gift(l, Math.max(0, credits), Math.max(0, aiReviews)), path: credits > 0 ? '/earn' : '/tests', button: MSG.open[l] })).catch(() => {})
   return result
 })

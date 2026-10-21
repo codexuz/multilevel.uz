@@ -28,17 +28,17 @@ export interface Order {
 }
 
 /** 79000 → "79 000 so'm". */
-export const fmtUzs = (n?: number | null) => (n == null ? '—' : `${String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} so'm`)
+export const fmtUzs = (n?: number | null) => (n == null ? '—' : `${String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} ${i18nT('common.som', {}, 'so\'m')}`)
 
 /** "30 days", "1 week", "3 months". */
 export function durationText(days: number) {
   if (!days) return ''
-  if (days % 30 === 0) return days === 30 ? '1 month' : `${days / 30} months`
-  if (days % 7 === 0) return days === 7 ? '1 week' : `${days / 7} weeks`
-  return days === 1 ? '1 day' : `${days} days`
+  if (days % 30 === 0) return i18nTn('duration.months', days / 30, days === 30 ? '1 month' : `${days / 30} months`)
+  if (days % 7 === 0) return i18nTn('duration.weeks', days / 7, days === 7 ? '1 week' : `${days / 7} weeks`)
+  return i18nTn('duration.days', days, days === 1 ? '1 day' : `${days} days`)
 }
 
-export const creditsText = (n: number) => (n === 1 ? '1 marking' : `${n} markings`)
+export const creditsText = (n: number) => i18nTn('duration.markings', n, n === 1 ? '1 marking' : `${n} markings`)
 
 /** A Telegram chat link with the message to send already written, where Telegram supports it. */
 export function telegramLink(base: string, message: string) {

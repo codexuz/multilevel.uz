@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { SpeakingPart } from '~/types/ielts'
 
+const { t } = useI18n()
+
 /**
  * Sitting Multilevel Speaking on screen, part by part: the questions or card (and picture), the
  * preparation time, then a recording up to the part's speaking time. Each answer can be heard back
@@ -95,7 +97,7 @@ const mmss = (s: number) => `${String(Math.floor(Math.max(0, s) / 60)).padStart(
         icon="i-lucide-arrow-left"
         color="neutral"
         variant="ghost"
-        label="Leave"
+        :label="t('exam.leave')"
       />
       <div class="flex items-center gap-1.5">
         <UBadge
@@ -150,8 +152,8 @@ const mmss = (s: number) => `${String(Math.floor(Math.max(0, s) / 60)).padStart(
           color="error"
           variant="subtle"
           icon="i-lucide-mic-off"
-          title="The microphone is not available"
-          :description="`${recorder.error.value}. Allow microphone access in the browser and try again.`"
+          :title="t('exam.micUnavailable')"
+          :description="t('exam.micUnavailableText', { error: recorder.error.value })"
         />
 
         <UCard>
@@ -160,16 +162,16 @@ const mmss = (s: number) => `${String(Math.floor(Math.max(0, s) / 60)).padStart(
             class="flex flex-wrap items-center justify-between gap-3"
           >
             <p class="text-sm text-muted">
-              {{ prepSeconds }} s to prepare, then up to {{ speakSeconds }} s to speak.
+              {{ t('exam.prepThenSpeak', { prep: prepSeconds, speak: speakSeconds }) }}
             </p>
             <div class="flex gap-2">
               <UButton
-                label="Start"
+                :label="t('common.start')"
                 icon="i-lucide-play"
                 @click="prepare"
               />
               <UButton
-                label="Speak now"
+                :label="t('exam.speakNow')"
                 icon="i-lucide-mic"
                 color="neutral"
                 variant="outline"
@@ -182,10 +184,10 @@ const mmss = (s: number) => `${String(Math.floor(Math.max(0, s) / 60)).padStart(
             class="flex flex-wrap items-center justify-between gap-3"
           >
             <p class="font-medium">
-              Prepare your answer <span class="tabular-nums text-primary">{{ mmss(countdown) }}</span>
+              {{ t('exam.prepare') }} <span class="tabular-nums text-primary">{{ mmss(countdown) }}</span>
             </p>
             <UButton
-              label="Speak now"
+              :label="t('exam.speakNow')"
               icon="i-lucide-mic"
               @click="record"
             />
@@ -195,10 +197,10 @@ const mmss = (s: number) => `${String(Math.floor(Math.max(0, s) / 60)).padStart(
             class="flex flex-wrap items-center justify-between gap-3"
           >
             <p class="font-medium flex items-center gap-2">
-              <span class="size-2.5 rounded-full bg-error animate-pulse" /> Recording <span class="tabular-nums">{{ mmss(countdown) }}</span> left
+              <span class="size-2.5 rounded-full bg-error animate-pulse" /> {{ t('exam.recordingLeft', { time: mmss(countdown) }) }}
             </p>
             <UButton
-              label="Stop"
+              :label="t('exam.stop')"
               icon="i-lucide-square"
               color="error"
               @click="stop"
@@ -216,7 +218,7 @@ const mmss = (s: number) => `${String(Math.floor(Math.max(0, s) / 60)).padStart(
             />
             <div class="flex flex-wrap gap-2">
               <UButton
-                label="Record again"
+                :label="t('exam.recordAgain')"
                 icon="i-lucide-rotate-ccw"
                 color="neutral"
                 variant="outline"
@@ -228,7 +230,7 @@ const mmss = (s: number) => `${String(Math.floor(Math.max(0, s) / 60)).padStart(
 
         <div class="flex justify-between gap-2">
           <UButton
-            label="Previous part"
+            :label="t('exam.previousPart')"
             icon="i-lucide-chevron-left"
             color="neutral"
             variant="ghost"
@@ -236,7 +238,7 @@ const mmss = (s: number) => `${String(Math.floor(Math.max(0, s) / 60)).padStart(
             @click="back"
           />
           <UButton
-            :label="isLast ? 'Finish' : 'Next part'"
+            :label="isLast ? t('exam.finish') : t('exam.nextPart')"
             :trailing-icon="isLast ? 'i-lucide-check' : 'i-lucide-chevron-right'"
             :disabled="phase === 'recording' || phase === 'preparing' || (isLast && !Object.keys(recordings).length)"
             @click="next"

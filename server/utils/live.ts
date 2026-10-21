@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lte, sql } from 'drizzle-orm'
 import { attempts, liveMocks, sections, tests, users } from '../database/schema'
 import { telegramApi, telegramBotToken } from './telegram'
+import { MSG, asLocale } from './messages'
 
 /**
  * Live mocks: one test everyone sits in the same window, ranked on Listening and Reading (marked at
@@ -77,8 +78,6 @@ export async function leaderboard(m: Mock, viewerId: string | null, limit = 50) 
 
 const siteUrl = () => String(useRuntimeConfig().public.siteUrl || 'https://multilevel.uz').replace(/\/$/, '')
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
-const ordinal = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[n % 10] ?? 'th'}`
-const endsText = (d: Date) => d.toLocaleString('en-GB', { weekday: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent' })
 
 async function send(chatId: string, text: string, path: string, button: string) {
   const res = await telegramApi('sendMessage', {
@@ -102,10 +101,11 @@ export async function runLiveMocks(now = new Date()) {
   for (const m of started) {
     await db.update(liveMocks).set({ announcedAt: now }).where(eq(liveMocks.id, m.id))
     if (!telegramBotToken()) continue
-    const audience = await db.select({ chatId: users.telegramId }).from(users)
+    const audience = await db.select({ chatId: users.telegramId, locale: users.locale }).from(users)
       .where(and(isNotNull(users.telegramId), eq(users.telegramNotify, true), eq(users.telegramBotJoined, true), eq(users.banned, false)))
     for (const u of audience) {
-      if (await send(u.chatId!, `🏆 <b>${m.title} is live</b>\nSit it by ${endsText(m.endsAt)}: Listening and Reading are ranked on one leaderboard. Your first try of each counts.`, '/live', 'Take part')) announced++
+      const l = asLocale(u.locale)
+      if (await send(u.chatId!, MSG.liveOpen(l, m.title, m.endsAt), '/live', MSG.liveOpenButton[l])) announced++
     }
   }
 
@@ -118,12 +118,13 @@ export async function runLiveMocks(now = new Date()) {
     if (!telegramBotToken()) continue
     const board = await standings(m.id)
     if (!board.length) continue
-    const chats = await db.select({ id: users.id, chatId: users.telegramId, notify: users.telegramNotify }).from(users)
+    const chats = await db.select({ id: users.id, chatId: users.telegramId, notify: users.telegramNotify, locale: users.locale }).from(users)
       .where(inArray(users.id, board.map(r => r.userId)))
     for (const r of board) {
       const u = chats.find(c => c.id === r.userId)
       if (!u?.chatId || !u.notify) continue
-      if (await send(u.chatId, `🏁 <b>${m.title} is over</b>\nYou placed <b>${ordinal(r.rank)}</b> of ${board.length}, with ${r.total} points. Thanks for taking part!`, `/live?mock=${m.id}`, 'See the leaderboard')) results++
+      const l = asLocale(u.locale)
+      if (await send(u.chatId, MSG.liveOver(l, m.title, r.rank, board.length, r.total), `/live?mock=${m.id}`, MSG.liveOverButton[l])) results++
     }
   }
   return { announced, results }
