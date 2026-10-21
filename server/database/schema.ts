@@ -291,6 +291,9 @@ export const orders = pgTable('orders', {
   clickPaydocId: text('click_paydoc_id'),
   note: text('note'),
   grantedById: uuid('granted_by_id').references(() => users.id, { onDelete: 'set null' }),
+  /** A promo code taken off the price (amountUzs is what is paid, after it). */
+  promoCodeId: uuid('promo_code_id').references((): AnyPgColumn => promoCodes.id, { onDelete: 'set null' }),
+  discountUzs: integer('discount_uzs').notNull().default(0),
   paidAt: timestamp('paid_at', { withTimezone: true }),
   createdAt: created(),
   updatedAt: updated()
@@ -303,8 +306,42 @@ export const subscriptions = pgTable('subscriptions', {
   orderId: uuid('order_id').references(() => orders.id, { onDelete: 'set null' }),
   startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
   endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+  /** Told in Telegram that it is about to end, and that it has ended (once each). */
+  remindedBeforeAt: timestamp('reminded_before_at', { withTimezone: true }),
+  remindedAfterAt: timestamp('reminded_after_at', { withTimezone: true }),
   createdAt: created()
 }, t => [index('subscriptions_user_idx').on(t.userId, t.endsAt)])
+
+// ---------- promo codes ----------
+/**
+ * A code that takes a percentage or an amount off a plan, or gives days of Premium by itself.
+ * Each user can use a code once; a code can be limited to some plans, a number of uses and a date.
+ */
+export const promoCodes = pgTable('promo_codes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  /** Stored in capitals; typed in any case. */
+  code: text('code').notNull().unique(),
+  kind: text('kind').notNull(), // PERCENT | AMOUNT | DAYS
+  /** Percent off (1–100), so'm off, or days of Premium. */
+  value: integer('value').notNull(),
+  /** Plan codes it applies to; empty for every plan (PERCENT and AMOUNT). */
+  planCodes: jsonb('plan_codes').$type<string[]>().notNull().default([]),
+  maxUses: integer('max_uses'),
+  uses: integer('uses').notNull().default(0),
+  endsAt: timestamp('ends_at', { withTimezone: true }),
+  active: boolean('active').notNull().default(true),
+  note: text('note'),
+  createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: created()
+})
+
+export const promoRedemptions = pgTable('promo_redemptions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  promoCodeId: uuid('promo_code_id').notNull().references(() => promoCodes.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  orderId: uuid('order_id').references(() => orders.id, { onDelete: 'set null' }),
+  createdAt: created()
+}, t => [uniqueIndex('promo_redemptions_once_uq').on(t.promoCodeId, t.userId)])
 
 /** Marking credits in and out; the balance is their sum. */
 export const creditTransactions = pgTable('credit_transactions', {

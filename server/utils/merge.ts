@@ -91,6 +91,9 @@ export async function mergeAccounts(keepId: string, otherId: string) {
     // kept account already earned its inviter one.
     await tx.execute(sql`update reward_transactions set referred_user_id = ${keepId} where referred_user_id = ${otherId} and user_id <> ${keepId}
       and not exists (select 1 from reward_transactions r where r.referred_user_id = ${keepId} and r.reason = 'REFERRAL')`)
+    // Promo codes used: once per person, so a code both accounts used counts once.
+    await tx.execute(sql`delete from promo_redemptions where user_id = ${otherId} and promo_code_id in (select promo_code_id from promo_redemptions where user_id = ${keepId})`)
+    await tx.execute(sql`update promo_redemptions set user_id = ${keepId} where user_id = ${otherId}`)
     // Unlocked tests: the ones the kept account does not have yet.
     await tx.execute(sql`insert into ${testUnlocks} (user_id, test_id, created_at) select ${keepId}, test_id, created_at from ${testUnlocks} where user_id = ${otherId} on conflict do nothing`)
     // What they did as staff, and whom they invited.

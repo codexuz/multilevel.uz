@@ -1,7 +1,7 @@
 import { createHash, timingSafeEqual } from 'node:crypto'
 import { and, desc, eq, gt, sql } from 'drizzle-orm'
 import type { orders } from '../database/schema'
-import { creditTransactions, plans, subscriptions, users } from '../database/schema'
+import { creditTransactions, plans, promoCodes, promoRedemptions, subscriptions, users } from '../database/schema'
 import { userLabel } from './sign-in'
 
 /**
@@ -56,6 +56,12 @@ export async function fulfilOrder(tx: Tx, order: typeof orders.$inferSelect, rea
   }
   if (order.credits > 0) {
     await tx.insert(creditTransactions).values({ userId: order.userId, delta: order.credits, reason, orderId: order.id })
+  }
+  // A promo code on the order now counts as used by this user.
+  if (order.promoCodeId) {
+    const added = await tx.insert(promoRedemptions).values({ promoCodeId: order.promoCodeId, userId: order.userId, orderId: order.id })
+      .onConflictDoNothing().returning({ id: promoRedemptions.id })
+    if (added.length) await tx.update(promoCodes).set({ uses: sql`${promoCodes.uses} + 1` }).where(eq(promoCodes.id, order.promoCodeId))
   }
 }
 

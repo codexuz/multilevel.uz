@@ -9,7 +9,7 @@ definePageMeta({ guestLayout: true })
  */
 const route = useRoute()
 const toast = useToast()
-const { me, loggedIn, isPremium, credits } = useMe()
+const { me, loggedIn, isPremium, credits, refresh: refreshMe } = useMe()
 
 const { data } = await useFetch<{ plans: Plan[], click: boolean, telegram: string }>('/api/billing/plans')
 const premiumPlans = computed(() => (data.value?.plans ?? []).filter(p => p.durationDays > 0))
@@ -23,20 +23,70 @@ useSeoMeta({
 const FREE = ['Free practice tests', 'Listening and Reading checked instantly', 'Score out of 75 and CEFR level', 'Answer key for every question', 'Writing and Speaking practice to download']
 const PREMIUM = ['Every test in the library, new ones every week', 'Why each answer is right, with the line in the passage', 'Writing and Speaking marked by an examiner (with marking credits)', 'All your results kept and compared']
 
+// ─── Promo codes: typed here, or arriving as /pricing?promo=CODE ───
+interface PromoInfo { code: string, kind: 'PERCENT' | 'AMOUNT' | 'DAYS', value: number, text: string, prices: Record<string, number> }
+const promoInput = ref(typeof route.query.promo === 'string' ? route.query.promo : '')
+const promoOpen = ref(!!promoInput.value)
+const promo = ref<PromoInfo | null>(null)
+const checkingPromo = ref(false)
+async function applyPromo() {
+  if (!promoInput.value.trim()) return
+  checkingPromo.value = true
+  try {
+    promo.value = await $fetch<PromoInfo>('/api/billing/promo', { query: { code: promoInput.value } })
+  } catch (e: any) {
+    promo.value = null
+    toast.add({ title: 'Promo code not applied', description: errorMessage(e), color: 'warning' })
+  } finally {
+    checkingPromo.value = false
+  }
+}
+function removePromo() {
+  promo.value = null
+  promoInput.value = ''
+}
+/** A plan's price with the applied code, and whether the code changes it. */
+const priceOf = (p: Plan) => promo.value?.prices[p.code] ?? p.priceUzs
+const discounted = (p: Plan) => priceOf(p) < p.priceUzs
+const redeeming = ref(false)
+async function redeemDays() {
+  if (!promo.value) return
+  if (!loggedIn.value) return navigateTo(`/login?next=${encodeURIComponent(`/pricing?promo=${promo.value.code}`)}`)
+  redeeming.value = true
+  try {
+    const { days } = await $fetch<{ days: number }>('/api/billing/promo/redeem', { method: 'POST', body: { code: promo.value.code } })
+    await refreshMe()
+    toast.add({ title: 'Premium switched on', description: `${durationText(days)} of Premium added.`, color: 'success' })
+    removePromo()
+  } catch (e: any) {
+    toast.add({ title: 'Not redeemed', description: errorMessage(e), color: 'error' })
+  } finally {
+    redeeming.value = false
+  }
+}
+
 // ─── Buying ───
 const buying = ref<string | null>(null)
 const telegramPlan = ref<Plan | null>(null)
 
 async function buy(plan: Plan) {
-  if (!loggedIn.value) return navigateTo(`/login?next=${encodeURIComponent(`/pricing?plan=${plan.code}`)}`)
-  if (!data.value?.click) {
+  const promoQuery = promo.value && discounted(plan) ? `&promo=${promo.value.code}` : ''
+  if (!loggedIn.value) return navigateTo(`/login?next=${encodeURIComponent(`/pricing?plan=${plan.code}${promoQuery}`)}`)
+  if (!data.value?.click && priceOf(plan) > 0) {
     telegramPlan.value = plan
     return
   }
   buying.value = plan.code
   try {
-    const order = await $fetch<{ url: string }>('/api/billing/orders', { method: 'POST', body: { plan: plan.code } })
-    window.location.href = order.url
+    const order = await $fetch<{ url?: string, paid?: boolean }>('/api/billing/orders', { method: 'POST', body: { plan: plan.code, promo: promo.value && discounted(plan) ? promo.value.code : undefined } })
+    if (order.paid) {
+      await refreshMe()
+      buying.value = null
+      removePromo()
+      toast.add({ title: 'Switched on', description: `${plan.name} is yours.`, color: 'success' })
+      return
+    }
+    window.location.href = order.url!
   } catch (e: any) {
     buying.value = null
     if (e?.data?.data?.code === 'TELEGRAM') telegramPlan.value = plan
@@ -44,14 +94,15 @@ async function buy(plan: Plan) {
   }
 }
 
-// Back from signing in to buy a plan: carry on with it.
-onMounted(() => {
+// A promo link applies its code; back from signing in to buy a plan: carry on with it.
+onMounted(async () => {
+  if (promoInput.value) await applyPromo()
   const wanted = data.value?.plans.find(p => p.code === route.query.plan)
   if (wanted && loggedIn.value) buy(wanted)
 })
 
 const telegramMessage = computed(() => telegramPlan.value
-  ? `Hello! I'd like to buy "${telegramPlan.value.name}" (${fmtUzs(telegramPlan.value.priceUzs)}) on multilevel.uz. My account: ${accountHandle(me.value) || me.value?.id || ''}`
+  ? `Hello! I'd like to buy "${telegramPlan.value.name}" (${fmtUzs(priceOf(telegramPlan.value))}${discounted(telegramPlan.value) ? ` with code ${promo.value!.code}` : ''}) on multilevel.uz. My account: ${accountHandle(me.value) || me.value?.id || ''}`
   : '')
 const telegramHandle = computed(() => (data.value?.telegram ?? '').replace(/^https?:\/\/t\.me\//, '@'))
 async function copyMessage() {
@@ -100,6 +151,51 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
         />
       </section>
 
+      <!-- Promo code -->
+      <section class="flex flex-col items-center gap-2 -mt-4">
+        <UAlert
+          v-if="promo"
+          color="success"
+          variant="subtle"
+          icon="i-lucide-ticket-percent"
+          class="max-w-xl"
+          :title="`${promo.code}: ${promo.text}`"
+          :description="promo.kind === 'DAYS' ? 'Use it now: no payment needed.' : 'Applied to the prices below.'"
+          :actions="[
+            ...(promo.kind === 'DAYS' ? [{ label: `Get ${durationText(promo.value)} of Premium`, color: 'success' as const, variant: 'solid' as const, loading: redeeming, onClick: redeemDays }] : []),
+            { label: 'Remove', color: 'neutral' as const, variant: 'ghost' as const, onClick: removePromo }
+          ]"
+        />
+        <UButton
+          v-else-if="!promoOpen"
+          label="Have a promo code?"
+          icon="i-lucide-ticket-percent"
+          color="neutral"
+          variant="link"
+          @click="promoOpen = true"
+        />
+        <form
+          v-else
+          class="flex gap-2 w-full max-w-sm"
+          @submit.prevent="applyPromo"
+        >
+          <UInput
+            v-model="promoInput"
+            placeholder="Promo code"
+            aria-label="Promo code"
+            class="flex-1"
+            :ui="{ base: 'uppercase' }"
+            autofocus
+          />
+          <UButton
+            type="submit"
+            label="Apply"
+            color="neutral"
+            :loading="checkingPromo"
+          />
+        </form>
+      </section>
+
       <section class="grid gap-4 sm:grid-cols-3">
         <UCard
           v-for="p in premiumPlans"
@@ -127,8 +223,14 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
             />
           </div>
           <div>
-            <p class="text-3xl font-bold text-highlighted tabular-nums">
+            <p
+              v-if="discounted(p)"
+              class="text-sm text-muted line-through tabular-nums"
+            >
               {{ fmtUzs(p.priceUzs) }}
+            </p>
+            <p class="text-3xl font-bold text-highlighted tabular-nums">
+              {{ fmtUzs(priceOf(p)) }}
             </p>
             <p
               v-if="perMonth(p)"
@@ -202,7 +304,10 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
                 {{ p.name }}
               </p>
               <p class="text-sm text-muted tabular-nums">
-                {{ fmtUzs(p.priceUzs) }}<span v-if="p.credits > 1"> · {{ fmtUzs(Math.round(p.priceUzs / p.credits)) }} each</span>
+                <span
+                  v-if="discounted(p)"
+                  class="line-through me-1"
+                >{{ fmtUzs(p.priceUzs) }}</span>{{ fmtUzs(priceOf(p)) }}<span v-if="p.credits > 1"> · {{ fmtUzs(Math.round(priceOf(p) / p.credits)) }} each</span>
               </p>
             </div>
             <UButton
@@ -296,7 +401,7 @@ const perMonth = (p: Plan) => (p.durationDays >= 60 ? Math.round(p.priceUzs / (p
               </p>
             </div>
             <p class="font-semibold tabular-nums text-highlighted shrink-0">
-              {{ fmtUzs(telegramPlan.priceUzs) }}
+              {{ fmtUzs(priceOf(telegramPlan)) }}
             </p>
           </div>
           <ol class="flex flex-col gap-3 text-sm">

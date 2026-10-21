@@ -94,6 +94,14 @@ export default defineNuxtConfig({
   },
 
   compatibilityDate: '2026-06-30',
+  // Background jobs on a timer (server/tasks): Premium reminders, the bot's daily question, study
+  // plan reminders. Times are UTC (Tashkent is UTC+5).
+  nitro: {
+    experimental: { tasks: true },
+    scheduledTasks: {
+      '7 * * * *': ['reminders:premium']
+    }
+  },
   vite: {
     optimizeDeps: {
       include: [

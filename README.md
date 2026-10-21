@@ -99,6 +99,19 @@ and Telegram's last delivery error at `/api/admin/telegram` (add `?fix=1` to poi
 address that page was opened on). Set `TELEGRAM_WEBHOOK=false` if the same bot's webhook is used
 by something else (it cannot also be read with getUpdates).
 
+### Promo codes and reminders
+
+`/admin/promos` makes codes that take a percentage or an amount off plans (all, or some), or give
+days of Premium on their own; each can have a usage limit and a last day, and each user uses a
+code once. Buyers type it on Pricing, or follow its link (`/pricing?promo=CODE`, **Copy link**);
+a code that brings the price to nothing switches the plan on without payment. The list shows each
+code's uses and what it brought in.
+
+Every hour a background job tells users in Telegram that their Premium ends within three days, and
+again the day after it ended. `PREMIUM_RENEW_PROMO=CODE` adds that promo code to both messages (for
+users who can still use it). An admin can run the job now with
+`POST /api/admin/tasks/reminders:premium`.
+
 ### Earning credits
 
 Besides buying Premium, a user can open single Premium tests with **credits** they earn (not to be

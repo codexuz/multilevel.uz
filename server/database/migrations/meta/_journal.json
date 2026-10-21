@@ -43,6 +43,13 @@
       "when": 1792570848998,
       "tag": "0005_ai_review_free",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792571412665,
+      "tag": "0006_promos_and_reminders",
+      "breakpoints": true
     }
   ]
 }

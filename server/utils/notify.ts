@@ -50,3 +50,18 @@ export const notifyInviteReward = (userId: string, credits: number) => notifyTel
   path: '/earn',
   button: 'See my credits'
 })
+
+const dayName = (d: Date) => d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Tashkent' })
+const offerLine = (offer: { code: string, text: string } | null) => (offer ? `\nUse code <b>${offer.code}</b> for ${offer.text}.` : '')
+
+export const notifyPremiumEnding = (userId: string, endsAt: Date, offer: { code: string, text: string } | null) => notifyTelegram(userId, {
+  text: `⏳ <b>Your Premium ends on ${dayName(endsAt)}</b>\nExtend it to keep every test and every explanation.${offerLine(offer)}`,
+  path: `/pricing${offer ? `?promo=${offer.code}` : ''}`,
+  button: 'Extend Premium'
+})
+
+export const notifyPremiumEnded = (userId: string, offer: { code: string, text: string } | null) => notifyTelegram(userId, {
+  text: `Your Premium has ended. Your results are kept, and the free tests are still yours.${offerLine(offer)}`,
+  path: `/pricing${offer ? `?promo=${offer.code}` : ''}`,
+  button: 'Get Premium again'
+})
