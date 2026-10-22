@@ -116,6 +116,7 @@ async function grade(next: boolean) {
   <AppPage
     :title="attempt ? `${skillLabel(attempt.skill)} — ${attempt.user?.name ?? ''}` : 'Marking'"
     back="/marking"
+    wide
   >
     <template #actions>
       <UBadge

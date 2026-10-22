@@ -43,7 +43,7 @@ export function formatDate(value?: string | null, withTime = false) {
   if (!value) return '—'
   const d = new Date(value)
   if (Number.isNaN(d.getTime())) return '—'
-  return d.toLocaleDateString(intlLocale(), withTime
+  return localeDate(d, intlLocale(), withTime
     ? { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }
     : { day: '2-digit', month: 'short', year: 'numeric' })
 }

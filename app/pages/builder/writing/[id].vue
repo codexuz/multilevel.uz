@@ -49,6 +49,7 @@ const saveLabel = computed(() => ({ idle: '', dirty: 'Unsaved changes', saving: 
   <AppPage
     :title="task ? (task.title || `Writing ${writingTaskLabel(task.taskNumber)}`) : 'Writing task'"
     :back="back"
+    wide
   >
     <template #actions>
       <span class="text-xs text-muted max-sm:hidden">{{ saveLabel }}</span>

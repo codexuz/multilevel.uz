@@ -190,6 +190,7 @@ const readiness = computed(() => test.value?.readiness ?? { errors: [], warnings
   <AppPage
     :title="test?.title ?? 'Test'"
     back="/builder"
+    wide
   >
     <template #actions>
       <UBadge

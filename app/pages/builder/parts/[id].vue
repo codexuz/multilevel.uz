@@ -106,6 +106,7 @@ const saveLabel = computed(() => ({ idle: '', dirty: 'Unsaved changes', saving: 
   <AppPage
     :title="part?.title || (listening ? 'Listening part' : 'Reading passage')"
     :back="back"
+    wide
   >
     <template #actions>
       <span class="text-xs text-muted max-sm:hidden">{{ saveLabel }}</span>

@@ -2,7 +2,7 @@
 /** A strip on the Tests page while a live mock is open, or before the next one. */
 const { t } = useI18n()
 const { live, next } = useLiveMock()
-const when = (d: string) => new Date(d).toLocaleString(intlLocale(), { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
+const when = (d: string) => localeDate(d, intlLocale(), { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
 </script>
 
 <template>

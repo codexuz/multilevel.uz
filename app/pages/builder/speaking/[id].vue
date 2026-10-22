@@ -68,6 +68,7 @@ const hint = computed(() => ({
   <AppPage
     :title="part ? (part.title || `Speaking ${speakingPartLabel(part.partNumber)}`) : 'Speaking part'"
     :back="back"
+    wide
   >
     <template #actions>
       <span class="text-xs text-muted max-sm:hidden">{{ saveLabel }}</span>

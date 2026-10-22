@@ -3,13 +3,15 @@
  * A page's frame. In the app (layouts/default.vue) it is a dashboard panel with a top bar; in the
  * public site (layouts/public.vue) it is a plain centred section, the back link and actions above it.
  * On a phone the app has no drawer: the tab bar and Profile lead everywhere, so the top bar has no
- * menu button.
+ * menu button. The content sits in a centred column, and each block in it is centred too (a
+ * narrower card stays in the middle); `wide` gives editors such as the builder the whole width.
  */
 defineProps<{
   title?: string
   icon?: string
   back?: string
   id?: string
+  wide?: boolean
 }>()
 const inPublic = useInPublicLayout()
 const { t } = useI18n()
@@ -79,7 +81,13 @@ const { t } = useI18n()
     </template>
 
     <template #body>
-      <slot />
+      <slot v-if="wide" />
+      <div
+        v-else
+        class="mx-auto w-full max-w-6xl flex flex-col gap-4 sm:gap-6 *:mx-auto *:w-full"
+      >
+        <slot />
+      </div>
     </template>
   </UDashboardPanel>
 </template>

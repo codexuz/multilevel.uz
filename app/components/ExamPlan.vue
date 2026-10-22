@@ -54,7 +54,7 @@ async function save(examDate: string | null = form.examDate || null) {
 }
 
 const examDay = computed(() => (plan.value?.examDate
-  ? new Date(`${plan.value.examDate}T00:00:00`).toLocaleDateString(intlLocale(), { weekday: 'long', day: 'numeric', month: 'long' })
+  ? localeDate(`${plan.value.examDate}T00:00:00`, intlLocale(), { weekday: 'long', day: 'numeric', month: 'long' })
   : ''))
 const levelColor = (score: number | null) => {
   const target = plan.value?.targetScore ?? 51

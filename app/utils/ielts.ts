@@ -24,14 +24,27 @@ export function attemptScopeLabel(a: Pick<AttemptSummary, 'scope' | 'skill' | 'p
 export function minutesText(seconds?: number | null) {
   if (!seconds) return '—'
   const m = Math.round(seconds / 60)
-  const unit = (n: number, u: 'minute' | 'hour') => new Intl.NumberFormat(intlLocale(), { style: 'unit', unit: u, unitDisplay: 'short' }).format(n)
+  // Browsers without Uzbek data write "35 min", so Uzbek is written out ("35 daq.", "1 soat").
+  const unit = (n: number, u: 'minute' | 'hour') => appLocale() === 'uz'
+    ? `${n} ${u === 'minute' ? 'daq.' : 'soat'}`
+    : new Intl.NumberFormat(intlLocale(), { style: 'unit', unit: u, unitDisplay: 'short' }).format(n)
   return m < 60 ? unit(m, 'minute') : `${unit(Math.floor(m / 60), 'hour')} ${unit(m % 60, 'minute')}`
+}
+
+const UZ_RELATIVE = {
+  format(n: number, unit: 'second' | 'minute' | 'hour' | 'day') {
+    const ago = Math.abs(n)
+    if (unit === 'second') return 'hozir'
+    if (unit === 'day' && ago === 1) return 'kecha'
+    return `${ago} ${{ minute: 'daqiqa', hour: 'soat', day: 'kun' }[unit]} oldin`
+  }
 }
 
 export function relativeTime(value?: string | null) {
   if (!value) return ''
   const diff = (Date.now() - new Date(value).getTime()) / 1000
-  const rtf = new Intl.RelativeTimeFormat(intlLocale(), { numeric: 'auto', style: 'short' })
+  // Browsers without Uzbek data write "-3 d", so Uzbek is written out ("3 kun oldin", "kecha").
+  const rtf = appLocale() === 'uz' ? UZ_RELATIVE : new Intl.RelativeTimeFormat(intlLocale(), { numeric: 'auto', style: 'short' })
   if (diff < 60) return rtf.format(0, 'second')
   if (diff < 3600) return rtf.format(-Math.floor(diff / 60), 'minute')
   if (diff < 86400) return rtf.format(-Math.floor(diff / 3600), 'hour')

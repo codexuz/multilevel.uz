@@ -59,7 +59,7 @@ async function revoke(id: string) {
                 />
               </p>
               <p class="text-xs text-muted">
-                {{ s.ipAddress || t('settings.unknownIp') }} · {{ t('settings.lastActive', { when: new Date(s.lastSeenAt).toLocaleString(intlLocale()) }) }}
+                {{ s.ipAddress || t('settings.unknownIp') }} · {{ t('settings.lastActive', { when: localeDate(s.lastSeenAt, intlLocale()) }) }}
               </p>
             </div>
             <UButton
