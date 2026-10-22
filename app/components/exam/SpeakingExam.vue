@@ -5,7 +5,7 @@ import type { SpeakingStep } from '~~/shared/utils/speaking'
 const { t } = useI18n()
 
 /**
- * Sitting Multilevel Speaking the way the exam runs it, with no buttons to press between turns:
+ * Sitting Speaking (Multilevel or IELTS) the way the exam runs it, with no buttons to press between turns:
  * a microphone check, then for each part a short introduction, and for each turn the examiner
  * reading the question aloud, the time to prepare, a beep and the recording, straight on to the
  * next. Part 1.1 and 1.2 are answered question by question, Part 2 and Part 3 in one long turn.
@@ -33,6 +33,9 @@ const props = defineProps<{
 const emit = defineEmits<{ submit: [recordings: SpeakingRecording[]] }>()
 
 const steps = computed(() => speakingSteps(props.parts))
+// IELTS: Part 1 (interview) and Part 3 (discussion) question by question, Part 2 the cue card.
+const ielts = computed(() => props.parts.some(p => p.exam === 'IELTS'))
+const exam = computed(() => (ielts.value ? 'IELTS' : 'MULTILEVEL'))
 const partOf = (id: string) => props.parts.find(p => p.id === id)
 const turnsIn = (partId: string) => steps.value.filter(s => s.partId === partId).length
 
@@ -119,7 +122,7 @@ let clip: HTMLAudioElement | null = null
 let voiceWorks: boolean | null = null
 const voiceUrl = (s: SpeakingStep) => `/api/speaking/voice?part=${s.partId}&position=${s.position}`
 const plain = (html?: string | null) => (html ?? '').replace(/<table[\s\S]*?<\/table>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
-const spokenText = (s: SpeakingStep) => s.question ?? (s.partNumber === 4 ? `${plain(partOf(s.partId)?.cueCard)} Use the arguments for and against.` : plain(partOf(s.partId)?.cueCard))
+const spokenText = (s: SpeakingStep) => s.question ?? (s.partNumber === 4 && !ielts.value ? `${plain(partOf(s.partId)?.cueCard)} Use the arguments for and against.` : plain(partOf(s.partId)?.cueCard))
 
 function playClip(url: string) {
   return new Promise<void>((resolve, reject) => {
@@ -286,13 +289,22 @@ onBeforeUnmount(() => {
 
 // ─── what the screen says ───
 const secondsText = (s: number) => (s >= 60 && s % 60 === 0 ? t('speak.minutes', { n: s / 60 }, s / 60) : t('speak.seconds', { n: s }, s))
-const PART_NAME: Record<number, string> = { 1: 'speak.p1', 2: 'speak.p2', 3: 'speak.p3', 4: 'speak.p4' }
-const PART_NUMBER: Record<number, string> = { 1: '1.1', 2: '1.2', 3: '2', 4: '3' }
+const PART_NAME = computed(() => (ielts.value
+  ? { 1: 'speak.i1', 2: 'speak.i2', 3: 'speak.i3' }
+  : { 1: 'speak.p1', 2: 'speak.p2', 3: 'speak.p3', 4: 'speak.p4' }) as Record<number, string>)
+const PART_NUMBER = computed(() => (ielts.value ? { 1: '1', 2: '2', 3: '3' } : { 1: '1.1', 2: '1.2', 3: '2', 4: '3' }) as Record<number, string>)
+/** Where the card (and a picture) shows: Multilevel Part 1.2's first turn, Part 2 and Part 3; IELTS Part 2. */
+const showsCard = (s: SpeakingStep) => (ielts.value ? s.partNumber === 2 : s.partNumber >= 3 || (s.partNumber === 2 && s.position === 0))
+const showsImage = (s: SpeakingStep) => (ielts.value ? s.position === 0 : s.partNumber === 3 || (s.partNumber === 2 && s.position === 0))
 const partInfo = computed(() => {
   const s = step.value
   if (!s) return ''
   const n = turnsIn(s.partId)
   const next = steps.value[index.value + 1]
+  if (ielts.value) {
+    if (s.partNumber === 2) return t('speak.i2Info', { prep: secondsText(s.prepSeconds), speak: secondsText(s.speakSeconds) })
+    return t(s.partNumber === 3 ? 'speak.i3Info' : 'speak.i1Info', { n, speak: secondsText(s.speakSeconds) })
+  }
   if (s.partNumber === 1) return t('speak.p1Info', { n, prep: secondsText(s.prepSeconds), speak: secondsText(s.speakSeconds) })
   if (s.partNumber === 2) return t('speak.p2Info', { speak: secondsText(s.speakSeconds), n: n - 1, then: secondsText(next?.partId === s.partId ? next.speakSeconds : 30) })
   return t(s.partNumber === 4 ? 'speak.p4Info' : 'speak.p3Info', { prep: secondsText(s.prepSeconds), speak: secondsText(s.speakSeconds) })
@@ -321,7 +333,7 @@ const button = computed(() => ({ intro: t('speak.ready'), listen: t('speak.skipL
           <UBadge
             v-for="p in parts"
             :key="p.id"
-            :label="speakingPartLabel(p.partNumber)"
+            :label="speakingPartLabel(p.partNumber, exam)"
             :color="step?.partId === p.id && phase !== 'check' ? 'primary' : recordings.some(r => r.partId === p.id) ? 'success' : 'neutral'"
             :variant="step?.partId === p.id && phase !== 'check' ? 'solid' : 'soft'"
           />
@@ -426,16 +438,16 @@ const button = computed(() => ({ intro: t('speak.ready'), listen: t('speak.skipL
         <!-- A turn -->
         <template v-else-if="step && phase !== 'done'">
           <p class="text-xs font-semibold uppercase tracking-wide text-primary">
-            {{ speakingPartLabel(step.partNumber) }} · {{ t(PART_NAME[step.partNumber] ?? 'speak.p1') }}
+            {{ speakingPartLabel(step.partNumber, exam) }} · {{ t(PART_NAME[step.partNumber] ?? 'speak.p1') }}
           </p>
           <img
-            v-if="part?.imageUrl && (step.partNumber === 3 || (step.partNumber === 2 && step.position === 0))"
+            v-if="part?.imageUrl && showsImage(step)"
             :src="part.imageUrl"
             alt=""
             class="rounded-xl max-h-72 w-full object-contain ring ring-default bg-elevated"
           >
           <div
-            v-if="part?.cueCard && (step.partNumber >= 3 || (step.partNumber === 2 && step.position === 0))"
+            v-if="part?.cueCard && showsCard(step)"
             class="rich-content speaking-card rounded-xl ring ring-default bg-elevated/50 p-5"
             v-html="part.cueCard"
           />
