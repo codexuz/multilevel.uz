@@ -152,6 +152,22 @@ export const MSG = {
     ru: `🏆 <b>${escapeHtml(title)} уже идёт</b>\nПройдите до ${dayText(l, endsAt, true)}: Аудирование и Чтение идут в общий рейтинг. Засчитывается первая попытка в каждом разделе.`
   })[l],
   liveOpenButton: { en: 'Take part', uz: 'Qatnashish', ru: 'Участвовать' },
+  liveSoon: (l: Locale, title: string, startsAt: Date, endsAt: Date) => ({
+    en: `📣 <b>${escapeHtml(title)}</b>\nA live mock opens ${dayText(l, startsAt, true)} and runs until ${dayText(l, endsAt, true)}. Everyone sits the same test; Listening and Reading are ranked on one leaderboard. Your first try of each counts.`,
+    uz: `📣 <b>${escapeHtml(title)}</b>\nJonli mock ${dayText(l, startsAt, true)} ochiladi va ${dayText(l, endsAt, true)} gacha davom etadi. Hamma bir xil testni topshiradi; Tinglash va O‘qish bitta reytingda baholanadi. Har biridan birinchi urinishingiz hisoblanadi.`,
+    ru: `📣 <b>${escapeHtml(title)}</b>\nЖивой мок откроется ${dayText(l, startsAt, true)} и продлится до ${dayText(l, endsAt, true)}. Все проходят один и тот же тест; Аудирование и Чтение идут в общий рейтинг. Засчитывается первая попытка в каждом разделе.`
+  })[l],
+  liveSoonButton: { en: 'See the details', uz: 'Batafsil', ru: 'Подробнее' },
+  /** The channel's results post: the top of the board. */
+  liveBoard: (l: Locale, title: string, top: { rank: number, name: string, total: number }[], participants: number) => {
+    const medal = (r: number) => (['🥇', '🥈', '🥉'][r - 1] ?? `${r}.`)
+    const lines = top.map(r => `${medal(r.rank)} ${escapeHtml(r.name)} — <b>${r.total}</b>`).join('\n')
+    return ({
+      en: `🏁 <b>${escapeHtml(title)}: the results</b>\n${participants} took part. The top ${top.length}, Listening and Reading out of 150:\n\n${lines}\n\nWell done, everyone!`,
+      uz: `🏁 <b>${escapeHtml(title)}: natijalar</b>\n${participants} kishi qatnashdi. Eng yaxshi ${top.length} natija, Tinglash va O‘qish, 150 balldan:\n\n${lines}\n\nBarchaga rahmat!`,
+      ru: `🏁 <b>${escapeHtml(title)}: итоги</b>\nУчастников: ${participants}. Лучшие ${top.length}, Аудирование и Чтение из 150:\n\n${lines}\n\nСпасибо всем!`
+    })[l]
+  },
   liveOver: (l: Locale, title: string, rank: number, of: number, total: number) => ({
     en: `🏁 <b>${escapeHtml(title)} is over</b>\nYou placed <b>${rank}${rank % 100 >= 11 && rank % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[rank % 10] ?? 'th'}</b> of ${of}, with ${total} points. Thanks for taking part!`,
     uz: `🏁 <b>${escapeHtml(title)} yakunlandi</b>\n${of} kishi orasida <b>${rank}-o‘rin</b>, ${total} ball. Qatnashganingiz uchun rahmat!`,

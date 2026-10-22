@@ -150,6 +150,14 @@ leaderboard at `/live` (highest total first, then whoever finished first; names 
 and initial), Writing and Speaking go to the examiner as usual. The hourly `live:mocks` job announces
 a mock on Telegram when it opens and sends each participant their place when it closes.
 
+With `TELEGRAM_CHANNEL` set (the bot an admin of the channel that can post messages), the bot also
+posts each mock there: when it is scheduled, when it opens, and the top 10 of the board when it
+closes, in `TELEGRAM_CHANNEL_LOCALE` (Uzbek by default). **Post to channel** on `/admin/live` posts a
+mock again as it stands; if Telegram refuses, the page says why.
+
+A mock can be edited (**Edit**): before it opens, its title, test and window; while it runs, its title
+and when it closes (the board so far stays); once it has ended, its title. Windows still may not overlap.
+
 ### Exam plan
 
 On **My results** a user sets the day of their exam and a target (B1 38+, B2 51+, C1 65+). They
