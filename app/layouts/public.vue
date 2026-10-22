@@ -15,6 +15,7 @@ watch(() => route.fullPath, () => (menuOpen.value = false))
 
 const links = computed(() => [
   { label: t('nav.tests'), to: '/tests' },
+  { label: t('nav.packs'), to: '/packs' },
   { label: t('nav.premium'), to: '/pricing' },
   { label: t('nav.centres'), to: '/centres' },
   { label: t('pub.how'), to: '/#how' },

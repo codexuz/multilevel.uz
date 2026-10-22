@@ -12,17 +12,28 @@ const { me, isPremium, credits, rewardCredits, refresh } = useMe()
 const toast = useToast()
 const { data: purchases } = await useFetch<Order[]>('/api/me/orders', { default: () => [] })
 
-const { data } = await useFetch<{ items: { skill: string, score: number | null, status: string }[], total: number }>('/api/me/attempts', { query: { limit: 100 } })
+const { data } = await useFetch<{ items: { skill: string, exam?: string, score: number | null, band?: number | null, status: string }[], total: number }>('/api/me/attempts', { query: { limit: 100 } })
+// The exam shown: IELTS results are bands, Multilevel ones scores out of 75.
+const { exam } = useExam()
+const ielts = computed(() => exam.value === 'IELTS')
 const best = computed(() => {
   const out: Partial<Record<'LISTENING' | 'READING' | 'WRITING' | 'SPEAKING', number>> = {}
-  for (const a of data.value?.items ?? []) if (a.score != null) out[a.skill as keyof typeof out] = Math.max(out[a.skill as keyof typeof out] ?? 0, a.score)
+  for (const a of data.value?.items ?? []) {
+    const value = ielts.value ? a.band : a.score
+    if (value != null && (a.exam ?? 'MULTILEVEL') === exam.value) out[a.skill as keyof typeof out] = Math.max(out[a.skill as keyof typeof out] ?? 0, value)
+  }
   return out
 })
-/** The level across the skills taken: from the average of their best scores. */
+/** The radar draws on the 0–75 scale: bands are stretched to it. */
+const radar = computed(() => (ielts.value ? Object.fromEntries(Object.entries(best.value).map(([k, v]) => [k, Math.round((v / 9) * 75)])) : best.value))
+/** The level across the skills taken: from the average of their best scores (IELTS: the overall band). */
 const overall = computed(() => {
   const scores = Object.values(best.value)
-  return scores.length ? cefrOf(scores.reduce((a, b) => a + b, 0) / scores.length) : null
+  if (!scores.length) return null
+  const mean = scores.reduce((a, b) => a + b, 0) / scores.length
+  return ielts.value ? bandCefr(roundToHalfBand(mean)) : cefrOf(mean)
 })
+const overallBandNow = computed(() => (ielts.value ? overallBand((['LISTENING', 'READING', 'WRITING', 'SPEAKING'] as const).map(s => best.value[s])) : null))
 
 /**
  * Linking Telegram or Google, so this account can also sign in with it. If that Telegram or
@@ -58,6 +69,7 @@ async function logout() {
 }
 const accountLinks = computed(() => [
   ...(me.value?.centres?.some(c => c.role !== 'STUDENT') ? [{ label: t('nav.centre'), description: t('profile.centreText'), icon: 'i-lucide-school', to: '/centre' }] : []),
+  { label: t('nav.packs'), description: t('profile.packsText'), icon: 'i-lucide-package', to: '/packs' },
   { label: t('nav.live'), description: t('profile.liveText'), icon: 'i-lucide-trophy', to: '/live' },
   { label: t('nav.earn'), icon: 'i-lucide-gift', to: '/earn' },
   { label: t('nav.promo'), description: t('profile.promoText'), icon: 'i-lucide-ticket', to: '/promo' },
@@ -98,10 +110,10 @@ const accountLinks = computed(() => [
             />
             <span class="font-semibold text-highlighted">{{ t('profile.yourLevel') }}</span>
           </div>
-          <span class="text-xs text-muted">{{ t('profile.bestScore') }}</span>
+          <span class="text-xs text-muted">{{ overallBandNow != null ? t('profile.overallBand', { band: fmtBand(overallBandNow) }) : t('profile.bestScore') }}</span>
         </div>
         <div class="grid sm:grid-cols-[1fr_1fr] gap-4 items-center">
-          <LevelRadar :scores="best" />
+          <LevelRadar :scores="radar" />
           <ul class="grid grid-cols-2 sm:grid-cols-1 gap-2">
             <li
               v-for="skill in (['LISTENING', 'READING', 'WRITING', 'SPEAKING'] as const)"
@@ -118,7 +130,7 @@ const accountLinks = computed(() => [
                   {{ skillLabel(skill) }}
                 </p>
                 <p class="font-semibold text-highlighted tabular-nums">
-                  {{ best[skill] != null ? `${best[skill]} / 75` : t('common.notYet') }}
+                  {{ best[skill] != null ? (ielts ? `${t('result.band')} ${fmtBand(best[skill])}` : `${best[skill]} / 75`) : t('common.notYet') }}
                 </p>
               </div>
             </li>
@@ -230,7 +242,7 @@ const accountLinks = computed(() => [
             <dt class="text-muted">
               {{ t('plan.target') }}
             </dt><dd class="font-medium">
-              {{ me?.targetLevel || (me?.targetScore != null ? `${me.targetScore} / 75` : '—') }}
+              {{ me?.exam === 'IELTS' ? (me?.targetBand != null ? `${t('result.band')} ${fmtBand(me.targetBand)}` : '—') : me?.targetLevel || (me?.targetScore != null ? `${me.targetScore} / 75` : '—') }}
             </dd>
           </div>
           <div>

@@ -18,7 +18,10 @@ export interface ResultView {
   partNumber?: number | null
   status: string
   test: { slug: string, title: string } | null
+  /** IELTS | MULTILEVEL: a band (0–9) or a score out of 75. */
+  exam?: string | null
   score?: number | null
+  band?: number | null
   cefrLevel?: string | null
   feedback?: string | null
   recordings?: { partId: string, position?: number, audioUrl: string, durationSeconds?: number | null }[]
@@ -104,9 +107,9 @@ const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') 
       </template>
       <template #right>
         <UBadge
-          v-if="view.score != null"
-          :label="`${fmtScore(view.score)} / 75 · ${view.cefrLevel ?? cefrOf(view.score)}`"
-          :color="scoreColor(view.score)"
+          v-if="hasResult(view)"
+          :label="view.band != null ? `${t('result.band')} ${fmtBand(view.band)} · ${view.cefrLevel ?? bandCefr(view.band)}` : `${fmtScore(view.score)} / 75 · ${view.cefrLevel ?? cefrOf(view.score)}`"
+          :color="resultColor(view)"
           variant="soft"
           class="max-sm:hidden tabular-nums"
         />

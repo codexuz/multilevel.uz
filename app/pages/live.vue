@@ -13,7 +13,7 @@ useSeoMeta({
 })
 
 interface Row { rank: number, name: string, total: number, scores: Record<string, number>, you: boolean }
-interface Board { participants: number, top: Row[], me: Row | null, done: { skill: string, attemptId: string, score: number | null }[] }
+interface Board { participants: number, top: Row[], me: Row | null, done: { skill: string, attemptId: string, score: number | null, band?: number | null }[] }
 
 const route = useRoute()
 const { loggedIn } = useMe()
@@ -113,7 +113,7 @@ const rankedSkills = computed(() => (data.value?.shown?.skills ?? []).filter(s =
             <UButton
               v-if="doneOf(skill)"
               :to="`/results/${doneOf(skill)!.attemptId}`"
-              :label="doneOf(skill)!.score != null ? `${doneOf(skill)!.score}/75` : t('work.handedIn')"
+              :label="resultChip(doneOf(skill)!) ?? t('work.handedIn')"
               icon="i-lucide-check"
               size="sm"
               color="neutral"
@@ -195,7 +195,7 @@ const rankedSkills = computed(() => (data.value?.shown?.skills ?? []).filter(s =
               </h2>
               <p class="text-xs text-muted truncate">
                 {{ data.shown.title }} · {{ t('live.people', { n: data.board.participants }, data.board.participants) }}
-                · {{ t('live.outOf', { skills: rankedSkills.map(s => skillLabel(s)).join(' + '), max: rankedSkills.length * 75 }) }}
+                · {{ t('live.outOf', { skills: rankedSkills.map(s => skillLabel(s)).join(' + '), max: rankedSkills.length * (data.shown.exam === 'IELTS' ? 9 : 75) }) }}
               </p>
             </div>
             <UBadge

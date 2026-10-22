@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Paginated, UserRole } from '~/types/models'
-import type { Plan } from '~/utils/billing'
+import type { Pack, Plan } from '~/utils/billing'
 
 /**
  * Users: roles, bans, and plans. A plan sold privately (on Telegram) is switched on here with
@@ -95,7 +95,12 @@ async function removeUser(p: AdminUser) {
 
 // ─── Plans sold privately ───
 const { data: planData } = await useFetch<{ plans: Plan[] }>('/api/admin/plans')
-const planItems = computed(() => (planData.value?.plans ?? []).map(p => ({ label: `${p.name} — ${fmtUzs(p.priceUzs)}${p.active ? '' : ' (off sale)'}`, value: p.code })))
+// Test packs sold privately are granted the same way (their value is "pack:<address>").
+const { data: packData } = await useFetch<Pack[]>('/api/admin/packs', { default: () => [] })
+const planItems = computed(() => [
+  ...(planData.value?.plans ?? []).map(p => ({ label: `${p.name} — ${fmtUzs(p.priceUzs)}${p.active ? '' : ' (off sale)'}`, value: p.code })),
+  ...packData.value.map(p => ({ label: `Pack: ${p.title} — ${fmtUzs(p.priceUzs)}${p.active ? '' : ' (off sale)'}`, value: `pack:${p.slug}` }))
+])
 const granting = ref<AdminUser | null>(null)
 const grant = reactive({ plan: '', amount: null as number | null, note: '' })
 const grantSaving = ref(false)
@@ -105,14 +110,14 @@ function openGrant(p: AdminUser) {
   granting.value = p
 }
 watch(() => grant.plan, (code) => {
-  const plan = planData.value?.plans.find(x => x.code === code)
+  const plan = planData.value?.plans.find(x => x.code === code) ?? packData.value.find(x => `pack:${x.slug}` === code)
   if (plan) grant.amount = plan.priceUzs
 })
 async function saveGrant() {
   if (!granting.value || !grant.plan) return
   grantSaving.value = true
   try {
-    await $fetch(`/api/admin/users/${granting.value.id}/grant`, { method: 'POST', body: { plan: grant.plan, amountUzs: grant.amount, note: grant.note } })
+    await $fetch(`/api/admin/users/${granting.value.id}/grant`, { method: 'POST', body: { ...(grant.plan.startsWith('pack:') ? { pack: grant.plan.slice(5) } : { plan: grant.plan }), amountUzs: grant.amount, note: grant.note } })
     toast.add({ title: 'Plan switched on', description: `${granting.value.name || accountHandle(granting.value)} has it now.`, color: 'success' })
     granting.value = null
     await refresh()

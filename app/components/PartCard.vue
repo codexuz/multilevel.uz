@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // One part to practise on its own: its skill and number, title, what it asks, the test it comes
 // from, and the way in. Premium parts are marked; their test's page offers Premium or opening it with credits.
-const props = defineProps<{ part: { id: string, skill: string, number: number | null, title: string | null, questions: number, types: string[], minWords: number | null, test: { id?: string, slug: string, title: string, access: string } } }>()
+const props = defineProps<{ part: { id: string, skill: string, exam?: string, number: number | null, title: string | null, questions: number, types: string[], minWords: number | null, test: { id?: string, slug: string, title: string, access: string } } }>()
 const { canOpen } = useMe()
 const { t } = useI18n()
 
@@ -9,7 +9,7 @@ const locked = computed(() => !canOpen(props.part.test))
 const to = computed(() => locked.value
   ? `/tests/${props.part.test.slug}`
   : `/tests/${props.part.test.slug}/${props.part.skill.toLowerCase()}?part=${props.part.number}`)
-const label = computed(() => `${skillLabel(props.part.skill)} · ${partName(props.part.skill, props.part.number)}`)
+const label = computed(() => `${skillLabel(props.part.skill)} · ${partName(props.part.skill, props.part.number, props.part.exam)}`)
 const title = computed(() => (props.part.title ?? '').replace(/^(Task|Part) [\d.]+\s*[—-]\s*/, '') || label.value)
 const asks = computed(() => props.part.questions
   ? `${t('common.questions', { n: props.part.questions }, props.part.questions)}${props.part.types.length ? ` · ${props.part.types.map(questionTypeLabel).join(', ')}` : ''}`

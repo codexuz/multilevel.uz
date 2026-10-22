@@ -133,8 +133,10 @@ export const STATUS_META: Record<string, { label: string, color: 'neutral' | 'su
 export const CATEGORY_ITEMS = [
   { label: 'None', value: null },
   { label: 'Authentic', value: 'AUTHENTIC' },
+  { label: 'Cambridge IELTS', value: 'CAMBRIDGE' },
   { label: 'Official sample', value: 'OFFICIAL' },
   { label: 'Practice book', value: 'BOOK' },
+  { label: 'Pre-test', value: 'PRE_TEST' },
   { label: 'Custom', value: 'CUSTOM' }
 ]
 export const categoryLabel = (value?: string | null) => (value ? i18nT(`category.${value}`, {}, CATEGORY_ITEMS.find(c => c.value === value)?.label ?? '') : '')

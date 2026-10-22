@@ -18,6 +18,8 @@ interface AdminAttempt {
   correct: number | null
   total: number | null
   score: number | null
+  band?: number | null
+  exam?: string
   cefrLevel: string | null
   liveMockId: string | null
 }
@@ -131,22 +133,22 @@ const clearUser = () => router.replace({ query: {} })
             > · {{ accountHandle(a.contact) }}</span>
           </p>
           <p class="text-xs text-muted truncate">
-            {{ a.test?.title || 'Removed test' }} · {{ skillLabel(a.skill) }}{{ a.partNumber ? ` ${partName(a.skill, a.partNumber)}` : '' }}
+            {{ a.test?.title || 'Removed test' }} · {{ a.exam === 'IELTS' ? 'IELTS ' : '' }}{{ skillLabel(a.skill) }}{{ a.partNumber ? ` ${partName(a.skill, a.partNumber, a.exam)}` : '' }}
             <span v-if="a.total"> · {{ a.correct }}/{{ a.total }}</span>
             <span v-if="a.liveMockId"> · Live mock</span>
           </p>
         </div>
         <span class="text-xs text-muted tabular-nums shrink-0 max-md:hidden">{{ formatDate(a.submittedAt, true) }}</span>
         <div
-          v-if="a.score != null"
+          v-if="hasResult(a)"
           class="w-16 text-right shrink-0"
         >
           <p class="font-bold text-highlighted tabular-nums leading-none">
-            {{ fmtScore(a.score) }}<span class="text-xs font-medium text-muted">/75</span>
+            {{ fmtResult(a) }}<span class="text-xs font-medium text-muted">{{ a.band != null ? '' : '/75' }}</span>
           </p>
           <UBadge
-            :label="(a.cefrLevel ?? cefrOf(a.score)) === 'A2' ? 'Below B1' : (a.cefrLevel ?? cefrOf(a.score))!"
-            :color="scoreColor(a.score)"
+            :label="resultLevel(a) === 'A2' ? 'Below B1' : resultLevel(a)!"
+            :color="resultColor(a)"
             variant="soft"
             size="sm"
             class="mt-1"

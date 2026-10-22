@@ -3,7 +3,7 @@
 definePageMeta({ middleware: 'staff' })
 useSeoMeta({ title: 'Marking', robots: 'noindex' })
 
-interface Row { id: string, skill: string, status: string, user?: { name: string, avatarUrl?: string | null }, test: { title: string } | null, submittedAt: string, score: number | null, cefrLevel: string | null }
+interface Row { id: string, skill: string, exam?: string, status: string, user?: { name: string, avatarUrl?: string | null }, test: { title: string } | null, submittedAt: string, score: number | null, band?: number | null, cefrLevel: string | null }
 
 const status = ref<'SUBMITTED' | 'GRADED'>('SUBMITTED')
 const page = ref(1)
@@ -57,8 +57,8 @@ const tabs = [{ label: 'To mark', value: 'SUBMITTED' }, { label: 'Marked', value
             </div>
             <UBadge
               v-if="a.status === 'GRADED'"
-              :label="`${fmtScore(a.score)} / 75 · ${a.cefrLevel ?? cefrOf(a.score)}`"
-              :color="scoreColor(a.score)"
+              :label="`${resultChip(a)} · ${resultLevel(a)}`"
+              :color="resultColor(a)"
               variant="soft"
               class="tabular-nums"
             />

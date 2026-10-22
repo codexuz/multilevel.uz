@@ -36,13 +36,15 @@ const description = computed(() => t.description || tr('test.description', { ski
 const siteUrl = String(config.public.siteUrl || 'https://mockmee.uz').replace(/\/$/, '')
 const url = `${siteUrl}/tests/${t.slug}`
 
+const ielts = t.exam === 'IELTS'
 const partLine = (p: any) => p.kind === 'part'
   ? `${tr('part.part', { n: p.partNumber })}${p.title ? ` — ${p.title}` : ''} · ${tr('common.questions', { n: p.questions }, p.questions)}`
   : p.kind === 'task'
-    ? `${writingTaskLabel(p.taskNumber)}${p.title ? ` — ${p.title.replace(/^Task [\d.]+\s*[—-]\s*/, '')}` : ''} · ${tr('test.minWords', { n: p.minWords })}`
-    : `${speakingPartLabel(p.partNumber)}${p.title ? ` — ${p.title.replace(/^Part [\d.]+\s*[—-]\s*/, '')}` : ''}`
+    ? `${writingTaskLabel(p.taskNumber, t.exam)}${p.title ? ` — ${p.title.replace(/^Task [\d.]+\s*[—-]\s*/, '')}` : ''} · ${tr('test.minWords', { n: p.minWords })}`
+    : `${speakingPartLabel(p.partNumber, t.exam)}${p.title ? ` — ${p.title.replace(/^Part [\d.]+\s*[—-]\s*/, '')}` : ''}`
 
-const howChecked = (skill: string) => tr(`test.how.${skill}`)
+// IELTS: how each section is marked, on bands.
+const howChecked = (skill: string) => tr(ielts ? `test.howIelts.${skill}` : `test.how.${skill}`)
 const creditsText = (n: number) => tr('test.credits', { n }, n)
 /** Sitting a section needs sign-in: a guest goes to sign in first and comes back to it. */
 const sitTo = (path: string) => (loggedIn.value ? path : `/login?next=${encodeURIComponent(path)}`)
@@ -69,13 +71,13 @@ useHead({
         'description': description.value,
         'url': url,
         'inLanguage': 'en',
-        'educationalLevel': 'CEFR B1–C1',
-        'assesses': 'English language proficiency (Multilevel)',
+        'educationalLevel': ielts ? 'IELTS band 4–9' : 'CEFR B1–C1',
+        'assesses': `English language proficiency (${examLabel(t.exam, t.module)})`,
         'learningResourceType': 'Practice test',
         'isAccessibleForFree': t.access !== 'PREMIUM',
         'datePublished': t.publishedAt ?? undefined,
         'dateModified': t.updatedAt ?? undefined,
-        'about': { '@type': 'Thing', 'name': 'Multilevel English exam' },
+        'about': { '@type': 'Thing', 'name': ielts ? 'IELTS' : 'Multilevel English exam' },
         'hasPart': skills.value.map((s: any) => ({
           '@type': 'Quiz',
           'name': `${t.title} — ${SKILL_META[s.skill as keyof typeof SKILL_META].label}`,
@@ -122,7 +124,7 @@ useHead({
       >
         <div class="relative z-1 flex flex-col gap-3 max-w-2xl">
           <div class="flex flex-wrap gap-1.5 text-[11px] font-semibold uppercase tracking-wide">
-            <span class="rounded-sm bg-white/20 px-1.5 py-0.5">Multilevel</span>
+            <span class="rounded-sm bg-white/20 px-1.5 py-0.5">{{ examLabel(t.exam, t.module) }}</span>
             <span
               v-if="t.access === 'PREMIUM'"
               class="rounded-sm bg-white/20 px-1.5 py-0.5 flex items-center gap-1"
@@ -194,6 +196,32 @@ useHead({
         reason="premium"
         compact
       />
+      <!-- Sold in a pack: the pack opens it for good -->
+      <UCard
+        v-if="locked && t.packs?.length"
+        :ui="{ body: 'flex flex-col sm:flex-row sm:items-center gap-4' }"
+      >
+        <UIcon
+          name="i-lucide-package"
+          class="size-10 shrink-0 text-primary"
+        />
+        <div class="flex-1 min-w-0">
+          <p class="font-semibold text-highlighted">
+            {{ tr('packs.inPack', { pack: t.packs[0].title }) }}
+          </p>
+          <p class="text-sm text-muted">
+            {{ tr('packs.inPackText', { price: fmtUzs(t.packs[0].priceUzs) }) }}
+          </p>
+        </div>
+        <UButton
+          :to="`/packs/${t.packs[0].slug}`"
+          :label="tr('packs.seePack')"
+          icon="i-lucide-package"
+          color="neutral"
+          variant="outline"
+          class="justify-center"
+        />
+      </UCard>
       <UAlert
         v-else-if="!loggedIn"
         color="info"

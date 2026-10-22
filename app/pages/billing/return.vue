@@ -12,7 +12,7 @@ const route = useRoute()
 const { refresh: refreshMe } = useMe()
 const id = String(route.query.order ?? '')
 
-const order = ref<Order | null>(null)
+const order = ref<(Order & { packSlug?: string | null }) | null>(null)
 const failed = ref(false)
 const gaveUp = ref(false)
 let timer: ReturnType<typeof setTimeout> | undefined
@@ -81,9 +81,9 @@ function again() {
           </p>
           <div class="flex flex-wrap justify-center gap-2 pt-1">
             <UButton
-              to="/tests"
-              :label="t('payment.toTests')"
-              icon="i-lucide-clipboard-list"
+              :to="order.packSlug ? `/packs/${order.packSlug}` : '/tests'"
+              :label="order.packSlug ? t('packs.openPack') : t('payment.toTests')"
+              :icon="order.packSlug ? 'i-lucide-package' : 'i-lucide-clipboard-list'"
             />
             <UButton
               to="/profile"

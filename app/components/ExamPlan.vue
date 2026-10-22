@@ -5,13 +5,17 @@ import type { SpotNumbers } from '~/composables/useSpotText'
  * and this week's goals (ticked off by what they do). Without a date, it asks for one.
  */
 const { t } = useI18n()
-const { spotLabel, spotDetail } = useSpotText()
+const { exam: planExam } = useExam()
+const { spotLabel, spotDetail } = useSpotText(planExam)
 const goalLabel = (g: Goal) => (g.kind === 'SECTION' ? t('plan.goalSection', { skill: skillLabel(g.skill) }) : t('plan.goalPractise', { skill: skillLabel(g.skill), what: spotLabel(g.kind, g.focus?.key ?? '') }))
 const goalDetail = (g: Goal) => (g.kind === 'SECTION'
-  ? (g.score == null ? t('plan.noScore') : t('plan.nowAbout', { score: g.score, target: g.target ?? '' }))
+  ? (g.score == null ? t('plan.noScore') : (ielts.value ? t('plan.nowAboutBand', { band: fmtBand(g.score), target: fmtBand(g.target) }) : t('plan.nowAbout', { score: g.score, target: g.target ?? '' })))
   : spotDetail(g.kind, g.skill, g.focus ?? { key: '' }))
 interface Goal { key: string, kind: 'SECTION' | 'TYPE' | 'CRITERION', skill: string, label: string, detail: string, done: boolean, to: string, score?: number | null, target?: number, focus?: SpotNumbers }
 interface Plan {
+  /** IELTS plans aim at a band; Multilevel ones at a level and a score out of 75. */
+  exam?: 'IELTS' | 'MULTILEVEL'
+  targetBand?: number | null
   examDate: string | null
   daysLeft: number | null
   targetLevel: string | null
@@ -25,7 +29,12 @@ const toast = useToast()
 const { me } = useMe()
 const { data: plan } = await useFetch<Plan>('/api/me/plan', { lazy: true, server: false })
 
-const LEVELS = [{ value: 'B1', score: 38 }, { value: 'B2', score: 51 }, { value: 'C1', score: 65 }]
+const MULTILEVEL_TARGETS = [{ value: 'B1', score: 38, label: 'B1 · 38+' }, { value: 'B2', score: 51, label: 'B2 · 51+' }, { value: 'C1', score: 65, label: 'C1 · 65+' }]
+const IELTS_TARGETS = [5.5, 6, 6.5, 7, 7.5, 8].map(b => ({ value: String(b), score: b, label: b.toFixed(1) }))
+const ielts = computed(() => (plan.value?.exam ?? me.value?.exam) === 'IELTS')
+const LEVELS = computed(() => (ielts.value ? IELTS_TARGETS : MULTILEVEL_TARGETS))
+/** The target picked: a CEFR level, or an IELTS band (as text). */
+const targetOf = (p: Plan | null | undefined) => (ielts.value ? (p?.targetBand != null ? String(p.targetBand) : '6.5') : LEVELS.value.some(l => l.value === p?.targetLevel) ? p!.targetLevel! : 'B2')
 const today = new Date(Date.now() + 5 * 3600e3).toISOString().slice(0, 10)
 const editing = ref(false)
 const form = reactive({ examDate: '', targetLevel: 'B2' })
@@ -33,17 +42,17 @@ const saving = ref(false)
 
 function startEdit() {
   form.examDate = plan.value?.examDate ?? ''
-  form.targetLevel = LEVELS.some(l => l.value === plan.value?.targetLevel) ? plan.value!.targetLevel! : 'B2'
+  form.targetLevel = targetOf(plan.value)
   editing.value = true
 }
 watch(plan, (p) => {
-  if (p && !p.examDate && !form.examDate) form.targetLevel = LEVELS.some(l => l.value === p.targetLevel) ? p.targetLevel! : 'B2'
+  if (p && !p.examDate && !form.examDate) form.targetLevel = targetOf(p)
 }, { immediate: true })
 
 async function save(examDate: string | null = form.examDate || null) {
   saving.value = true
   try {
-    plan.value = await $fetch<Plan>('/api/me/plan', { method: 'PATCH', body: { examDate, targetLevel: form.targetLevel } })
+    plan.value = await $fetch<Plan>('/api/me/plan', { method: 'PATCH', body: ielts.value ? { examDate, targetBand: Number(form.targetLevel) } : { examDate, targetLevel: form.targetLevel } })
     editing.value = false
     toast.add({ title: examDate ? t('plan.ready') : t('plan.removed'), color: 'success' })
   } catch (e) {
@@ -57,9 +66,9 @@ const examDay = computed(() => (plan.value?.examDate
   ? localeDate(plan.value.examDate, intlLocale(), { weekday: 'long', day: 'numeric', month: 'long' })
   : ''))
 const levelColor = (score: number | null) => {
-  const target = plan.value?.targetScore ?? 51
+  const target = ielts.value ? plan.value?.targetBand ?? 6.5 : plan.value?.targetScore ?? 51
   if (score == null) return 'neutral'
-  return score >= target ? 'success' : score >= target - 7 ? 'warning' : 'error'
+  return score >= target ? 'success' : score >= target - (ielts.value ? 1 : 7) ? 'warning' : 'error'
 }
 const LEVEL_TEXT: Record<string, string> = { neutral: 'text-dimmed', success: 'text-success', warning: 'text-warning', error: 'text-error' }
 const doneCount = computed(() => plan.value?.goals.filter(g => g.done).length ?? 0)
@@ -101,7 +110,7 @@ const remindersOff = computed(() => !me.value?.telegram || !me.value?.telegramNo
             <UButton
               v-for="l in LEVELS"
               :key="l.value"
-              :label="l.value"
+              :label="ielts ? l.label : l.value"
               :color="form.targetLevel === l.value ? 'primary' : 'neutral'"
               :variant="form.targetLevel === l.value ? 'solid' : 'outline'"
               @click="form.targetLevel = l.value"
@@ -138,7 +147,7 @@ const remindersOff = computed(() => !me.value?.telegram || !me.value?.telegramNo
           </h2>
           <p class="text-sm text-muted">
             {{ examDay }} · {{ t('plan.targetWord') }}
-            <span class="font-medium text-highlighted">{{ plan.targetLevel && LEVELS.some(l => l.value === plan!.targetLevel) ? `${plan.targetLevel} (${plan.targetScore}+)` : `${plan.targetScore}/75` }}</span>
+            <span class="font-medium text-highlighted">{{ ielts ? `${t('result.band')} ${fmtBand(plan.targetBand)}` : plan.targetLevel && LEVELS.some(l => l.value === plan!.targetLevel) ? `${plan.targetLevel} (${plan.targetScore}+)` : `${plan.targetScore}/75` }}</span>
           </p>
         </div>
         <UButton
@@ -167,8 +176,8 @@ const remindersOff = computed(() => !me.value?.telegram || !me.value?.telegramNo
               {{ skillLabel(skill) }}
             </p>
             <p class="text-sm font-semibold tabular-nums">
-              <span :class="LEVEL_TEXT[levelColor(l.score)]">{{ l.score ?? '—' }}</span><span
-                v-if="l.score != null"
+              <span :class="LEVEL_TEXT[levelColor(l.score)]">{{ l.score == null ? '—' : ielts ? fmtBand(l.score) : l.score }}</span><span
+                v-if="l.score != null && !ielts"
                 class="text-xs text-dimmed font-normal"
               >/75{{ l.source === 'AI' ? ' AI' : '' }}</span>
             </p>
@@ -260,7 +269,7 @@ const remindersOff = computed(() => !me.value?.telegram || !me.value?.telegramNo
               <UButton
                 v-for="l in LEVELS"
                 :key="l.value"
-                :label="`${l.value} · ${l.score}+`"
+                :label="l.label"
                 :color="form.targetLevel === l.value ? 'primary' : 'neutral'"
                 :variant="form.targetLevel === l.value ? 'solid' : 'outline'"
                 @click="form.targetLevel = l.value"

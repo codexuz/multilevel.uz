@@ -46,7 +46,9 @@
     "staffLive": "Live mocks",
     "staffGrowth": "Growth",
     "staffCentres": "Centres",
-    "staffOverview": "Overview"
+    "staffOverview": "Overview",
+    "packs": "Test packs",
+    "staffPacks": "Test packs"
   },
   "pub": {
     "how": "How it works",
@@ -55,15 +57,15 @@
     "startNow": "Start now",
     "openMenu": "Open menu",
     "menu": "Menu",
-    "footerAbout": "Free Multilevel (CEFR) English mock tests, checked instantly, with a score out of 75 and your level.",
+    "footerAbout": "IELTS and Multilevel mock tests, marked instantly: an IELTS band or a Multilevel score out of 75, with your level.",
     "practise": "Practise",
     "allTests": "All tests",
     "contact": "Contact us"
   },
   "home": {
-    "seoTitle": "Free Multilevel English mock tests",
-    "seoDescription": "Free online Multilevel (CEFR) English practice tests: Listening, Reading, Writing and Speaking in the official format, checked instantly with a score out of 75 and your CEFR level.",
-    "seoOg": "Listening, Reading, Writing and Speaking in the official Multilevel format, checked instantly.",
+    "seoTitle": "IELTS and Multilevel mock tests online",
+    "seoDescription": "Practise for IELTS (Academic and General Training) and the Multilevel CEFR exam: full mock tests in the official format, banded or scored instantly, with AI and examiner feedback on Writing and Speaking.",
+    "seoOg": "IELTS and Multilevel mock tests in the official format, marked instantly.",
     "skillText": {
       "LISTENING": "Six parts and 35 questions with the recording played as on the day, checked the moment you finish.",
       "READING": "Five passages and 35 questions side by side, with the line that holds each answer shown in the review.",
@@ -99,8 +101,8 @@
     "invitedText": "Sign up and get a free credit: it opens one Premium test for good.",
     "invitedAction": "Sign up free",
     "welcomeBack": "Welcome back, {name}",
-    "heroTitle": "Free {accent} English mock tests & CEFR level check",
-    "heroText": "Listening, Reading, Writing and Speaking in the official format. Sign in free and your answers are checked instantly, with a score out of 75 and your CEFR level.",
+    "heroTitle": "{accent} and {second} mock tests, marked instantly",
+    "heroText": "Sit Listening, Reading, Writing and Speaking the way the real exam runs them: the computer-delivered IELTS screen, or the official Multilevel format. Get your band or score the moment you finish.",
     "seePremium": "See Premium",
     "noAccount": "Sign in free with Telegram or Google",
     "upperInt": "Upper-int.",
@@ -137,7 +139,27 @@
     "faqAccent": "questions",
     "faqMore": "Anything else? Write to us on Telegram.",
     "ctaTitle": "Ready to see your level?",
-    "ctaText": "Take a free test now. It takes under an hour, and your score comes the moment you finish."
+    "ctaText": "Take a free test now. It takes under an hour, and your score comes the moment you finish.",
+    "heroCardIelts": "Band 7.0 · 33/40 in 58 minutes",
+    "twoExams": "Two exams, one place to prepare",
+    "twoExamsText": "Pick your exam: the tests, the timing, the screen and the scoring follow it.",
+    "ielts1": "Academic and General Training tests",
+    "ielts2": "The computer-delivered IELTS screen: highlighting, notes, the question bar",
+    "ielts3": "Listening and Reading banded on the official tables",
+    "ielts4": "Writing and Speaking banded on the four criteria",
+    "multilevel1": "The national CEFR exam, part for part",
+    "multilevel2": "Six Listening parts, five Reading passages, 35 questions each",
+    "multilevel3": "Scored out of 75 with your CEFR level",
+    "multilevel4": "Speaking with the examiner's voice and timers",
+    "seeTests": "{exam} tests",
+    "statExams": "Exams: IELTS and Multilevel",
+    "statBand": "IELTS band, as the test reports it",
+    "skillTextIelts": {
+      "LISTENING": "Four parts and 40 questions, the recording played once, with two minutes to check at the end.",
+      "READING": "Three passages and 40 questions side by side, with highlighting and notes as on the computer.",
+      "WRITING": "Task 1 and Task 2 with a live word count, banded on the four criteria by AI or an examiner.",
+      "SPEAKING": "The interview, the long turn and the discussion, timed, with AI feedback or an examiner's band."
+    }
   },
   "common": {
     "loading": "Loading…",
@@ -204,7 +226,11 @@
     "recordAnswers": "Record your answers",
     "from": "From {title}",
     "unlock": "Unlock",
-    "practise": "Practise"
+    "practise": "Practise",
+    "introIelts": "IELTS Academic and General Training on the computer-delivered screen: take a full test or practise one part at a time. Listening and Reading are banded the moment you finish.",
+    "seoTitleIelts": "IELTS mock tests online",
+    "seoDescriptionIelts": "IELTS Academic and General Training practice tests on the computer-delivered screen: Listening, Reading, Writing and Speaking, banded instantly.",
+    "titleIelts": "IELTS {accent}"
   },
   "qtype": {
     "TRUE_FALSE_NOT_GIVEN": "True / False / Not Given",
@@ -229,7 +255,9 @@
     "AUTHENTIC": "Authentic",
     "OFFICIAL": "Official sample",
     "BOOK": "Practice book",
-    "CUSTOM": "Custom"
+    "CUSTOM": "Custom",
+    "CAMBRIDGE": "Cambridge IELTS",
+    "PRE_TEST": "Pre-test"
   },
   "test": {
     "opened": "Test opened",
@@ -253,7 +281,13 @@
     "practiseAlone": "Practise {part} on its own",
     "unlockPremium": "Unlock with Premium",
     "startSkill": "Start {skill}",
-    "signInToStart": "Sign in to start {skill}"
+    "signInToStart": "Sign in to start {skill}",
+    "howIelts": {
+      "LISTENING": "The recording plays once, as on the day, then you have two minutes to check. Banded from your right answers out of 40.",
+      "READING": "Three passages and 40 questions in 60 minutes. Banded from your right answers on the official table.",
+      "WRITING": "Task 1 and Task 2 in 60 minutes. AI feedback on the band descriptors at once, or an examiner's band.",
+      "SPEAKING": "The three parts, timed as in the interview. AI feedback on the four criteria, or an examiner's band."
+    }
   },
   "paywall": {
     "premiumTitle": "This test is part of Premium",
@@ -324,7 +358,14 @@
     "editNote": "Add / edit note",
     "removeHighlight": "Remove highlight",
     "addNote": "Add note",
-    "startWriting": "Start writing your answer here…"
+    "startWriting": "Start writing your answer here…",
+    "choose": "Which exam are you preparing for?",
+    "ieltsHint": "Academic & General Training",
+    "multilevelHint": "National CEFR exam",
+    "academic": "IELTS Academic",
+    "general": "IELTS General Training",
+    "allModules": "Academic and General",
+    "module": "IELTS module"
   },
   "sit": {
     "test": "Test",
@@ -386,7 +427,8 @@
     "wpm": "{n} words/min",
     "pauses": "{n} pause | {n} pauses",
     "fillers": "{n} filler | {n} fillers",
-    "upgrades": "Better words"
+    "upgrades": "Better words",
+    "guideIelts": "An estimate on the IELTS band descriptors. Bands 6.5–7 are what most universities ask for."
   },
   "result": {
     "level": {
@@ -405,7 +447,17 @@
     "notSaved": "This result is not saved",
     "notSavedText": "You are not signed in, so this result is shown once and kept nowhere. Sign in to keep your results and see your progress.",
     "reviewAnswers": "Review answers",
-    "seeAnswers": "See your answers"
+    "seeAnswers": "See your answers",
+    "band": "Band",
+    "yourBand": "Your band",
+    "partOnlyIelts": "Sit the whole section to get a band",
+    "ieltsLevel": {
+      "C2": "Band 8.5+ (C2): you use English fully and flexibly, with only rare slips.",
+      "C1": "Band 7–8 (C1): you handle complex language well, with occasional inaccuracies.",
+      "B2": "Band 5.5–6.5 (B2): you use English effectively, though with some errors and misunderstandings. Many universities ask for 6.5.",
+      "B1": "Band 4–5 (B1): you manage in familiar situations but make frequent mistakes. Band 5.5 is the next step.",
+      "A2": "Below band 4: you understand basic English in familiar situations. Keep building vocabulary and grammar."
+    }
   },
   "review": {
     "questionsRange": "Questions {from}–{to} · {correct} of {total} correct",
@@ -494,12 +546,12 @@
   },
   "insights": {
     "typeDetail": "{share}% right over {total} questions",
-    "criterionDetail": "{average}/5 on average",
+    "criterionDetail": "{average}/{outOf} on average",
     "lowestTask": "{task} was your lowest",
     "workOn": "Work on these next",
     "workOnText": "Where you lose the most marks lately, with a part to practise for each.",
     "practiseAgain": "Practise again",
-    "last": "Last {score}/75",
+    "last": "Last {score}",
     "onAverage": "on your average before",
     "fromReviews": "From {n} AI review | From {n} AI reviews",
     "moreTypes": "and {n} more task type you do better on | and {n} more task types you do better on",
@@ -528,7 +580,8 @@
     "removeDate": "Remove the date",
     "telegramToo": "Sign in with Telegram too to get reminders before your exam.",
     "remindersOff": "Reminders are off.",
-    "turnOn": "Turn on Telegram messages to get them."
+    "turnOn": "Turn on Telegram messages to get them.",
+    "nowAboutBand": "Now about band {band}, aiming for {target}"
   },
   "work": {
     "toDo": "{n} to do",
@@ -602,7 +655,13 @@
     "connect": "Connect {way}",
     "preferScore": "I prefer a target score",
     "skipScore": "Skip score",
-    "startLearning": "Start learning"
+    "startLearning": "Start learning",
+    "sExamTitle": "Which exam are you preparing for?",
+    "sExamText": "We open the right tests, score you on the right scale, and plan your weeks for it. You can switch any time.",
+    "sBandTitle": "What band do you need?",
+    "sBandText": "Most universities ask for 6.5; many visas and jobs 6 or 7.",
+    "ieltsText": "Academic or General Training. Computer-delivered layout, banded 0–9.",
+    "multilevelText": "Uzbekistan's national CEFR exam. Official format, scored 0–75."
   },
   "settings": {
     "signOutDevice": "Sign out this device?",
@@ -658,7 +717,9 @@
     "signIn": "Sign-in",
     "connect": "Connect",
     "connected": "connected",
-    "promoText": "Discounts and free Premium"
+    "promoText": "Discounts and free Premium",
+    "overallBand": "Overall band {band}",
+    "packsText": "Sets of tests that stay yours"
   },
   "duration": {
     "months": "{n} month | {n} months",
@@ -1028,7 +1089,13 @@
     "startNow": "Start speaking now",
     "finishAnswer": "Finish answer",
     "qOf": "Question {n} of {total}",
-    "saving": "Saving your answers…"
+    "saving": "Saving your answers…",
+    "i1": "Interview",
+    "i2": "Long turn",
+    "i3": "Discussion",
+    "i1Info": "The examiner asks you {n} questions about yourself and familiar topics. Answer each at once, in about {speak}.",
+    "i2Info": "You get a topic card. You have {prep} to prepare, then talk for up to {speak}.",
+    "i3Info": "The examiner asks {n} more abstract questions linked to Part 2. Answer each at once, in about {speak}."
   },
   "pdf": {
     "download": "Download PDF",
@@ -1044,5 +1111,58 @@
     "premium": "PDF downloads are part of Premium",
     "premiumText": "With Premium you can download every test as a PDF to print, with its answer key.",
     "notFound": "This test could not be found"
+  },
+  "ieltsCriterion": {
+    "taskAchievement": "Task achievement / response",
+    "organisation": "Coherence and cohesion",
+    "vocabulary": "Lexical resource",
+    "grammar": "Grammatical range and accuracy",
+    "fluency": "Fluency and coherence",
+    "pronunciation": "Pronunciation"
+  },
+  "packs": {
+    "title": "Test packs",
+    "heading": "Test packs: buy once, keep for good",
+    "intro": "Sets of tests (authentic papers, full mocks) sold together. Pay once and every test in the pack is yours for good, with or without Premium.",
+    "lead": "Several tests together, yours for good",
+    "all": "All packs",
+    "pack": "Test pack",
+    "owned": "Yours",
+    "open": "Open",
+    "openPack": "Open the pack",
+    "tests": "{n} test | {n} tests",
+    "none": "No {exam} packs yet",
+    "noneText": "New packs are on their way. Meanwhile, sit the free tests or get Premium for the whole library.",
+    "browseTests": "Browse tests",
+    "orPremium": "Or open everything with Premium",
+    "orPremiumText": "Premium opens every test in the library while it runs, with explanations and more AI feedback.",
+    "seePremium": "See Premium",
+    "notFound": "Pack not found",
+    "inside": "What is inside",
+    "sit": "Sit",
+    "preview": "See",
+    "yours": "This pack is yours",
+    "yoursText": "Every test in “{title}” is open for good.",
+    "ownedText": "Every test in it is open for good. Sit them in any order, as many times as you like.",
+    "start": "Start the first test",
+    "perTest": "{price} a test",
+    "oneOff": "one payment",
+    "benefit1": "Every test in the pack, yours for good",
+    "benefit2": "Listening and Reading marked instantly, with the key",
+    "benefit3": "Works with or without Premium",
+    "benefit4": "Writing and Speaking with AI feedback",
+    "promoPlaceholder": "Promo code",
+    "buy": "Buy the pack",
+    "signInToBuy": "Sign in to buy",
+    "payClick": "Pay securely with Click.",
+    "payTelegram": "Bought through our Telegram: we open it on your account.",
+    "buyOnTelegram": "Buy on Telegram",
+    "telegramText": "Send this message to {handle}. Once you have paid, the pack opens on your account.",
+    "telegramMessage": "Hello! I would like to buy the test pack “{pack}” ({price}). My account: {account}",
+    "inPack": "Also in the pack “{pack}”",
+    "inPackText": "Buy the pack for {price} and this test, with the others in it, is yours for good.",
+    "seePack": "See the pack",
+    "seoTitle": "IELTS and Multilevel test packs",
+    "seoDescription": "Sets of IELTS and Multilevel mock tests, bought once and kept for good."
   }
 }

@@ -10,7 +10,7 @@ interface Item {
   test: { slug: string, title: string } | null
   to: string | null
   group: string
-  mine: { attemptId: string, score: number | null, status: string } | null
+  mine: { attemptId: string, score: number | null, band?: number | null, status: string } | null
 }
 const { data } = await useFetch<{ groups: { id: string, name: string }[], items: Item[] }>('/api/me/assignments', { lazy: true, server: false })
 const items = computed(() => [...(data.value?.items ?? [])].sort((a, b) => Number(!!a.mine) - Number(!!b.mine)).slice(0, 6))
@@ -76,7 +76,7 @@ const overdue = (i: Item) => !i.mine && !!i.dueAt && new Date(i.dueAt) < new Dat
         <UButton
           v-if="i.mine"
           :to="`/results/${i.mine.attemptId}`"
-          :label="i.mine.score != null ? `${i.mine.score}/75` : t('work.handedIn')"
+          :label="resultChip(i.mine) ?? t('work.handedIn')"
           size="xs"
           color="neutral"
           variant="outline"

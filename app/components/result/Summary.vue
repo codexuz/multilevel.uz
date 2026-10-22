@@ -12,12 +12,15 @@ const { loggedIn } = useMe()
 
 const skill = computed(() => props.view.skill as keyof typeof SKILL_META)
 const objective = computed(() => skill.value === 'LISTENING' || skill.value === 'READING')
-const scored = computed(() => props.view.score != null && (objective.value || props.view.status === 'GRADED'))
-const level = computed(() => props.view.cefrLevel ?? cefrOf(props.view.score))
+const ielts = computed(() => props.view.exam === 'IELTS')
+const scored = computed(() => hasResult(props.view) && (objective.value || props.view.status === 'GRADED'))
+const level = computed(() => props.view.cefrLevel ?? (ielts.value ? bandCefr(props.view.band) : cefrOf(props.view.score)))
+// An IELTS part practised on its own has no band: its right answers are the result.
+const partOnly = computed(() => ielts.value && objective.value && props.view.band == null && props.view.total != null)
 const testTo = computed(() => (props.view.test ? `/tests/${props.view.test.slug}` : '/tests'))
 const againTo = computed(() => (props.view.test ? `/tests/${props.view.test.slug}/${skill.value.toLowerCase()}${props.view.partNumber ? `?part=${props.view.partNumber}` : ''}` : '/tests'))
 
-const levelText = (l: string) => t(`result.level.${l}`)
+const levelText = (l: string) => (ielts.value ? t(`result.ieltsLevel.${l}`) : t(`result.level.${l}`))
 
 /** How each part went: what to keep doing and what to work on. */
 const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? []).map((p: any) => {
@@ -39,7 +42,9 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
       </div>
       <div class="min-w-0">
         <p class="text-sm font-medium text-primary">
-          {{ skillLabel(view.skill) }}<span v-if="view.partNumber"> · {{ partName(view.skill, view.partNumber) }}</span>
+          <template v-if="ielts">
+            IELTS ·
+          </template>{{ skillLabel(view.skill) }}<span v-if="view.partNumber"> · {{ partName(view.skill, view.partNumber, view.exam) }}</span>
         </p>
         <h1 class="text-xl sm:text-2xl font-bold text-highlighted text-balance">
           {{ view.test?.title }}
@@ -48,15 +53,39 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
     </div>
 
     <!-- The score -->
-    <UCard v-if="scored">
+    <UCard v-if="scored || partOnly">
       <p class="text-center font-semibold text-highlighted mb-3">
-        {{ t('home.yourScore') }}
+        {{ partOnly ? t('result.correct') : ielts ? t('result.yourBand') : t('home.yourScore') }}
       </p>
       <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#5870f5] to-[#8b9cff] px-6 py-7 text-center text-white">
-        <p class="text-6xl font-bold tabular-nums leading-none">
+        <p
+          v-if="partOnly"
+          class="text-6xl font-bold tabular-nums leading-none"
+        >
+          {{ view.correct ?? 0 }}<span class="text-2xl font-semibold opacity-80"> / {{ view.total }}</span>
+        </p>
+        <p
+          v-else-if="ielts"
+          class="text-6xl font-bold tabular-nums leading-none"
+        >
+          <span class="text-2xl font-semibold opacity-80 me-2">{{ t('result.band') }}</span>{{ fmtBand(view.band) }}
+        </p>
+        <p
+          v-else
+          class="text-6xl font-bold tabular-nums leading-none"
+        >
           {{ fmtScore(view.score) }}<span class="text-2xl font-semibold opacity-80"> / 75</span>
         </p>
-        <p class="mt-2 font-medium">
+        <p
+          v-if="partOnly"
+          class="mt-2 font-medium"
+        >
+          {{ t('result.partOnlyIelts') }}
+        </p>
+        <p
+          v-else
+          class="mt-2 font-medium"
+        >
           {{ level === 'A2' ? t('common.belowB1') : `CEFR ${level}` }}
         </p>
         <img
@@ -67,13 +96,13 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
         >
       </div>
       <p
-        v-if="level"
+        v-if="level && !partOnly"
         class="mt-4 text-sm text-toned text-pretty"
       >
         {{ levelText(level) }}
       </p>
       <div
-        v-if="objective"
+        v-if="objective && !partOnly"
         class="mt-4 grid grid-cols-2 gap-3"
       >
         <div class="rounded-lg bg-elevated px-4 py-3">

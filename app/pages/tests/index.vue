@@ -1,19 +1,25 @@
 <script setup lang="ts">
 import type { Paged } from '~/types/ielts'
+import type { Pack } from '~/utils/billing'
 
 definePageMeta({ guestLayout: true })
 
 /**
  * The open catalogue, rendered on the server so every title and description is in the page Google
- * reads. Full tests, or parts to practise on their own, filtered by words, skill, part, question
- * type, and whether a test has all four skills. The filters live in the address, so a filtered
- * list can be shared and comes back on reload.
+ * reads. One exam at a time (IELTS, with Academic or General Training, or Multilevel), with its
+ * test packs on top. Full tests, or parts to practise on their own, filtered by words, skill, part,
+ * question type, and whether a test has all four skills. The filters live in the address, so a
+ * filtered list can be shared and comes back on reload.
  */
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
 const ALL = 'ALL'
 const str = (v: unknown, fallback = '') => (typeof v === 'string' ? v : fallback)
+// ?exam= (a shared link) switches the exam and keeps it; otherwise the one the user prepares for.
+const { exam, setExam } = useExam()
+if (isExam(route.query.exam) && route.query.exam !== exam.value) await setExam(route.query.exam)
+const ieltsModule = ref(str(route.query.module, ALL))
 
 const view = ref<'tests' | 'parts'>(route.query.view === 'parts' ? 'parts' : 'tests')
 const search = ref(str(route.query.q))
@@ -29,8 +35,14 @@ watch(search, (v) => {
   clearTimeout(timer)
   timer = setTimeout(() => (q.value = v.trim()), 300)
 })
-// Part numbers: a skill's own (Speaking's 1.1, 1.2, 2, 3), or 1–6 across every skill.
-const partNumbers = computed(() => (skill.value === ALL ? [1, 2, 3, 4, 5, 6] : PART_NUMBERS[skill.value] ?? []))
+// Part numbers: a skill's own in this exam (Multilevel Speaking's 1.1, 1.2, 2, 3), or every one across the skills.
+const partNumbers = computed(() => (skill.value === ALL
+  ? [...new Set(['LISTENING', 'READING', 'WRITING', 'SPEAKING'].flatMap(s => partNumbersOf(exam.value, s)))].sort((a, b) => a - b)
+  : partNumbersOf(exam.value, skill.value)))
+watch(exam, () => {
+  if (exam.value !== 'IELTS') ieltsModule.value = ALL
+  if (part.value !== ALL && !partNumbers.value.includes(Number(part.value))) part.value = ALL
+})
 // Question types belong to Listening and Reading.
 watch(skill, (s) => {
   if (part.value !== ALL && !partNumbers.value.includes(Number(part.value))) part.value = ALL
@@ -45,10 +57,14 @@ watch(() => route.query, (rq) => {
   if (part.value !== str(rq.part, ALL)) part.value = str(rq.part, ALL)
   if (type.value !== str(rq.type, ALL)) type.value = str(rq.type, ALL)
   if (full.value !== (rq.full === '1')) full.value = rq.full === '1'
+  if (ieltsModule.value !== str(rq.module, ALL)) ieltsModule.value = str(rq.module, ALL)
+  if (isExam(rq.exam) && rq.exam !== exam.value) setExam(rq.exam)
 })
-watch([view, q, skill, part, type, full], () => (page.value = 1))
-watch([view, q, skill, part, type, full, page], () => router.replace({
+watch([view, q, skill, part, type, full, exam, ieltsModule], () => (page.value = 1))
+watch([view, q, skill, part, type, full, page, exam, ieltsModule], () => router.replace({
   query: {
+    exam: exam.value,
+    ...(exam.value === 'IELTS' && ieltsModule.value !== ALL ? { module: ieltsModule.value } : {}),
     ...(view.value === 'parts' ? { view: 'parts' } : {}),
     ...(q.value ? { q: q.value } : {}),
     ...(skill.value !== ALL ? { skill: skill.value } : {}),
@@ -60,6 +76,8 @@ watch([view, q, skill, part, type, full, page], () => router.replace({
 }))
 
 const query = computed(() => ({
+  exam: exam.value,
+  module: exam.value === 'IELTS' && ieltsModule.value !== ALL ? ieltsModule.value : undefined,
   search: q.value || undefined,
   skill: skill.value !== ALL ? skill.value : undefined,
   part: view.value === 'parts' && part.value !== ALL ? part.value : undefined,
@@ -69,17 +87,23 @@ const query = computed(() => ({
   limit: view.value === 'parts' ? 24 : 12
 }))
 const { data, status } = await useFetch<Paged<any> & { fullTests?: number }>(() => (view.value === 'parts' ? '/api/practice/parts' : '/api/tests'), { query })
-
+const { data: packs } = await useFetch<Pack[]>('/api/packs', { query: computed(() => ({ exam: exam.value })), default: () => [] })
+const moduleItems = computed(() => [
+  { label: t('exam.allModules'), value: ALL },
+  { label: t('exam.academic'), value: 'ACADEMIC' },
+  { label: t('exam.general'), value: 'GENERAL_TRAINING' }
+])
 const views = computed(() => [{ label: t('tests.fullTests'), value: 'tests', icon: 'i-lucide-files' }, { label: t('tests.byPart'), value: 'parts', icon: 'i-lucide-puzzle' }])
 const skillItems = computed(() => [{ label: t('tests.allSkills'), value: ALL }, ...(['LISTENING', 'READING', 'WRITING', 'SPEAKING'] as const).map(s => ({ label: skillLabel(s), value: s, icon: SKILL_META[s].icon }))])
-const partItems = computed(() => [{ label: t('tests.anyPart'), value: ALL }, ...partNumbers.value.map(n => ({ label: skill.value === ALL ? t('part.part', { n }) : partName(skill.value, n), value: String(n) }))])
+const partItems = computed(() => [{ label: t('tests.anyPart'), value: ALL }, ...partNumbers.value.map(n => ({ label: skill.value === ALL ? t('part.part', { n }) : partName(skill.value, n, exam.value), value: String(n) }))])
 /** How many tests (with the other filters) have all four skills: shown on the switch. */
 const fullTests = ref<number | null>(null)
 watch(data, d => d && view.value === 'tests' && d.fullTests != null && (fullTests.value = d.fullTests), { immediate: true })
 const typeItems = computed(() => [{ label: t('tests.allTypes'), value: ALL }, ...QUESTION_TYPES.map(q => ({ label: questionTypeLabel(q.value), value: q.value, icon: q.icon }))])
 const typesApply = computed(() => skill.value !== 'WRITING' && skill.value !== 'SPEAKING')
-const filtered = computed(() => !!q.value || skill.value !== ALL || type.value !== ALL || (view.value === 'parts' && part.value !== ALL) || (view.value === 'tests' && full.value))
+const filtered = computed(() => !!q.value || skill.value !== ALL || type.value !== ALL || ieltsModule.value !== ALL || (view.value === 'parts' && part.value !== ALL) || (view.value === 'tests' && full.value))
 function clear() {
+  ieltsModule.value = ALL
   search.value = ''
   q.value = ''
   skill.value = ALL
@@ -93,8 +117,8 @@ const countText = computed(() => {
 })
 
 useSeoMeta({
-  title: () => t('tests.seoTitle'),
-  description: () => t('tests.seoDescription')
+  title: () => (exam.value === 'IELTS' ? t('tests.seoTitleIelts') : t('tests.seoTitle')),
+  description: () => (exam.value === 'IELTS' ? t('tests.seoDescriptionIelts') : t('tests.seoDescription'))
 })
 </script>
 
@@ -106,7 +130,7 @@ useSeoMeta({
     <div class="flex flex-col gap-5">
       <div>
         <i18n-t
-          keypath="tests.title"
+          :keypath="exam === 'IELTS' ? 'tests.titleIelts' : 'tests.title'"
           tag="h1"
           scope="global"
           class="text-2xl sm:text-3xl font-bold text-highlighted"
@@ -116,11 +140,44 @@ useSeoMeta({
           </template>
         </i18n-t>
         <p class="text-muted mt-1">
-          {{ t('tests.intro') }}
+          {{ exam === 'IELTS' ? t('tests.introIelts') : t('tests.intro') }}
         </p>
       </div>
 
+      <ExamSwitch />
+
       <LiveMockBanner />
+
+      <section
+        v-if="packs.length"
+        class="flex flex-col gap-3"
+      >
+        <div class="flex items-end justify-between gap-3">
+          <div>
+            <h2 class="font-semibold text-highlighted">
+              {{ t('packs.title') }}
+            </h2>
+            <p class="text-sm text-muted">
+              {{ t('packs.lead') }}
+            </p>
+          </div>
+          <UButton
+            :to="`/packs?exam=${exam}`"
+            :label="t('packs.all')"
+            trailing-icon="i-lucide-arrow-right"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+          />
+        </div>
+        <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+          <PackCard
+            v-for="p in packs.slice(0, 3)"
+            :key="p.id"
+            :pack="p"
+          />
+        </div>
+      </section>
 
       <UTabs
         v-model="view"
@@ -137,6 +194,13 @@ useSeoMeta({
             :placeholder="view === 'parts' ? t('tests.searchParts') : t('tests.searchTests')"
             :aria-label="t('tests.search')"
             class="col-span-2 lg:w-72"
+          />
+          <USelect
+            v-if="exam === 'IELTS'"
+            v-model="ieltsModule"
+            :items="moduleItems"
+            :aria-label="t('exam.module')"
+            class="col-span-2 lg:col-span-1 lg:w-52"
           />
           <USelect
             v-model="skill"

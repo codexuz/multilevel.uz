@@ -17,13 +17,17 @@ const { data: test, status, error } = useAsyncData<Test>(() => `test:${id.value}
 useSeoMeta({ title: () => `${test.value?.title ?? 'Test'} — Builder`, robots: 'noindex' })
 
 // ─── Details ───────────────────────────────────────────────────────────────
-const meta = reactive({ title: '', slug: '', description: '', mode: 'PRACTICE', access: 'FREE', category: null as string | null, source: '' })
+const meta = reactive({ title: '', slug: '', description: '', mode: 'PRACTICE', access: 'FREE', category: null as string | null, source: '', module: 'MULTILEVEL' })
 watch(test, (t) => {
   if (!t) return
-  Object.assign(meta, { title: t.title, slug: t.slug ?? '', description: t.description ?? '', mode: t.mode, access: t.access ?? 'FREE', category: t.category ?? null, source: t.source ?? '' })
+  Object.assign(meta, { title: t.title, slug: t.slug ?? '', description: t.description ?? '', mode: t.mode, access: t.access ?? 'FREE', category: t.category ?? null, source: t.source ?? '', module: t.module ?? 'MULTILEVEL' })
 }, { immediate: true })
 const detailsDirty = computed(() => !!test.value && (meta.title !== test.value.title || meta.slug !== (test.value.slug ?? '') || meta.description !== (test.value.description ?? '') || meta.mode !== test.value.mode || meta.access !== (test.value.access ?? 'FREE')
-  || meta.category !== (test.value.category ?? null) || meta.source !== (test.value.source ?? '')))
+  || meta.category !== (test.value.category ?? null) || meta.source !== (test.value.source ?? '') || meta.module !== (test.value.module ?? 'MULTILEVEL')))
+/** The test's exam: its parts are numbered and scored for it, and only its library can go in. */
+const exam = computed(() => examOfModule(test.value?.module))
+// Academic and General Training swap freely; the other exam only while the test is empty.
+const MODULE_ITEMS = [{ label: 'IELTS Academic', value: 'ACADEMIC' }, { label: 'IELTS General Training', value: 'GENERAL_TRAINING' }, { label: 'Multilevel', value: 'MULTILEVEL' }]
 
 const saving = ref(false)
 async function run(action: () => Promise<Test>, done?: string) {
@@ -38,7 +42,7 @@ async function run(action: () => Promise<Test>, done?: string) {
   }
 }
 const saveDetails = () => run(() => libraryAPI.updateTest(id.value, {
-  title: meta.title.trim(), slug: meta.slug.trim() || undefined, description: meta.description.trim() || null, mode: meta.mode, access: meta.access, category: meta.category, source: meta.source.trim() || null
+  title: meta.title.trim(), slug: meta.slug.trim() || undefined, description: meta.description.trim() || null, mode: meta.mode, access: meta.access, category: meta.category, source: meta.source.trim() || null, module: meta.module
 }), 'Saved')
 
 // ─── Sections ──────────────────────────────────────────────────────────────
@@ -75,8 +79,8 @@ const withoutLabel = (title: string) => title.replace(/^(Task|Part) [\d.]+\s*[�
 
 function itemLabel(item: SectionItem) {
   if (item.part) return { title: `Part ${item.part.partNumber}${item.part.title ? ` — ${item.part.title}` : ''}`, sub: `${item.part.questionCount ?? item.part.groups?.flatMap(g => g.items).length ?? 0} questions${item.part.from ? ` · ${item.part.from}–${item.part.to}` : ''}`, to: `/builder/parts/${item.part.id}` }
-  if (item.writingTask) return { title: `${writingTaskLabel(item.writingTask.taskNumber)}${item.writingTask.title ? ` — ${withoutLabel(item.writingTask.title)}` : ''}`, sub: (item.writingTask.prompt ?? '').replace(/<[^>]*>/g, ' ').trim().slice(0, 100), to: `/builder/writing/${item.writingTask.id}` }
-  if (item.speakingPart) return { title: `${speakingPartLabel(item.speakingPart.partNumber)}${item.speakingPart.title ? ` — ${withoutLabel(item.speakingPart.title)}` : ''}`, sub: `${item.speakingPart.questions?.length ?? 0} questions`, to: `/builder/speaking/${item.speakingPart.id}` }
+  if (item.writingTask) return { title: `${writingTaskLabel(item.writingTask.taskNumber, exam.value)}${item.writingTask.title ? ` — ${withoutLabel(item.writingTask.title)}` : ''}`, sub: (item.writingTask.prompt ?? '').replace(/<[^>]*>/g, ' ').trim().slice(0, 100), to: `/builder/writing/${item.writingTask.id}` }
+  if (item.speakingPart) return { title: `${speakingPartLabel(item.speakingPart.partNumber, exam.value)}${item.speakingPart.title ? ` — ${withoutLabel(item.speakingPart.title)}` : ''}`, sub: `${item.speakingPart.questions?.length ?? 0} questions`, to: `/builder/speaking/${item.speakingPart.id}` }
   return { title: 'Missing', sub: '', to: '' }
 }
 
@@ -101,7 +105,7 @@ const { data: pickList, status: pickState } = useAsyncData(
   'test:picker',
   (): Promise<any> => {
     if (!picker.value) return Promise.resolve(null)
-    const p = { limit: 30, search: pickQ.value || undefined }
+    const p = { limit: 30, search: pickQ.value || undefined, exam: exam.value }
     if (picker.value === 'WRITING') return libraryAPI.writingTasks(p)
     if (picker.value === 'SPEAKING') return libraryAPI.speakingParts(p)
     return libraryAPI.parts({ ...p, skill: picker.value })
@@ -116,18 +120,21 @@ async function pick(row: any) {
 }
 async function createAndOpen(skill: Skill) {
   const nextNumber = (sectionOf(skill)?.items.length ?? 0) + 1
+  // The next number the exam has for this skill (IELTS: Listening 4 parts, Reading 3, Writing 2, Speaking 3).
+  const numbers = partNumbersOf(exam.value, skill)
+  const number = numbers[Math.min(nextNumber, numbers.length) - 1] ?? 1
   try {
     let target = ''
     if (skill === 'WRITING') {
-      const task = await libraryAPI.createWritingTask({ taskNumber: Math.min(3, nextNumber), prompt: '<p>Write the question here.</p>' })
+      const task = await libraryAPI.createWritingTask({ exam: exam.value, taskNumber: number, prompt: '<p>Write the question here.</p>' })
       await libraryAPI.addItem(id.value, skill, { writingTaskId: task.id })
       target = `/builder/writing/${task.id}`
     } else if (skill === 'SPEAKING') {
-      const part = await libraryAPI.createSpeakingPart({ partNumber: Math.min(4, nextNumber), questions: [] })
+      const part = await libraryAPI.createSpeakingPart({ exam: exam.value, partNumber: number, questions: [] })
       await libraryAPI.addItem(id.value, skill, { speakingPartId: part.id })
       target = `/builder/speaking/${part.id}`
     } else {
-      const part = await libraryAPI.createPart({ skill, partNumber: Math.min(skill === 'LISTENING' ? 6 : 5, nextNumber), title: `${test.value?.title ?? ''} — ${SKILL_META[skill].label} ${nextNumber}`.slice(0, 300) })
+      const part = await libraryAPI.createPart({ exam: exam.value, skill, partNumber: number, title: `${test.value?.title ?? ''} — ${SKILL_META[skill].label} ${nextNumber}`.slice(0, 300) })
       await libraryAPI.addItem(id.value, skill, { partId: part.id })
       target = `/builder/parts/${part.id}`
     }
@@ -434,6 +441,16 @@ const readiness = computed(() => test.value?.readiness ?? { errors: [], warnings
                 class="w-full"
               />
             </UFormField>
+            <UFormField
+              label="Exam"
+              help="IELTS tests sit on the computer-delivered IELTS screen and are scored in bands."
+            >
+              <USelect
+                v-model="meta.module"
+                :items="MODULE_ITEMS"
+                class="w-full"
+              />
+            </UFormField>
             <div class="grid grid-cols-2 gap-3">
               <UFormField
                 label="Mode"
@@ -467,7 +484,7 @@ const readiness = computed(() => test.value?.readiness ?? { errors: [], warnings
             <UFormField label="Source">
               <UInput
                 v-model="meta.source"
-                placeholder="Multilevel practice book, Test 1"
+                :placeholder="exam === 'IELTS' ? 'Cambridge IELTS 18, Test 1' : 'Multilevel practice book, Test 1'"
                 class="w-full"
               />
             </UFormField>
@@ -522,7 +539,7 @@ const readiness = computed(() => test.value?.readiness ?? { errors: [], warnings
               class="py-2 flex items-center gap-3"
             >
               <UBadge
-                :label="row.taskNumber ? writingTaskLabel(row.taskNumber) : picker === 'SPEAKING' ? speakingPartLabel(row.partNumber) : `Part ${row.partNumber}`"
+                :label="row.taskNumber ? writingTaskLabel(row.taskNumber, exam) : picker === 'SPEAKING' ? speakingPartLabel(row.partNumber, exam) : `Part ${row.partNumber}`"
                 color="neutral"
                 variant="soft"
               />
