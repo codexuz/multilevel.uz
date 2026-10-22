@@ -205,7 +205,7 @@ async function endPremium(p: AdminUser) {
                   name="i-logos-telegram"
                   class="size-3 align-[-1px] me-0.5"
                   aria-label="Telegram"
-                />{{ accountHandle(p) }} · joined {{ new Date(p.createdAt).toLocaleDateString() }}
+                />{{ accountHandle(p) }} · joined {{ localeDate(p.createdAt, 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) }}
               </p>
               <p class="text-xs mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
                 <span :class="p.premiumUntil ? 'text-success' : 'text-muted'">

@@ -109,7 +109,7 @@ const STATE = {
   LIVE: { label: 'Live', color: 'error' as const },
   ENDED: { label: 'Ended', color: 'neutral' as const }
 }
-const when = (d: string) => new Date(d).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+const when = (d: string) => localeDate(d, 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 </script>
 
 <template>
