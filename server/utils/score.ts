@@ -39,16 +39,17 @@ export function cefrLevel(score: number): CefrLevel {
 }
 
 /**
- * The scaled score for a section of `total` questions. A full 35-question paper reads the official
- * table; a shorter practice paper is scaled to the same table by its share of right answers.
- * `settings.scale` on a section (36 numbers, index = right answers) replaces the table.
+ * The scaled score for `correct` right answers, read from the official table as they are: the
+ * score is out of the whole 35-question section, so only 35 right answers make 75, and a single
+ * part practised on its own scores what those answers are worth in the exam (7 right → 36 in
+ * Reading), not its share scaled up. `settings.scale` on a section (36 numbers, index = right
+ * answers) replaces the table.
  */
-export function sectionScore(skill: ObjectiveSkill, correct: number, total: number, settings?: { scale?: unknown } | null): number {
+export function sectionScore(skill: ObjectiveSkill, correct: number, settings?: { scale?: unknown } | null): number {
   const custom = Array.isArray(settings?.scale) && settings.scale.length === 36 && settings.scale.every(n => Number.isFinite(Number(n)))
     ? (settings.scale as unknown[]).map(Number)
     : null
   const table = custom ?? (skill === 'listening' ? LISTENING : READING)
-  const onTable = total === 35 ? correct : total > 0 ? Math.round((correct / total) * 35) : 0
-  const i = Math.max(0, Math.min(Math.round(onTable), table.length - 1))
+  const i = Math.max(0, Math.min(Math.round(correct), table.length - 1))
   return table[i]!
 }
