@@ -1,12 +1,12 @@
 import { eq } from 'drizzle-orm'
 import { centres } from '../../../database/schema'
 
-// Changes a centre's name, seats, licence end or whether it is on.
+// Changes a centre's name, seats, licence end, whether it is on, and its details in the public catalogue.
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)
   const id = String(getRouterParam(event, 'id'))
-  const body = (await readBody<{ name?: string, seats?: number, licensedUntil?: string, active?: boolean }>(event)) ?? {}
-  const set: Partial<typeof centres.$inferInsert> = {}
+  const body = (await readBody<{ name?: string, seats?: number, licensedUntil?: string, active?: boolean } & Record<string, unknown>>(event)) ?? {}
+  const set: Partial<typeof centres.$inferInsert> = listingValues(body)
   if (body.name !== undefined) {
     const name = String(body.name).trim().slice(0, 120)
     if (!name) throw createError({ statusCode: 400, message: 'Give the centre a name' })

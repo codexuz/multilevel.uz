@@ -171,6 +171,24 @@ export const MSG = {
   },
   start: { en: 'Start', uz: 'Boshlash', ru: 'Начать' },
 
+  centreRequest: (l: Locale, name: string, city: string | null, students: number | null) => ({
+    en: `🏫 <b>A learning centre wants to join</b>\n${escapeHtml(name)}${city ? `, ${escapeHtml(city)}` : ''}${students ? ` · about ${students} students` : ''}`,
+    uz: `🏫 <b>O‘quv markazi qo‘shilmoqchi</b>\n${escapeHtml(name)}${city ? `, ${escapeHtml(city)}` : ''}${students ? ` · taxminan ${students} o‘quvchi` : ''}`,
+    ru: `🏫 <b>Учебный центр хочет подключиться</b>\n${escapeHtml(name)}${city ? `, ${escapeHtml(city)}` : ''}${students ? ` · около ${students} учеников` : ''}`
+  })[l],
+  centreRequestButton: { en: 'Review it', uz: 'Ko‘rib chiqish', ru: 'Рассмотреть' },
+  centreApproved: (l: Locale, name: string) => ({
+    en: `🎉 <b>${escapeHtml(name)} is on Multilevel</b>\nYour centre is open: make groups, share their join links and set work.`,
+    uz: `🎉 <b>${escapeHtml(name)} Multilevelga qo‘shildi</b>\nMarkazingiz ochildi: guruhlar yarating, qo‘shilish havolalarini ulashing va vazifalar bering.`,
+    ru: `🎉 <b>${escapeHtml(name)} теперь на Multilevel</b>\nВаш центр открыт: создавайте группы, делитесь ссылками для вступления и давайте задания.`
+  })[l],
+  centreApprovedButton: { en: 'Open my centre', uz: 'Markazimni ochish', ru: 'Открыть мой центр' },
+  centreRejected: (l: Locale, name: string) => ({
+    en: `<b>About ${escapeHtml(name)}</b>\nWe could not open your centre this time. Write to us on Telegram and we will help.`,
+    uz: `<b>${escapeHtml(name)} haqida</b>\nBu safar markazingizni ocha olmadik. Telegramda bizga yozing, yordam beramiz.`,
+    ru: `<b>О центре ${escapeHtml(name)}</b>\nВ этот раз мы не смогли открыть ваш центр. Напишите нам в Telegram, и мы поможем.`
+  })[l],
+
   gift: (l: Locale, credit: number, ai: number) => {
     const parts = [credit > 0 ? credits(l, credit) : null, ai > 0 ? aiReviews(l, ai) : null].filter(Boolean).join(({ en: ' and ', uz: ' va ', ru: ' и ' })[l])
     return ({ en: `🎁 <b>A gift from Multilevel</b>\nYou received ${parts}.`, uz: `🎁 <b>Multilevel’dan sovg‘a</b>\nSizga ${parts} berildi.`, ru: `🎁 <b>Подарок от Multilevel</b>\nВы получили: ${parts}.` })[l]

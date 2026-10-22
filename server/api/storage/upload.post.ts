@@ -1,14 +1,15 @@
 import { randomUUID } from 'node:crypto'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
 
-type Purpose = 'test-audio' | 'test-asset' | 'recording' | 'avatar'
+type Purpose = 'test-audio' | 'test-asset' | 'recording' | 'avatar' | 'centre-logo'
 const STAFF_PURPOSES: Purpose[] = ['test-audio', 'test-asset']
 
 const PREFIX: Record<Purpose, string> = {
   'test-audio': 'tests/audio',
   'test-asset': 'tests/assets',
   'recording': 'recordings',
-  'avatar': 'avatars'
+  'avatar': 'avatars',
+  'centre-logo': 'centres/logos'
 }
 
 // What each purpose may hold. Test files are pictures (maps, diagrams, charts) and
@@ -17,7 +18,8 @@ const ALLOWED: Record<Purpose, (mime: string) => boolean> = {
   'test-audio': mime => mime.startsWith('audio/'),
   'test-asset': mime => (mime.startsWith('image/') && mime !== 'image/svg+xml') || ['text/vtt', 'text/plain', 'application/pdf'].includes(mime),
   'recording': mime => mime.startsWith('audio/'),
-  'avatar': mime => mime.startsWith('image/') && mime !== 'image/svg+xml'
+  'avatar': mime => mime.startsWith('image/') && mime !== 'image/svg+xml',
+  'centre-logo': mime => mime.startsWith('image/') && mime !== 'image/svg+xml'
 }
 
 const EXT_BY_TYPE: Record<string, string> = {
@@ -69,7 +71,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 413, message: 'File too large' })
   }
 
-  const scope = purpose === 'avatar' || purpose === 'recording' ? user.id : 'shared'
+  const scope = purpose === 'avatar' || purpose === 'recording' || purpose === 'centre-logo' ? user.id : 'shared'
   const key = `${PREFIX[purpose]}/${scope}/${randomUUID()}.${extFromType(contentType, filePart.filename)}`
 
   const client = useS3Client()

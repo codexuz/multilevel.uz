@@ -7,6 +7,9 @@ const { t } = useI18n()
 const route = useRoute()
 const id = String(route.params.id)
 const { data, error, refresh } = await useFetch<ResultView & Record<string, any>>(`/api/attempts/${id}`)
+// Staff and teachers open other people's results: say whose it is.
+const { me, isAdmin } = useMe()
+const someoneElse = computed(() => (data.value?.user && data.value.user.id !== me.value?.id ? data.value.user as { id: string, name: string } : null))
 useSeoMeta({ title: () => (data.value?.test?.title ? `${t('review.result')} — ${data.value.test.title}` : t('review.result')), robots: 'noindex' })
 
 // Marked while the page is open: the user-events plugin raises this.
@@ -24,6 +27,15 @@ onBeforeUnmount(() => off?.())
   >
     <template #actions>
       <UButton
+        v-if="someoneElse && isAdmin"
+        :to="`/admin/attempts?user=${someoneElse.id}`"
+        :label="t('results.theirAttempts')"
+        icon="i-lucide-clipboard-check"
+        color="neutral"
+        variant="ghost"
+      />
+      <UButton
+        v-else
         to="/results"
         :label="t('nav.results')"
         icon="i-lucide-chart-column"
@@ -38,8 +50,15 @@ onBeforeUnmount(() => off?.())
       :description="t('results.notFoundText')"
       :actions="[{ label: t('nav.results'), to: '/results' }]"
     />
+    <UAlert
+      v-if="someoneElse && !error"
+      icon="i-lucide-user"
+      color="neutral"
+      variant="subtle"
+      :title="t('results.whose', { name: someoneElse.name })"
+    />
     <ResultSummary
-      v-else-if="data"
+      v-if="data && !error"
       :view="data"
       :review-to="`/results/${id}/review`"
     >

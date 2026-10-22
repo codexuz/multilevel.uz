@@ -1,7 +1,8 @@
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { centreMembers, classGroups, users } from '../../../database/schema'
 
-// A centre for its owner and teachers: seats, licence, teachers and groups (the teacher code for the owner).
+// A centre for its owner and teachers: seats, licence, teachers and groups (the teacher code and the
+// catalogue listing for the owner).
 export default defineEventHandler(async (event) => {
   const { centre, role } = await requireCentreStaff(event, String(getRouterParam(event, 'id')))
   const db = useDb()
@@ -22,6 +23,7 @@ export default defineEventHandler(async (event) => {
     id: centre.id, name: centre.name, role,
     seats: centre.seats, students, licensedUntil: centre.licensedUntil, open: licenceOpen(centre),
     teacherCode: role === 'OWNER' ? centre.teacherCode : null,
+    listing: role === 'OWNER' ? listingView(centre) : null,
     teachers: teachers.map(t => ({ id: t.id, name: t.name || (t.telegramUsername ? `@${t.telegramUsername}` : t.email) || 'Teacher', role: t.role })),
     groups: groups.map(r => ({ id: r.g.id, name: r.g.name, joinCode: r.g.joinCode, archived: r.g.archived, teacher: r.teacher, students: r.students, assignments: r.assignments }))
   }

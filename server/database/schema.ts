@@ -245,7 +245,7 @@ export const attempts = pgTable('attempts', {
   createdAt: created(),
   updatedAt: updated()
 }, t => [
-  index('attempts_user_idx').on(t.userId, t.submittedAt), index('attempts_status_idx').on(t.status),
+  index('attempts_user_idx').on(t.userId, t.submittedAt), index('attempts_status_idx').on(t.status), index('attempts_submitted_idx').on(t.submittedAt),
   uniqueIndex('attempts_live_mock_uq').on(t.liveMockId, t.userId, t.skill).where(sql`${t.liveMockId} is not null`)
 ])
 
@@ -292,8 +292,35 @@ export const centres = pgTable('centres', {
   teacherCode: text('teacher_code').notNull().unique(),
   active: boolean('active').notNull().default(true),
   createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
+  // The public catalogue (/centres): shown there only when `listed` and the licence runs.
+  listed: boolean('listed').notNull().default(false),
+  city: text('city'),
+  address: text('address'),
+  description: text('description'),
+  phone: text('phone'),
+  telegram: text('telegram'),
+  website: text('website'),
+  logoUrl: text('logo_url'),
   createdAt: created()
 })
+
+/** A learning centre asking to join (/centres/apply); an admin opens the centre from it or turns it down. */
+export const centreRequests = pgTable('centre_requests', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  city: text('city'),
+  phone: text('phone').notNull(),
+  telegram: text('telegram'),
+  /** About how many students would take a seat. */
+  students: integer('students'),
+  message: text('message'),
+  status: text('status').notNull().default('PENDING'), // PENDING | APPROVED | REJECTED
+  centreId: uuid('centre_id').references(() => centres.id, { onDelete: 'set null' }),
+  reviewedById: uuid('reviewed_by_id').references(() => users.id, { onDelete: 'set null' }),
+  reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+  createdAt: created()
+}, t => [index('centre_requests_status_idx').on(t.status, t.createdAt), index('centre_requests_user_idx').on(t.userId)])
 
 export const centreMembers = pgTable('centre_members', {
   centreId: uuid('centre_id').notNull().references(() => centres.id, { onDelete: 'cascade' }),
