@@ -35,12 +35,12 @@ export async function notifyTelegram(userId: string, message: Message | ((l: Loc
   return res.ok
 }
 
-export const notifyMarked = (userId: string, attemptId: string, skill: string, score: number, cefr: string) => notifyTelegram(userId, l => ({
-  text: MSG.marked(l, skill, score, cefr), path: `/results/${attemptId}`, button: MSG.markedButton[l]
+export const notifyMarked = (userId: string, attemptId: string, skill: string, score: number, cefr: string, band = false) => notifyTelegram(userId, l => ({
+  text: MSG.marked(l, skill, score, cefr, band), path: `/results/${attemptId}`, button: MSG.markedButton[l]
 }))
 
-export const notifyAiReview = (userId: string, reviewId: string, attemptId: string | null, score: number, cefr: string, skill = 'WRITING') => notifyTelegram(userId, l => ({
-  text: MSG.aiReview(l, skill, score, cefr), path: attemptId ? `/results/${attemptId}` : `/feedback/${reviewId}`, button: MSG.aiReviewButton[l]
+export const notifyAiReview = (userId: string, reviewId: string, attemptId: string | null, score: number, cefr: string, skill = 'WRITING', band = false) => notifyTelegram(userId, l => ({
+  text: MSG.aiReview(l, skill, score, cefr, band), path: attemptId ? `/results/${attemptId}` : `/feedback/${reviewId}`, button: MSG.aiReviewButton[l]
 }))
 
 export const notifyInviteReward = (userId: string, credits: number) => notifyTelegram(userId, l => ({

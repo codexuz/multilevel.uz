@@ -6,18 +6,22 @@ import type { SpotNumbers } from '~/composables/useSpotText'
  * Hidden until there is something to show.
  */
 const { t } = useI18n()
-const { spotLabel, spotDetail } = useSpotText()
+// The exam the user prepares for: IELTS insights are on bands and criteria out of 9.
+const { exam } = useExam()
+const { spotLabel, spotDetail } = useSpotText(exam)
 interface Practise { slug: string, title: string, skill: string, part: number, done: boolean, locked: boolean }
 interface Focus extends SpotNumbers { skill: string, kind: 'TYPE' | 'CRITERION', key: string, label: string, detail: string, practise: Practise | null }
 interface Objective { skill: string, answers: number, share: number, types: { type: string, label: string, total: number, share: number }[], parts: { part: number, total: number, share: number }[] }
 interface Criteria { reviews: number, criteria: { key: string, label: string, average: number | null }[], tasks: { number: number, label: string, average: number, reviews: number }[], priorities: string[] }
-interface Insights { skills: Objective[], writing: Criteria, speaking: Criteria, trend: Record<string, { score: number, at: string }[]>, focus: Focus[] }
+interface Insights { exam?: string, skills: Objective[], writing: Criteria, speaking: Criteria, trend: Record<string, { score: number, at: string }[]>, focus: Focus[] }
 
-const { data } = await useFetch<Insights>('/api/me/insights', { lazy: true, server: false })
+const { data } = await useFetch<Insights>('/api/me/insights', { lazy: true, server: false, query: computed(() => ({ exam: exam.value })) })
+const ielts = computed(() => data.value?.exam === 'IELTS')
+const outOf = computed(() => (ielts.value ? 9 : 5))
 
 const practiseLink = (p: Practise) => `/tests/${p.slug}/${p.skill.toLowerCase()}?part=${p.part}`
 const shareColor = (share: number) => (share >= 80 ? 'success' : share >= 60 ? 'primary' : share >= 40 ? 'warning' : 'error')
-const markColor = (avg: number) => shareColor((avg / 5) * 100)
+const markColor = (avg: number) => shareColor((avg / outOf.value) * 100)
 
 interface Card { skill: string, trend: { score: number, at: string }[], objective?: Objective, criteria?: Criteria }
 const cards = computed<Card[]>(() => {
@@ -37,7 +41,7 @@ function sparkline(points: { score: number }[]) {
   const h = 28
   const scores = points.map(p => p.score)
   const mid = (Math.max(...scores) + Math.min(...scores)) / 2
-  const span = Math.max(10, Math.max(...scores) - Math.min(...scores))
+  const span = Math.max(ielts.value ? 1 : 10, Math.max(...scores) - Math.min(...scores))
   const y = (s: number) => h - ((s - (mid - span / 2)) / span) * h
   return points.map((p, i) => `${i ? 'L' : 'M'}${((i / (points.length - 1)) * w).toFixed(1)},${y(p.score).toFixed(1)}`).join(' ')
 }
@@ -45,7 +49,8 @@ function change(points: { score: number }[]) {
   if (points.length < 2) return null
   const last = points[points.length - 1]!.score
   const before = points.slice(0, -1)
-  return Math.round(last - before.reduce((a, p) => a + p.score, 0) / before.length)
+  const diff = last - before.reduce((a, p) => a + p.score, 0) / before.length
+  return ielts.value ? Math.round(diff * 2) / 2 : Math.round(diff)
 }
 </script>
 
@@ -134,7 +139,7 @@ function change(points: { score: number }[]) {
               v-if="c.trend.length"
               class="text-xs text-muted"
             >
-              {{ t('insights.last', { score: fmtScore(c.trend[c.trend.length - 1]!.score) }) }}
+              {{ t('insights.last', { score: ielts ? `${t('result.band')} ${fmtBand(c.trend[c.trend.length - 1]!.score)}` : `${fmtScore(c.trend[c.trend.length - 1]!.score)}/75` }) }}
               <template v-if="change(c.trend) != null">
                 · <span :class="change(c.trend)! >= 0 ? 'text-success' : 'text-error'">{{ change(c.trend)! >= 0 ? '+' : '' }}{{ change(c.trend) }}</span> {{ t('insights.onAverage') }}
               </template>
@@ -208,10 +213,10 @@ function change(points: { score: number }[]) {
             <div v-if="k.average != null">
               <div class="flex justify-between text-sm">
                 <span class="text-toned">{{ t(`criterion.${k.key}`) }}</span>
-                <span class="tabular-nums text-highlighted font-medium">{{ k.average }}/5</span>
+                <span class="tabular-nums text-highlighted font-medium">{{ k.average }}/{{ outOf }}</span>
               </div>
               <UProgress
-                :model-value="(k.average / 5) * 100"
+                :model-value="(k.average / outOf) * 100"
                 :color="markColor(k.average)"
                 size="sm"
                 class="mt-1"
@@ -225,7 +230,7 @@ function change(points: { score: number }[]) {
             <UBadge
               v-for="tk in c.criteria.tasks"
               :key="tk.number"
-              :label="`${partName(c.skill, tk.number)} ${tk.average}/5`"
+              :label="`${partName(c.skill, tk.number, data?.exam)} ${tk.average}/${outOf}`"
               :color="markColor(tk.average)"
               variant="soft"
               size="sm"

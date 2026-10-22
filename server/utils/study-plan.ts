@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, isNotNull, isNull, sql } from 'drizzle-orm'
+import { and, desc, eq, gte, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
 import { aiReviews, attempts, sections, tests, users } from '../database/schema'
 import { type Focus, insightsOf } from './insights'
 
@@ -47,15 +47,26 @@ export interface Goal {
 
 const skillWord = (s: string) => s.charAt(0) + s.slice(1).toLowerCase()
 
-/** Each skill's level now: the average of the last three whole sections (or AI estimates for Writing and Speaking). */
-async function estimates(userId: string) {
+/** An IELTS target from a CEFR level, when no band was chosen. */
+const BAND_OF_LEVEL: Record<string, number> = { B1: 5, B2: 6.5, C1: 7.5 }
+export const targetBandOf = (u: { targetBand: number | null, targetLevel: string | null }) =>
+  u.targetBand ?? BAND_OF_LEVEL[u.targetLevel ?? ''] ?? 6.5
+
+/**
+ * Each skill's level now: the average of the last three whole sections (or AI estimates for Writing
+ * and Speaking), as scores out of 75 or, for IELTS, bands.
+ */
+async function estimates(userId: string, exam: Exam) {
   const db = useDb()
+  const ielts = exam === 'IELTS'
+  const markedValue = ielts ? attempts.band : attempts.score
+  const reviewValue = ielts ? aiReviews.band : aiReviews.score
   const [marked, reviews] = await Promise.all([
-    db.select({ skill: attempts.skill, score: attempts.score }).from(attempts)
-      .where(and(eq(attempts.userId, userId), isNotNull(attempts.score), isNull(attempts.partNumber)))
+    db.select({ skill: attempts.skill, score: markedValue }).from(attempts)
+      .where(and(eq(attempts.userId, userId), eq(attempts.exam, exam), isNotNull(markedValue), isNull(attempts.partNumber)))
       .orderBy(desc(attempts.submittedAt)).limit(60),
-    db.select({ skill: aiReviews.skill, score: aiReviews.score }).from(aiReviews)
-      .where(and(eq(aiReviews.userId, userId), eq(aiReviews.status, 'DONE'), isNotNull(aiReviews.score)))
+    db.select({ skill: aiReviews.skill, score: reviewValue }).from(aiReviews)
+      .where(and(eq(aiReviews.userId, userId), eq(aiReviews.status, 'DONE'), isNotNull(reviewValue)))
       .orderBy(desc(aiReviews.createdAt)).limit(20)
   ])
   return Object.fromEntries(SKILLS.map((skill) => {
@@ -65,29 +76,33 @@ async function estimates(userId: string) {
       list = reviews.filter(r => r.skill === skill).slice(0, 3)
       source = 'AI'
     }
-    const score = list.length ? Math.round(list.reduce((a, r) => a + r.score!, 0) / list.length) : null
+    const mean = list.length ? list.reduce((a, r) => a + Number(r.score), 0) / list.length : null
+    const score = mean == null ? null : ielts ? roundToHalfBand(mean) : Math.round(mean)
     return [skill, { score, source: score == null ? null : source }]
   })) as Record<typeof SKILLS[number], { score: number | null, source: 'MARKED' | 'AI' | null }>
 }
 
 export async function planOf(user: { id: string, role: string }, now = Date.now()) {
   const db = useDb()
-  const [u] = await db.select({ examDate: users.examDate, targetLevel: users.targetLevel, targetScore: users.targetScore })
+  const [u] = await db.select({ examDate: users.examDate, targetLevel: users.targetLevel, targetScore: users.targetScore, targetBand: users.targetBand, exam: users.exam })
     .from(users).where(eq(users.id, user.id)).limit(1)
   if (!u) throw createError({ statusCode: 404, message: 'User not found' })
+  const exam: Exam = isExam(u.exam) ? u.exam : 'IELTS'
+  const ielts = exam === 'IELTS'
   const today = tashkentToday(now)
   const since = weekStart(today)
   const daysLeft = u.examDate ? daysBetween(today, u.examDate) : null
-  const target = targetScoreOf(u)
+  const target = ielts ? targetBandOf(u) : targetScoreOf(u)
+  const ofExam = ielts ? inArray(tests.module, [...IELTS_MODULES]) : eq(tests.module, 'MULTILEVEL')
 
   const [level, insights, week, weekReviews, offered] = await Promise.all([
-    estimates(user.id),
-    insightsOf(user),
+    estimates(user.id, exam),
+    insightsOf(user, exam),
     db.select({ skill: attempts.skill, partNumber: attempts.partNumber, at: attempts.submittedAt }).from(attempts)
-      .where(and(eq(attempts.userId, user.id), gte(attempts.submittedAt, since))),
+      .where(and(eq(attempts.userId, user.id), eq(attempts.exam, exam), gte(attempts.submittedAt, since))),
     db.select({ skill: aiReviews.skill }).from(aiReviews)
       .where(and(eq(aiReviews.userId, user.id), gte(aiReviews.createdAt, since), sql`${aiReviews.status} <> 'FAILED'`)),
-    db.selectDistinct({ skill: sections.skill }).from(sections).innerJoin(tests, eq(tests.id, sections.testId)).where(eq(tests.status, 'PUBLISHED'))
+    db.selectDistinct({ skill: sections.skill }).from(sections).innerJoin(tests, eq(tests.id, sections.testId)).where(and(eq(tests.status, 'PUBLISHED'), ofExam))
   ])
 
   // A whole section of each skill below target (all four in the last month), the furthest behind first.
@@ -100,9 +115,9 @@ export async function planOf(user: { id: string, role: string }, now = Date.now(
   const goals: Goal[] = toSit.map(s => ({
     key: `section-${s}`, kind: 'SECTION', skill: s, score: level[s].score, target,
     label: `A whole ${skillWord(s)} section`,
-    detail: level[s].score == null ? 'No score yet: see where you stand' : `Now about ${level[s].score}/75, aiming for ${target}`,
+    detail: level[s].score == null ? 'No score yet: see where you stand' : ielts ? `Now about band ${level[s].score}, aiming for ${target}` : `Now about ${level[s].score}/75, aiming for ${target}`,
     done: week.some(a => a.skill === s && a.partNumber == null),
-    to: `/tests?skill=${s}`
+    to: `/tests?exam=${exam}&skill=${s}`
   }))
   for (const f of insights.focus.slice(0, 2)) {
     if (!f.practise) continue
@@ -120,6 +135,8 @@ export async function planOf(user: { id: string, role: string }, now = Date.now(
   const practisedDays = new Set(week.map(a => tashkentToday(a.at.getTime()))).size
 
   return {
+    exam,
+    targetBand: ielts ? target : null,
     examDate: u.examDate,
     daysLeft,
     targetLevel: u.targetLevel,

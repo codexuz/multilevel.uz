@@ -30,7 +30,7 @@ export async function spokenText(partId: string, position: number): Promise<stri
   if (!part) return null
   const questions = await db.select({ text: speakingQuestions.text }).from(speakingQuestions)
     .where(eq(speakingQuestions.partId, partId)).orderBy(asc(speakingQuestions.position))
-  if (answeredByQuestion(part.partNumber) && questions.length) return plain(questions[position]?.text ?? null) || null
+  if (answeredByQuestion(part.partNumber, part.exam) && questions.length) return plain(questions[position]?.text ?? null) || null
   if (part.partNumber === 4) return `Part 3. ${plain(part.cueCard)} Use the arguments for and against.`.trim()
   return `Part 2. ${plain(part.cueCard) || questions.map(q => plain(q.text)).join(' ')}`.trim()
 }

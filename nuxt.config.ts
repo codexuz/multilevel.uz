@@ -1,6 +1,6 @@
 const siteName = 'Mockmee'
 const siteUrl = (process.env.NUXT_PUBLIC_SITE_URL || 'https://mockmee.uz').replace(/\/$/, '')
-const siteDescription = 'Mockmee: online Multilevel (CEFR) English mock tests in the official format: Listening, Reading, Writing and Speaking, checked instantly.'
+const siteDescription = 'Mockmee: online IELTS and Multilevel (CEFR) English mock tests in the official format: Listening, Reading, Writing and Speaking, marked instantly.'
 const noIndex = { robots: false, sitemap: false }
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
@@ -16,7 +16,7 @@ export default defineNuxtConfig({
   devtools: {
     enabled: true
   },
-  css: ['~/assets/css/main.css'],
+  css: ['~/assets/css/main.css', '~/assets/css/ielts-exam.css'],
   site: {
     url: siteUrl,
     name: siteName,

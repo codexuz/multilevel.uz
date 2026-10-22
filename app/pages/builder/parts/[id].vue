@@ -50,7 +50,10 @@ const groups = computed(() => [...(part.value?.groups ?? [])].sort((a, b) => a.p
 const numbers = computed(() => groups.value.flatMap(g => g.items.map(i => i.number)))
 const nextNumber = computed(() => (numbers.value.length ? Math.max(...numbers.value) + 1 : suggestedStart.value))
 // Where each Multilevel part's numbering starts: Listening 1, 9, 15, 19, 24, 30; Reading 1, 7, 15, 21, 30.
-const suggestedStart = computed(() => (listening.value ? [1, 9, 15, 19, 24, 30] : [1, 7, 15, 21, 30])[form.partNumber - 1] ?? 1)
+// Where the numbering usually starts: IELTS Listening 1, 11, 21, 31; Reading 1, 14, 27 (roughly 13 a passage).
+const suggestedStart = computed(() => (part.value?.exam === 'IELTS'
+  ? (listening.value ? [1, 11, 21, 31] : [1, 14, 27])
+  : (listening.value ? [1, 9, 15, 19, 24, 30] : [1, 7, 15, 21, 30]))[form.partNumber - 1] ?? 1)
 const unkeyed = computed(() => groups.value.flatMap(g => g.items).filter(i => !(i.acceptedAnswers ?? []).length).map(i => i.number))
 
 const editorOpen = ref(false)
@@ -333,7 +336,7 @@ const saveLabel = computed(() => ({ idle: '', dirty: 'Unsaved changes', saving: 
             <UFormField label="Part">
               <USelect
                 v-model="form.partNumber"
-                :items="Array.from({ length: listening ? 6 : 5 }, (_, i) => ({ label: `Part ${i + 1}`, value: i + 1 }))"
+                :items="partNumbersOf(part?.exam, listening ? 'LISTENING' : 'READING').map(n => ({ label: `Part ${n}`, value: n }))"
                 class="w-full"
               />
             </UFormField>

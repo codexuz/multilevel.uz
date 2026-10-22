@@ -12,6 +12,24 @@ export interface Plan {
   position: number
 }
 
+/** A test pack: tests sold together once, each the buyer's for good. */
+export interface Pack {
+  id: string
+  slug: string
+  title: string
+  description: string | null
+  exam: 'IELTS' | 'MULTILEVEL'
+  priceUzs: number
+  oldPriceUzs: number | null
+  coverUrl: string | null
+  featured: boolean
+  active: boolean
+  position: number
+  owned: boolean
+  testCount: number
+  tests: { id: string, slug: string, title: string, module: string, exam: string, category: string | null, status: string }[]
+}
+
 export interface Order {
   id: string
   number: number

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
  * Marking one Writing or Speaking attempt: the tasks and what was written (or the recordings) on one
- * side; the score out of 75, a word for the candidate and a comment on each essay on the other.
+ * side; the score out of 75 (IELTS: the band, 0–9 in halves), a word for the candidate and a comment
+ * on each essay on the other.
  * An AI draft (made when the Writing was handed in, or on request) can fill the empty fields in.
  */
 definePageMeta({ middleware: 'staff' })
@@ -19,9 +20,12 @@ const speaking = computed<any[]>(() => section.value?.speaking ?? [])
 const score = ref<number | null>(null)
 const feedback = ref('')
 const essayFeedback = reactive<Record<string, string>>({})
+const ielts = computed(() => attempt.value?.exam === 'IELTS')
+/** The band picker: 0 to 9 in halves, highest first. */
+const BANDS = Array.from({ length: 19 }, (_, i) => (18 - i) / 2).map(b => ({ label: b.toFixed(1), value: b }))
 watch(attempt, (a) => {
   if (!a) return
-  score.value = a.score ?? null
+  score.value = (a.exam === 'IELTS' ? a.band : a.score) ?? null
   feedback.value = a.feedback ?? ''
   for (const t of a.review?.sections?.[0]?.tasks ?? []) if (t.essay) essayFeedback[t.essay.id] = t.essay.feedback ?? ''
 }, { immediate: true })
@@ -31,6 +35,7 @@ interface AiDraft {
   id: string
   status: 'PENDING' | 'DONE' | 'FAILED'
   score: number | null
+  band?: number | null
   cefrLevel: string | null
   error: string | null
   summary?: string
@@ -72,7 +77,8 @@ onBeforeUnmount(() => clearTimeout(aiTimer))
 function useAiDraft() {
   const d = ai.value
   if (!d || d.status !== 'DONE') return
-  if (score.value == null && d.score != null) score.value = d.score
+  const suggested = ielts.value ? d.band : d.score
+  if (score.value == null && suggested != null) score.value = suggested
   if (!feedback.value.trim()) {
     // Speaking has no per-part comment boxes: each part's comment goes into the feedback.
     const partNotes = d.parts?.length ? d.parts.map(p => `${p.label}: ${p.comment}`).join('\n') : ''
@@ -95,9 +101,10 @@ async function grade(next: boolean) {
   try {
     attempt.value = await $fetch(`/api/admin/marking/${id.value}`, {
       method: 'POST',
-      body: { score: score.value, feedback: feedback.value.trim() || null, essays: Object.entries(essayFeedback).map(([essayId, text]) => ({ id: essayId, feedback: text })) }
+      body: { ...(ielts.value ? { band: score.value } : { score: score.value }), feedback: feedback.value.trim() || null, essays: Object.entries(essayFeedback).map(([essayId, text]) => ({ id: essayId, feedback: text })) }
     })
-    toast.add({ title: 'Marked', description: `${score.value} / 75 · ${cefrOf(score.value)}. The candidate has been told.`, color: 'success' })
+    const given = ielts.value ? `Band ${fmtBand(score.value)} · ${bandCefr(score.value)}` : `${score.value} / 75 · ${cefrOf(score.value)}`
+    toast.add({ title: 'Marked', description: `${given}. The candidate has been told.`, color: 'success' })
     if (next) {
       const queue = await $fetch<any>('/api/admin/marking', { query: { status: 'SUBMITTED', limit: 5 } })
       const following = queue.items.find((a: any) => a.id !== id.value)
@@ -154,7 +161,7 @@ async function grade(next: boolean) {
         >
           <template #header>
             <div class="flex items-center gap-2 flex-wrap">
-              <span class="font-semibold">{{ writingTaskLabel(t.task.taskNumber) }}</span>
+              <span class="font-semibold">{{ writingTaskLabel(t.task.taskNumber, t.task.exam) }}</span>
               <UBadge
                 v-if="t.essay"
                 :label="`${t.essay.wordCount} words`"
@@ -207,7 +214,7 @@ async function grade(next: boolean) {
           :key="p.id"
         >
           <template #header>
-            <span class="font-semibold">{{ speakingPartLabel(p.partNumber) }}<span v-if="p.title"> — {{ p.title }}</span></span>
+            <span class="font-semibold">{{ speakingPartLabel(p.partNumber, p.exam) }}<span v-if="p.title"> — {{ p.title }}</span></span>
           </template>
           <SpeakingAnswers
             :part="p"
@@ -236,7 +243,7 @@ async function grade(next: boolean) {
                 <UIcon
                   name="i-lucide-sparkles"
                   class="text-primary"
-                />AI suggests {{ ai.score }} / 75 · {{ ai.cefrLevel === 'A2' ? 'below B1' : ai.cefrLevel }}
+                />AI suggests {{ ai.band != null ? `band ${fmtBand(ai.band)}` : `${ai.score} / 75` }} · {{ ai.cefrLevel === 'A2' ? 'below B1' : ai.cefrLevel }}
               </p>
               <p
                 v-if="ai.summary"
@@ -280,6 +287,21 @@ async function grade(next: boolean) {
             </div>
           </div>
           <UFormField
+            v-if="ielts"
+            label="Band (IELTS)"
+            required
+            :help="score != null ? `CEFR ${bandCefr(score)}` : 'Whole and half bands; the mean of the four criteria, half-band rounded.'"
+          >
+            <USelect
+              :model-value="score ?? undefined"
+              :items="BANDS"
+              placeholder="Band"
+              @update:model-value="v => (score = Number(v))"
+              class="w-36"
+            />
+          </UFormField>
+          <UFormField
+            v-else
             label="Score (0–75)"
             required
             :help="score != null ? `CEFR ${cefrOf(score) === 'A2' ? 'below B1' : cefrOf(score)}` : 'B1 from 38, B2 from 51, C1 from 65.'"

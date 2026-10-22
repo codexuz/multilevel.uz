@@ -94,14 +94,17 @@ export async function importTest(payload: any, userId: string | null) {
     if (!SKILL_SET.has(section.skill)) throw createError({ statusCode: 400, message: `Unknown section "${section.skill}"` })
   }
   const slug = await uniqueSlug(String(source.title))
+  // An erp-lms IELTS file says ACADEMIC or GENERAL_TRAINING: it comes in as an IELTS test.
+  const module = isIeltsModule(source.module) ? source.module : 'MULTILEVEL'
+  const exam = examOfModule(module)
   const db = useDb()
   return db.transaction(async (tx) => {
     const [test] = await tx.insert(tests).values({
       slug, title: String(source.title).slice(0, 300), description: source.description ?? null,
       mode: ['PRACTICE', 'MOCK'].includes(source.mode) ? source.mode : 'PRACTICE',
       access: source.access === 'PREMIUM' ? 'PREMIUM' : 'FREE',
-      category: ['AUTHENTIC', 'CAMBRIDGE', 'PRE_TEST', 'CUSTOM'].includes(source.category) ? source.category : null,
-      module: 'MULTILEVEL', source: source.source ?? null, createdById: userId
+      category: ['AUTHENTIC', 'CAMBRIDGE', 'OFFICIAL', 'BOOK', 'PRE_TEST', 'CUSTOM'].includes(source.category) ? source.category : null,
+      module, source: source.source ?? null, createdById: userId
     }).returning({ id: tests.id })
     for (const section of source.sections ?? []) {
       const [created] = await tx.insert(sections).values({
@@ -112,7 +115,7 @@ export async function importTest(payload: any, userId: string | null) {
         const link: any = { sectionId: created!.id, position: index + 1 }
         if (item.part) {
           const [part] = await tx.insert(parts).values({
-            skill: section.skill, partNumber: Number(item.part.partNumber) || index + 1, title: item.part.title ?? null, passage: item.part.passage ?? null,
+            exam, skill: section.skill, partNumber: Number(item.part.partNumber) || index + 1, title: item.part.title ?? null, passage: item.part.passage ?? null,
             audioRef: item.part.audioRef ?? null, transcriptRef: item.part.transcriptRef ?? null, difficulty: item.part.difficulty ?? null,
             timeLimitMinutes: item.part.timeLimitMinutes ?? null, createdById: userId
           }).returning({ id: parts.id })
@@ -130,14 +133,14 @@ export async function importTest(payload: any, userId: string | null) {
           link.partId = part!.id
         } else if (item.writingTask) {
           const [task] = await tx.insert(writingTasks).values({
-            taskNumber: Number(item.writingTask.taskNumber) || index + 1, module: item.writingTask.module ?? null, title: item.writingTask.title ?? null,
+            exam, taskNumber: Number(item.writingTask.taskNumber) || index + 1, module: item.writingTask.module ?? null, title: item.writingTask.title ?? null,
             prompt: item.writingTask.prompt ?? '', imageRef: item.writingTask.imageRef ?? null, minWords: item.writingTask.minWords ?? null,
             suggestedMinutes: item.writingTask.suggestedMinutes ?? null, createdById: userId
           }).returning({ id: writingTasks.id })
           link.writingTaskId = task!.id
         } else if (item.speakingPart) {
           const [part] = await tx.insert(speakingParts).values({
-            partNumber: Number(item.speakingPart.partNumber) || index + 1, title: item.speakingPart.title ?? null, cueCard: item.speakingPart.cueCard ?? null,
+            exam, partNumber: Number(item.speakingPart.partNumber) || index + 1, title: item.speakingPart.title ?? null, cueCard: item.speakingPart.cueCard ?? null,
             imageRef: item.speakingPart.imageRef ?? null, prepSeconds: item.speakingPart.prepSeconds ?? null, speakSeconds: item.speakingPart.speakSeconds ?? null,
             createdById: userId
           }).returning({ id: speakingParts.id })

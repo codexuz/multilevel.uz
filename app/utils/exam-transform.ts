@@ -158,12 +158,12 @@ export interface WritingPartData {
 export function transformWritingTask(task: WritingTask & { minWords?: number | null }): WritingPartData {
   return {
     id: task.id,
-    partLabel: writingTaskLabel(task.taskNumber),
+    partLabel: writingTaskLabel(task.taskNumber, task.exam),
     task: `TASK_${task.taskNumber}`,
     prompt: task.prompt,
     image_url: mediaUrl(task.imageUrl) || undefined,
-    min_words: task.minWords ?? writingDefaults(task.taskNumber).minWords,
-    suggested_time: task.suggestedMinutes ?? writingDefaults(task.taskNumber).minutes
+    min_words: task.minWords ?? writingDefaults(task.taskNumber, task.exam).minWords,
+    suggested_time: task.suggestedMinutes ?? writingDefaults(task.taskNumber, task.exam).minutes
   }
 }
 

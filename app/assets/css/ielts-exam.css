@@ -1,0 +1,328 @@
+/*
+ * The IELTS test screen (from the erp-lms IELTS app), made to look and behave like the computer-delivered IELTS (Inspera): Arial,
+ * black on white, a grey rubric box, two panes with a ⟷ handle, the part bar at the bottom with a
+ * strip over each question, square arrow buttons and the ✓ submission button. Sizes and colours are
+ * measured from the official demo; colours come from --ix-* (useExamTheme) so the high-contrast
+ * schemes and text sizes work everywhere.
+ */
+
+/* Defaults (black on white), for pieces shown outside a test, such as the rubric on the review page. */
+:root {
+  --ix-bg: #ffffff; --ix-text: #000000; --ix-muted: #535353; --ix-line: #c1c1c1; --ix-rubric-bg: #f1f2ec; --ix-rubric-border: #d5d5d5;
+  --ix-accent: #418fc6; --ix-option-hover: #e4e4e4; --ix-option-selected: #bbd8f0; --ix-answered: #358e14; --ix-track: #d7d7d7;
+  --ix-prev-btn: #4c4c4c; --ix-next-btn: #000000; --ix-arrow-icon: #ffffff; --ix-disabled-btn: #dddddd; --ix-deliver: #efefef;
+  --ix-deliver-icon: #535353; --ix-panel: #e8e8e8; --ix-input-border: #535353; --ix-highlight-bg: #7d4a5a; --ix-highlight-text: #ffffff;
+  --ix-note-bg: #1e46be; --ix-brand: #e31837;
+}
+.dark {
+  --ix-bg: var(--ui-bg); --ix-text: var(--ui-text); --ix-muted: var(--ui-text-muted); --ix-line: var(--ui-border);
+  --ix-rubric-bg: var(--ui-bg-elevated); --ix-rubric-border: var(--ui-border); --ix-option-hover: var(--ui-bg-elevated);
+  --ix-option-selected: color-mix(in srgb, #418fc6 35%, transparent); --ix-input-border: var(--ui-text-muted);
+}
+
+.ix {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: var(--ix-font-size, 16px);
+  line-height: 1.5;
+  color: var(--ix-text);
+  background: var(--ix-bg);
+  height: 100dvh;
+  min-width: 0;
+  display: flex;
+  overflow: hidden;
+}
+.ix :where(button) { font: inherit; }
+.ix-main { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+/* ── header ─────────────────────────────────────────────────────────────────────────────── */
+.ix-header { position: relative; height: 56px; flex-shrink: 0; display: flex; align-items: stretch; background: var(--ix-bg); border-bottom: 1px solid var(--ix-line); }
+.ix-logo { display: flex; align-items: center; padding: 0 16px; width: 125px; flex-shrink: 0; text-decoration: none; }
+.ix-logo span { font-family: 'Arial Black', Arial, sans-serif; font-weight: 900; font-size: 22px; line-height: 1; letter-spacing: -0.5px; color: #4f57de; }
+.ix.is-dark .ix-logo span { color: var(--ix-text); }
+.ix-logo sup { font-size: 6px; vertical-align: top; position: relative; top: 2px; font-family: Arial, sans-serif; letter-spacing: 0; }
+.ix-candidate { padding: 8px 16px 0; min-width: 0; font-size: 16px; }
+.ix-candidate strong { display: block; font-weight: 700; line-height: 18px; white-space: nowrap; }
+.ix-candidate small { display: flex; align-items: center; gap: 4px; font-size: 13px; line-height: 18px; white-space: nowrap; }
+.ix-timer { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 700; white-space: nowrap; }
+.ix-timer.is-low { color: var(--ix-brand); }
+.ix-icons { margin-left: auto; display: flex; align-items: center; padding-right: 8px; }
+.ix-icon { position: relative; display: grid; place-items: center; width: 27px; height: 25px; margin: 0 14px; background: none; border: 0; cursor: pointer; color: var(--ix-text); }
+.ix-icon .iconify { width: 27px; height: 27px; }
+.ix-icon.is-off { color: var(--ix-brand); }
+.ix-icon:focus-visible, .ix-arrow:focus-visible, .ix-deliver:focus-visible, .ix-qnum:focus-visible { outline: 2px solid var(--ix-accent); outline-offset: 2px; }
+.ix-popover { position: absolute; top: 46px; right: 0; z-index: 40; min-width: 220px; padding: 12px 16px; background: var(--ix-bg); border: 1px solid var(--ix-line); border-radius: 4px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25); font-size: 14px; text-align: left; cursor: default; }
+
+/* ── the rubric box ─────────────────────────────────────────────────────────────────────── */
+.ix-rubric { flex-shrink: 0; margin: 16px; padding: 12px 16px; background: var(--ix-rubric-bg); border: 1px solid var(--ix-rubric-border); border-radius: 4px; }
+.ix-rubric h2 { margin: 0 0 7px; font-size: 1em; font-weight: 700; line-height: 1.15; display: flex; align-items: center; gap: 8px; }
+.ix-rubric p { margin: 0; line-height: 1.15; }
+
+/* ── panes ──────────────────────────────────────────────────────────────────────────────── */
+.ix-body { position: relative; flex: 1; min-height: 0; display: flex; }
+.ix-split { flex: 1; min-height: 0; display: flex; }
+.ix-pane { min-width: 0; min-height: 0; overflow-y: auto; padding: 24px 16px 104px; overscroll-behavior: contain; }
+.ix-single { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 16px 160px; }
+.ix-divider { position: relative; flex: 0 0 2px; background: var(--ix-muted); opacity: 0.75; cursor: col-resize; touch-action: none; }
+.ix-divider button { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 36px; height: 36px; display: grid; place-items: center; background: var(--ix-bg); border: 1px solid var(--ix-text); border-radius: 2px; cursor: col-resize; color: var(--ix-text); }
+@media (max-width: 1023px) {
+  .ix-split { flex-direction: column; }
+  .ix-split .ix-pane { padding-bottom: 24px; }
+  .ix-split .ix-pane + .ix-divider + .ix-pane { padding-bottom: 104px; }
+  .ix-divider { flex-basis: 2px; cursor: row-resize; }
+  .ix-divider button { transform: translate(-50%, -50%) rotate(90deg); cursor: row-resize; }
+}
+
+.ix-passage-title { margin: 0 0 16px; font-size: 1.32em; font-weight: 700; line-height: 1.3; }
+.ix-passage { line-height: 1.5; }
+.ix-passage :where(p) { margin: 0 0 1em; }
+.ix-passage :where(h1, h2, h3, h4) { font-weight: 700; margin: 1em 0 0.25em; font-size: 1em; }
+.ix-passage :where(img) { max-width: 100%; margin: 0.75em 0; }
+
+/* ── the bottom bar ─────────────────────────────────────────────────────────────────────── */
+.ix-arrows { position: absolute; right: 32px; bottom: 88px; z-index: 15; display: flex; gap: 2px; }
+.ix-arrow { width: 56px; height: 55px; display: grid; place-items: center; border: 0; border-radius: 3px; color: var(--ix-arrow-icon); cursor: pointer; }
+.ix-arrow svg { width: 30px; height: 30px; fill: currentColor; }
+.ix-arrow.is-prev { background: var(--ix-prev-btn); }
+.ix-arrow.is-next { background: var(--ix-next-btn); }
+.ix-arrow:disabled { background: var(--ix-disabled-btn); cursor: default; }
+.ix-arrow:disabled { color: #fff; }
+
+.ix-footer { position: relative; flex-shrink: 0; height: 53px; display: flex; align-items: stretch; background: var(--ix-bg); color: #333; color: var(--ix-text); overflow-x: auto; overflow-y: hidden; }
+.ix-fpart { color: inherit; flex: 1 1 0; min-width: max-content; display: flex; align-items: center; justify-content: center; gap: 16px; margin: 0 1px; padding: 0 20px; border: 0; border-top: 3px solid transparent; background: none; cursor: pointer; white-space: nowrap; }
+.ix-fpart .ix-fcount { color: var(--ix-muted); }
+.ix-fpart:hover .ix-flabel { text-decoration: underline; }
+.ix-fpart.is-current { flex: 0 0 auto; justify-content: flex-start; cursor: default; }
+.ix-fpart.is-current .ix-flabel { font-weight: 700; text-decoration: none; }
+/* A part that is one question (a writing task) spreads over its share with one strip over it. */
+.ix-fpart.is-current.is-single { position: relative; flex: 1 1 0; }
+.ix-fpart.is-current.is-single::before { content: ''; position: absolute; left: 0; right: 0; top: -3px; height: 3px; background: var(--ix-track); }
+.ix-fpart.is-current.is-single.is-answered::before { background: var(--ix-answered); }
+.ix-qnums { display: flex; align-items: center; gap: 0; padding-right: 8px; }
+.ix-qnum { color: inherit; position: relative; min-width: 30px; margin: 0 0; padding: 2.4px 4px; border: 2px solid transparent; border-radius: 3px; background: var(--ix-bg); cursor: pointer; text-align: center; line-height: 19px; }
+.ix-qnum::before { content: ''; position: absolute; left: 0; right: 0; top: -15px; height: 3px; background: var(--ix-track); }
+.ix-qnum + .ix-qnum::before { left: 2px; }
+.ix-qnum.is-answered::before { background: var(--ix-answered); }
+.ix-qnum:hover { border-color: var(--ix-text); }
+.ix-qnum.is-current { border-color: var(--ix-accent); font-weight: 700; }
+.ix-deliver { flex: 0 0 77px; position: sticky; right: 0; display: grid; place-items: center; border: 0; background: var(--ix-deliver); color: var(--ix-deliver-icon); cursor: pointer; }
+.ix-deliver .iconify { width: 22px; height: 22px; }
+.ix-deliver:hover, .ix-deliver.is-active { background: #333; color: #fff; }
+
+/* ── questions ──────────────────────────────────────────────────────────────────────────── */
+.ix-questions > * + * { margin-top: 40px; }
+.ix-qhead { margin: 0 0 10px; font-size: 1em; font-weight: 700; line-height: 1.15; }
+.ix-instruction { margin: 0 0 12px; line-height: 1.5; }
+.ix-instruction :where(p) { margin: 0 0 0.5em; }
+.ix-qtitle { margin: 24px 0 16px; font-size: 1.1em; font-weight: 700; }
+.ix-item + .ix-item { margin-top: 18px; }
+.ix-prompt { display: flex; align-items: flex-start; gap: 0; margin: 0 0 10px; line-height: 1.5; }
+.ix-prompt > :last-child { flex: 1; min-width: 0; }
+.ix-num { display: inline-block; flex-shrink: 0; margin: 0 4px 0 0; padding: 4px 2px 3px; min-width: 25px; text-align: center; border: 2px solid transparent; border-radius: 3px; font-weight: 700; line-height: 1; }
+.ix-num.is-current { border-color: var(--ix-accent); }
+/* The tick or cross after a question's number on a marked paper. */
+.ix-mark { display: inline-grid; place-items: center; flex-shrink: 0; width: 1.25em; height: 1.25em; margin: 0.1em 6px 0 0; border-radius: 50%; color: #fff; }
+.ix-mark .iconify { width: 0.85em; height: 0.85em; }
+.ix-mark.is-right { background: var(--ix-answered); }
+.ix-mark.is-part { background: #c98a00; }
+.ix-mark.is-wrong { background: var(--ix-brand); }
+
+.ix-options { display: flex; flex-direction: column; }
+.ix-option { position: relative; display: block; padding: 9.6px 8px 9.6px 32px; line-height: 1.5; cursor: pointer; }
+.ix-option input { position: absolute; left: 13px; top: calc(9.6px + 0.75em - 6.5px); width: 13px; height: 13px; margin: 0; accent-color: var(--ix-accent); cursor: pointer; }
+.ix-option:hover { background: var(--ix-option-hover); }
+.ix-option.is-selected { background: var(--ix-option-selected); }
+.ix-option.is-disabled { cursor: default; }
+.ix-option.is-disabled:hover:not(.is-selected) { background: none; }
+.ix-option.is-correct { background: color-mix(in srgb, var(--ix-answered) 22%, transparent); }
+.ix-option.is-wrong { background: color-mix(in srgb, var(--ix-brand) 18%, transparent); }
+/* The right choice, not chosen, while the key is shown. */
+.ix-option.is-key { box-shadow: inset 0 0 0 2px var(--ix-answered); }
+.ix-grid td.is-choice.is-key { box-shadow: inset 0 0 0 2px var(--ix-answered); }
+
+.ix-gap { display: inline-block; width: 11.1em; max-width: 100%; height: 1.4em; margin: 0.8px 4px -1.6px; padding: 0 8px; vertical-align: baseline; font: inherit; color: var(--ix-text); background: var(--ix-bg); border: 1px solid var(--ix-input-border); border-radius: 3px; outline: none; }
+.ix-gap::placeholder { color: var(--ix-text); opacity: 1; font-weight: 700; text-align: center; }
+.ix-gap:focus { border-color: var(--ix-accent); box-shadow: 0 0 0 1px var(--ix-accent); }
+.ix-gap:focus::placeholder { color: transparent; }
+.ix-gap:disabled { opacity: 1; }
+.ix-gap.is-wide { width: min(22em, 100%); margin-left: 0; }
+.ix-gap.is-correct { border-color: var(--ix-answered); box-shadow: 0 0 0 1px var(--ix-answered); }
+.ix-gap.is-wrong { border-color: var(--ix-brand); box-shadow: 0 0 0 1px var(--ix-brand); }
+.ix-key { margin-left: 4px; font-size: 0.85em; font-weight: 700; color: var(--ix-answered); }
+.ix-key.is-block { display: block; margin: 2px 0 4px; }
+.ix-gapline { line-height: 2.25; }
+.ix-gapline.is-bullet { display: list-item; list-style: disc; margin-left: 1.6em; padding-left: 0.2em; }
+.ix-notes-text :where(h1, h2, h3, h4, strong) { font-weight: 700; }
+.ix-notes-text :where(h1, h2, h3, h4) { font-size: 1.1em; margin: 0; display: inline; }
+
+.ix-select { height: 1.6em; min-width: 5em; margin: 0 4px; padding: 0 4px; font: inherit; color: var(--ix-text); background: var(--ix-bg); border: 1px solid var(--ix-input-border); border-radius: 3px; }
+.ix-select:focus { border-color: var(--ix-accent); box-shadow: 0 0 0 1px var(--ix-accent); outline: none; }
+
+/* Drag and drop: the words or headings to move, and the gaps they go into. */
+.ix-tokens-title { margin: 14px 0 6px; font-weight: 700; }
+.ix-tokens { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.ix-tokens.is-inline { flex-direction: row; flex-wrap: wrap; }
+.ix-token { color: inherit; display: inline-block; max-width: 100%; padding: 1px 9px; text-align: left; font-weight: 700; line-height: 22px; background: var(--ix-bg); border: 1px solid var(--ix-text); border-radius: 2px; cursor: grab; user-select: none; }
+.ix-token:hover { background: var(--ix-option-hover); }
+.ix-token.is-picked { background: var(--ix-option-selected); border-color: var(--ix-accent); }
+.ix-token.is-used { visibility: hidden; }
+.ix-drop { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; min-width: 11.1em; min-height: 24px; margin: 0 4px; padding: 0 8px; font-weight: 700; line-height: 22px; text-align: center; border: 1px dashed var(--ix-accent); border-radius: 2px; background: var(--ix-bg); cursor: pointer; }
+.ix-drop.is-block { display: flex; width: min(34em, 100%); margin: 4px 0; }
+.ix-heading-slot { margin: 6px 0 2px; }
+.ix-heading-slot .ix-drop.is-filled { border-color: var(--ix-accent); }
+.ix-drop.is-filled { border-style: solid; border-color: var(--ix-text); justify-content: flex-start; text-align: left; }
+.ix-drop.is-over, .ix-drop:focus-visible { background: var(--ix-option-selected); outline: none; }
+.ix-drop.is-correct { border-color: var(--ix-answered); box-shadow: 0 0 0 1px var(--ix-answered); }
+.ix-drop.is-wrong { border-color: var(--ix-brand); box-shadow: 0 0 0 1px var(--ix-brand); }
+.ix-heading-slot .ix-drop.is-correct { border-color: var(--ix-answered); }
+.ix-heading-slot .ix-drop.is-wrong { border-color: var(--ix-brand); }
+
+/* Tables: the table completion questions and the grids of choices. */
+.ix-table { border-collapse: collapse; margin: 4px 0; max-width: 100%; }
+.ix-table caption { padding: 22px 8px; font-weight: 700; border: 1px solid var(--ix-text); border-bottom: 0; }
+.ix-table th, .ix-table td { padding: 4px 8px; border: 1px solid var(--ix-text); vertical-align: middle; line-height: 24px; }
+.ix-table th { font-weight: 700; text-align: center; }
+.ix-table td.is-rowhead { font-weight: 700; padding-left: 16px; }
+.ix-grid td.is-choice { text-align: center; padding: 0; }
+.ix-grid td.is-choice label { display: grid; place-items: center; min-width: 40px; min-height: 36px; cursor: pointer; }
+.ix-grid td.is-choice:hover { background: var(--ix-option-hover); }
+.ix-grid td.is-choice.is-selected { background: var(--ix-option-selected); }
+.ix-grid td.is-choice.is-correct { background: color-mix(in srgb, var(--ix-answered) 22%, transparent); }
+.ix-grid td.is-choice.is-wrong { background: color-mix(in srgb, var(--ix-brand) 18%, transparent); }
+.ix-grid input { width: 13px; height: 13px; accent-color: var(--ix-accent); }
+.ix-list { margin: 0; padding-left: 1.4em; list-style: disc; }
+.ix-list li { margin: 0 0 10px; line-height: 2.1; }
+.ix-image { max-width: 100%; height: auto; }
+
+/* ── writing ────────────────────────────────────────────────────────────────────────────── */
+.ix-task { font-weight: 700; line-height: 24px; }
+.ix-task :where(p) { margin: 0 0 1.5em; }
+.ix-essay { display: block; width: 100%; height: max(12em, calc(100dvh - 380px)); padding: 9px 12px; font: inherit; line-height: 1.15; color: var(--ix-text); background: var(--ix-bg); border: 1px solid var(--ix-input-border); border-radius: 0; resize: none; outline: none; }
+.ix-essay:focus { border-color: var(--ix-accent); box-shadow: 0 0 0 1px var(--ix-accent); }
+.ix-words { margin-top: 8px; text-align: right; }
+
+/* ── overlays: Play / Start, Options, submission ────────────────────────────────────────── */
+.ix-cover { position: fixed; inset: 0; z-index: 45; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 24px; text-align: center; color: #fff; background: rgba(0, 0, 0, 0.72); }
+.ix-cover p { margin: 0; max-width: 980px; }
+.ix-cover .iconify.is-big { width: 108px; height: 108px; }
+.ix-black-btn { display: inline-flex; align-items: center; gap: 10px; padding: 11px 20px; font-size: 14px; color: #fff; background: #000; border: 1px solid #000; border-radius: 2px; cursor: pointer; }
+.ix-black-btn:hover { background: #222; }
+.ix-black-btn:disabled { opacity: 0.5; cursor: default; }
+.ix-black-btn .iconify { width: 22px; height: 22px; }
+
+.ix-options-page { position: fixed; inset: 0; z-index: 60; overflow-y: auto; padding: 16px; color: var(--ix-text); background: var(--ix-bg); font-family: Arial, Helvetica, sans-serif; font-size: 16px; }
+.ix-options-page h1 { margin: 10px 0 26px; font-size: 28px; font-weight: 400; text-align: center; }
+.ix-options-close, .ix-options-back { position: absolute; top: 14px; width: 40px; height: 40px; display: grid; place-items: center; background: none; border: 0; cursor: pointer; color: var(--ix-text); }
+.ix-options-close { right: 22px; }
+.ix-options-back { left: 22px; }
+.ix-options-close .iconify, .ix-options-back .iconify { width: 30px; height: 30px; }
+.ix-menu { width: min(700px, 100%); margin: 0 auto 16px; border: 1px solid #c8c8c8; border-radius: 4px; overflow: hidden; }
+.ix-menu-item { color: inherit; width: 100%; display: flex; align-items: center; gap: 22px; min-height: 76px; padding: 0 34px 0 38px; text-align: left; background: var(--ix-bg); border: 0; cursor: pointer; }
+.ix-menu-item + .ix-menu-item { border-top: 1px solid #c8c8c8; }
+.ix-menu-item:hover { background: var(--ix-option-hover); }
+.ix-menu-item > .iconify:first-child { width: 22px; height: 22px; color: #a0a0a0; }
+.ix-menu-item > .ix-menu-label { flex: 1; text-align: left; }
+.ix-menu-item > .iconify:last-child { width: 20px; height: 20px; }
+.ix-menu-item.is-primary { color: #fff; background: #e31837; }
+.ix-menu-item.is-primary > .iconify:first-child { color: #fff; }
+.ix-menu.is-primary { border-color: #e31837; }
+.ix-menu-item.is-checked { background: var(--ix-option-selected); }
+
+.ix-submit { width: min(808px, 100%); margin: 0 auto; padding: 22px 16px 40px; display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+.ix-submit-wrap { flex: 1; min-height: 0; overflow-y: auto; border-top: 0; }
+.ix-submit-wrap > hr { margin: 0; border: 0; border-top: 1px solid var(--ix-line); }
+.ix-submit-summary { width: min(808px, 100%); margin: 24px auto; padding: 0 16px; }
+.ix-submit-summary li { margin: 4px 0; }
+
+/* ── Notes ──────────────────────────────────────────────────────────────────────────────── */
+.ix-notes { flex: 0 0 300px; display: flex; flex-direction: column; min-height: 0; background: var(--ix-panel); border-left: 1px solid var(--ix-line); }
+.ix-notes-head { height: 56px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; background: var(--ix-bg); box-shadow: 0 2px 2px rgba(0, 0, 0, 0.15); z-index: 1; }
+.ix-notes-head button { color: inherit; background: none; border: 0; cursor: pointer; display: grid; place-items: center; }
+.ix-notes-list { flex: 1; min-height: 0; overflow-y: auto; }
+.ix-note { padding: 18px 16px 12px; background: var(--ix-bg); border-bottom: 1px solid var(--ix-line); }
+.ix-note-head { margin: 0 0 10px; line-height: 24px; }
+.ix-note-head strong { margin-right: 6px; }
+.ix-note-head em { word-break: break-word; }
+.ix-note textarea { display: block; width: 100%; min-height: 44px; padding: 4px 6px; font: inherit; font-size: 16px; color: var(--ix-text); background: var(--ix-bg); border: 1px solid #aaa; border-radius: 3px; resize: vertical; outline: none; }
+.ix-note textarea:focus { border-color: var(--ix-accent); box-shadow: 0 0 0 1px var(--ix-accent); }
+.ix-note-delete { display: block; margin: 10px 0 0 auto; padding: 0; color: #2a6ebb; background: none; border: 0; cursor: pointer; }
+.ix-note-delete:hover { text-decoration: underline; }
+.ix-note.is-active { color: #fff; background: var(--ix-note-bg); }
+.ix-note.is-active .ix-note-delete, .ix-note.is-active .ix-note-more { color: #fff; }
+.ix-note-quote { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ix-note-quote.is-open { display: block; }
+.ix-note-more { display: block; margin: 0 0 10px; padding: 0; color: #2a6ebb; background: none; border: 0; cursor: pointer; }
+.ix-notes-empty { padding: 18px 16px; color: var(--ix-muted); font-size: 14px; }
+@media (max-width: 767px) {
+  .ix-notes { position: fixed; inset: 0 0 0 auto; width: min(300px, 90vw); z-index: 50; }
+}
+
+/* ── highlights and the Note / Highlight toolbar ────────────────────────────────────────── */
+.ix mark.exam-highlight { background: var(--ix-highlight-bg, #7d4a5a); color: var(--ix-highlight-text, #fff); padding: 0; border-radius: 0; }
+.ix mark.exam-highlight.has-note { background: var(--ix-note-bg, #1e46be); color: #fff; }
+.ix-adder { position: absolute; z-index: 50; display: flex; transform: translateX(-50%); margin-top: 9px; background: #fff; border: 1px solid #737373; border-radius: 4px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25); }
+.ix-adder::before { content: ''; position: absolute; top: -7px; left: 50%; width: 12px; height: 12px; background: #fff; border-left: 1px solid #737373; border-top: 1px solid #737373; transform: translateX(-50%) rotate(45deg); }
+.ix-adder button { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 45px; padding: 10px 10px 7px; font-size: 12px; line-height: 12px; color: #737373; background: none; border: 0; cursor: pointer; }
+.ix-adder button:hover { color: #000; }
+.ix-adder .iconify { width: 16px; height: 16px; }
+
+/* ── scrollbars: square and always shown, as in the test (17px, grey thumb on the page colour) ─ */
+.ix ::-webkit-scrollbar { width: 17px; height: 17px; }
+.ix ::-webkit-scrollbar-track { background: var(--ix-bg); }
+.ix ::-webkit-scrollbar-thumb { background: #999999; border: 0; border-radius: 0; }
+.ix ::-webkit-scrollbar-thumb:hover { background: #7f7f7f; }
+.ix ::-webkit-scrollbar-thumb:active { background: #666666; }
+.ix ::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+.ix ::-webkit-scrollbar-corner { background: var(--ix-bg); }
+/* Firefox has no ::-webkit-scrollbar; Chrome would drop the rules above if these applied to it. */
+@supports (-moz-appearance: none) {
+  .ix, .ix * { scrollbar-width: auto; scrollbar-color: #999999 var(--ix-bg); }
+}
+
+/* ── the marked paper (results → review) ────────────────────────────────────────────────── */
+.ix-sections { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; border: 1px solid var(--ix-text); border-radius: 3px; overflow: hidden; }
+.ix-section { color: inherit; padding: 5px 16px; background: var(--ix-bg); border: 0; cursor: pointer; font-size: 15px; }
+.ix-section + .ix-section { border-left: 1px solid var(--ix-text); }
+.ix-section:hover { background: var(--ix-option-hover); }
+.ix-section.is-current { color: var(--ix-bg); background: var(--ix-text); font-weight: 700; }
+.ix-keyswitch { display: flex; align-items: center; gap: 8px; margin: 0 10px; font-size: 14px; white-space: nowrap; cursor: pointer; }
+.ix-keyswitch input { width: 16px; height: 16px; margin: 0; accent-color: var(--ix-answered); cursor: pointer; }
+.ix-band { margin: 0 8px; font-size: 14px; white-space: nowrap; }
+.ix-band strong { font-size: 18px; margin-left: 2px; }
+a.ix-icon { text-decoration: none; }
+@media (max-width: 900px) {
+  .ix-sections { position: static; transform: none; align-self: center; margin-left: 8px; }
+  .ix-candidate small { display: none; }
+  .ix-keyswitch span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+}
+@media (max-width: 640px) { .ix-candidate { display: none; } .ix-logo { width: auto; } }
+
+/* The strips over the numbers: a mark is green, none is red. */
+.ix-footer.is-review .ix-qnum.is-right::before { background: var(--ix-answered); }
+.ix-footer.is-review .ix-qnum.is-wrong::before { background: var(--ix-brand); }
+.ix-footer.is-review .ix-qnum.is-wrong { color: var(--ix-brand); }
+
+.ix-audio { flex-shrink: 0; margin: -4px 16px 12px; }
+
+/* Why an answer is right, under its questions while the key is shown. */
+.ix-why { margin-top: 16px; padding: 10px 14px; background: var(--ix-rubric-bg); border: 1px solid var(--ix-rubric-border); border-left: 4px solid var(--ix-answered); border-radius: 4px; font-size: 0.9em; line-height: 1.5; }
+.ix-why-title { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; font-weight: 700; }
+.ix-why-item { display: flex; gap: 10px; }
+.ix-why-item + .ix-why-item, .ix-why-text + .ix-why-item { margin-top: 8px; }
+.ix-why-num { flex-shrink: 0; min-width: 1.6em; }
+.ix-why-text :where(p) { margin: 0 0 0.4em; }
+.ix-why-quote { margin: 4px 0 0; padding-left: 8px; font-style: italic; border-left: 2px solid var(--ix-accent); }
+.ix-passage mark { color: inherit; }
+
+/* Writing: the response as it was handed in, and its marks under it. */
+.ix-response { min-height: 12em; padding: 9px 12px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; border: 1px solid var(--ix-input-border); }
+.ix-response-empty { color: var(--ix-muted); font-style: italic; }
+.ix-words.is-short { color: var(--ix-brand); }
+.ix-marks { margin-top: 28px; }
+.ix-marks-table { width: 100%; }
+.ix-marks-table td.is-band { width: 5em; text-align: center; font-weight: 700; }
+.ix-marks-table tr.is-total td { font-weight: 700; background: var(--ix-rubric-bg); }
+.ix-muted { color: var(--ix-muted); font-weight: 400; }
+.ix-feedback { margin: 0; white-space: pre-wrap; line-height: 1.5; }
+.ix-ai-head { display: flex; align-items: center; gap: 12px; }
+.ix-link { margin-left: auto; padding: 0; color: #2a6ebb; background: none; border: 0; cursor: pointer; font-weight: 400; }
+.ix-link:hover { text-decoration: underline; }

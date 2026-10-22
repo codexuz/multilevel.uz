@@ -12,6 +12,8 @@ const { t } = useI18n()
  * attempt kept on the server): the paper comes without keys, answers are kept in this browser as they
  * are given, and handing in checks them. A signed-in candidate's attempt is saved; a guest's result is
  * shown and kept nowhere. A guest's Writing can be downloaded; Speaking can be heard back.
+ * IELTS Listening, Reading and Writing sit on the computer-delivered IELTS screen (components/ix,
+ * from the erp-lms IELTS app); Multilevel on Mockmee's own.
  */
 definePageMeta({ layout: 'exam' })
 
@@ -37,6 +39,7 @@ const parts = computed(() => (section.value?.parts ?? []).map(skill === 'LISTENI
 const writingParts = computed(() => (section.value?.tasks ?? []).map(transformWritingTask))
 const partAudio = computed(() => Object.fromEntries(parts.value.map((p, i) => [i, p.audioUrl]).filter(([, url]) => url)))
 const seconds = computed(() => section.value?.seconds ?? 3600)
+const ielts = computed(() => section.value?.exam === 'IELTS')
 
 // Kept in this browser as they are given: a reload or a lost connection loses nothing.
 const key = `ml.paper.${slug}.${skill}${partNo ? `.${partNo}` : ''}`
@@ -157,7 +160,7 @@ async function finishSpeaking(list: SpeakingRecording[]) {
 /** The question an answer was to (Part 1.1 and 1.2), for the list of recordings. */
 const answerLabel = (r: { partId: string, position: number }) => {
   const p = section.value?.speaking?.find(x => x.id === r.partId)
-  return p && answeredByQuestion(p.partNumber) ? p.questions?.[r.position]?.text ?? '' : ''
+  return p && answeredByQuestion(p.partNumber, p.exam) ? p.questions?.[r.position]?.text ?? '' : ''
 }
 
 const essayExport = computed(() => (section.value?.tasks ?? []).map(t => ({
@@ -424,8 +427,38 @@ const pageError = computed(() => {
       </div>
 
       <template v-else-if="section">
+        <IxListeningExam
+          v-if="ielts && skill === 'LISTENING'"
+          :parts="parts"
+          :audio-url="mediaUrl(section.audioUrl) || undefined"
+          :part-audio-urls="partAudio"
+          :initial-answers="answers"
+          :leave-to="leaveTo"
+          @save-progress="onAnswers"
+          @submit="finishObjective"
+        />
+        <IxReadingExam
+          v-else-if="ielts && skill === 'READING'"
+          :parts="parts"
+          :timer-seconds="seconds"
+          :initial-answers="answers"
+          :leave-to="leaveTo"
+          :auto-start="resumed"
+          @save-progress="onAnswers"
+          @submit="finishObjective"
+        />
+        <IxWritingExam
+          v-else-if="ielts && skill === 'WRITING'"
+          :parts="writingParts"
+          :timer-seconds="seconds"
+          :initial-essays="essays"
+          :leave-to="leaveTo"
+          :auto-start="resumed"
+          @save-progress="onEssays"
+          @submit="finishWriting"
+        />
         <ExamListeningExam
-          v-if="skill === 'LISTENING'"
+          v-else-if="skill === 'LISTENING'"
           :parts="parts"
           :audio-url="mediaUrl(section.audioUrl) || undefined"
           :part-audio-urls="partAudio"

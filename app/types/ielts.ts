@@ -75,6 +75,7 @@ export interface QuestionGroup {
 
 export interface Part {
   id: string
+  exam?: string | null
   skill: 'LISTENING' | 'READING'
   partNumber: number
   title?: string | null
@@ -100,6 +101,8 @@ export interface Part {
 
 export interface WritingTask {
   id: string
+  /** IELTS | MULTILEVEL: how the task is numbered and how long it should be. */
+  exam?: string | null
   taskNumber: number
   module?: IeltsModule | null
   title?: string | null
@@ -114,6 +117,7 @@ export interface WritingTask {
 
 export interface SpeakingPart {
   id: string
+  exam?: string | null
   partNumber: number
   title?: string | null
   cueCard?: string | null
@@ -177,6 +181,8 @@ export interface TestSummary {
   status?: TestStatus
   category?: string | null
   module: IeltsModule
+  /** IELTS | MULTILEVEL, from the module. */
+  exam?: 'IELTS' | 'MULTILEVEL'
   source?: string | null
   publishedAt?: string | null
   updatedAt?: string
@@ -221,6 +227,8 @@ export interface AttemptSummary {
 
 export interface PaperSection {
   skill: Skill
+  /** IELTS sits on the computer-delivered IELTS screen; Multilevel on Mockmee's own. */
+  exam?: 'IELTS' | 'MULTILEVEL'
   title: string | null
   instructions: string | null
   seconds: number

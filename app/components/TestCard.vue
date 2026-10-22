@@ -2,7 +2,7 @@
 // A published test as a tile (SmallTalk2Me's course cards): its level, whether it is free, its
 // title, what is in it, and an illustration. The whole tile links to the test's page, which search
 // engines index.
-const props = defineProps<{ test: { slug: string, title: string, description?: string | null, mode?: string, access?: string, category?: string | null, source?: string | null, sections: { skill: string, questions?: number, items?: number, durationSeconds?: number | null }[] } }>()
+const props = defineProps<{ test: { slug: string, title: string, description?: string | null, mode?: string, access?: string, category?: string | null, source?: string | null, exam?: string, module?: string, sections: { skill: string, questions?: number, items?: number, durationSeconds?: number | null }[] } }>()
 
 const skills = computed(() => props.test.sections.filter(s => (s.items ?? 1) > 0))
 const questions = computed(() => skills.value.reduce((n, s) => n + (s.questions ?? 0), 0))
@@ -20,7 +20,13 @@ const { isPremium } = useMe()
       :class="tileGradient(test.slug)"
     >
       <div class="flex items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-wide">
-        <span class="rounded-sm bg-white/20 px-1.5 py-0.5">{{ test.mode === 'MOCK' ? t('tests.mockExam') : 'B1–C1' }}</span>
+        <span class="flex items-center gap-1">
+          <span class="rounded-sm bg-white/25 px-1.5 py-0.5">{{ examLabel(test.exam, test.module) }}</span>
+          <span
+            v-if="test.mode === 'MOCK'"
+            class="rounded-sm bg-white/15 px-1.5 py-0.5"
+          >{{ t('tests.mockExam') }}</span>
+        </span>
         <span
           v-if="test.access === 'PREMIUM'"
           class="flex items-center gap-1"

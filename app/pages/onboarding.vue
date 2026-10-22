@@ -24,31 +24,47 @@ const DURATIONS = computed(() => [
   { value: '2y+', label: t('onboarding.dMore'), icon: 'i-lucide-graduation-cap' }
 ])
 
+// The exam first: IELTS aims at a band, Multilevel at a level and a score out of 75.
+const { exam: shownExam, setExam } = useExam()
+const exam = ref<Exam | null>(me.value?.exam ?? null)
 const currentLevel = ref<string | null>(me.value?.currentLevel ?? null)
 const learningDuration = ref<string | null>(me.value?.learningDuration ?? null)
 const targetLevel = ref<string | null>(me.value?.targetLevel ?? null)
 const targetScore = ref<number | null>(me.value?.targetScore ?? null)
-const step = ref(0)
+const targetBand = ref<number | null>(me.value?.targetBand ?? null)
+const stepIndex = ref(0)
 const saving = ref(false)
+const BANDS = [5.5, 6, 6.5, 7, 7.5, 8]
 
-const ICONS = ['i-lucide-bar-chart-3', 'i-lucide-clock-3', 'i-lucide-flag', 'i-lucide-target']
-const steps = computed(() => ICONS.map((icon, i) => ({
-  eyebrow: t('onboarding.step', { n: i + 1, of: ICONS.length }),
-  title: t(`onboarding.s${i + 1}Title`),
-  description: t(`onboarding.s${i + 1}Text`),
-  icon
+type StepKey = 'exam' | 'level' | 'duration' | 'targetLevel' | 'targetScore' | 'targetBand'
+const STEP_ICON: Record<StepKey, string> = { exam: 'i-lucide-compass', level: 'i-lucide-bar-chart-3', duration: 'i-lucide-clock-3', targetLevel: 'i-lucide-flag', targetScore: 'i-lucide-target', targetBand: 'i-lucide-target' }
+const STEP_TEXT: Record<StepKey, string> = { exam: 'sExam', level: 's1', duration: 's2', targetLevel: 's3', targetScore: 's4', targetBand: 'sBand' }
+const keys = computed<StepKey[]>(() => (exam.value === 'IELTS'
+  ? ['exam', 'level', 'duration', 'targetBand']
+  : ['exam', 'level', 'duration', 'targetLevel', 'targetScore']))
+const steps = computed(() => keys.value.map((key, i) => ({
+  key,
+  eyebrow: t('onboarding.step', { n: i + 1, of: keys.value.length }),
+  title: t(`onboarding.${STEP_TEXT[key]}Title`),
+  description: t(`onboarding.${STEP_TEXT[key]}Text`),
+  icon: STEP_ICON[key]
 })))
+const step = computed(() => steps.value[stepIndex.value]!.key)
 
-const active = computed(() => steps.value[step.value]!)
-const progress = computed(() => ((step.value + 1) / steps.value.length) * 100)
-const canSubmit = computed(() => !!currentLevel.value && !!learningDuration.value
-  && (!!targetLevel.value || targetScore.value != null))
+const active = computed(() => steps.value[stepIndex.value]!)
+const progress = computed(() => ((stepIndex.value + 1) / steps.value.length) * 100)
+const canSubmit = computed(() => !!exam.value && !!currentLevel.value && !!learningDuration.value
+  && (exam.value === 'IELTS' ? targetBand.value != null : (!!targetLevel.value || targetScore.value != null)))
 const canContinue = computed(() => {
-  if (step.value === 0) return !!currentLevel.value
-  if (step.value === 1) return !!learningDuration.value
-  if (step.value === 2) return true
+  if (step.value === 'exam') return !!exam.value
+  if (step.value === 'level') return !!currentLevel.value
+  if (step.value === 'duration') return !!learningDuration.value
+  if (step.value === 'targetLevel') return true
   return canSubmit.value
 })
+function selectExam(value: Exam) {
+  exam.value = value
+}
 
 function selectCurrentLevel(level: string) {
   currentLevel.value = level
@@ -68,15 +84,15 @@ function selectTargetScore(score: number) {
 
 function next() {
   if (!canContinue.value) return
-  if (step.value < steps.value.length - 1) {
-    step.value += 1
+  if (stepIndex.value < steps.value.length - 1) {
+    stepIndex.value += 1
     return
   }
   submit()
 }
 
 function back() {
-  if (step.value > 0) step.value -= 1
+  if (stepIndex.value > 0) stepIndex.value -= 1
 }
 
 function skipTargetLevel() {
@@ -98,10 +114,13 @@ async function submit() {
       body: {
         currentLevel: currentLevel.value,
         learningDuration: learningDuration.value,
-        targetLevel: targetLevel.value,
-        targetScore: targetScore.value
+        exam: exam.value,
+        targetLevel: exam.value === 'IELTS' ? null : targetLevel.value,
+        targetScore: exam.value === 'IELTS' ? null : targetScore.value,
+        targetBand: exam.value === 'IELTS' ? targetBand.value : null
       }
     })
+    if (exam.value && exam.value !== shownExam.value) await setExam(exam.value)
     await refresh()
     await navigateTo(typeof route.query.next === 'string' && route.query.next.startsWith('/') && !route.query.next.startsWith('//') ? route.query.next : '/tests')
   } catch {
@@ -116,7 +135,7 @@ async function submit() {
   <UContainer class="flex min-h-[calc(100vh-8rem)] max-w-2xl items-center py-8">
     <div class="w-full space-y-6">
       <UAlert
-        v-if="otherWay && step === 0"
+        v-if="otherWay && stepIndex === 0"
         color="neutral"
         variant="subtle"
         icon="i-lucide-combine"
@@ -145,7 +164,7 @@ async function submit() {
           <UBadge
             color="neutral"
             variant="subtle"
-            :label="`${step + 1}/${steps.length}`"
+            :label="`${stepIndex + 1}/${steps.length}`"
           />
         </div>
         <UProgress
@@ -161,7 +180,28 @@ async function submit() {
 
         <div class="mt-6">
           <div
-            v-if="step === 0"
+            v-if="step === 'exam'"
+            class="grid gap-3 sm:grid-cols-2"
+          >
+            <button
+              v-for="e in (['IELTS', 'MULTILEVEL'] as const)"
+              :key="e"
+              type="button"
+              class="flex flex-col items-start gap-2 rounded-xl p-5 text-left ring transition-colors focus-visible:outline-2 focus-visible:outline-primary"
+              :class="exam === e ? 'ring-2 ring-primary bg-primary/5' : 'ring-default hover:bg-elevated/60'"
+              @click="selectExam(e)"
+            >
+              <UIcon
+                :name="e === 'IELTS' ? 'i-lucide-globe-2' : 'i-lucide-flag'"
+                class="size-7 text-primary"
+              />
+              <span class="text-lg font-bold text-highlighted">{{ e === 'IELTS' ? 'IELTS' : 'Multilevel' }}</span>
+              <span class="text-sm text-muted">{{ e === 'IELTS' ? t('onboarding.ieltsText') : t('onboarding.multilevelText') }}</span>
+            </button>
+          </div>
+
+          <div
+            v-else-if="step === 'level'"
             class="grid grid-cols-2 gap-3 sm:grid-cols-5"
           >
             <UButton
@@ -176,7 +216,7 @@ async function submit() {
           </div>
 
           <div
-            v-else-if="step === 1"
+            v-else-if="step === 'duration'"
             class="grid gap-3"
           >
             <UButton
@@ -193,7 +233,22 @@ async function submit() {
           </div>
 
           <div
-            v-else-if="step === 2"
+            v-else-if="step === 'targetBand'"
+            class="grid grid-cols-3 gap-3 sm:grid-cols-6"
+          >
+            <UButton
+              v-for="band in BANDS"
+              :key="band"
+              class="h-20 justify-center text-lg font-semibold"
+              :color="targetBand === band ? 'primary' : 'neutral'"
+              :variant="targetBand === band ? 'solid' : 'subtle'"
+              :label="band.toFixed(1)"
+              @click="targetBand = band"
+            />
+          </div>
+
+          <div
+            v-else-if="step === 'targetLevel'"
             class="space-y-4"
           >
             <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -255,14 +310,14 @@ async function submit() {
           variant="ghost"
           icon="i-lucide-arrow-left"
           :label="t('common.back')"
-          :disabled="step === 0 || saving"
+          :disabled="stepIndex === 0 || saving"
           @click="back"
         />
         <UButton
           size="lg"
           :loading="saving"
           :disabled="!canContinue || saving"
-          :label="step === steps.length - 1 ? t('onboarding.startLearning') : t('common.continue')"
+          :label="stepIndex === steps.length - 1 ? t('onboarding.startLearning') : t('common.continue')"
           trailing-icon="i-lucide-arrow-right"
           @click="next"
         />

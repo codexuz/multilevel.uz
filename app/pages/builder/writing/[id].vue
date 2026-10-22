@@ -2,7 +2,10 @@
 import type { WritingTask } from '~/types/ielts'
 import { libraryAPI } from '~/services/ielts'
 
-/** A Writing task: Task 1.1 (an informal letter), Task 1.2 (a formal letter) or Task 2 (an essay), with its word minimum. */
+/**
+ * A Writing task with its word minimum. Multilevel: Task 1.1 (an informal letter), Task 1.2 (a formal
+ * letter) or Task 2 (an essay). IELTS: Task 1 (a chart or a letter) or Task 2 (an essay).
+ */
 definePageMeta({ middleware: 'admin' })
 
 const route = useRoute()
@@ -12,7 +15,7 @@ const id = computed(() => String(route.params.id))
 const back = computed(() => (route.query.test ? `/builder/tests/${route.query.test}` : '/builder?tab=writing'))
 
 const { data: task, status, error } = useAsyncData<WritingTask>(() => `writing:${id.value}`, () => libraryAPI.writingTask(id.value), { watch: [id] })
-useSeoMeta({ title: () => `${task.value?.title || `Writing ${writingTaskLabel(task.value?.taskNumber)}`} — Builder`, robots: 'noindex' })
+useSeoMeta({ title: () => `${task.value?.title || `Writing ${writingTaskLabel(task.value?.taskNumber, task.value?.exam)}`} — Builder`, robots: 'noindex' })
 
 const form = reactive({ taskNumber: 3 as 1 | 2 | 3, title: '', prompt: '', imageRef: null as string | null, minWords: null as number | null, suggestedMinutes: null as number | null })
 const editorKey = ref(0)
@@ -47,7 +50,7 @@ const saveLabel = computed(() => ({ idle: '', dirty: 'Unsaved changes', saving: 
 
 <template>
   <AppPage
-    :title="task ? (task.title || `Writing ${writingTaskLabel(task.taskNumber)}`) : 'Writing task'"
+    :title="task ? (task.title || `Writing ${writingTaskLabel(task.taskNumber, task.exam)}`) : 'Writing task'"
     :back="back"
     wide
   >
@@ -124,18 +127,18 @@ const saveLabel = computed(() => ({ idle: '', dirty: 'Unsaved changes', saving: 
           </UFormField>
           <UFormField
             label="Task"
-            help="Task 1.1 and 1.2 share one situation; put it in both questions."
+            :help="task?.exam === 'IELTS' ? 'Task 1: Academic describes a chart or diagram, General Training is a letter. Task 2 is an essay.' : 'Task 1.1 and 1.2 share one situation; put it in both questions.'"
           >
             <USelect
               v-model="form.taskNumber"
-              :items="[1, 2, 3].map(n => ({ label: writingTaskLabel(n), value: n }))"
+              :items="partNumbersOf(task?.exam, 'WRITING').map(n => ({ label: writingTaskLabel(n, task?.exam), value: n }))"
               class="w-full"
             />
           </UFormField>
           <div class="grid grid-cols-2 gap-3">
             <UFormField
               label="Minimum words"
-              :help="`Default ${writingDefaults(form.taskNumber).minWords}`"
+              :help="`Default ${writingDefaults(form.taskNumber, task?.exam).minWords}`"
             >
               <UInputNumber
                 v-model="form.minWords"
@@ -146,7 +149,7 @@ const saveLabel = computed(() => ({ idle: '', dirty: 'Unsaved changes', saving: 
             </UFormField>
             <UFormField
               label="Minutes"
-              :help="`Default ${writingDefaults(form.taskNumber).minutes}`"
+              :help="`Default ${writingDefaults(form.taskNumber, task?.exam).minutes}`"
             >
               <UInputNumber
                 v-model="form.suggestedMinutes"

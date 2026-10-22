@@ -25,18 +25,22 @@ interface Review {
   id: string
   status: 'PENDING' | 'DONE' | 'FAILED'
   score: number | null
+  /** IELTS: the band, with the criteria marked out of 9 (`scale`). */
+  band?: number | null
+  scale?: number
   cefrLevel: string | null
   error: string | null
   summary?: string
   strengths?: string[]
   priorities?: string[]
-  tasks?: { taskId: string, label: string, wordCount: number, minWords: number, criteria: Record<string, number>, level: string | null, comment: string, corrections: Correction[], betterSentence: string }[]
+  tasks?: { taskId: string, label: string, wordCount: number, minWords: number, criteria: Record<string, number>, band?: number | null, level: string | null, comment: string, corrections: Correction[], betterSentence: string }[]
   parts?: {
     partId: string
     label: string
     durationSeconds: number | null
     transcript: string
     criteria: Record<string, number>
+    band?: number | null
     /** CEFR sub-levels per criterion (reviews since answers are marked one by one). */
     labels?: Record<string, string>
     level: string | null
@@ -113,18 +117,21 @@ const leftText = computed(() => {
   return a.period === 'day' ? tr('ai.leftToday', { left: a.left, limit: a.limit }) : tr('ai.leftMonth', { left: a.left, limit: a.limit })
 })
 const speaking = computed(() => !!review.value?.parts || props.skill === 'SPEAKING')
+// IELTS marks each criterion as a band out of 9, under the IELTS names.
+const outOf = computed(() => review.value?.scale ?? 5)
+const ielts = computed(() => outOf.value === 9)
 const CRITERIA = computed(() => speaking.value
-  ? ['fluency', 'vocabulary', 'grammar', 'pronunciation', 'taskAchievement'].map(key => ({ key, label: tr(`criterion.${key}`) }))
-  : ['taskAchievement', 'organisation', 'vocabulary', 'grammar'].map(key => ({ key, label: tr(`criterion.${key}`) })))
+  ? ['fluency', 'vocabulary', 'grammar', 'pronunciation', 'taskAchievement'].map(key => ({ key, label: tr(ielts.value ? `ieltsCriterion.${key}` : `criterion.${key}`) }))
+  : ['taskAchievement', 'organisation', 'vocabulary', 'grammar'].map(key => ({ key, label: tr(ielts.value ? `ieltsCriterion.${key}` : `criterion.${key}`) })))
 /** Tasks or parts, alike: what each card shows. */
 const items = computed(() => review.value?.parts
   ? review.value.parts.map(p => ({
-      id: p.partId, label: p.label, level: p.level, criteria: p.criteria, labels: p.labels, comment: p.comment, corrections: p.corrections, better: p.betterAnswer,
+      id: p.partId, label: p.label, band: p.band ?? null, level: p.level, criteria: p.criteria, labels: p.labels, comment: p.comment, corrections: p.corrections, better: p.betterAnswer,
       meta: p.durationSeconds ? `${p.durationSeconds}s` : '', warn: false, transcript: p.transcript,
       answers: p.answers ?? [], upgrades: p.upgrades ?? [], tips: p.pronunciationTips ?? []
     }))
   : (review.value?.tasks ?? []).map(t => ({
-      id: t.taskId, label: t.label, level: t.level, criteria: t.criteria, labels: undefined as Record<string, string> | undefined, comment: t.comment, corrections: t.corrections, better: t.betterSentence,
+      id: t.taskId, label: t.label, band: t.band ?? null, level: t.level, criteria: t.criteria, labels: undefined as Record<string, string> | undefined, comment: t.comment, corrections: t.corrections, better: t.betterSentence,
       meta: tr('ai.wordsOf', { n: t.wordCount, min: t.minWords }), warn: t.wordCount < t.minWords, transcript: null as string | null,
       answers: [] as NonNullable<NonNullable<Review['parts']>[number]['answers']>, upgrades: [] as { basic: string, better: string, example: string }[], tips: [] as string[]
     })))
@@ -229,7 +236,16 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? tr('common.b
         </div>
         <div class="rounded-xl bg-gradient-to-br from-[#5870f5] to-[#8b9cff] px-6 py-5 text-white flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
           <div>
-            <p class="text-5xl font-bold tabular-nums leading-none whitespace-nowrap">
+            <p
+              v-if="review.band != null"
+              class="text-5xl font-bold tabular-nums leading-none whitespace-nowrap"
+            >
+              <span class="text-xl font-semibold opacity-80 me-2">{{ tr('result.band') }}</span>{{ fmtBand(review.band) }}
+            </p>
+            <p
+              v-else
+              class="text-5xl font-bold tabular-nums leading-none whitespace-nowrap"
+            >
               {{ review.score }}<span class="text-xl font-semibold opacity-80"> / 75</span>
             </p>
             <p class="mt-2 font-medium">
@@ -237,7 +253,7 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? tr('common.b
             </p>
           </div>
           <p class="text-xs text-white/80 sm:text-right sm:max-w-44">
-            {{ tr('ai.guide') }}
+            {{ review.band != null ? tr('ai.guideIelts') : tr('ai.guide') }}
           </p>
         </div>
         <p
@@ -293,6 +309,13 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? tr('common.b
           <div class="flex items-center gap-2">
             <span class="font-semibold">{{ t.label }}</span>
             <UBadge
+              v-if="t.band != null"
+              :label="`${tr('result.band')} ${fmtBand(t.band)}`"
+              color="primary"
+              variant="solid"
+              size="sm"
+            />
+            <UBadge
               v-if="t.level"
               :label="levelText(t.level)"
               color="primary"
@@ -318,12 +341,12 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? tr('common.b
                   <span
                     v-if="t.labels?.[c.key] && t.labels[c.key] !== 'none'"
                     class="text-xs font-medium text-primary me-1.5"
-                  >{{ t.labels[c.key] }}</span>{{ t.criteria[c.key] }}/5</span>
+                  >{{ t.labels[c.key] }}</span>{{ t.criteria[c.key] }}/{{ outOf }}</span>
               </div>
               <div class="h-1.5 rounded-full bg-elevated overflow-hidden">
                 <div
                   class="h-full rounded-full bg-primary"
-                  :style="{ width: `${(t.criteria[c.key] ?? 0) * 20}%` }"
+                  :style="{ width: `${((t.criteria[c.key] ?? 0) / outOf) * 100}%` }"
                 />
               </div>
             </li>

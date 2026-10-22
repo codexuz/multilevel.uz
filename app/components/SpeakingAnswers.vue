@@ -5,13 +5,13 @@
  * they were kept one by one (a single recording for the whole part) are shown under the part.
  */
 const props = defineProps<{
-  part: { id: string, partNumber: number, cueCard?: string | null, imageUrl?: string | null, questions?: { id: string, text: string }[] }
+  part: { id: string, partNumber: number, exam?: string | null, cueCard?: string | null, imageUrl?: string | null, questions?: { id: string, text: string }[] }
   recordings: { partId: string, position?: number, audioUrl: string }[]
   emptyText: string
 }>()
 
 const mine = computed(() => props.recordings.filter(r => r.partId === props.part.id))
-const byQuestion = computed(() => answeredByQuestion(props.part.partNumber) && (props.part.questions?.length ?? 0) > 0 && mine.value.length > 1)
+const byQuestion = computed(() => answeredByQuestion(props.part.partNumber, props.part.exam) && (props.part.questions?.length ?? 0) > 0 && mine.value.length > 1)
 const at = (position: number) => mine.value.find(r => (r.position ?? 0) === position)
 </script>
 

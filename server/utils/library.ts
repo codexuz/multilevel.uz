@@ -25,6 +25,14 @@ const optional = <T>(value: T | undefined, fallback: T) => (value === undefined 
 const bad = (message: string) => createError({ statusCode: 400, message })
 const conflict = (message: string) => createError({ statusCode: 409, message })
 const notFound = (message: string) => createError({ statusCode: 404, message })
+/** The exam a library item or a filter is for: IELTS, or Multilevel when not said. */
+const examFrom = (value: unknown): Exam => (isExam(value) ? value : 'MULTILEVEL')
+/** A filter on an item's exam, when one is asked for. */
+const examFilter = (column: any, value: unknown) => (isExam(value) ? eq(column, value) : undefined)
+/** Tests of an exam: IELTS ones are Academic or General Training. */
+const testExamFilter = (value: unknown) => value === 'IELTS'
+  ? inArray(tests.module, [...IELTS_MODULES])
+  : value === 'MULTILEVEL' ? eq(tests.module, 'MULTILEVEL') : undefined
 
 // ─── Parts ───────────────────────────────────────────────────────────────────────────────
 
@@ -32,6 +40,7 @@ export async function listParts(query: Body) {
   const db = useDb()
   const { page, limit, offset } = paging(query)
   const where = and(
+    examFilter(parts.exam, query.exam),
     query.skill ? eq(parts.skill, String(query.skill)) : undefined,
     query.partNumber ? eq(parts.partNumber, Number(query.partNumber)) : undefined,
     query.difficulty ? eq(parts.difficulty, String(query.difficulty)) : undefined,
@@ -84,17 +93,18 @@ export async function getPart(id: string) {
   return { ...partView(part, true), tests: placed, answered: await answeredInPart(id) }
 }
 
-function checkPartNumber(skill: string, partNumber: number) {
-  const limit = skill === 'READING' ? FORMAT.READING.parts : FORMAT.LISTENING.parts
-  if (!Number.isInteger(partNumber) || partNumber < 1 || partNumber > limit) throw bad(`${skill === 'READING' ? 'Reading' : 'Listening'} has parts 1–${limit}`)
+function checkPartNumber(skill: string, partNumber: number, exam: Exam) {
+  const limit = partNumbersOf(exam, skill).length
+  if (!Number.isInteger(partNumber) || partNumber < 1 || partNumber > limit) throw bad(`${exam === 'IELTS' ? 'IELTS' : 'Multilevel'} ${skill === 'READING' ? 'Reading' : 'Listening'} has parts 1–${limit}`)
 }
 
 export async function createPart(body: Body, userId: string) {
   if (body.skill !== 'LISTENING' && body.skill !== 'READING') throw bad('A part is Listening or Reading')
-  checkPartNumber(body.skill, Number(body.partNumber))
+  const exam = examFrom(body.exam)
+  checkPartNumber(body.skill, Number(body.partNumber), exam)
   const db = useDb()
   const [part] = await db.insert(parts).values({
-    skill: body.skill, partNumber: Number(body.partNumber), title: text(body.title),
+    exam, skill: body.skill, partNumber: Number(body.partNumber), title: text(body.title),
     passage: body.skill === 'READING' ? body.passage ?? null : null,
     audioRef: body.skill === 'LISTENING' ? body.audioRef ?? null : null,
     transcriptRef: body.skill === 'LISTENING' ? body.transcriptRef ?? null : null,
@@ -105,7 +115,7 @@ export async function createPart(body: Body, userId: string) {
 
 export async function updatePart(id: string, body: Body) {
   const part = await partRow(id)
-  if (body.partNumber) checkPartNumber(part.skill, Number(body.partNumber))
+  if (body.partNumber) checkPartNumber(part.skill, Number(body.partNumber), examFrom(part.exam))
   const db = useDb()
   await db.update(parts).set({
     ...(body.partNumber ? { partNumber: Number(body.partNumber) } : {}),
@@ -259,6 +269,7 @@ export async function listWritingTasks(query: Body) {
   const { page, limit, offset } = paging(query)
   const search = query.search?.trim()
   const where = and(
+    examFilter(writingTasks.exam, query.exam),
     query.taskNumber ? eq(writingTasks.taskNumber, Number(query.taskNumber)) : undefined,
     search ? or(ilike(writingTasks.title, `%${search}%`), ilike(writingTasks.prompt, `%${search}%`)) : undefined
   )
@@ -279,16 +290,18 @@ async function writingTaskRow(id: string) {
 
 export const getWritingTask = async (id: string) => writingTaskView(await writingTaskRow(id))
 
-function checkTaskNumber(n: number) {
-  if (![1, 2, 3].includes(n)) throw bad('Writing tasks are 1 (Task 1.1), 2 (Task 1.2) and 3 (Task 2)')
+function checkTaskNumber(n: number, exam: Exam) {
+  const numbers = partNumbersOf(exam, 'WRITING')
+  if (!numbers.includes(n)) throw bad(`Writing tasks are ${numbers.map(x => `${x} (${taskName(exam, x)})`).join(', ')}`)
 }
 
 export async function createWritingTask(body: Body, userId: string) {
-  checkTaskNumber(Number(body.taskNumber))
+  const exam = examFrom(body.exam)
+  checkTaskNumber(Number(body.taskNumber), exam)
   if (!text(body.prompt)) throw bad('The task needs its question')
   const db = useDb()
   const [task] = await db.insert(writingTasks).values({
-    taskNumber: Number(body.taskNumber), module: body.module ?? null, title: text(body.title), prompt: body.prompt,
+    exam, taskNumber: Number(body.taskNumber), module: body.module ?? null, title: text(body.title), prompt: body.prompt,
     imageRef: body.imageRef ?? null, minWords: body.minWords ?? null, suggestedMinutes: body.suggestedMinutes ?? null, createdById: userId
   }).returning({ id: writingTasks.id })
   return getWritingTask(task!.id)
@@ -296,7 +309,7 @@ export async function createWritingTask(body: Body, userId: string) {
 
 export async function updateWritingTask(id: string, body: Body) {
   const task = await writingTaskRow(id)
-  if (body.taskNumber !== undefined) checkTaskNumber(Number(body.taskNumber))
+  if (body.taskNumber !== undefined) checkTaskNumber(Number(body.taskNumber), examFrom(task.exam))
   const db = useDb()
   await db.update(writingTasks).set({
     taskNumber: optional(body.taskNumber === undefined ? undefined : Number(body.taskNumber), task.taskNumber),
@@ -325,6 +338,7 @@ export async function listSpeakingParts(query: Body) {
   const { page, limit, offset } = paging(query)
   const search = query.search?.trim()
   const where = and(
+    examFilter(speakingParts.exam, query.exam),
     query.partNumber ? eq(speakingParts.partNumber, Number(query.partNumber)) : undefined,
     search ? or(ilike(speakingParts.title, `%${search}%`), ilike(speakingParts.cueCard, `%${search}%`)) : undefined
   )
@@ -344,7 +358,10 @@ export async function getSpeakingPart(id: string) {
 
 export async function saveSpeakingPart(id: string | null, body: Body, userId: string) {
   const partNumber = Number(body.partNumber)
-  if (![1, 2, 3, 4].includes(partNumber)) throw bad('Speaking parts are 1 (Part 1.1), 2 (Part 1.2), 3 (Part 2) and 4 (Part 3)')
+  // A part keeps the exam it was written for; a new one takes the one asked for.
+  const exam = id ? examFrom((await getSpeakingPart(id)).exam) : examFrom(body.exam)
+  const numbers = partNumbersOf(exam, 'SPEAKING')
+  if (!numbers.includes(partNumber)) throw bad(`Speaking parts are ${numbers.map(x => `${x} (${speakingPartName(exam, x)})`).join(', ')}`)
   const values = {
     partNumber, title: text(body.title), cueCard: body.cueCard ?? null, imageRef: body.imageRef ?? null,
     prepSeconds: body.prepSeconds ?? null, speakSeconds: body.speakSeconds ?? null
@@ -359,7 +376,7 @@ export async function saveSpeakingPart(id: string | null, body: Body, userId: st
       if (questions.length) await tx.insert(speakingQuestions).values(questions.map((t: string, i: number) => ({ partId: id, text: t, position: i + 1 })))
       return id
     }
-    const [part] = await tx.insert(speakingParts).values({ ...values, createdById: userId }).returning({ id: speakingParts.id })
+    const [part] = await tx.insert(speakingParts).values({ ...values, exam, createdById: userId }).returning({ id: speakingParts.id })
     if (questions.length) await tx.insert(speakingQuestions).values(questions.map((t: string, i: number) => ({ partId: part!.id, text: t, position: i + 1 })))
     return part!.id
   })
@@ -387,6 +404,8 @@ function catalogFilters(query: Body) {
   const skill = SKILL_NAMES.includes(String(query.skill)) ? String(query.skill) : null
   const type = query.type && IELTS_QUESTION_TYPES[String(query.type)] ? String(query.type) : null
   return [
+    testExamFilter(query.exam),
+    isIeltsModule(query.module) ? eq(tests.module, String(query.module)) : undefined,
     skill ? sql`exists (select 1 from ${sections} s join ${sectionItems} si on si.section_id = s.id where s.test_id = ${tests.id} and s.skill = ${skill})` : undefined,
     type ? sql`exists (select 1 from ${sections} s join ${sectionItems} si on si.section_id = s.id join ${questionGroups} g on g.part_id = si.part_id where s.test_id = ${tests.id} and g.type = ${type})` : undefined,
     query.access === 'FREE' || query.access === 'PREMIUM' ? eq(tests.access, String(query.access)) : undefined
@@ -411,6 +430,7 @@ export async function listPracticeParts(query: Body) {
   const itemNo = sql<number>`coalesce(${parts.partNumber}, ${writingTasks.taskNumber}, ${speakingParts.partNumber})`
   const where = and(
     eq(tests.status, 'PUBLISHED'),
+    testExamFilter(query.exam),
     skill ? eq(sections.skill, skill) : undefined,
     number ? sql`${itemNo} = ${number}` : undefined,
     type ? sql`exists (select 1 from ${questionGroups} g where g.part_id = ${sectionItems.partId} and g.type = ${type})` : undefined,
@@ -449,8 +469,9 @@ export async function listPracticeParts(query: Body) {
       title: r.parts?.title ?? r.writing_tasks?.title ?? r.speaking_parts?.title ?? null,
       questions: own.reduce((n, g) => n + g.n, 0),
       types: [...new Set(own.map(g => g.type))],
-      minWords: r.writing_tasks ? minimumWordsFor(r.writing_tasks.taskNumber, r.writing_tasks.minWords) : null,
-      test: { id: r.tests.id, slug: r.tests.slug, title: r.tests.title, access: r.tests.access }
+      exam: examOfModule(r.tests.module),
+      minWords: r.writing_tasks ? minimumWordsFor(r.writing_tasks) : null,
+      test: { id: r.tests.id, slug: r.tests.slug, title: r.tests.title, access: r.tests.access, module: r.tests.module }
     }
   })
   return paged(items, total?.n ?? 0, page, limit)
@@ -493,13 +514,17 @@ export async function getTest(id: string) {
 }
 
 const MODES = ['PRACTICE', 'MOCK']
-const CATEGORIES = ['AUTHENTIC', 'CAMBRIDGE', 'PRE_TEST', 'CUSTOM']
+// The builder's categories (CATEGORY_ITEMS): Multilevel samples and books, IELTS's Cambridge books and pre-tests.
+const CATEGORIES = ['AUTHENTIC', 'CAMBRIDGE', 'OFFICIAL', 'BOOK', 'PRE_TEST', 'CUSTOM']
+/** MULTILEVEL, or an IELTS module (ACADEMIC, GENERAL_TRAINING). */
+const moduleFrom = (value: unknown) => (isIeltsModule(value) ? value : 'MULTILEVEL')
 
 export async function createTest(body: Body, userId: string) {
   const title = text(body.title)
   if (!title) throw bad('The test needs a title')
   const db = useDb()
   const [test] = await db.insert(tests).values({
+    module: moduleFrom(body.module),
     slug: await uniqueSlug(title), title, description: text(body.description),
     mode: MODES.includes(body.mode) ? body.mode : 'PRACTICE', category: CATEGORIES.includes(body.category) ? body.category : null,
     source: text(body.source), createdById: userId
@@ -517,8 +542,14 @@ export async function updateTest(id: string, body: Body) {
     const [taken] = await db.select({ id: tests.id }).from(tests).where(and(eq(tests.slug, slug), ne(tests.id, id))).limit(1)
     if (taken) throw conflict('Another test already uses this address')
   }
+  // Academic and General Training swap freely; moving to the other exam only while the test is empty
+  // (its parts are numbered and scored for the exam it is).
+  const module = body.module !== undefined ? moduleFrom(body.module) : test.module
+  if (examOfModule(module) !== examOfModule(test.module) && test.sections.some((s: any) => s.items?.length)) {
+    throw bad('Empty the test first: its parts are written for the other exam')
+  }
   await db.update(tests).set({
-    title, slug,
+    title, slug, module,
     description: body.description !== undefined ? text(body.description) : test.description,
     mode: MODES.includes(body.mode) ? body.mode : test.mode,
     access: body.access === 'PREMIUM' || body.access === 'FREE' ? body.access : test.access,
@@ -628,19 +659,23 @@ export async function addItem(testId: string, skillName: string, body: Body) {
   const skill = checkSkill(skillName)
   const given = [body.partId, body.writingTaskId, body.speakingPartId].filter(Boolean)
   if (given.length !== 1) throw bad('Choose one part, writing task or speaking part')
-  await loadTest({ id: testId })
+  const test = await loadTest({ id: testId })
+  const exam = examOfTest(test)
+  let itemExam: string = exam
   if (body.partId) {
     const part = await partRow(body.partId)
     if (part.skill !== skill) throw bad(`This is not a ${skill.toLowerCase()} part`)
+    itemExam = part.exam
   }
   if (body.writingTaskId) {
     if (skill !== 'WRITING') throw bad('A writing task goes in the Writing section')
-    await writingTaskRow(body.writingTaskId)
+    itemExam = (await writingTaskRow(body.writingTaskId)).exam
   }
   if (body.speakingPartId) {
     if (skill !== 'SPEAKING') throw bad('A speaking part goes in the Speaking section')
-    await getSpeakingPart(body.speakingPartId)
+    itemExam = (await getSpeakingPart(body.speakingPartId)).exam
   }
+  if (itemExam !== exam) throw bad(`This is written for ${itemExam === 'IELTS' ? 'IELTS' : 'Multilevel'}; the test is ${exam === 'IELTS' ? 'IELTS' : 'Multilevel'}`)
   const sectionId = await upsertSection(testId, skill)
   const db = useDb()
   const [duplicate] = await db.select({ id: sectionItems.id }).from(sectionItems).where(and(

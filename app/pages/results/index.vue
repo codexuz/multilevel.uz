@@ -3,7 +3,7 @@
 const { t } = useI18n()
 useSeoMeta({ title: () => t('nav.results'), robots: 'noindex' })
 
-interface Row { id: string, skill: string, partNumber: number | null, status: string, test: { slug: string, title: string } | null, submittedAt: string, correct: number | null, total: number | null, score: number | null, cefrLevel: string | null }
+interface Row { id: string, skill: string, exam?: string, partNumber: number | null, status: string, test: { slug: string, title: string } | null, submittedAt: string, correct: number | null, total: number | null, score: number | null, band?: number | null, cefrLevel: string | null }
 
 const page = ref(1)
 const { data, status } = await useFetch<{ items: Row[], total: number, pages: number }>('/api/me/attempts', { query: { page, limit: 20 }, lazy: true })
@@ -70,17 +70,17 @@ const { data, status } = await useFetch<{ items: Row[], total: number, pages: nu
           <div class="min-w-0 flex-1">
             <p class="font-medium text-highlighted truncate">{{ r.test?.title || 'Removed test' }}</p>
             <p class="text-xs text-muted truncate">
-              {{ skillLabel(r.skill) }}{{ r.partNumber ? ` ${partName(r.skill, r.partNumber)}` : '' }} · {{ relativeTime(r.submittedAt) }}<span v-if="r.total"> · {{ t('results.correctOf', { correct: r.correct, total: r.total }) }}</span>
+              {{ r.exam === 'IELTS' ? 'IELTS · ' : '' }}{{ skillLabel(r.skill) }}{{ r.partNumber ? ` ${partName(r.skill, r.partNumber, r.exam)}` : '' }} · {{ relativeTime(r.submittedAt) }}<span v-if="r.total"> · {{ t('results.correctOf', { correct: r.correct, total: r.total }) }}</span>
             </p>
           </div>
           <div
-            v-if="r.score != null"
+            v-if="hasResult(r)"
             class="text-right shrink-0"
           >
-            <p class="text-lg font-bold text-highlighted tabular-nums leading-none">{{ fmtScore(r.score) }}<span class="text-xs font-medium text-muted">/75</span></p>
+            <p class="text-lg font-bold text-highlighted tabular-nums leading-none">{{ fmtResult(r) }}<span class="text-xs font-medium text-muted">{{ r.band != null ? '' : '/75' }}</span></p>
             <UBadge
-              :label="(r.cefrLevel ?? cefrOf(r.score)) === 'A2' ? t('common.belowB1') : (r.cefrLevel ?? cefrOf(r.score))!"
-              :color="scoreColor(r.score)"
+              :label="resultLevel(r) === 'A2' ? t('common.belowB1') : resultLevel(r)!"
+              :color="resultColor(r)"
               variant="soft"
               size="sm"
               class="mt-1"

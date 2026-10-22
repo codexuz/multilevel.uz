@@ -6,6 +6,8 @@ export interface LiveMock {
   state: 'UPCOMING' | 'LIVE' | 'ENDED'
   test: { slug: string, title: string } | null
   skills: string[]
+  /** IELTS ranks on bands, Multilevel on scores out of 75. */
+  exam?: 'IELTS' | 'MULTILEVEL'
 }
 
 /** The live mock open now and the next one, shared by the menu and the Tests page. */

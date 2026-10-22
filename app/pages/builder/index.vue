@@ -4,7 +4,8 @@ import { libraryAPI } from '~/services/ielts'
 
 /**
  * The library (the IELTS addon's builder). Parts, writing tasks and speaking parts are written once
- * and reused; a test is a paper put together from them, section by section.
+ * and reused; a test is a paper put together from them, section by section. One exam at a time:
+ * IELTS and Multilevel number their parts and tasks differently, so each has its own library.
  */
 definePageMeta({ middleware: 'admin' })
 useSeoMeta({ title: 'Test builder', robots: 'noindex' })
@@ -39,19 +40,20 @@ watch(search, (v) => {
 })
 // 'ALL' rather than empty: a select cannot hold an empty value.
 const testStatus = ref('ALL')
-watch([tab, q, testStatus], () => (page.value = 1))
+const { exam, setExam } = useExam()
+watch([tab, q, testStatus, exam], () => (page.value = 1))
 
 const { data, status, refresh } = useAsyncData(
   'builder:list',
   (): Promise<any> => {
-    const p = { page: page.value, limit: 20, search: q.value || undefined }
+    const p = { page: page.value, limit: 20, search: q.value || undefined, exam: exam.value }
     if (tab.value === 'tests') return libraryAPI.tests({ ...p, status: testStatus.value === 'ALL' ? undefined : testStatus.value })
     if (tab.value === 'listening') return libraryAPI.parts({ ...p, skill: 'LISTENING' })
     if (tab.value === 'reading') return libraryAPI.parts({ ...p, skill: 'READING' })
     if (tab.value === 'writing') return libraryAPI.writingTasks(p)
     return libraryAPI.speakingParts(p)
   },
-  { watch: [tab, page, q, testStatus], lazy: true }
+  { watch: [tab, page, q, testStatus, exam], lazy: true }
 )
 
 // ─── Creating ──────────────────────────────────────────────────────────────
@@ -60,20 +62,22 @@ async function create(kind: string) {
   creating.value = true
   try {
     if (kind === 'tests') {
-      const title = await prompt({ title: 'New test', label: 'Title', placeholder: 'Multilevel Practice Test 2', confirmLabel: 'Create' })
+      const ielts = exam.value === 'IELTS'
+      const title = await prompt({ title: ielts ? 'New IELTS test (Academic; change it on the test)' : 'New Multilevel test', label: 'Title', placeholder: ielts ? 'IELTS Academic Practice Test 2' : 'Multilevel Practice Test 2', confirmLabel: 'Create' })
       if (!title?.trim()) return
-      const test = await libraryAPI.createTest({ title: title.trim() })
+      const test = await libraryAPI.createTest({ title: title.trim(), module: ielts ? 'ACADEMIC' : 'MULTILEVEL' })
       return navigateTo(`/builder/tests/${test.id}`)
     }
     if (kind === 'listening' || kind === 'reading') {
-      const part = await libraryAPI.createPart({ skill: kind.toUpperCase(), partNumber: 1, title: kind === 'reading' ? 'New passage' : 'New part' })
+      const part = await libraryAPI.createPart({ exam: exam.value, skill: kind.toUpperCase(), partNumber: 1, title: kind === 'reading' ? 'New passage' : 'New part' })
       return navigateTo(`/builder/parts/${part.id}`)
     }
     if (kind === 'writing') {
-      const task = await libraryAPI.createWritingTask({ taskNumber: 3, prompt: '<p>Write the question here.</p>' })
+      // The essay: Task 2 in both exams (Multilevel numbers it 3).
+      const task = await libraryAPI.createWritingTask({ exam: exam.value, taskNumber: exam.value === 'IELTS' ? 2 : 3, prompt: '<p>Write the question here.</p>' })
       return navigateTo(`/builder/writing/${task.id}`)
     }
-    const part = await libraryAPI.createSpeakingPart({ partNumber: 1, questions: [] })
+    const part = await libraryAPI.createSpeakingPart({ exam: exam.value, partNumber: 1, questions: [] })
     return navigateTo(`/builder/speaking/${part.id}`)
   } catch (e) {
     toast.add({ title: 'Not created', description: errorMessage(e), color: 'error' })
@@ -116,7 +120,7 @@ const open = (row: any) => navigateTo(
 
 const strip = (html?: string | null) => (html ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
 const statusItems = [{ label: 'Any status', value: 'ALL' }, { label: 'Draft', value: 'DRAFT' }, { label: 'Published', value: 'PUBLISHED' }, { label: 'Archived', value: 'ARCHIVED' }]
-const createLabel = computed(() => ({ tests: 'New test', listening: 'New Listening part', reading: 'New Reading passage', writing: 'New Writing task', speaking: 'New Speaking part' } as Record<string, string>)[tab.value])
+const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS test' : 'New Multilevel test', listening: 'New Listening part', reading: 'New Reading passage', writing: 'New Writing task', speaking: 'New Speaking part' } as Record<string, string>)[tab.value])
 </script>
 
 <template>
@@ -154,6 +158,13 @@ const createLabel = computed(() => ({ tests: 'New test', listening: 'New Listeni
     <template #toolbar>
       <UDashboardToolbar>
         <div class="flex flex-wrap items-center gap-2 py-1 w-full">
+          <USelect
+            :model-value="exam"
+            :items="[{ label: 'IELTS', value: 'IELTS' }, { label: 'Multilevel', value: 'MULTILEVEL' }]"
+            aria-label="Exam"
+            class="w-36"
+            @update:model-value="v => setExam(v as Exam)"
+          />
           <UTabs
             v-model="tab"
             :items="TABS"
@@ -199,7 +210,7 @@ const createLabel = computed(() => ({ tests: 'New test', listening: 'New Listeni
                 {{ t.title }}
               </p>
               <p class="text-xs text-muted truncate">
-                {{ t.mode === 'MOCK' ? 'Mock' : 'Practice' }}
+                {{ examLabel(t.exam, t.module) }} · {{ t.mode === 'MOCK' ? 'Mock' : 'Practice' }}
                 <span v-if="t.category"> · {{ categoryLabel(t.category) }}</span>
                 · {{ t.sections.map(s => SKILL_META[s.skill].label).join(', ') || 'no sections' }}
               </p>
@@ -262,7 +273,7 @@ const createLabel = computed(() => ({ tests: 'New test', listening: 'New Listeni
             @click="open(w)"
           >
             <UBadge
-              :label="writingTaskLabel(w.taskNumber)"
+              :label="writingTaskLabel(w.taskNumber, w.exam)"
               color="neutral"
               variant="soft"
             />
@@ -271,7 +282,7 @@ const createLabel = computed(() => ({ tests: 'New test', listening: 'New Listeni
                 {{ w.title || strip(w.prompt).slice(0, 90) || 'Untitled' }}
               </p>
               <p class="text-xs text-muted">
-                At least {{ w.minWords ?? writingDefaults(w.taskNumber).minWords }} words<span v-if="w.essays"> · {{ w.essays }} essays</span>
+                At least {{ w.minWords ?? writingDefaults(w.taskNumber, w.exam).minWords }} words<span v-if="w.essays"> · {{ w.essays }} essays</span>
               </p>
             </div>
           </li>
@@ -285,7 +296,7 @@ const createLabel = computed(() => ({ tests: 'New test', listening: 'New Listeni
             @click="open(s)"
           >
             <UBadge
-              :label="speakingPartLabel(s.partNumber)"
+              :label="speakingPartLabel(s.partNumber, s.exam)"
               color="neutral"
               variant="soft"
             />

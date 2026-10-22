@@ -9,10 +9,11 @@ export function attemptSummary(row: any) {
   return {
     id: row.id,
     skill: row.skill,
+    exam: row.exam ?? 'MULTILEVEL',
     partNumber: row.partNumber ?? null,
     mode: row.mode,
     status: row.status,
-    test: row.test ? { id: row.test.id, slug: row.test.slug, title: row.test.title } : null,
+    test: row.test ? { id: row.test.id, slug: row.test.slug, title: row.test.title, module: row.test.module } : null,
     user: row.user ? { id: row.user.id, name: userLabel(row.user), avatarUrl: row.user.avatarUrl } : undefined,
     startedAt: row.startedAt,
     submittedAt: row.submittedAt,
@@ -21,6 +22,7 @@ export function attemptSummary(row: any) {
     correct: row.correct,
     total: row.total,
     score: row.score,
+    band: row.band ?? null,
     cefrLevel: row.cefrLevel,
     liveMockId: row.liveMockId ?? null,
     feedback: row.feedback
@@ -52,7 +54,7 @@ export async function attemptView(id: string, viewer: { id: string, role: string
         explanations,
         given: new Map(given.map(a => [a.itemId, a.response ?? ''])),
         marks: new Map(given.map(a => [a.itemId, !!a.isCorrect])),
-        correct: row.correct, total: row.total, score: row.score,
+        correct: row.correct, total: row.total, score: row.score, band: row.band,
         essays: new Map(written.map(e => [e.taskId, { id: e.id, text: e.text, wordCount: e.wordCount, feedback: e.feedback }]))
       })
     : null

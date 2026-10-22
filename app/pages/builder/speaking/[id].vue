@@ -56,17 +56,24 @@ async function remove() {
   }
 }
 const saveLabel = computed(() => ({ idle: '', dirty: 'Unsaved changes', saving: 'Saving…', saved: 'Saved', error: 'Not saved' })[autosave.state.value])
-const hint = computed(() => ({
-  1: 'Part 1.1: three questions about the candidate — 5 seconds to think, 30 seconds to answer each.',
-  2: 'Part 1.2: two pictures to compare, then questions about them — 10 seconds to think, 30–45 seconds each.',
-  3: 'Part 2: a picture and a cue card — one minute to prepare, two minutes to speak.',
-  4: 'Part 3: a debate topic with points for and against — one minute to prepare, two minutes to speak.'
-} as Record<number, string>)[form.partNumber])
+const ielts = computed(() => part.value?.exam === 'IELTS')
+const hint = computed(() => (ielts.value
+  ? {
+      1: 'Part 1: questions about the candidate and familiar topics, answered at once (about 30 seconds each), four to five minutes in all.',
+      2: 'Part 2: the cue card, with the points to cover — one minute to prepare, up to two minutes to speak.',
+      3: 'Part 3: discussion questions linked to Part 2, answered at once (about a minute each).'
+    }
+  : {
+      1: 'Part 1.1: three questions about the candidate — 5 seconds to think, 30 seconds to answer each.',
+      2: 'Part 1.2: two pictures to compare, then questions about them — 10 seconds to think, 30–45 seconds each.',
+      3: 'Part 2: a picture and a cue card — one minute to prepare, two minutes to speak.',
+      4: 'Part 3: a debate topic with points for and against — one minute to prepare, two minutes to speak.'
+    } as Record<number, string>)[form.partNumber])
 </script>
 
 <template>
   <AppPage
-    :title="part ? (part.title || `Speaking ${speakingPartLabel(part.partNumber)}`) : 'Speaking part'"
+    :title="part ? (part.title || `Speaking ${speakingPartLabel(part.partNumber, part.exam)}`) : 'Speaking part'"
     :back="back"
     wide
   >
@@ -104,7 +111,7 @@ const hint = computed(() => ({
           variant="subtle"
           :description="hint"
         />
-        <UCard v-if="form.partNumber !== 1">
+        <UCard v-if="ielts ? form.partNumber === 2 : form.partNumber !== 1">
           <template #header>
             <p class="font-semibold text-highlighted">
               {{ form.partNumber === 2 ? 'Pictures' : 'Picture' }}
@@ -116,7 +123,7 @@ const hint = computed(() => ({
             :url="part.imageUrl"
           />
         </UCard>
-        <UCard v-if="form.partNumber >= 3">
+        <UCard v-if="ielts ? form.partNumber === 2 : form.partNumber >= 3">
           <template #header>
             <p class="font-semibold text-highlighted">
               {{ form.partNumber === 4 ? 'Debate table' : 'Cue card' }}
@@ -209,7 +216,7 @@ const hint = computed(() => ({
           <UFormField label="Part">
             <USelect
               v-model="form.partNumber"
-              :items="[1, 2, 3, 4].map(n => ({ label: speakingPartLabel(n), value: n }))"
+              :items="partNumbersOf(part?.exam, 'SPEAKING').map(n => ({ label: speakingPartLabel(n, part?.exam), value: n }))"
               class="w-full"
             />
           </UFormField>
@@ -221,7 +228,7 @@ const hint = computed(() => ({
               v-model="form.prepSeconds"
               :min="0"
               :max="600"
-              :placeholder="form.partNumber >= 3 ? '60' : '5'"
+              :placeholder="ielts ? (form.partNumber === 2 ? '60' : '3') : form.partNumber >= 3 ? '60' : '5'"
               class="w-full"
             />
           </UFormField>
@@ -230,7 +237,7 @@ const hint = computed(() => ({
               v-model="form.speakSeconds"
               :min="0"
               :max="900"
-              :placeholder="form.partNumber >= 3 ? '120' : '30'"
+              :placeholder="ielts ? (form.partNumber === 2 ? '120' : form.partNumber === 3 ? '60' : '30') : form.partNumber >= 3 ? '120' : '30'"
               class="w-full"
             />
           </UFormField>

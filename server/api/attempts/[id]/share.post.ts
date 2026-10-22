@@ -16,6 +16,6 @@ export default defineEventHandler(async (event) => {
   return {
     url: `${site}/share/${token}`,
     image: `${site}/og/${token}.png`,
-    text: MSG.shareText(asLocale(locale), data.skill, data.score, data.cefrLevel)
+    text: MSG.shareText(asLocale(locale), data.skill, data.score, data.cefrLevel, data.band != null)
   }
 })

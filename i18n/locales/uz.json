@@ -46,7 +46,9 @@
     "staffLive": "Jonli mocklar",
     "staffGrowth": "O‘sish",
     "staffCentres": "Markazlar",
-    "staffOverview": "Umumiy ko‘rinish"
+    "staffOverview": "Umumiy ko‘rinish",
+    "packs": "Test to‘plamlari",
+    "staffPacks": "Test to‘plamlari"
   },
   "pub": {
     "how": "Qanday ishlaydi",
@@ -55,15 +57,15 @@
     "startNow": "Boshlash",
     "openMenu": "Menyuni ochish",
     "menu": "Menyu",
-    "footerAbout": "Bepul Multilevel (CEFR) ingliz tili mock testlari: darhol tekshiriladi, 75 ballik natija va darajangiz bilan.",
+    "footerAbout": "IELTS va Multilevel mock testlari, darhol baholanadi: IELTS bandi yoki Multilevel bo‘yicha 75 ballik natija va darajangiz.",
     "practise": "Mashq",
     "allTests": "Barcha testlar",
     "contact": "Biz bilan bog‘lanish"
   },
   "home": {
-    "seoTitle": "Bepul Multilevel ingliz tili mock testlari",
-    "seoDescription": "Bepul onlayn Multilevel (CEFR) ingliz tili mashq testlari: rasmiy formatdagi Tinglash, O‘qish, Yozish va Gapirish. Darhol tekshiriladi, 75 ballik natija va CEFR darajangiz bilan.",
-    "seoOg": "Rasmiy Multilevel formatidagi Tinglash, O‘qish, Yozish va Gapirish, darhol tekshiriladi.",
+    "seoTitle": "Onlayn IELTS va Multilevel mock testlari",
+    "seoDescription": "IELTS (Academic va General Training) va Multilevel CEFR imtihoniga tayyorlaning: rasmiy formatdagi to‘liq mock testlar, darhol band yoki ball, Yozish va Gapirish bo‘yicha AI va imtihon oluvchi tahlili.",
+    "seoOg": "Rasmiy formatdagi IELTS va Multilevel mock testlari, darhol baholanadi.",
     "skillText": {
       "LISTENING": "Oltita qism va 35 ta savol, audio imtihondagidek eshittiriladi va tugatishingiz bilan tekshiriladi.",
       "READING": "Beshta matn va 35 ta savol yonma-yon, tahlilda har bir javob yozilgan qator ko‘rsatiladi.",
@@ -99,8 +101,8 @@
     "invitedText": "Ro‘yxatdan o‘ting va bepul kredit oling: u bitta Premium testni butunlay ochadi.",
     "invitedAction": "Bepul ro‘yxatdan o‘tish",
     "welcomeBack": "Xush kelibsiz, {name}",
-    "heroTitle": "Bepul {accent} ingliz tili mock testlari va CEFR darajasini aniqlash",
-    "heroText": "Rasmiy formatdagi Tinglash, O‘qish, Yozish va Gapirish. Bepul kiring — javoblaringiz darhol tekshiriladi: 75 ballik natija va CEFR darajangiz bilan.",
+    "heroTitle": "{accent} va {second} mock testlari, darhol baholanadi",
+    "heroText": "Tinglash, O‘qish, Yozish va Gapirishni haqiqiy imtihondagidek topshiring: kompyuterdagi IELTS ekranida yoki rasmiy Multilevel formatida. Tugatishingiz bilan band yoki ballingizni oling.",
     "seePremium": "Premium haqida",
     "noAccount": "Telegram yoki Google orqali bepul kiring",
     "upperInt": "Upper-int.",
@@ -137,7 +139,27 @@
     "faqAccent": "savollar",
     "faqMore": "Yana savolingiz bormi? Telegramda yozing.",
     "ctaTitle": "Darajangizni bilishga tayyormisiz?",
-    "ctaText": "Hoziroq bepul test topshiring. Bir soatdan kam vaqt oladi, natija esa tugatishingiz bilan chiqadi."
+    "ctaText": "Hoziroq bepul test topshiring. Bir soatdan kam vaqt oladi, natija esa tugatishingiz bilan chiqadi.",
+    "heroCardIelts": "Band 7.0 · 58 daqiqada 33/40",
+    "twoExams": "Ikki imtihon — bitta tayyorgarlik joyi",
+    "twoExamsText": "Imtihoningizni tanlang: testlar, vaqt, ekran va baholash unga mos bo‘ladi.",
+    "ielts1": "Academic va General Training testlari",
+    "ielts2": "Kompyuterdagi IELTS ekrani: belgilash, eslatmalar, savollar paneli",
+    "ielts3": "Tinglash va O‘qish rasmiy jadvallar bo‘yicha band bilan",
+    "ielts4": "Yozish va Gapirish to‘rt mezon bo‘yicha band bilan",
+    "multilevel1": "Milliy CEFR imtihoni, qisma-qism",
+    "multilevel2": "Tinglashda 6 qism, O‘qishda 5 matn, har birida 35 savol",
+    "multilevel3": "75 ballik shkala va CEFR darajangiz",
+    "multilevel4": "Gapirish imtihon oluvchi ovozi va taymerlar bilan",
+    "seeTests": "{exam} testlari",
+    "statExams": "Imtihon: IELTS va Multilevel",
+    "statBand": "IELTS bandi, imtihondagidek",
+    "skillTextIelts": {
+      "LISTENING": "4 qism va 40 savol, audio bir marta eshittiriladi, oxirida tekshirish uchun ikki daqiqa.",
+      "READING": "Uchta matn va 40 savol yonma-yon, kompyuterdagidek belgilash va eslatmalar bilan.",
+      "WRITING": "Task 1 va Task 2, so‘zlar soni sanab boriladi; AI yoki imtihon oluvchi to‘rt mezon bo‘yicha band beradi.",
+      "SPEAKING": "Intervyu, uzun javob va muhokama, vaqt bilan; AI tahlili yoki imtihon oluvchining bandi."
+    }
   },
   "common": {
     "loading": "Yuklanmoqda…",
@@ -204,7 +226,11 @@
     "recordAnswers": "Javoblaringizni yozib oling",
     "from": "Manba: {title}",
     "unlock": "Ochish",
-    "practise": "Mashq qilish"
+    "practise": "Mashq qilish",
+    "introIelts": "Kompyuterdagi IELTS ekranida Academic va General Training: to‘liq test topshiring yoki bitta qismni mashq qiling. Tinglash va O‘qish tugatishingiz bilan band bilan baholanadi.",
+    "seoTitleIelts": "Onlayn IELTS mock testlari",
+    "seoDescriptionIelts": "Kompyuterdagi IELTS ekranida Academic va General Training mashq testlari: Tinglash, O‘qish, Yozish va Gapirish, darhol band bilan.",
+    "titleIelts": "IELTS {accent}"
   },
   "qtype": {
     "TRUE_FALSE_NOT_GIVEN": "True / False / Not Given",
@@ -229,7 +255,9 @@
     "AUTHENTIC": "Haqiqiy",
     "OFFICIAL": "Rasmiy namuna",
     "BOOK": "Mashq kitobi",
-    "CUSTOM": "Maxsus"
+    "CUSTOM": "Maxsus",
+    "CAMBRIDGE": "Cambridge IELTS",
+    "PRE_TEST": "Pre-test"
   },
   "test": {
     "opened": "Test ochildi",
@@ -253,7 +281,13 @@
     "practiseAlone": "{part}ni alohida mashq qilish",
     "unlockPremium": "Premium bilan ochish",
     "startSkill": "{skill}ni boshlash",
-    "signInToStart": "{skill}ni boshlash uchun kiring"
+    "signInToStart": "{skill}ni boshlash uchun kiring",
+    "howIelts": {
+      "LISTENING": "Audio imtihondagidek bir marta eshittiriladi, so‘ng tekshirish uchun ikki daqiqa. 40 tadan to‘g‘ri javoblaringiz bo‘yicha band beriladi.",
+      "READING": "60 daqiqada uchta matn va 40 ta savol. Rasmiy jadval bo‘yicha band beriladi.",
+      "WRITING": "60 daqiqada Task 1 va Task 2. Band deskriptorlari bo‘yicha darhol AI tahlili yoki imtihon oluvchining bandi.",
+      "SPEAKING": "Uchta qism, intervyudagidek vaqt bilan. To‘rt mezon bo‘yicha AI tahlili yoki imtihon oluvchining bandi."
+    }
   },
   "paywall": {
     "premiumTitle": "Bu test Premiumga kiradi",
@@ -324,7 +358,14 @@
     "editNote": "Izoh qo‘shish / tahrirlash",
     "removeHighlight": "Belgini olib tashlash",
     "addNote": "Izoh qo‘shish",
-    "startWriting": "Javobingizni shu yerga yozishni boshlang…"
+    "startWriting": "Javobingizni shu yerga yozishni boshlang…",
+    "choose": "Qaysi imtihonga tayyorlanyapsiz?",
+    "ieltsHint": "Academic va General Training",
+    "multilevelHint": "Milliy CEFR imtihoni",
+    "academic": "IELTS Academic",
+    "general": "IELTS General Training",
+    "allModules": "Academic va General",
+    "module": "IELTS moduli"
   },
   "sit": {
     "test": "Test",
@@ -386,7 +427,8 @@
     "wpm": "daqiqasiga {n} so‘z",
     "pauses": "{n} ta pauza",
     "fillers": "{n} ta to‘ldiruvchi so‘z",
-    "upgrades": "Yaxshiroq so‘zlar"
+    "upgrades": "Yaxshiroq so‘zlar",
+    "guideIelts": "IELTS band deskriptorlari bo‘yicha taxmin. Ko‘p universitetlar 6.5–7 band so‘raydi."
   },
   "result": {
     "level": {
@@ -405,7 +447,17 @@
     "notSaved": "Bu natija saqlanmadi",
     "notSavedText": "Siz hisobga kirmagansiz, shuning uchun natija bir marta ko‘rsatiladi va hech qayerda saqlanmaydi. Natijalarni saqlash va o‘sishni ko‘rish uchun kiring.",
     "reviewAnswers": "Javoblarni tahlil qilish",
-    "seeAnswers": "Javoblaringizni ko‘rish"
+    "seeAnswers": "Javoblaringizni ko‘rish",
+    "band": "Band",
+    "yourBand": "Sizning bandingiz",
+    "partOnlyIelts": "Band olish uchun butun bo‘limni topshiring",
+    "ieltsLevel": {
+      "C2": "Band 8.5+ (C2): ingliz tilidan to‘liq va erkin foydalanasiz, xatolar juda kam.",
+      "C1": "Band 7–8 (C1): murakkab tilni yaxshi qo‘llaysiz, ba’zan noaniqliklar bo‘ladi.",
+      "B2": "Band 5.5–6.5 (B2): ingliz tilidan samarali foydalanasiz, lekin ba’zi xatolar bor. Ko‘p universitetlar 6.5 talab qiladi.",
+      "B1": "Band 4–5 (B1): tanish vaziyatlarda uddalaysiz, lekin tez-tez xato qilasiz. Keyingi qadam — 5.5.",
+      "A2": "Band 4 dan past: tanish vaziyatlarda oddiy inglizchani tushunasiz. So‘z boyligi va grammatikani oshirishda davom eting."
+    }
   },
   "review": {
     "questionsRange": "{from}–{to}-savollar · {total} tadan {correct} tasi to‘g‘ri",
@@ -494,12 +546,12 @@
   },
   "insights": {
     "typeDetail": "{total} ta savolda {share}% to‘g‘ri",
-    "criterionDetail": "o‘rtacha {average}/5",
+    "criterionDetail": "o‘rtacha {average}/{outOf}",
     "lowestTask": "eng pasti: {task}",
     "workOn": "Keyingi navbatda shular ustida ishlang",
     "workOnText": "So‘nggi paytda eng ko‘p ball yo‘qotayotgan joylaringiz va har biri uchun mashq qilinadigan qism.",
     "practiseAgain": "Yana mashq qilish",
-    "last": "Oxirgisi {score}/75",
+    "last": "Oxirgisi {score}",
     "onAverage": "avvalgi o‘rtachangizga nisbatan",
     "fromReviews": "{n} ta AI tahlil asosida",
     "moreTypes": "va siz yaxshiroq bajaradigan yana {n} ta savol turi",
@@ -528,7 +580,8 @@
     "removeDate": "Sanani o‘chirish",
     "telegramToo": "Imtihon oldidan eslatma olish uchun Telegram orqali ham kiring.",
     "remindersOff": "Eslatmalar o‘chirilgan.",
-    "turnOn": "Ularni olish uchun Telegram xabarlarini yoqing."
+    "turnOn": "Ularni olish uchun Telegram xabarlarini yoqing.",
+    "nowAboutBand": "Hozir taxminan band {band}, maqsad {target}"
   },
   "work": {
     "toDo": "{n} ta vazifa",
@@ -602,7 +655,13 @@
     "connect": "{way}ni bog‘lash",
     "preferScore": "Men maqsad ballini afzal ko‘raman",
     "skipScore": "Ballni o‘tkazib yuborish",
-    "startLearning": "O‘qishni boshlash"
+    "startLearning": "O‘qishni boshlash",
+    "sExamTitle": "Qaysi imtihonga tayyorlanyapsiz?",
+    "sExamText": "Kerakli testlarni ochamiz, to‘g‘ri shkalada baholaymiz va haftalaringizni rejalashtiramiz. Istalgan payt almashtirish mumkin.",
+    "sBandTitle": "Sizga qaysi band kerak?",
+    "sBandText": "Ko‘p universitetlar 6.5 so‘raydi; ko‘plab vizalar va ishlar uchun 6 yoki 7.",
+    "ieltsText": "Academic yoki General Training. Kompyuterdagi ko‘rinish, 0–9 band.",
+    "multilevelText": "O‘zbekistonning milliy CEFR imtihoni. Rasmiy format, 0–75 ball."
   },
   "settings": {
     "signOutDevice": "Bu qurilmadan chiqilsinmi?",
@@ -658,7 +717,9 @@
     "signIn": "Kirish usullari",
     "connect": "Ulash",
     "connected": "ulangan",
-    "promoText": "Chegirmalar va bepul Premium"
+    "promoText": "Chegirmalar va bepul Premium",
+    "overallBand": "Umumiy band {band}",
+    "packsText": "Sizda qoladigan test to‘plamlari"
   },
   "duration": {
     "months": "{n} oy",
@@ -1028,7 +1089,13 @@
     "startNow": "Hozir gapirishni boshlash",
     "finishAnswer": "Javobni tugatish",
     "qOf": "{total} tadan {n}-savol",
-    "saving": "Javoblaringiz saqlanmoqda…"
+    "saving": "Javoblaringiz saqlanmoqda…",
+    "i1": "Suhbat",
+    "i2": "Uzun javob",
+    "i3": "Muhokama",
+    "i1Info": "Imtihon oluvchi sizga o‘zingiz va tanish mavzular haqida {n} ta savol beradi. Har biriga darhol, taxminan {speak} javob bering.",
+    "i2Info": "Sizga mavzu kartasi beriladi. Tayyorlanishga {prep}, so‘ng {speak} gacha gapirasiz.",
+    "i3Info": "Imtihon oluvchi 2-qismga bog‘liq {n} ta umumiyroq savol beradi. Har biriga darhol, taxminan {speak} javob bering."
   },
   "pdf": {
     "download": "PDF yuklab olish",
@@ -1044,5 +1111,58 @@
     "premium": "PDF yuklab olish Premiumga kiradi",
     "premiumText": "Premium bilan har bir testni javoblar kaliti bilan chop etish uchun PDF qilib yuklab olasiz.",
     "notFound": "Bu test topilmadi"
+  },
+  "ieltsCriterion": {
+    "taskAchievement": "Task achievement / response",
+    "organisation": "Coherence and cohesion",
+    "vocabulary": "Lexical resource",
+    "grammar": "Grammatical range and accuracy",
+    "fluency": "Fluency and coherence",
+    "pronunciation": "Pronunciation"
+  },
+  "packs": {
+    "title": "Test to‘plamlari",
+    "heading": "Test to‘plamlari: bir marta to‘lang, doim sizniki",
+    "intro": "Birga sotiladigan testlar (haqiqiy imtihon variantlari, to‘liq mocklar). Bir marta to‘lang — to‘plamdagi har bir test Premium bo‘lsa ham, bo‘lmasa ham doim sizniki.",
+    "lead": "Bir nechta test birga, doim sizniki",
+    "all": "Barcha to‘plamlar",
+    "pack": "Test to‘plami",
+    "owned": "Sizniki",
+    "open": "Ochish",
+    "openPack": "To‘plamni ochish",
+    "tests": "{n} ta test | {n} ta test",
+    "none": "Hozircha {exam} to‘plamlari yo‘q",
+    "noneText": "Yangi to‘plamlar tez orada. Hozircha bepul testlarni topshiring yoki butun kutubxona uchun Premium oling.",
+    "browseTests": "Testlarni ko‘rish",
+    "orPremium": "Yoki Premium bilan hammasini oching",
+    "orPremiumText": "Premium amal qilgan davrda kutubxonadagi barcha testlarni, izohlarni va ko‘proq AI tahlilini ochadi.",
+    "seePremium": "Premiumni ko‘rish",
+    "notFound": "To‘plam topilmadi",
+    "inside": "Ichida nima bor",
+    "sit": "Topshirish",
+    "preview": "Ko‘rish",
+    "yours": "Bu to‘plam sizniki",
+    "yoursText": "“{title}” dagi har bir test doim ochiq.",
+    "ownedText": "Undagi har bir test doim ochiq. Istalgan tartibda, xohlagancha topshiring.",
+    "start": "Birinchi testni boshlash",
+    "perTest": "bitta test {price}",
+    "oneOff": "bir martalik to‘lov",
+    "benefit1": "To‘plamdagi har bir test doim sizniki",
+    "benefit2": "Tinglash va O‘qish darhol tekshiriladi, javoblar kaliti bilan",
+    "benefit3": "Premium bilan ham, usiz ham ishlaydi",
+    "benefit4": "Yozish va Gapirish uchun AI tahlili",
+    "promoPlaceholder": "Promokod",
+    "buy": "To‘plamni sotib olish",
+    "signInToBuy": "Sotib olish uchun kiring",
+    "payClick": "Click orqali xavfsiz to‘lov.",
+    "payTelegram": "Telegramimiz orqali sotib olinadi: biz uni hisobingizda ochamiz.",
+    "buyOnTelegram": "Telegramda sotib olish",
+    "telegramText": "Ushbu xabarni {handle} ga yuboring. To‘lovdan so‘ng to‘plam hisobingizda ochiladi.",
+    "telegramMessage": "Assalomu alaykum! “{pack}” test to‘plamini ({price}) sotib olmoqchiman. Hisobim: {account}",
+    "inPack": "“{pack}” to‘plamida ham bor",
+    "inPackText": "To‘plamni {price} ga oling — bu test va undagi boshqalar doim sizniki bo‘ladi.",
+    "seePack": "To‘plamni ko‘rish",
+    "seoTitle": "IELTS va Multilevel test to‘plamlari",
+    "seoDescription": "Bir marta sotib olinadigan va doim sizda qoladigan IELTS va Multilevel mock test to‘plamlari."
   }
 }

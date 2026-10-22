@@ -21,6 +21,10 @@ export interface Me {
   learningDuration: string | null
   targetLevel: string | null
   targetScore: number | null
+  /** The exam they prepare for, or null before they chose. */
+  exam: 'IELTS' | 'MULTILEVEL' | null
+  /** IELTS: the overall band they aim for. */
+  targetBand: number | null
   onboarded: boolean
   /** Premium now (staff always): every test and every explanation. */
   premium: boolean
