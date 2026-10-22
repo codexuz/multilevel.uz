@@ -254,6 +254,7 @@ async function endPremium(p: AdminUser) {
             />
             <UDropdownMenu
               :items="[[
+                { label: 'Attempts', icon: 'i-lucide-clipboard-check', to: `/admin/attempts?user=${p.id}` },
                 { label: 'Credits & AI reviews', icon: 'i-lucide-gift', onSelect: () => openGift(p) },
                 ...(p.premiumUntil ? [{ label: 'End Premium', icon: 'i-lucide-circle-stop', onSelect: () => endPremium(p) }] : []),
                 ...(p.id !== me?.id ? [

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * A learning centre for its owner and teachers: seats and licence, the groups (each with a join link
- * for students), and for the owner the code teachers join with.
+ * for students), and for the owner the code teachers join with and how the centre shows in the catalogue.
  */
 const { t } = useI18n()
 useSeoMeta({ title: () => t('nav.centre'), robots: 'noindex' })
@@ -15,6 +15,7 @@ interface CentreView {
   licensedUntil: string | null
   open: boolean
   teacherCode: string | null
+  listing: { city: string | null, address: string | null, description: string | null, phone: string | null, telegram: string | null, website: string | null, logoUrl: string | null, listed: boolean } | null
   teachers: { id: string, name: string, role: string }[]
   groups: { id: string, name: string, joinCode: string, archived: boolean, teacher: string | null, students: number, assignments: number }[]
 }
@@ -219,6 +220,13 @@ async function copy(text: string, title: string) {
           </div>
         </UCard>
       </div>
+
+      <CentreListing
+        v-if="data.listing"
+        :key="data.id"
+        :centre-id="data.id"
+        :listing="data.listing"
+      />
     </div>
 
     <UModal
