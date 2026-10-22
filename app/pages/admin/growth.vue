@@ -80,7 +80,7 @@ function cell(n: number | null, size: number) {
   const step = STOPS.reduce((s, stop, i) => (share >= stop ? i : s), 0)
   return { pct: Math.round(share * 100), bg: `var(--viz-q${step})`, ink: `var(--viz-qi${step})` }
 }
-const weekOf = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+const weekOf = (d: string) => localeDate(d, 'en-GB', { day: 'numeric', month: 'short' })
 const planTotal = computed(() => Math.max(1, ...(data.value?.byPlan ?? []).map(p => p.revenue)))
 const testTop = computed(() => Math.max(1, ...(data.value?.topTests ?? []).map(t => t.attempts)))
 </script>

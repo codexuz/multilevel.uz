@@ -658,8 +658,7 @@
     "signIn": "Kirish usullari",
     "connect": "Ulash",
     "connected": "ulangan",
-    "promoText": "Chegirmalar va bepul Premium",
-    "centresText": "Multilevelga tayyorlaydigan markazlar"
+    "promoText": "Chegirmalar va bepul Premium"
   },
   "duration": {
     "months": "{n} oy",

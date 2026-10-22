@@ -54,11 +54,11 @@ export const gapCount = (html?: string | null) => (html ? [...html.matchAll(GAP_
 /**
  * The chip drawn in a gap: the answer given, whether it was right, and the key when asked for.
  * `numbered` off leaves out the number and the anchor, for a gap whose question is numbered beside it.
- * `blank` draws an empty line to write on instead (a printed paper).
+ * `blank` draws the gap as a printed exam paper does: "(7)__________".
  */
 export function gapChip(item: QuestionItem | undefined, showKey: boolean, label?: (key: string) => string, numbered = true, blank = false) {
   if (!item) return '<span class="text-dimmed">___</span>'
-  if (blank) return `<span class="inline-flex items-end gap-1 align-baseline">${numbered ? `<b>(${item.number})</b>` : ''}<span class="inline-block w-28 border-b border-current">&nbsp;</span></span>`
+  if (blank) return `<span class="whitespace-nowrap">${numbered ? `(${item.number})` : ''}<span class="inline-block w-24 border-b border-current">&nbsp;</span></span>`
   const show = (v: string) => escapeHtml(label ? label(v) : v)
   const ok = !!item.isCorrect
   const given = answered(item)

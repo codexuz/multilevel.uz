@@ -658,8 +658,7 @@
     "signIn": "Sign-in",
     "connect": "Connect",
     "connected": "connected",
-    "promoText": "Discounts and free Premium",
-    "centresText": "Centres that prepare for Multilevel"
+    "promoText": "Discounts and free Premium"
   },
   "duration": {
     "months": "{n} month | {n} months",

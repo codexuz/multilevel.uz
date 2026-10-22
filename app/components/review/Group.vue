@@ -13,8 +13,6 @@ const props = defineProps<{
   showKey: boolean
   /** Questions whose evidence is already marked in the passage beside the list. */
   evidenceShown?: Set<number>
-  /** A printed paper: nothing answered, the gaps and answers left as lines to write on. */
-  blank?: boolean
 }>()
 
 const items = computed(() => sortedItems(props.group))
@@ -41,12 +39,12 @@ const gapLabel = computed(() => type.value === 'SUMMARY_COMPLETION_DRAG_DROP' &&
   : undefined)
 
 const table = computed(() => (type.value === 'TABLE_COMPLETION' && props.group.content?.table?.headers?.length ? props.group.content.table : null))
-const filledTable = computed(() => (table.value ? fillTable(table.value, items.value, props.showKey, props.blank) : null))
+const filledTable = computed(() => (table.value ? fillTable(table.value, items.value, props.showKey) : null))
 
 /** The group's text with the gaps filled, when the gaps are in it; otherwise each item's prompt carries its gap. */
 const filled = computed(() => {
   if (!isGap.value || table.value || !gapCount(props.group.context)) return null
-  return fillGaps(props.group.context!, items.value, props.showKey, gapLabel.value, true, props.blank)
+  return fillGaps(props.group.context!, items.value, props.showKey, gapLabel.value)
 })
 const looseItems = computed(() => {
   if (table.value) return []
@@ -276,7 +274,7 @@ const notes = computed(() => (props.showKey ? items.value.filter(i => explanatio
           <div
             v-if="isGap && gapCount(item.prompt)"
             class="rich-content text-sm leading-9"
-            v-html="fillGaps(item.prompt!, [item], showKey, gapLabel, false, blank).html"
+            v-html="fillGaps(item.prompt!, [item], showKey, gapLabel, false).html"
           />
           <template v-else>
             <div
@@ -340,16 +338,7 @@ const notes = computed(() => (props.showKey ? items.value.filter(i => explanatio
               v-else
               class="space-y-1 text-sm"
             >
-              <p
-                v-if="blank"
-                class="flex items-end gap-2"
-              >
-                <span class="inline-block w-24 border-b border-current">&nbsp;</span>
-              </p>
-              <p
-                v-else
-                class="flex flex-wrap items-center gap-2"
-              >
+              <p class="flex flex-wrap items-center gap-2">
                 <span class="text-muted">Your answer:</span>
                 <span
                   class="rounded-md border-2 px-2 py-0.5 font-medium"

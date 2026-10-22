@@ -1,51 +1,99 @@
 /**
- * Dates in the interface language. Many browsers ship without Uzbek date names, and then
- * `toLocaleString('uz-Latn-UZ', …)` gives "M10" for October; Uzbek is written out here instead,
- * in the same shape Intl gives where it knows Uzbek ("payshanba, 22-oktabr, 14:05", "22-okt, 2026").
- * Other languages go to Intl as they are.
+ * Dates in the interface language, written the same on the server and in the browser. Intl cannot
+ * be trusted for that: many browsers ship without Uzbek date names ("M10" for October), Node and
+ * Chrome word English and Russian dates differently ("Thu 22 Oct" against "Thu, 22 Oct", "Sept"
+ * against "Sep"), and the server's time zone is not the reader's. So English, Uzbek and Russian are
+ * written out here, in the shape Node's Intl gives them ("Thursday 22 October at 14:05",
+ * "payshanba, 22-oktabr, 14:05", "22 окт. 2026 г."), in Tashkent time, as the site's schedule is.
+ * A "2026-10-22" day is read as that calendar day. Other languages still go to Intl.
  */
 
-const UZ_MONTHS = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr']
-const UZ_MONTHS_SHORT = ['yan', 'fev', 'mar', 'apr', 'may', 'iyn', 'iyl', 'avg', 'sen', 'okt', 'noy', 'dek']
-const UZ_WEEKDAYS = ['yakshanba', 'dushanba', 'seshanba', 'chorshanba', 'payshanba', 'juma', 'shanba']
-const UZ_WEEKDAYS_SHORT = ['Yak', 'Dush', 'Sesh', 'Chor', 'Pay', 'Jum', 'Shan']
-const WEEKDAY_INDEX: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }
+/** The time zone the site's dates are shown in. */
+export const SITE_TIME_ZONE = 'Asia/Tashkent'
 
-/** Like `date.toLocaleString(locale, options)`, with Uzbek month and weekday names that do not depend on the browser. */
+type Lang = 'en' | 'uz' | 'ru'
+const NAMES: Record<Lang, { months: string[], monthsOf: string[], monthsShort: string[], weekdays: string[], weekdaysShort: string[] }> = {
+  en: {
+    months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+    monthsOf: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+    monthsShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'],
+    weekdays: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    weekdaysShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  },
+  uz: {
+    months: ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'],
+    monthsOf: ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'],
+    monthsShort: ['yan', 'fev', 'mar', 'apr', 'may', 'iyn', 'iyl', 'avg', 'sen', 'okt', 'noy', 'dek'],
+    weekdays: ['yakshanba', 'dushanba', 'seshanba', 'chorshanba', 'payshanba', 'juma', 'shanba'],
+    weekdaysShort: ['Yak', 'Dush', 'Sesh', 'Chor', 'Pay', 'Jum', 'Shan']
+  },
+  ru: {
+    months: ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'],
+    monthsOf: ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'],
+    monthsShort: ['янв.', 'февр.', 'мар.', 'апр.', 'мая', 'июн.', 'июл.', 'авг.', 'сент.', 'окт.', 'нояб.', 'дек.'],
+    weekdays: ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'],
+    weekdaysShort: ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб']
+  }
+}
+
+const langOf = (locale: string): Lang | null => {
+  const l = locale.slice(0, 2).toLowerCase()
+  return l === 'en' || l === 'uz' || l === 'ru' ? l : null
+}
+const two = (n: number) => String(n).padStart(2, '0')
+
+/** The calendar date and clock of a moment in a time zone, from numbers every Intl has. */
+function partsOf(date: Date | string | number, timeZone: string) {
+  const day = typeof date === 'string' ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(date) : null
+  if (day) {
+    const [y, m, d] = [Number(day[1]), Number(day[2]), Number(day[3])]
+    return { y, m, d, wd: new Date(Date.UTC(y, m - 1, d)).getUTCDay(), hh: 0, mm: 0, ss: 0 }
+  }
+  const at = new Date(date)
+  if (Number.isNaN(at.getTime())) return null
+  const p: Record<string, string> = {}
+  for (const x of new Intl.DateTimeFormat('en-US', { timeZone, year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', hourCycle: 'h23' }).formatToParts(at)) p[x.type] = x.value
+  const [y, m, d] = [Number(p.year), Number(p.month), Number(p.day)]
+  return { y, m, d, wd: new Date(Date.UTC(y, m - 1, d)).getUTCDay(), hh: Number(p.hour) % 24, mm: Number(p.minute), ss: Number(p.second) }
+}
+
+/** Like `date.toLocaleString(locale, options)`, the same wherever it runs (see above). */
 export function localeDate(date: Date | string | number, locale: string, options?: Intl.DateTimeFormatOptions): string {
-  const d = new Date(date)
-  if (!locale.toLowerCase().startsWith('uz')) return d.toLocaleString(locale, options)
-
+  const lang = langOf(locale)
   const o = options ?? {}
+  if (!lang) return new Date(date).toLocaleString(locale, { timeZone: SITE_TIME_ZONE, ...o })
+  const p = partsOf(date, o.timeZone ?? SITE_TIME_ZONE)
+  if (!p) return '—'
+  const n = NAMES[lang]
   const hasDate = !!(o.weekday || o.day || o.month || o.year)
   const hasTime = !!(o.hour || o.minute || o.second)
+
   // No fields asked for: date and time in numbers, as toLocaleString gives them.
-  const all = !hasDate && !hasTime
-
-  // The numbers for this moment in the asked time zone, from a format every browser has.
-  const parts: Record<string, string> = {}
-  for (const p of new Intl.DateTimeFormat('en-US', {
-    timeZone: o.timeZone, weekday: 'short', year: 'numeric', month: 'numeric', day: 'numeric',
-    hour: 'numeric', minute: 'numeric', second: 'numeric', hourCycle: 'h23'
-  }).formatToParts(d)) parts[p.type] = p.value
-  const two = (v?: string) => (v ?? '').padStart(2, '0')
-  const month = Number(parts.month) - 1
-  const weekday = WEEKDAY_INDEX[parts.weekday ?? ''] ?? 0
-  const time = all || o.second ? `${two(parts.hour)}:${two(parts.minute)}:${two(parts.second)}` : `${two(parts.hour)}:${two(parts.minute)}`
-
-  if (all) return `${two(parts.day)}/${two(String(month + 1))}/${parts.year}, ${time}`
-
-  const out: string[] = []
-  if (o.weekday) out.push(o.weekday === 'long' ? UZ_WEEKDAYS[weekday]! : UZ_WEEKDAYS_SHORT[weekday]!)
-  if (o.day || o.month) {
-    const day = o.day === '2-digit' ? two(parts.day) : parts.day
-    const name = o.month === 'long' ? UZ_MONTHS[month]! : UZ_MONTHS_SHORT[month]!
-    // A month alone stands capitalised ("Oktabr"); with a day it is "22-oktabr".
-    if (o.day && o.month) out.push(`${day}-${name}`)
-    else if (o.month) out.push(name.charAt(0).toUpperCase() + name.slice(1))
-    else out.push(day!)
+  if (!hasDate && !hasTime) {
+    const sep = lang === 'ru' ? '.' : '/'
+    return `${two(p.d)}${sep}${two(p.m)}${sep}${p.y}, ${two(p.hh)}:${two(p.mm)}:${two(p.ss)}`
   }
-  if (o.year) out.push(parts.year!)
-  if (hasTime) out.push(time)
-  return out.join(', ')
+  const time = o.second ? `${two(p.hh)}:${two(p.mm)}:${two(p.ss)}` : `${two(p.hh)}:${two(p.mm)}`
+  const day = o.day === '2-digit' ? two(p.d) : String(p.d)
+  const longMonth = o.month === 'long'
+
+  let text: string
+  if (o.day && o.month) {
+    const month = longMonth ? n.monthsOf[p.m - 1]! : n.monthsShort[p.m - 1]!
+    text = lang === 'uz' ? `${day}-${month}` : `${day} ${month}`
+  } else if (o.month) {
+    text = longMonth || lang === 'uz' ? n.months[p.m - 1]! : n.monthsShort[p.m - 1]!
+  } else {
+    text = o.day ? day : ''
+  }
+  if (o.year) text = lang === 'uz' ? (text ? `${text}, ${p.y}` : String(p.y)) : lang === 'ru' ? `${text} ${p.y} г.`.trim() : `${text} ${p.y}`.trim()
+  if (o.weekday) {
+    const wd = o.weekday === 'long' ? n.weekdays[p.wd]! : n.weekdaysShort[p.wd]!
+    text = text ? (lang === 'en' ? `${wd} ${text}` : `${wd}, ${text}`) : wd
+  }
+  if (!hasTime) return text
+  if (!text) return time
+  // "Thursday 22 October at 14:05", "четверг, 22 октября в 14:05"; elsewhere a comma.
+  if (o.weekday === 'long' && !o.year && lang !== 'uz') return `${text} ${lang === 'ru' ? 'в' : 'at'} ${time}`
+  return `${text}, ${time}`
 }

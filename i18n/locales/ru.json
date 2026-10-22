@@ -658,8 +658,7 @@
     "signIn": "Способы входа",
     "connect": "Подключить",
     "connected": "подключён",
-    "promoText": "Скидки и бесплатный Premium",
-    "centresText": "Центры подготовки к Multilevel"
+    "promoText": "Скидки и бесплатный Premium"
   },
   "duration": {
     "months": "{n} месяц | {n} месяца | {n} месяцев",
