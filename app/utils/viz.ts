@@ -15,5 +15,5 @@ export function niceScale(max: number) {
 export const compact = (n: number) => new Intl.NumberFormat(intlLocale(), { notation: 'compact', maximumFractionDigits: 1 }).format(n)
 
 const asDate = (d: string) => new Date(`${d}T00:00:00`)
-export const shortDay = (d: string) => asDate(d).toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short' })
-export const longDay = (d: string) => asDate(d).toLocaleDateString(intlLocale(), { weekday: 'short', day: 'numeric', month: 'short' })
+export const shortDay = (d: string) => localeDate(asDate(d), intlLocale(), { day: 'numeric', month: 'short' })
+export const longDay = (d: string) => localeDate(asDate(d), intlLocale(), { weekday: 'short', day: 'numeric', month: 'short' })

@@ -14,7 +14,7 @@ export const fromTelegram = (code?: string | null): Locale | null => {
 export const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
 const INTL: Record<Locale, string> = { en: 'en-GB', uz: 'uz-Latn-UZ', ru: 'ru-RU' }
-export const dayText = (l: Locale, d: Date, withTime = false) => d.toLocaleString(INTL[l], {
+export const dayText = (l: Locale, d: Date, withTime = false) => localeDate(d, INTL[l], {
   weekday: 'long', day: 'numeric', month: 'long', ...(withTime ? { hour: '2-digit', minute: '2-digit' } : {}), timeZone: 'Asia/Tashkent'
 })
 

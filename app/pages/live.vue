@@ -42,7 +42,7 @@ function countdown(to: string) {
   const m = Math.floor((s % 3600) / 60)
   return d ? `${d}d ${h}h ${m}m` : `${h}h ${m}m ${s % 60}s`
 }
-const when = (d: string) => new Date(d).toLocaleString(intlLocale(), { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
+const when = (d: string) => localeDate(d, intlLocale(), { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
 const doneOf = (skill: string) => data.value?.board?.done.find(d => d.skill === skill)
 const showingLive = computed(() => !!data.value?.shown && data.value.shown.id === data.value.live?.id)
 const medal = (rank: number) => ({ 1: '🥇', 2: '🥈', 3: '🥉' } as Record<number, string>)[rank] ?? String(rank)
