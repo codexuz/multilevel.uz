@@ -36,7 +36,7 @@ export interface Focus {
 }
 
 const WRITING_CRITERIA = { taskAchievement: 'Task achievement', organisation: 'Organisation', vocabulary: 'Vocabulary', grammar: 'Grammar' } as Record<string, string>
-const SPEAKING_CRITERIA = { fluency: 'Fluency', vocabulary: 'Vocabulary', grammar: 'Grammar', taskAchievement: 'Task achievement' } as Record<string, string>
+const SPEAKING_CRITERIA = { fluency: 'Fluency', vocabulary: 'Vocabulary', grammar: 'Grammar', pronunciation: 'Pronunciation', taskAchievement: 'Task achievement' } as Record<string, string>
 const writingTask = (n: number) => ({ 1: 'Task 1.1', 2: 'Task 1.2', 3: 'Task 2' } as Record<number, string>)[n] ?? `Task ${n}`
 const speakingPart = (n: number) => ({ 1: 'Part 1.1', 2: 'Part 1.2', 3: 'Part 2', 4: 'Part 3' } as Record<number, string>)[n] ?? `Part ${n}`
 const TYPE_LABEL: Record<string, string> = {
@@ -91,9 +91,11 @@ async function criteriaStats(userId: string, skill: 'WRITING' | 'SPEAKING') {
   for (const r of rows) {
     const res = r.result as { tasks?: Reviewed[], parts?: Reviewed[] } | null
     for (const t of (skill === 'WRITING' ? res?.tasks : res?.parts) ?? []) {
-      const marks = Object.keys(names).map(k => Number(t.criteria?.[k] ?? 0))
+      // A criterion a review did not mark (pronunciation, before it was assessed) is left out, not counted as 0.
+      const keys = Object.keys(names).filter(k => t.criteria?.[k] != null)
+      const marks = keys.map(k => Number(t.criteria[k]))
       if (marks.every(m => !m)) continue // nothing written or said
-      Object.keys(names).forEach((k, i) => {
+      keys.forEach((k, i) => {
         sums[k] = { sum: (sums[k]?.sum ?? 0) + marks[i]!, n: (sums[k]?.n ?? 0) + 1 }
       })
       const no = Number(skill === 'WRITING' ? t.taskNumber : t.partNumber)

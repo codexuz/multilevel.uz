@@ -269,14 +269,19 @@ export const essays = pgTable('essays', {
   updatedAt: updated()
 }, t => [uniqueIndex('essays_attempt_task_uq').on(t.attemptId, t.taskId)])
 
+/**
+ * One recorded answer: Part 1.1 and 1.2 are answered question by question (`position` is the
+ * question's place in the part, from 0), Part 2 and Part 3 in one turn (position 0).
+ */
 export const speakingResponses = pgTable('speaking_responses', {
   id: uuid('id').primaryKey().defaultRandom(),
   attemptId: uuid('attempt_id').notNull().references(() => attempts.id, { onDelete: 'cascade' }),
   partId: uuid('part_id').notNull().references(() => speakingParts.id, { onDelete: 'cascade' }),
+  position: integer('position').notNull().default(0),
   audioRef: text('audio_ref').notNull(),
   durationSeconds: integer('duration_seconds'),
   createdAt: created()
-}, t => [uniqueIndex('speaking_responses_attempt_part_uq').on(t.attemptId, t.partId)])
+}, t => [uniqueIndex('speaking_responses_attempt_part_position_uq').on(t.attemptId, t.partId, t.position)])
 
 // ---------- learning centres (B2B) ----------
 // A centre buys seats: each student in it has Premium while its licence runs. Its owner and teachers

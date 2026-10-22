@@ -67,15 +67,37 @@ says when it is ready. Without Premium a user gets `AI_FEEDBACK_FREE_PER_MONTH` 
 Premium `AI_FEEDBACK_PREMIUM_PER_DAY` (10) a day; staff have no limit; failed ones do not count.
 Reward bonuses an admin grants (`users.ai_bonus_reviews`) are used once the allowance runs out.
 
+### Speaking, as the exam runs it
+
+Speaking runs by itself, like the exam (and like the edumoschool speaking bot it follows): a
+microphone check (record three seconds, hear it back), then for each part a short introduction,
+and for each turn the examiner reading the question aloud, the time to prepare, a beep and the
+recording, straight on to the next. Part 1.1 and 1.2 are answered question by question (5 + 30
+seconds; the pictures of Part 1.2 10 + 45), Part 2 and Part 3 in one turn of 60 + 120 seconds
+(`shared/utils/speaking.ts`; a part's own times from the builder win). There is no going back and
+no second take; "Start now" and "Finish answer" only cut a wait short. Each answer is its own
+recording (`speaking_responses.position`), uploaded while the exam goes on.
+
+The examiner's voice is OpenAI text-to-speech (`AI_TTS_MODEL`, `gpt-4o-mini-tts` by default;
+`AI_TTS_VOICE`, `sage`), made once per question and kept in storage (`tts/…`); without OpenAI or
+storage the browser's own voice reads the question.
+
 ### AI feedback on Speaking
 
-Speaking works the same way. Each recording is read from our own storage (never from an address
-the browser sends; a practice recording must be the user's own upload), transcribed by
-Deepgram (`DEEPGRAM_API_KEY`; model `nova-3`, or `DEEPGRAM_MODEL`; fillers like "um" are kept so
-hesitation shows), and the transcripts are rated per part on fluency,
-vocabulary, grammar and task achievement, with corrections and a model answer a level up. The
-score out of 75 weights Part 1.1 and 1.2 at 20% each, Part 2 and 3 at 30%. Pronunciation cannot be
-judged from a transcript, so it is left to the examiner. The page shows what was heard.
+Each recording is read from our own storage (never from an address the browser sends; a practice
+recording must be the user's own upload) and transcribed with its word timings by Deepgram
+(`DEEPGRAM_API_KEY`; `nova-3`, or `DEEPGRAM_MODEL`) or ElevenLabs (`ELEVENLABS_API_KEY`;
+`scribe_v2`, or `ELEVENLABS_MODEL`). With both, `TRANSCRIBER` (`deepgram` or `elevenlabs`) picks the
+first and the other is its backup. Fillers like "um" are kept, and the timings give each answer's
+speed, pauses, fillers and how clearly each word came through (`server/utils/speech-metrics.ts`).
+
+Each part is then marked on its own, all at once, as an examiner would: a CEFR sub-level (A1 …
+C1+) on fluency, vocabulary, grammar, pronunciation (judged from the recognition's evidence, since
+the model cannot hear) and task achievement, a comment on every answer, corrections, better words,
+pronunciation tips and a model answer a level up. Each sub-level has its points on the 0–75 scale
+(set so a part marked B2 throughout lands in the B2 band), an answer far shorter than its time
+caps fluency and task achievement, and the parts weigh 20% (1.1), 25% (1.2), 25% (Part 2) and 30%
+(Part 3) (`server/utils/speaking-score.ts`). A short last call writes the summary.
 
 A handed-in Writing or Speaking gets one AI review automatically, free (it does not count toward the
 allowance). On the marking page examiners see it as **AI suggests …** and can fill an empty score and

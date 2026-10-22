@@ -354,14 +354,15 @@
     "organisation": "Organisation",
     "vocabulary": "Vocabulary",
     "grammar": "Grammar",
-    "fluency": "Fluency"
+    "fluency": "Fluency",
+    "pronunciation": "Pronunciation"
   },
   "ai": {
     "noFeedback": "No AI feedback yet",
     "leftToday": "{left} of {limit} left today",
     "leftMonth": "{left} of {limit} left this month",
     "wordsOf": "{n} / {min}+ words",
-    "introSpeaking": "An estimated score out of 75 from what you said: how each part did on fluency, vocabulary, grammar and the task, with corrections. About a minute.",
+    "introSpeaking": "An estimated score out of 75 from what you said, as an examiner marks it: fluency, vocabulary, grammar, pronunciation and the task for each part, with your speed and pauses, corrections and better words. About a minute.",
     "introWriting": "An estimated score out of 75, how each task did on the four criteria, and the corrections that matter most. About a minute.",
     "instant": "Instant AI feedback",
     "signIn": "Sign in for AI feedback",
@@ -378,7 +379,13 @@
     "heard": "What we heard",
     "corrections": "Corrections",
     "stepUp": "One step up",
-    "guide": "An AI estimate to guide you, not an examiner's mark."
+    "guide": "An AI estimate to guide you, not an examiner's mark.",
+    "byAnswer": "Answer by answer",
+    "nothingHeard": "Nothing could be heard",
+    "wpm": "{n} words/min",
+    "pauses": "{n} pause | {n} pauses",
+    "fillers": "{n} filler | {n} fillers",
+    "upgrades": "Better words"
   },
   "result": {
     "level": {
@@ -992,5 +999,35 @@
     "uploadLogo": "Upload logo",
     "listingSaved": "Saved",
     "seeCatalogue": "See the catalogue"
+  },
+  "speak": {
+    "checkTitle": "Check your microphone",
+    "checkText": "Record three seconds and listen back, so you know the examiner will hear you. The exam then runs by itself: listen, prepare, speak at the beep.",
+    "testRecord": "Record 3 seconds",
+    "testAgain": "Record again",
+    "testing": "Recording…",
+    "sounds": "I can hear myself — start",
+    "readAloud": "The examiner reads each question aloud",
+    "micDenied": "The microphone is blocked",
+    "micDeniedText": "Allow the microphone for this site in your browser's settings, then try again.",
+    "p1": "Personal questions",
+    "p2": "Pictures",
+    "p3": "Long turn",
+    "p4": "Argument",
+    "p1Info": "The examiner asks you {n} questions about yourself. For each you have {prep} to think and {speak} to answer.",
+    "p2Info": "Look at the pictures: describe and compare them in {speak}. Then answer {n} more questions, {then} each.",
+    "p3Info": "Read the card. You have {prep} to prepare and {speak} to talk. Cover every point on the card.",
+    "p4Info": "Read the statement and the arguments for and against. You have {prep} to prepare and {speak} to give your view.",
+    "seconds": "{n} second | {n} seconds",
+    "minutes": "{n} minute | {n} minutes",
+    "ready": "I'm ready",
+    "listen": "Listen",
+    "prepare": "Prepare",
+    "speakNow": "Speak",
+    "skipListening": "Skip",
+    "startNow": "Start speaking now",
+    "finishAnswer": "Finish answer",
+    "qOf": "Question {n} of {total}",
+    "saving": "Saving your answers…"
   }
 }

@@ -10,7 +10,7 @@ import { answers, attempts, essays, speakingResponses, users } from '../../../..
 interface SubmitBody {
   answers?: { itemId: string, answer: string }[]
   essays?: { taskId: string, text: string }[]
-  recordings?: { partId: string, audioRef: string, durationSeconds?: number }[]
+  recordings?: { partId: string, position?: number, audioRef: string, durationSeconds?: number }[]
   startedAt?: string
 }
 
@@ -41,9 +41,17 @@ export default defineEventHandler(async (event) => {
   for (const e of Array.isArray(body.essays) ? body.essays : []) {
     if (e && taskIds.has(e.taskId) && typeof e.text === 'string') essayMap.set(e.taskId, { text: e.text.slice(0, 20000), wordCount: countEssayWords(e.text) })
   }
-  const speakingIds = new Set(section.items.filter((i: any) => i.speakingPart).map((i: any) => i.speakingPart.id))
-  const recordings = (Array.isArray(body.recordings) ? body.recordings : [])
-    .filter(r => r && speakingIds.has(r.partId) && typeof r.audioRef === 'string' && /^https?:\/\//.test(r.audioRef))
+  // One recording per turn of the exam (a question of Part 1.1 or 1.2, or all of Part 2 or Part 3),
+  // each the candidate's own upload to our storage.
+  const turns = new Set(speakingSteps(section.items.filter((i: any) => i.speakingPart).map((i: any) => i.speakingPart)).map(s => `${s.partId}:${s.position}`))
+  const recorded = new Map<string, { partId: string, position: number, audioRef: string, durationSeconds: number | null }>()
+  for (const r of Array.isArray(body.recordings) ? body.recordings : []) {
+    const position = Math.max(0, Math.floor(Number(r?.position) || 0))
+    const key = s3KeyFromUrl(String(r?.audioRef ?? ''))
+    if (!r || !turns.has(`${r.partId}:${position}`) || !key || (user && !key.split('/').includes(user.id))) continue
+    recorded.set(`${r.partId}:${position}`, { partId: r.partId, position, audioRef: r.audioRef, durationSeconds: Number.isFinite(Number(r.durationSeconds)) ? Math.round(Number(r.durationSeconds)) : null })
+  }
+  const recordings = [...recorded.values()]
 
   const objective = skill === 'LISTENING' || skill === 'READING'
   const marked = markSection(section, given)
@@ -77,7 +85,7 @@ export default defineEventHandler(async (event) => {
       if (rows.length) await tx.insert(answers).values(rows)
       const essayRows = [...essayMap.entries()].map(([taskId, e]) => ({ attemptId: attempt!.id, taskId, text: e.text, wordCount: e.wordCount }))
       if (essayRows.length) await tx.insert(essays).values(essayRows)
-      if (recordings.length) await tx.insert(speakingResponses).values(recordings.map(r => ({ attemptId: attempt!.id, partId: r.partId, audioRef: r.audioRef, durationSeconds: r.durationSeconds ?? null })))
+      if (recordings.length) await tx.insert(speakingResponses).values(recordings.map(r => ({ attemptId: attempt!.id, ...r })))
       if (needsCredit) await spendCredit(tx, user.id, attempt!.id)
       return attempt!.id
     })

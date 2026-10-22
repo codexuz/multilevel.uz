@@ -15,7 +15,6 @@ useSeoMeta({ title: () => `Marking${attempt.value?.user ? ` — ${attempt.value.
 const section = computed(() => attempt.value?.review?.sections?.[0] ?? null)
 const tasks = computed<any[]>(() => section.value?.tasks ?? [])
 const speaking = computed<any[]>(() => section.value?.speaking ?? [])
-const recordingFor = (partId: string) => attempt.value?.recordings?.find((r: any) => r.partId === partId) ?? null
 
 const score = ref<number | null>(null)
 const feedback = ref('')
@@ -210,40 +209,11 @@ async function grade(next: boolean) {
           <template #header>
             <span class="font-semibold">{{ speakingPartLabel(p.partNumber) }}<span v-if="p.title"> — {{ p.title }}</span></span>
           </template>
-          <img
-            v-if="p.imageUrl"
-            :src="p.imageUrl"
-            alt=""
-            class="rounded-md max-h-56 mb-3 border border-default"
-          >
-          <div
-            v-if="p.cueCard"
-            class="rich-content text-sm mb-3"
-            v-html="p.cueCard"
+          <SpeakingAnswers
+            :part="p"
+            :recordings="attempt.recordings ?? []"
+            empty-text="No recording."
           />
-          <ol
-            v-if="p.questions?.length"
-            class="list-decimal pl-5 text-sm mb-3"
-          >
-            <li
-              v-for="q in p.questions"
-              :key="q.id"
-            >
-              {{ q.text }}
-            </li>
-          </ol>
-          <audio
-            v-if="recordingFor(p.id)"
-            :src="recordingFor(p.id).audioUrl"
-            controls
-            class="w-full"
-          />
-          <p
-            v-else
-            class="text-sm text-muted"
-          >
-            No recording for this part.
-          </p>
         </UCard>
       </div>
 

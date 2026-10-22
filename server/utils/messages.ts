@@ -65,9 +65,9 @@ const TYPES: Record<Locale, Record<string, string>> = {
 }
 export const typeLabel = (l: Locale, t: string) => TYPES[l][t] ?? TYPES.en[t] ?? t
 const CRITERIA: Record<Locale, Record<string, string>> = {
-  en: { taskAchievement: 'Task achievement', organisation: 'Organisation', vocabulary: 'Vocabulary', grammar: 'Grammar', fluency: 'Fluency' },
-  uz: { taskAchievement: 'Topshiriqni bajarish', organisation: 'Tuzilish', vocabulary: 'Lug‘at', grammar: 'Grammatika', fluency: 'Ravonlik' },
-  ru: { taskAchievement: 'Выполнение задачи', organisation: 'Структура', vocabulary: 'Лексика', grammar: 'Грамматика', fluency: 'Беглость' }
+  en: { taskAchievement: 'Task achievement', organisation: 'Organisation', vocabulary: 'Vocabulary', grammar: 'Grammar', fluency: 'Fluency', pronunciation: 'Pronunciation' },
+  uz: { taskAchievement: 'Topshiriqni bajarish', organisation: 'Tuzilish', vocabulary: 'Lug‘at', grammar: 'Grammatika', fluency: 'Ravonlik', pronunciation: 'Talaffuz' },
+  ru: { taskAchievement: 'Выполнение задачи', organisation: 'Структура', vocabulary: 'Лексика', grammar: 'Грамматика', fluency: 'Беглость', pronunciation: 'Произношение' }
 }
 export const criterionLabel = (l: Locale, k: string) => CRITERIA[l][k] ?? CRITERIA.en[k] ?? k
 

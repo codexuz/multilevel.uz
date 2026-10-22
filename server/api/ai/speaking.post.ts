@@ -7,7 +7,7 @@ import { aiReviews, attempts } from '../../database/schema'
  * recordings uploaded to our storage first). Questions come from the test; recordings are read
  * only from our own storage. Returns the review to poll.
  */
-interface Body { attemptId?: string, slug?: string, part?: number | string | null, recordings?: { partId: string, audioRef: string, durationSeconds?: number }[] }
+interface Body { attemptId?: string, slug?: string, part?: number | string | null, recordings?: { partId: string, position?: number, audioRef: string, durationSeconds?: number }[] }
 
 export default defineEventHandler(async (event) => {
   if (!speakingAiEnabled()) throw createError({ statusCode: 404, message: 'AI feedback on Speaking is not available' })
@@ -34,15 +34,14 @@ export default defineEventHandler(async (event) => {
     const whole = test.sections.find((s: any) => s.skill === 'SPEAKING')
     const section = whole && body.part ? pickPart(whole, Number(body.part)) : whole
     if (!section?.items?.length) throw createError({ statusCode: 404, message: 'Speaking not found' })
-    const given = new Map((Array.isArray(body.recordings) ? body.recordings : []).map(r => [String(r.partId), r]))
-    const items = section.items.filter((i: any) => i.speakingPart && given.has(i.speakingPart.id)).map((i: any) => {
-      const r = given.get(i.speakingPart.id)!
+    const testParts = new Map<string, any>(section.items.filter((i: any) => i.speakingPart).map((i: any) => [i.speakingPart.id as string, i.speakingPart]))
+    const rows = (Array.isArray(body.recordings) ? body.recordings : []).filter(r => testParts.has(String(r?.partId))).map((r) => {
       // Only this user's own uploads (their user id is part of a recording's key).
       const key = s3KeyFromUrl(String(r.audioRef))
       if (!key || !key.split('/').includes(user.id)) throw createError({ statusCode: 400, message: 'Upload the recordings first' })
-      return { part: i.speakingPart, audioRef: String(r.audioRef), durationSeconds: Number(r.durationSeconds) || null }
+      return { part: testParts.get(String(r.partId)), position: Math.max(0, Math.floor(Number(r.position) || 0)), audioRef: String(r.audioRef), durationSeconds: Number(r.durationSeconds) || null }
     })
-    parts = await withQuestions(items)
+    parts = await speakingPartsOf(rows)
     testId = test.id
   }
   if (!parts.length) throw createError({ statusCode: 400, message: 'Record at least one answer first.' })

@@ -354,14 +354,15 @@
     "organisation": "Tuzilish",
     "vocabulary": "Lug‘at",
     "grammar": "Grammatika",
-    "fluency": "Ravonlik"
+    "fluency": "Ravonlik",
+    "pronunciation": "Talaffuz"
   },
   "ai": {
     "noFeedback": "Hozircha AI tahlil yo‘q",
     "leftToday": "Bugun {limit} tadan {left} tasi qoldi",
     "leftMonth": "Bu oy {limit} tadan {left} tasi qoldi",
     "wordsOf": "{n} / {min}+ so‘z",
-    "introSpeaking": "Gapirganingiz asosida 75 ballik taxminiy baho: har bir qism ravonlik, lug‘at, grammatika va topshiriq bo‘yicha qanday ekani, tuzatishlar bilan. Taxminan bir daqiqa.",
+    "introSpeaking": "Gapirganingiz asosida imtihon oluvchi kabi 75 ballik taxminiy baho: har bir qism bo‘yicha ravonlik, lug‘at, grammatika, talaffuz va topshiriq, nutq tezligi va pauzalaringiz, tuzatishlar va yaxshiroq so‘zlar bilan. Taxminan bir daqiqa.",
     "introWriting": "75 ballik taxminiy baho, har bir topshiriq to‘rt mezon bo‘yicha qanday ekani va eng muhim tuzatishlar. Taxminan bir daqiqa.",
     "instant": "Tezkor AI tahlil",
     "signIn": "AI tahlil uchun kiring",
@@ -378,7 +379,13 @@
     "heard": "Biz eshitgan",
     "corrections": "Tuzatishlar",
     "stepUp": "Bir pog‘ona yuqori",
-    "guide": "Bu yo‘l ko‘rsatuvchi AI bahosi, imtihon oluvchining bahosi emas."
+    "guide": "Bu yo‘l ko‘rsatuvchi AI bahosi, imtihon oluvchining bahosi emas.",
+    "byAnswer": "Har bir javob",
+    "nothingHeard": "Hech narsa eshitilmadi",
+    "wpm": "daqiqasiga {n} so‘z",
+    "pauses": "{n} ta pauza",
+    "fillers": "{n} ta to‘ldiruvchi so‘z",
+    "upgrades": "Yaxshiroq so‘zlar"
   },
   "result": {
     "level": {
@@ -992,5 +999,35 @@
     "uploadLogo": "Logotip yuklash",
     "listingSaved": "Saqlandi",
     "seeCatalogue": "Katalogni ko‘rish"
+  },
+  "speak": {
+    "checkTitle": "Mikrofoningizni tekshiring",
+    "checkText": "Uch soniya yozib, qayta tinglang: imtihon oluvchi sizni eshitishiga ishonch hosil qiling. Keyin imtihon o‘zi davom etadi: tinglang, tayyorlaning, signaldan keyin gapiring.",
+    "testRecord": "3 soniya yozish",
+    "testAgain": "Qayta yozish",
+    "testing": "Yozilmoqda…",
+    "sounds": "O‘zimni eshityapman — boshlash",
+    "readAloud": "Imtihon oluvchi har bir savolni ovoz chiqarib o‘qiydi",
+    "micDenied": "Mikrofon bloklangan",
+    "micDeniedText": "Brauzer sozlamalarida ushbu sayt uchun mikrofonga ruxsat bering va qayta urinib ko‘ring.",
+    "p1": "Shaxsiy savollar",
+    "p2": "Rasmlar",
+    "p3": "Uzun javob",
+    "p4": "Munozara",
+    "p1Info": "Imtihon oluvchi sizga o‘zingiz haqingizda {n} ta savol beradi. Har biriga o‘ylash uchun {prep} va javob berish uchun {speak} bor.",
+    "p2Info": "Rasmlarga qarang: ularni {speak} ichida tasvirlab, taqqoslang. So‘ng yana {n} ta savolga har biriga {then} ichida javob bering.",
+    "p3Info": "Kartani o‘qing. Tayyorlanish uchun {prep}, gapirish uchun {speak} bor. Kartadagi har bir bandni yoriting.",
+    "p4Info": "Fikrni hamda tarafdor va qarshi dalillarni o‘qing. Tayyorlanish uchun {prep}, fikringizni aytish uchun {speak} bor.",
+    "seconds": "{n} soniya",
+    "minutes": "{n} daqiqa",
+    "ready": "Tayyorman",
+    "listen": "Tinglang",
+    "prepare": "Tayyorlaning",
+    "speakNow": "Gapiring",
+    "skipListening": "O‘tkazib yuborish",
+    "startNow": "Hozir gapirishni boshlash",
+    "finishAnswer": "Javobni tugatish",
+    "qOf": "{total} tadan {n}-savol",
+    "saving": "Javoblaringiz saqlanmoqda…"
   }
 }
