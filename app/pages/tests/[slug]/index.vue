@@ -5,7 +5,7 @@ definePageMeta({ guestLayout: true })
 const route = useRoute()
 const slug = String(route.params.slug)
 const config = useRuntimeConfig()
-const { loggedIn, canOpen, rewardCredits, me, refresh: refreshMe } = useMe()
+const { loggedIn, canOpen, rewardCredits, me, isPremium, refresh: refreshMe } = useMe()
 const toast = useToast()
 const { t: tr } = useI18n()
 
@@ -101,6 +101,19 @@ useHead({
     :title="t.title"
     back="/tests"
   >
+    <template
+      v-if="isPremium"
+      #actions
+    >
+      <UButton
+        :to="`/tests/${t.slug}/pdf?download=1`"
+        target="_blank"
+        icon="i-lucide-download"
+        :label="tr('pdf.download')"
+        color="neutral"
+        variant="outline"
+      />
+    </template>
     <div class="flex flex-col gap-6 max-w-5xl">
       <!-- The test's tile, large: the same colours as in the list -->
       <div

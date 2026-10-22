@@ -150,6 +150,23 @@ leaderboard at `/live` (highest total first, then whoever finished first; names 
 and initial), Writing and Speaking go to the examiner as usual. The hourly `live:mocks` job announces
 a mock on Telegram when it opens and sends each participant their place when it closes.
 
+With `TELEGRAM_CHANNEL` set (the bot an admin of the channel that can post messages), the bot also
+posts each mock there: when it is scheduled, when it opens, and the top 10 of the board when it
+closes, in `TELEGRAM_CHANNEL_LOCALE` (Uzbek by default). **Post to channel** on `/admin/live` posts a
+mock again as it stands; if Telegram refuses, the page says why.
+
+A mock can be edited (**Edit**): before it opens, its title, test and window; while it runs, its title
+and when it closes (the board so far stays); once it has ended, its title. Windows still may not overlap.
+
+### Tests as PDF (Premium)
+
+Premium users (and staff) have a **PDF** button on each test card and **Download PDF** on a test's
+page. It opens `/tests/{slug}/pdf`: the whole test as an A4 paper (Reading passages and questions
+with lines in the gaps, Writing tasks with lines to write on, Speaking cards, a note that Listening's
+recording is played on the site) and, if wanted, the answer key at the end. The browser's print
+window opens by itself; "Save as PDF" saves it. The paper comes from `/api/tests/{slug}/paper`,
+which answers 402 without Premium.
+
 ### Exam plan
 
 On **My results** a user sets the day of their exam and a target (B1 38+, B2 51+, C1 65+). They

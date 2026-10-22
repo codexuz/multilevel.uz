@@ -54,9 +54,11 @@ export const gapCount = (html?: string | null) => (html ? [...html.matchAll(GAP_
 /**
  * The chip drawn in a gap: the answer given, whether it was right, and the key when asked for.
  * `numbered` off leaves out the number and the anchor, for a gap whose question is numbered beside it.
+ * `blank` draws an empty line to write on instead (a printed paper).
  */
-export function gapChip(item: QuestionItem | undefined, showKey: boolean, label?: (key: string) => string, numbered = true) {
+export function gapChip(item: QuestionItem | undefined, showKey: boolean, label?: (key: string) => string, numbered = true, blank = false) {
   if (!item) return '<span class="text-dimmed">___</span>'
+  if (blank) return `<span class="inline-flex items-end gap-1 align-baseline">${numbered ? `<b>(${item.number})</b>` : ''}<span class="inline-block w-28 border-b border-current">&nbsp;</span></span>`
   const show = (v: string) => escapeHtml(label ? label(v) : v)
   const ok = !!item.isCorrect
   const given = answered(item)
@@ -71,7 +73,7 @@ export function gapChip(item: QuestionItem | undefined, showKey: boolean, label?
  * The group's text with each gap filled by the answer given. A "{7}" gap is question 7; the plain
  * gaps take the group's remaining numbers in order, as the exam numbered them.
  */
-export function fillGaps(html: string, items: QuestionItem[], showKey: boolean, label?: (key: string) => string, numbered = true) {
+export function fillGaps(html: string, items: QuestionItem[], showKey: boolean, label?: (key: string) => string, numbered = true, blank = false) {
   const byNumber = new Map(items.map(i => [i.number, i]))
   const explicit = new Set([...html.matchAll(/\{(\d{1,2})\}/g)].map(m => Number(m[1])))
   const free = items.filter(i => !explicit.has(i.number))
@@ -81,13 +83,13 @@ export function fillGaps(html: string, items: QuestionItem[], showKey: boolean, 
     const explicitGap = /^\{(\d{1,2})\}$/.exec(gap)
     const item = explicitGap ? byNumber.get(Number(explicitGap[1])) : free[next++]
     if (item) placed.add(item.number)
-    return gapChip(item, showKey, label, numbered)
+    return gapChip(item, showKey, label, numbered, blank)
   })
   return { html: out, placed }
 }
 
 /** A table-completion table with the gaps filled, cell by cell, numbered across the table. */
-export function fillTable(table: { headers: string[], rows: string[][] }, items: QuestionItem[], showKey: boolean) {
+export function fillTable(table: { headers: string[], rows: string[][] }, items: QuestionItem[], showKey: boolean, blank = false) {
   const byNumber = new Map(items.map(i => [i.number, i]))
   const all = table.rows.flat().join(' ')
   const explicit = new Set([...all.matchAll(/\{(\d{1,2})\}/g)].map(m => Number(m[1])))
@@ -95,7 +97,7 @@ export function fillTable(table: { headers: string[], rows: string[][] }, items:
   let next = 0
   return table.rows.map(row => row.map(cell => escapeHtml(cell).replace(GAP_RE, (gap) => {
     const numbered = /^\{(\d{1,2})\}$/.exec(gap)
-    return gapChip(numbered ? byNumber.get(Number(numbered[1])) : free[next++], showKey)
+    return gapChip(numbered ? byNumber.get(Number(numbered[1])) : free[next++], showKey, undefined, true, blank)
   })))
 }
 

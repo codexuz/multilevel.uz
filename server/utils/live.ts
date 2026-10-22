@@ -1,7 +1,8 @@
-import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lte, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, lte, ne, sql } from 'drizzle-orm'
 import { attempts, liveMocks, sections, tests, users } from '../database/schema'
 import { telegramApi, telegramBotToken } from './telegram'
 import { MSG, asLocale } from './messages'
+import { telegramChannel } from './rewards'
 
 /**
  * Live mocks: one test everyone sits in the same window, ranked on Listening and Reading (marked at
@@ -14,6 +15,20 @@ type Mock = typeof liveMocks.$inferSelect
 
 export const mockState = (m: Pick<Mock, 'startsAt' | 'endsAt'>, now = new Date()) =>
   m.startsAt > now ? 'UPCOMING' as const : m.endsAt > now ? 'LIVE' as const : 'ENDED' as const
+
+/**
+ * A window an admin sets: it ends after it starts, in the future, within two weeks, and overlaps no
+ * other mock (`except`, the one being edited), so there is one leaderboard at a time.
+ */
+export async function checkWindow(startsAt: Date, endsAt: Date, except?: string) {
+  if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) throw createError({ statusCode: 400, message: 'Pick when it starts and ends' })
+  if (endsAt <= startsAt) throw createError({ statusCode: 400, message: 'It must end after it starts' })
+  if (endsAt <= new Date()) throw createError({ statusCode: 400, message: 'That time has passed' })
+  if (endsAt.getTime() - startsAt.getTime() > 14 * 864e5) throw createError({ statusCode: 400, message: 'Keep it to two weeks at most' })
+  const [clash] = await useDb().select({ title: liveMocks.title }).from(liveMocks)
+    .where(and(lt(liveMocks.startsAt, endsAt), gt(liveMocks.endsAt, startsAt), except ? ne(liveMocks.id, except) : undefined)).limit(1)
+  if (clash) throw createError({ statusCode: 409, message: `It overlaps "${clash.title}"` })
+}
 
 /** The live mock of this test that is open now, if any. */
 export async function openMockOfTest(testId: string, now = new Date()) {
@@ -88,9 +103,47 @@ async function send(chatId: string, text: string, path: string, button: string) 
   return res.ok
 }
 
+// ---------- the Telegram channel ----------
+// With TELEGRAM_CHANNEL set (the same channel as the join reward) the bot posts each mock there: when
+// it is scheduled, when it opens, and the top of the board when it closes. The bot must be an admin
+// of the channel allowed to post messages. TELEGRAM_CHANNEL_LOCALE picks the language (uz by default).
+
+const channelLocale = () => asLocale(process.env.TELEGRAM_CHANNEL_LOCALE || 'uz')
+
+/** Posts where a mock stands to the channel: coming, open, or its results. Says why when it cannot. */
+export async function postMockToChannel(m: Mock, now = new Date()): Promise<{ ok: boolean, error?: string }> {
+  const channel = telegramChannel()
+  if (!channel) return { ok: false, error: 'No channel is set up (TELEGRAM_CHANNEL)' }
+  const l = channelLocale()
+  const state = mockState(m, now)
+  let text: string
+  let path = '/live'
+  let button: string
+  if (state === 'UPCOMING') {
+    text = MSG.liveSoon(l, m.title, m.startsAt, m.endsAt)
+    button = MSG.liveSoonButton[l]
+  } else if (state === 'LIVE') {
+    text = MSG.liveOpen(l, m.title, m.endsAt)
+    button = MSG.liveOpenButton[l]
+  } else {
+    const board = await standings(m.id)
+    if (!board.length) return { ok: false, error: 'Nobody took part, so there are no results to post' }
+    text = MSG.liveBoard(l, m.title, board.slice(0, 10), board.length)
+    path = `/live?mock=${m.id}`
+    button = MSG.liveOverButton[l]
+  }
+  const res = await telegramApi('sendMessage', {
+    chat_id: channel.chat, text, parse_mode: 'HTML', link_preview_options: { is_disabled: true },
+    reply_markup: { inline_keyboard: [[{ text: button, url: `${siteUrl()}${path}` }]] }
+  }).catch((e: any) => ({ ok: false, description: e?.data?.description || e?.message }))
+  if (!res.ok) console.warn('[live] channel post failed:', res.description)
+  return res.ok ? { ok: true } : { ok: false, error: `Telegram: ${res.description || 'the post was refused'}. The bot must be an admin of the channel that can post messages.` }
+}
+
 /**
- * Hourly: tells everyone the bot may write to that a mock has started, and when one has ended, tells
- * each participant their place and puts a draft test into the library.
+ * Hourly: tells everyone the bot may write to (and the channel) that a mock has started, and when one
+ * has ended, tells each participant their place, posts the top of the board to the channel and puts
+ * a draft test into the library.
  */
 export async function runLiveMocks(now = new Date()) {
   const db = useDb()
@@ -101,6 +154,7 @@ export async function runLiveMocks(now = new Date()) {
   for (const m of started) {
     await db.update(liveMocks).set({ announcedAt: now }).where(eq(liveMocks.id, m.id))
     if (!telegramBotToken()) continue
+    await postMockToChannel(m, now)
     const audience = await db.select({ chatId: users.telegramId, locale: users.locale }).from(users)
       .where(and(isNotNull(users.telegramId), eq(users.telegramNotify, true), eq(users.telegramBotJoined, true), eq(users.banned, false)))
     for (const u of audience) {
@@ -118,6 +172,7 @@ export async function runLiveMocks(now = new Date()) {
     if (!telegramBotToken()) continue
     const board = await standings(m.id)
     if (!board.length) continue
+    await postMockToChannel(m, now)
     const chats = await db.select({ id: users.id, chatId: users.telegramId, notify: users.telegramNotify, locale: users.locale }).from(users)
       .where(inArray(users.id, board.map(r => r.userId)))
     for (const r of board) {
