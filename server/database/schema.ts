@@ -1,7 +1,7 @@
 import { relations, sql } from 'drizzle-orm'
 import {
   pgTable, pgEnum, uuid, text, integer, boolean, serial,
-  timestamp, date, jsonb, index, uniqueIndex, primaryKey, type AnyPgColumn
+  timestamp, date, jsonb, real, index, uniqueIndex, primaryKey, type AnyPgColumn
 } from 'drizzle-orm/pg-core'
 
 // ---------- Enums ----------
@@ -34,6 +34,10 @@ export const users = pgTable('users', {
   learningDuration: text('learning_duration'), // '<6m' | '6-12m' | '1-2y' | '2y+'
   targetLevel: text('target_level'), // A1..C1
   targetScore: integer('target_score'), // 0..75
+  /** The exam they prepare for (IELTS | MULTILEVEL): the catalogue opens on it. */
+  exam: text('exam'),
+  /** IELTS: the overall band they aim for. */
+  targetBand: real('target_band'),
   /** The day of the user's real exam (Tashkent date): a countdown, a weekly plan and reminders. */
   examDate: date('exam_date', { mode: 'string' }),
   /** The last day the bot sent a study plan reminder, so it writes at most once a day. */
@@ -80,6 +84,7 @@ export const tests = pgTable('tests', {
   mode: text('mode').notNull().default('PRACTICE'), // PRACTICE | MOCK
   status: text('status').notNull().default('DRAFT'),
   category: text('category'), // AUTHENTIC | CAMBRIDGE | PRE_TEST | CUSTOM
+  /** The exam and its kind: MULTILEVEL, or ACADEMIC | GENERAL_TRAINING for IELTS (examOfModule). */
   module: text('module').notNull().default('MULTILEVEL'),
   source: text('source'),
   /** FREE: anyone can sit it. PREMIUM: its page is public, sitting it needs an active plan. */
@@ -107,6 +112,8 @@ export const sections = pgTable('sections', {
 
 export const parts = pgTable('parts', {
   id: uuid('id').primaryKey().defaultRandom(),
+  /** IELTS | MULTILEVEL: the exam whose tests it goes into (its numbering follows that exam). */
+  exam: text('exam').notNull().default('MULTILEVEL'),
   skill: text('skill').notNull(), // LISTENING | READING
   partNumber: integer('part_number').notNull(),
   title: text('title'),
@@ -154,7 +161,8 @@ export const questionItems = pgTable('question_items', {
 
 export const writingTasks = pgTable('writing_tasks', {
   id: uuid('id').primaryKey().defaultRandom(),
-  /** Multilevel: 1 = Task 1.1, 2 = Task 1.2, 3 = Task 2 (the title says which). */
+  exam: text('exam').notNull().default('MULTILEVEL'),
+  /** Multilevel: 1 = Task 1.1, 2 = Task 1.2, 3 = Task 2. IELTS: 1 = Task 1, 2 = Task 2. */
   taskNumber: integer('task_number').notNull(),
   module: text('module'),
   title: text('title'),
@@ -169,7 +177,8 @@ export const writingTasks = pgTable('writing_tasks', {
 
 export const speakingParts = pgTable('speaking_parts', {
   id: uuid('id').primaryKey().defaultRandom(),
-  /** Multilevel: 1 = Part 1.1, 2 = Part 1.2, 3 = Part 2, 4 = Part 3 (the title says which). */
+  exam: text('exam').notNull().default('MULTILEVEL'),
+  /** Multilevel: 1 = Part 1.1, 2 = Part 1.2, 3 = Part 2, 4 = Part 3. IELTS: Part 1, 2 and 3. */
   partNumber: integer('part_number').notNull(),
   title: text('title'),
   cueCard: text('cue_card'),
@@ -235,8 +244,11 @@ export const attempts = pgTable('attempts', {
   /** Listening and Reading: right answers out of the questions. */
   correct: integer('correct'),
   total: integer('total'),
-  /** The Multilevel scaled score, 0–75, and its CEFR level. */
+  /** The exam it was (IELTS | MULTILEVEL), so results read on the right scale. */
+  exam: text('exam').notNull().default('MULTILEVEL'),
+  /** Multilevel: the scaled score, 0–75. IELTS: the band, 0–9 in halves. And the CEFR level. */
   score: integer('score'),
+  band: real('band'),
   cefrLevel: text('cefr_level'),
   examinerId: uuid('examiner_id').references(() => users.id, { onDelete: 'set null' }),
   feedback: text('feedback'),
@@ -406,6 +418,8 @@ export const orders = pgTable('orders', {
   clickPaydocId: text('click_paydoc_id'),
   note: text('note'),
   grantedById: uuid('granted_by_id').references(() => users.id, { onDelete: 'set null' }),
+  /** A test pack bought: its tests open for good when the order is paid. */
+  packId: uuid('pack_id').references((): AnyPgColumn => packs.id, { onDelete: 'set null' }),
   /** A promo code taken off the price (amountUzs is what is paid, after it). */
   promoCodeId: uuid('promo_code_id').references((): AnyPgColumn => promoCodes.id, { onDelete: 'set null' }),
   discountUzs: integer('discount_uzs').notNull().default(0),
@@ -508,6 +522,8 @@ export const aiReviews = pgTable('ai_reviews', {
   input: jsonb('input').notNull(),
   result: jsonb('result'),
   score: integer('score'),
+  /** IELTS: the band the AI gave. */
+  band: real('band'),
   cefrLevel: text('cefr_level'),
   model: text('model'),
   inputTokens: integer('input_tokens'),
@@ -517,7 +533,35 @@ export const aiReviews = pgTable('ai_reviews', {
   completedAt: timestamp('completed_at', { withTimezone: true })
 }, t => [index('ai_reviews_user_idx').on(t.userId, t.createdAt)])
 
-/** Premium tests a user opened with credits: theirs for good. */
+// ---------- test packs ----------
+/**
+ * A bundle of tests sold once (say, ten authentic IELTS Academic tests): paying opens each of them
+ * for good, as an unlocked test, whatever happens to Premium.
+ */
+export const packs = pgTable('packs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  slug: text('slug').notNull().unique(),
+  title: text('title').notNull(),
+  description: text('description'),
+  exam: text('exam').notNull().default('IELTS'),
+  /** In so'm; `oldPriceUzs` is shown struck through beside it. */
+  priceUzs: integer('price_uzs').notNull(),
+  oldPriceUzs: integer('old_price_uzs'),
+  coverUrl: text('cover_url'),
+  featured: boolean('featured').notNull().default(false),
+  active: boolean('active').notNull().default(true),
+  position: integer('position').notNull().default(1),
+  createdAt: created(),
+  updatedAt: updated()
+})
+
+export const packTests = pgTable('pack_tests', {
+  packId: uuid('pack_id').notNull().references(() => packs.id, { onDelete: 'cascade' }),
+  testId: uuid('test_id').notNull().references(() => tests.id, { onDelete: 'cascade' }),
+  position: integer('position').notNull().default(1)
+}, t => [primaryKey({ columns: [t.packId, t.testId] }), index('pack_tests_test_idx').on(t.testId)])
+
+/** Premium tests a user opened with credits or bought in a pack: theirs for good. */
 export const testUnlocks = pgTable('test_unlocks', {
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   testId: uuid('test_id').notNull().references(() => tests.id, { onDelete: 'cascade' }),

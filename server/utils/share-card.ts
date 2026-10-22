@@ -7,7 +7,7 @@ import { referralCodeOf } from './rewards'
 import { cefrLevel } from './score'
 
 /**
- * A result as a picture to share: "Aziz scored 58/75, B2 in Multilevel Reading", with the
+ * A result as a picture to share: "Aziz scored 58/75, B2 in Multilevel Reading" (or band 6.5 in IELTS), with the
  * sharer's invite link on it, so every shared result can bring a friend. The link to it is signed,
  * so only results their owner chose to share can be opened.
  */
@@ -29,7 +29,7 @@ export function attemptOfToken(token: string): string | null {
   return a.length === b.length && timingSafeEqual(a, b) ? id : null
 }
 
-export interface ShareData { name: string, score: number, cefrLevel: string, skill: string, partNumber: number | null, test: { slug: string, title: string } | null, code: string }
+export interface ShareData { name: string, score: number, cefrLevel: string, skill: string, exam: string, band: number | null, partNumber: number | null, test: { slug: string, title: string } | null, code: string }
 
 /** What a shared result shows, if it has a score to show. */
 export async function shareData(attemptId: string): Promise<ShareData | null> {
@@ -37,11 +37,13 @@ export async function shareData(attemptId: string): Promise<ShareData | null> {
   const [row] = await db.select({ a: attempts, test: { slug: tests.slug, title: tests.title }, name: users.name, telegramUsername: users.telegramUsername })
     .from(attempts).innerJoin(users, eq(users.id, attempts.userId)).leftJoin(tests, eq(tests.id, attempts.testId))
     .where(eq(attempts.id, attemptId)).limit(1)
-  if (!row || row.a.score == null || row.a.status !== 'GRADED') return null
+  if (!row || (row.a.score == null && row.a.band == null) || row.a.status !== 'GRADED') return null
   return {
     name: (row.name || '').trim().split(/\s+/)[0] || (row.telegramUsername ? `@${row.telegramUsername}` : 'I'),
-    score: row.a.score,
-    cefrLevel: row.a.cefrLevel ?? cefrLevel(row.a.score),
+    score: row.a.score ?? row.a.band!,
+    band: row.a.band,
+    exam: row.a.exam,
+    cefrLevel: row.a.cefrLevel ?? (row.a.band != null ? bandCefr(row.a.band)! : cefrLevel(row.a.score!)),
     skill: row.a.skill,
     partNumber: row.a.partNumber,
     test: row.test?.slug ? row.test : null,
@@ -86,12 +88,15 @@ export async function renderShareCard(d: ShareData): Promise<Buffer> {
       h('div', { display: 'flex', alignItems: 'center', fontSize: 34, fontWeight: 900 },
         { type: 'img', props: { src: MARK, width: 48, height: 48, style: { marginRight: 14 } } },
         'Mockmee'),
-      h('div', { display: 'flex', fontSize: 24, fontWeight: 700, padding: '8px 18px', borderRadius: 999, background: 'rgba(255,255,255,0.18)' }, 'CEFR English mock test')),
+      h('div', { display: 'flex', fontSize: 24, fontWeight: 700, padding: '8px 18px', borderRadius: 999, background: 'rgba(255,255,255,0.18)' }, d.band != null ? 'IELTS mock test' : 'Multilevel mock test')),
     h('div', { display: 'flex', flexDirection: 'column' },
       h('div', { display: 'flex', fontSize: 40, fontWeight: 700, opacity: 0.9 }, `${d.name} scored`),
       h('div', { display: 'flex', alignItems: 'flex-end', marginTop: 4 },
-        h('div', { display: 'flex', fontSize: 200, fontWeight: 900, lineHeight: 1 }, String(d.score)),
-        h('div', { display: 'flex', fontSize: 64, fontWeight: 700, opacity: 0.85, marginLeft: 12, marginBottom: 22 }, '/ 75'),
+        ...(d.band != null
+          ? [h('div', { display: 'flex', fontSize: 64, fontWeight: 700, opacity: 0.85, marginRight: 16, marginBottom: 22 }, 'Band'),
+              h('div', { display: 'flex', fontSize: 200, fontWeight: 900, lineHeight: 1 }, d.band.toFixed(1))]
+          : [h('div', { display: 'flex', fontSize: 200, fontWeight: 900, lineHeight: 1 }, String(d.score)),
+              h('div', { display: 'flex', fontSize: 64, fontWeight: 700, opacity: 0.85, marginLeft: 12, marginBottom: 22 }, '/ 75')]),
         h('div', { display: 'flex', fontSize: 52, fontWeight: 900, color: '#3b4fd8', background: 'white', borderRadius: 18, padding: '10px 26px', marginLeft: 36, marginBottom: 26 }, levelLabel(d.cefrLevel))),
       h('div', { display: 'flex', fontSize: 34, fontWeight: 400, opacity: 0.92, marginTop: 6, maxWidth: 1070 }, what.length > 64 ? `${what.slice(0, 63)}…` : what)),
     h('div', { display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 30 },

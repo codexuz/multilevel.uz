@@ -41,12 +41,14 @@ export async function openMockOfTest(testId: string, now = new Date()) {
 export async function mockView(m: Mock, now = new Date()) {
   const db = useDb()
   const [[t], skills] = await Promise.all([
-    db.select({ slug: tests.slug, title: tests.title }).from(tests).where(eq(tests.id, m.testId)).limit(1),
+    db.select({ slug: tests.slug, title: tests.title, module: tests.module }).from(tests).where(eq(tests.id, m.testId)).limit(1),
     db.select({ skill: sections.skill }).from(sections).where(eq(sections.testId, m.testId)).orderBy(asc(sections.position))
   ])
   const state = mockState(m, now)
   return {
     id: m.id, title: m.title, startsAt: m.startsAt, endsAt: m.endsAt, state,
+    /** IELTS ranks on bands (out of 9 a skill), Multilevel on scores (out of 75). */
+    exam: examOfModule(t?.module),
     // Before it opens, which test it is stays a secret.
     test: state === 'UPCOMING' || !t ? null : { slug: t.slug, title: t.title },
     skills: skills.map(s => s.skill)
@@ -60,13 +62,13 @@ function boardName(name: string | null, id: string) {
   return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1]!.charAt(0)}.` : parts[0]!
 }
 
-/** Everyone's place: highest total of the ranked sections first, then whoever finished first. */
+/** Everyone's place: highest total of the ranked sections first (scores, or IELTS bands), then whoever finished first. */
 export async function standings(mockId: string) {
   const rows = await useDb().execute(sql`
-    select a.user_id as "userId", u.name, sum(a.score)::int as total, max(a.submitted_at) as finished,
-      json_object_agg(a.skill, a.score) as scores
+    select a.user_id as "userId", u.name, sum(coalesce(a.band, a.score))::float as total, max(a.submitted_at) as finished,
+      json_object_agg(a.skill, coalesce(a.band, a.score)) as scores
     from attempts a join users u on u.id = a.user_id
-    where a.live_mock_id = ${mockId} and a.skill in ('LISTENING', 'READING') and a.score is not null
+    where a.live_mock_id = ${mockId} and a.skill in ('LISTENING', 'READING') and (a.score is not null or a.band is not null)
     group by a.user_id, u.name
     order by total desc, finished asc`) as unknown as { userId: string, name: string | null, total: number, finished: string, scores: Record<string, number> }[]
   return [...rows].map((r, i) => ({ rank: i + 1, userId: r.userId, name: boardName(r.name, r.userId), total: r.total, scores: r.scores, finished: r.finished }))
@@ -76,7 +78,7 @@ export async function leaderboard(m: Mock, viewerId: string | null, limit = 50) 
   const [all, mine] = await Promise.all([
     standings(m.id),
     viewerId
-      ? useDb().select({ skill: attempts.skill, id: attempts.id, score: attempts.score }).from(attempts)
+      ? useDb().select({ skill: attempts.skill, id: attempts.id, score: attempts.score, band: attempts.band }).from(attempts)
           .where(and(eq(attempts.liveMockId, m.id), eq(attempts.userId, viewerId)))
       : Promise.resolve([])
   ])
@@ -87,7 +89,7 @@ export async function leaderboard(m: Mock, viewerId: string | null, limit = 50) 
     top: all.slice(0, limit).map(strip),
     me: me ? strip(me) : null,
     /** The sections the viewer has already sat in this mock (each counts once). */
-    done: mine.map(a => ({ skill: a.skill, attemptId: a.id, score: a.score }))
+    done: mine.map(a => ({ skill: a.skill, attemptId: a.id, score: a.score, band: a.band }))
   }
 }
 

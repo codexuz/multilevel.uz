@@ -23,6 +23,9 @@ export default defineEventHandler(async (event) => {
     learningDuration: u.learningDuration,
     targetLevel: u.targetLevel,
     targetScore: u.targetScore,
+    /** IELTS | MULTILEVEL, or null before they chose. */
+    exam: isExam(u.exam) ? u.exam : null,
+    targetBand: u.targetBand,
     onboarded: u.onboarded,
     premium: access.premium,
     premiumUntil: access.premiumUntil,

@@ -46,7 +46,7 @@ export function paymentRequired(code: 'PREMIUM_REQUIRED' | 'CREDIT_REQUIRED', me
   throw createError({ statusCode: 402, message, data: { code } })
 }
 
-/** A paid order's Premium and credits, once (callers hold the order row locked). */
+/** A paid order's Premium, credits and pack, once (callers hold the order row locked). */
 export async function fulfilOrder(tx: Tx, order: typeof orders.$inferSelect, reason: 'PURCHASE' | 'GRANT') {
   if (order.durationDays > 0) {
     // Buying while Premium runs starts the new stretch where the current one ends.
@@ -60,6 +60,8 @@ export async function fulfilOrder(tx: Tx, order: typeof orders.$inferSelect, rea
   if (order.credits > 0) {
     await tx.insert(creditTransactions).values({ userId: order.userId, delta: order.credits, reason, orderId: order.id })
   }
+  // A test pack: its tests open for good.
+  if (order.packId) await unlockPack(tx, order.userId, order.packId)
   // A promo code on the order now counts as used by this user.
   if (order.promoCodeId) {
     const added = await tx.insert(promoRedemptions).values({ promoCodeId: order.promoCodeId, userId: order.userId, orderId: order.id })
@@ -95,7 +97,7 @@ export const planView = (p: typeof plans.$inferSelect) => ({
 })
 
 export const orderView = (o: typeof orders.$inferSelect & { user?: { id: string, name: string | null, email: string | null, telegramUsername: string | null } | null }) => ({
-  id: o.id, number: o.number, planName: o.planName, amountUzs: o.amountUzs, durationDays: o.durationDays, credits: o.credits,
+  id: o.id, number: o.number, planName: o.planName, packId: o.packId, amountUzs: o.amountUzs, durationDays: o.durationDays, credits: o.credits,
   provider: o.provider, status: o.status, note: o.note, paidAt: o.paidAt, createdAt: o.createdAt,
   user: o.user ? { id: o.user.id, name: userLabel(o.user), email: o.user.email, telegramUsername: o.user.telegramUsername } : undefined
 })

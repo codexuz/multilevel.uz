@@ -6,7 +6,12 @@
 
 export interface GivenAnswer { itemId: string, answer: string }
 
-export function markSection(section: any, given: Map<string, string>) {
+/**
+ * `module` is the test's (Academic and General Training Reading convert to bands differently). An
+ * IELTS section gets a band, a Multilevel one a score out of 75; a single part practised on its own
+ * gets neither in IELTS, only the right answers.
+ */
+export function markSection(section: any, given: Map<string, string>, module?: string | null) {
   const marks = new Map<string, boolean>()
   let correct = 0
   let total = 0
@@ -25,8 +30,14 @@ export function markSection(section: any, given: Map<string, string>) {
     }
   }
   const objective = section.skill === 'LISTENING' ? 'listening' : section.skill === 'READING' ? 'reading' : null
+  const exam = examOfSection(section)
+  if (exam === 'IELTS') {
+    const whole = (section.items ?? []).filter((i: any) => i.part).length >= formatOf('IELTS')[section.skill as 'LISTENING' | 'READING']?.parts
+    const band = objective && total && whole ? rawToBand(section.skill, module, correct, total) : null
+    return { exam, marks, correct, total, score: null, band, cefrLevel: bandCefr(band) }
+  }
   const score = objective && total ? sectionScore(objective, correct, section.settings) : null
-  return { marks, correct, total, score, cefrLevel: score == null ? null : cefrLevel(score) }
+  return { exam, marks, correct, total, score, band: null as number | null, cefrLevel: score == null ? null : cefrLevel(score) }
 }
 
 /** Every item id of a section, so answers to questions not in it are ignored. */
@@ -48,6 +59,8 @@ export function reviewSection(section: any, opts: {
   correct: number | null
   total: number | null
   score: number | null
+  /** IELTS: the band, in place of a score. */
+  band?: number | null
   essays?: Map<string, { id?: string, text: string, wordCount: number, feedback?: string | null }>
 }) {
   const paper = paperSection(section, true)
@@ -74,12 +87,13 @@ export function reviewSection(section: any, opts: {
     skill: paper.skill,
     title: paper.title,
     audioUrl: paper.audioUrl,
+    exam: paper.exam,
     correct: opts.correct,
     total: opts.total,
-    band: opts.score,
+    band: opts.band ?? null,
     score: opts.score,
-    cefrLevel: opts.score == null ? null : cefrLevel(opts.score),
-    estimated: opts.total != null && opts.total !== 35,
+    cefrLevel: opts.band != null ? bandCefr(opts.band) : opts.score == null ? null : cefrLevel(opts.score),
+    estimated: opts.total != null && opts.total !== formatOf(paper.exam)[paper.skill as 'LISTENING' | 'READING']?.questions,
     parts,
     tasks: paper.tasks.map((task: any) => {
       const essay = opts.essays?.get(task.id)

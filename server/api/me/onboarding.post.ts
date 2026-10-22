@@ -11,6 +11,8 @@ export default defineEventHandler(async (event) => {
     learningDuration?: string
     targetLevel?: string
     targetScore?: number
+    exam?: string
+    targetBand?: number
   }>(event)
 
   const currentLevel = LEVELS.includes(body.currentLevel ?? '') ? body.currentLevel : null
@@ -20,12 +22,17 @@ export default defineEventHandler(async (event) => {
     ? Math.round(body.targetScore)
     : null
 
+  const exam = isExam(body.exam) ? body.exam : null
+  const targetBand = isBand(body.targetBand) ? body.targetBand : null
+
   const db = useDb()
   await db.update(users).set({
     currentLevel,
     learningDuration,
     targetLevel,
     targetScore,
+    exam,
+    targetBand,
     onboarded: true,
     updatedAt: new Date()
   }).where(eq(users.id, user.id))

@@ -37,8 +37,8 @@ export interface Focus {
 
 const WRITING_CRITERIA = { taskAchievement: 'Task achievement', organisation: 'Organisation', vocabulary: 'Vocabulary', grammar: 'Grammar' } as Record<string, string>
 const SPEAKING_CRITERIA = { fluency: 'Fluency', vocabulary: 'Vocabulary', grammar: 'Grammar', pronunciation: 'Pronunciation', taskAchievement: 'Task achievement' } as Record<string, string>
-const writingTask = (n: number) => ({ 1: 'Task 1.1', 2: 'Task 1.2', 3: 'Task 2' } as Record<number, string>)[n] ?? `Task ${n}`
-const speakingPart = (n: number) => ({ 1: 'Part 1.1', 2: 'Part 1.2', 3: 'Part 2', 4: 'Part 3' } as Record<number, string>)[n] ?? `Part ${n}`
+/** Tests of an exam, in SQL over `tests t`. */
+const examTests = (exam: Exam) => (exam === 'IELTS' ? sql`t.module in ('ACADEMIC', 'GENERAL_TRAINING')` : sql`t.module = 'MULTILEVEL'`)
 const TYPE_LABEL: Record<string, string> = {
   TRUE_FALSE_NOT_GIVEN: 'True / False / Not Given', YES_NO_NOT_GIVEN: 'Yes / No / Not Given', MULTIPLE_CHOICE: 'Multiple choice',
   MULTIPLE_ANSWER: 'Multiple answer', NOTE_COMPLETION: 'Note completion', SENTENCE_COMPLETION: 'Sentence completion',
@@ -53,7 +53,7 @@ const pct = (right: number, total: number) => (total ? Math.round((right / total
 type Rows<T> = T[]
 
 /** Right answers by task type and by part, over the user's recent Listening and Reading. */
-async function objectiveStats(userId: string) {
+async function objectiveStats(userId: string, exam: Exam) {
   const db = useDb()
   const since = new Date(Date.now() - RECENT_DAYS * 864e5).toISOString()
   const [byType, byPart] = await Promise.all([
@@ -63,7 +63,7 @@ async function objectiveStats(userId: string) {
       join attempts a on a.id = ans.attempt_id
       join question_items qi on qi.id = ans.item_id
       join question_groups g on g.id = qi.group_id
-      where a.user_id = ${userId} and a.submitted_at > ${since}::timestamptz and a.skill in ('LISTENING', 'READING')
+      where a.user_id = ${userId} and a.exam = ${exam} and a.submitted_at > ${since}::timestamptz and a.skill in ('LISTENING', 'READING')
       group by a.skill, g.type`) as unknown as Promise<Rows<{ skill: string, type: string, total: number, right: number }>>,
     db.execute(sql`
       select a.skill, p.part_number as part, count(*)::int as total, count(*) filter (where ans.is_correct)::int as right
@@ -72,7 +72,7 @@ async function objectiveStats(userId: string) {
       join question_items qi on qi.id = ans.item_id
       join question_groups g on g.id = qi.group_id
       join parts p on p.id = g.part_id
-      where a.user_id = ${userId} and a.submitted_at > ${since}::timestamptz and a.skill in ('LISTENING', 'READING')
+      where a.user_id = ${userId} and a.exam = ${exam} and a.submitted_at > ${since}::timestamptz and a.skill in ('LISTENING', 'READING')
       group by a.skill, p.part_number`) as unknown as Promise<Rows<{ skill: string, part: number, total: number, right: number }>>
   ])
   return { byType: [...byType], byPart: [...byPart] }
@@ -80,11 +80,15 @@ async function objectiveStats(userId: string) {
 
 interface Reviewed { criteria: Record<string, number>, taskNumber?: number, partNumber?: number }
 
-/** Average criteria and task marks from the user's recent AI reviews of one skill. */
-async function criteriaStats(userId: string, skill: 'WRITING' | 'SPEAKING') {
-  const rows = await useDb().select({ result: aiReviews.result }).from(aiReviews)
+/**
+ * Average criteria and task marks from the user's recent AI reviews of one skill, for one exam
+ * (IELTS reviews mark out of 9 and say so; Multilevel ones mark out of 5).
+ */
+async function criteriaStats(userId: string, skill: 'WRITING' | 'SPEAKING', exam: Exam) {
+  const all = await useDb().select({ result: aiReviews.result }).from(aiReviews)
     .where(and(eq(aiReviews.userId, userId), eq(aiReviews.skill, skill), eq(aiReviews.status, 'DONE')))
-    .orderBy(desc(aiReviews.createdAt)).limit(10)
+    .orderBy(desc(aiReviews.createdAt)).limit(30)
+  const rows = all.filter(r => ((r.result as { scale?: number } | null)?.scale === 9) === (exam === 'IELTS')).slice(0, 10)
   const names = skill === 'WRITING' ? WRITING_CRITERIA : SPEAKING_CRITERIA
   const sums: Record<string, { sum: number, n: number }> = {}
   const tasks: Record<number, { sum: number, n: number }> = {}
@@ -105,27 +109,29 @@ async function criteriaStats(userId: string, skill: 'WRITING' | 'SPEAKING') {
   const latest = rows[0]?.result as { priorities?: string[] } | undefined
   return {
     reviews: rows.length,
+    scale: exam === 'IELTS' ? 9 : 5,
     criteria: Object.entries(names).map(([key, label]) => ({ key, label, average: sums[key] ? Math.round((sums[key].sum / sums[key].n) * 10) / 10 : null })),
-    tasks: Object.entries(tasks).map(([no, t]) => ({ number: Number(no), label: skill === 'WRITING' ? writingTask(Number(no)) : speakingPart(Number(no)), average: Math.round((t.sum / t.n) * 10) / 10, reviews: t.n }))
+    tasks: Object.entries(tasks).map(([no, t]) => ({ number: Number(no), label: skill === 'WRITING' ? taskName(exam, Number(no)) : speakingPartName(exam, Number(no)), average: Math.round((t.sum / t.n) * 10) / 10, reviews: t.n }))
       .sort((a, b) => a.number - b.number),
     priorities: (latest?.priorities ?? []).slice(0, 3)
   }
 }
 
-/** The user's scores for whole sections over time, oldest first (the last 10). */
-async function scoreTrend(userId: string) {
-  const rows = await useDb().select({ skill: attempts.skill, score: attempts.score, at: attempts.submittedAt }).from(attempts)
-    .where(and(eq(attempts.userId, userId), isNotNull(attempts.score), isNull(attempts.partNumber)))
+/** The user's scores (IELTS: bands) for whole sections over time, oldest first (the last 10). */
+async function scoreTrend(userId: string, exam: Exam) {
+  const value = exam === 'IELTS' ? attempts.band : attempts.score
+  const rows = await useDb().select({ skill: attempts.skill, score: value, at: attempts.submittedAt }).from(attempts)
+    .where(and(eq(attempts.userId, userId), eq(attempts.exam, exam), isNotNull(value), isNull(attempts.partNumber)))
     .orderBy(desc(attempts.submittedAt)).limit(80)
   const by: Record<string, { score: number, at: Date }[]> = {}
   for (const r of rows) {
     const list = (by[r.skill] ??= [])
-    if (list.length < 10) list.push({ score: r.score!, at: r.at })
+    if (list.length < 10) list.push({ score: Number(r.score), at: r.at })
   }
   return Object.fromEntries(Object.entries(by).map(([skill, list]) => [skill, list.reverse()]))
 }
 
-interface Pick { userId: string, premium: boolean, unlocked: Set<string> }
+interface Pick { userId: string, premium: boolean, unlocked: Set<string>, exam: Exam }
 
 /**
  * One part to practise: from a published test, with the task type (Listening/Reading) or the task
@@ -146,7 +152,7 @@ async function practiseFor(pick: Pick, skill: string, match: { type: string } | 
         and (a.part_number is null or a.part_number = ${number})) as done
     from section_items si
     join sections s on s.id = si.section_id and s.skill = ${skill}
-    join tests t on t.id = s.test_id and t.status = 'PUBLISHED'
+    join tests t on t.id = s.test_id and t.status = 'PUBLISHED' and ${examTests(pick.exam)}
     ${join}
     limit 200`) as unknown as Rows<{ id: string, slug: string, title: string, access: string, part: number, done: boolean }>
   const options = [...rows].map(r => ({ ...r, locked: r.access === 'PREMIUM' && !pick.premium && !pick.unlocked.has(r.id) }))
@@ -158,12 +164,14 @@ async function practiseFor(pick: Pick, skill: string, match: { type: string } | 
   return { slug: o.slug, title: o.title, skill, part: Number(o.part), done: o.done, locked: o.locked }
 }
 
-export async function insightsOf(user: { id: string, role: string }) {
+/** Insights for one exam: an IELTS candidate's on bands, a Multilevel one's on scores out of 75. */
+export async function insightsOf(user: { id: string, role: string }, exam: Exam = 'MULTILEVEL') {
   const [objective, writing, speaking, trend, access, unlocked] = await Promise.all([
-    objectiveStats(user.id), criteriaStats(user.id, 'WRITING'), criteriaStats(user.id, 'SPEAKING'), scoreTrend(user.id),
+    objectiveStats(user.id, exam), criteriaStats(user.id, 'WRITING', exam), criteriaStats(user.id, 'SPEAKING', exam), scoreTrend(user.id, exam),
     accessOf(user), unlockedTestIds(user.id)
   ])
-  const pick: Pick = { userId: user.id, premium: access.premium, unlocked: new Set(unlocked) }
+  const pick: Pick = { userId: user.id, premium: access.premium, unlocked: new Set(unlocked), exam }
+  const outOf = exam === 'IELTS' ? 9 : 5
 
   const skills = (['LISTENING', 'READING'] as const).map((skill) => {
     const types = objective.byType.filter(r => r.skill === skill)
@@ -193,13 +201,13 @@ export async function insightsOf(user: { id: string, role: string }) {
     const scored = stats.criteria.filter(c => c.average != null) as { key: string, label: string, average: number }[]
     if (!scored.length) continue
     const low = scored.reduce((a, b) => (b.average < a.average ? b : a))
-    if (low.average >= 4) continue
+    if (low.average >= (exam === 'IELTS' ? 7 : 4)) continue
     const task = stats.tasks.length ? stats.tasks.reduce((a, b) => (b.average < a.average ? b : a)) : null
     spots.push({
-      skill, kind: 'CRITERION', key: low.key, label: low.label, rank: low.average / 5, average: low.average, taskNumber: task?.number ?? null,
-      detail: `${low.average}/5 on average${task ? `; ${task.label} was your lowest` : ''}`,
+      skill, kind: 'CRITERION', key: low.key, label: low.label, rank: low.average / outOf, average: low.average, taskNumber: task?.number ?? null,
+      detail: `${low.average}/${outOf} on average${task ? `; ${task.label} was your lowest` : ''}`,
       // Without a task to point at, the longest one: Task 2, or Part 3.
-      part: task?.number ?? (skill === 'WRITING' ? 3 : 4)
+      part: task?.number ?? (skill === 'WRITING' ? (exam === 'IELTS' ? 2 : 3) : (exam === 'IELTS' ? 3 : 4))
     })
   }
   const top = spots.sort((a, b) => a.rank - b.rank).slice(0, 4)
@@ -207,6 +215,7 @@ export async function insightsOf(user: { id: string, role: string }) {
   const focus: Focus[] = top.map(({ rank: _rank, part: _part, ...f }, i) => ({ ...f, practise: practise[i] ?? null }))
 
   return {
+    exam,
     skills,
     writing,
     speaking,

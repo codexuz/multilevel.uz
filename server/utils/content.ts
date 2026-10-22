@@ -14,20 +14,25 @@ export type Skill = (typeof SKILLS)[number]
 export const isSkill = (value: unknown): value is Skill => SKILLS.includes(value as Skill)
 export const SECTION_ORDER: Record<Skill, number> = { LISTENING: 1, READING: 2, WRITING: 3, SPEAKING: 4 }
 
-/** The Multilevel times, used when a section sets none. */
-export const OFFICIAL_SECONDS: Record<Skill, number> = { LISTENING: 35 * 60, READING: 60 * 60, WRITING: 60 * 60, SPEAKING: 15 * 60 }
+/** The exam a test is for, from its module (MULTILEVEL, or ACADEMIC / GENERAL_TRAINING for IELTS). */
+export const examOfTest = (test: { module?: string | null } | null | undefined): Exam => examOfModule(test?.module)
 
-/** The Multilevel format: parts and questions per paper, tasks and speaking parts. */
-export const FORMAT = {
-  LISTENING: { parts: 6, questions: 35 },
-  READING: { parts: 5, questions: 35 },
-  WRITING: { tasks: [1, 2, 3] },
-  SPEAKING: { parts: [1, 2, 3, 4] }
-} as const
+/** The exam a section's contents are written for (each part, task and speaking part says), Multilevel by default. */
+export function examOfSection(section: any): Exam {
+  const item = (section?.items ?? []).find((i: any) => i.part || i.writingTask || i.speakingPart)
+  const exam = item?.part?.exam ?? item?.writingTask?.exam ?? item?.speakingPart?.exam
+  return isExam(exam) ? exam : 'MULTILEVEL'
+}
 
-/** Multilevel Writing: Task 1.1 (an informal letter), Task 1.2 (a formal letter), Task 2 (an essay). */
-export const minimumWordsFor = (taskNumber: number, configured?: number | null) =>
-  configured ?? (taskNumber === 1 ? 50 : taskNumber === 2 ? 120 : 180)
+/** The official time of a section, used when it sets none. */
+export const officialSeconds = (exam: string | null | undefined, skill: string) => formatOf(exam).seconds[skill as Skill] ?? 60 * 60
+
+/**
+ * The fewest words a writing task asks for: its own, else the exam's (Multilevel Task 1.1 50,
+ * Task 1.2 120, Task 2 180; IELTS Task 1 150, Task 2 250).
+ */
+export const minimumWordsFor = (task: { taskNumber: number, minWords?: number | null, exam?: string | null }) =>
+  task.minWords ?? writingTaskDefaults(task.exam, task.taskNumber).minWords
 
 const words = (text: string) => String(text ?? '').replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter(Boolean)
 export const countEssayWords = (text: string) => words(text).length
@@ -126,7 +131,7 @@ export function sectionView(section: any, withKeys: boolean) {
     ...rest,
     audioUrl: sign(section.audioRef),
     durationSeconds: section.durationSeconds ?? null,
-    officialSeconds: OFFICIAL_SECONDS[section.skill as Skill],
+    officialSeconds: officialSeconds(examOfSection(section), section.skill),
     items: (items ?? []).map((item: any) => ({
       id: item.id,
       position: item.position,
@@ -139,7 +144,7 @@ export function sectionView(section: any, withKeys: boolean) {
 
 export function testView(test: any, withKeys: boolean) {
   const { sections, ...rest } = test
-  return { ...rest, sections: (sections ?? []).map((section: any) => sectionView(section, withKeys)) }
+  return { ...rest, exam: examOfTest(test), sections: (sections ?? []).map((section: any) => sectionView(section, withKeys)) }
 }
 
 /** What a list shows of a test: its sections and how long each takes. */
@@ -147,11 +152,12 @@ export function testSummary(test: any) {
   const { sections, ...rest } = test
   return {
     ...rest,
+    exam: examOfTest(test),
     sections: (sections ?? []).map((s: any) => ({
       skill: s.skill,
       items: s.items?.length ?? 0,
       questions: (s.items ?? []).reduce((sum: number, item: any) => sum + (item.part?.groups ?? []).reduce((n: number, g: any) => n + (g.items?.length ?? 0), 0), 0),
-      durationSeconds: s.durationSeconds ?? OFFICIAL_SECONDS[s.skill as Skill]
+      durationSeconds: s.durationSeconds ?? officialSeconds(examOfTest(test), s.skill)
     }))
   }
 }
@@ -159,14 +165,16 @@ export function testSummary(test: any) {
 /** One section as the candidate sees it while sitting it: no answers, no transcripts. */
 export function paperSection(section: any, withKeys = false) {
   const items = section.items ?? []
+  const exam = examOfSection(section)
   return {
     skill: section.skill as Skill,
+    exam,
     title: section.title ?? null,
     instructions: section.instructions ?? null,
-    seconds: section.durationSeconds ?? OFFICIAL_SECONDS[section.skill as Skill],
+    seconds: section.durationSeconds ?? officialSeconds(exam, section.skill),
     audioUrl: sign(section.audioRef),
     parts: items.filter((i: any) => i.part).map((i: any) => partView(i.part, withKeys)),
-    tasks: items.filter((i: any) => i.writingTask).map((i: any) => ({ ...writingTaskView(i.writingTask), minWords: minimumWordsFor(i.writingTask.taskNumber, i.writingTask.minWords) })),
+    tasks: items.filter((i: any) => i.writingTask).map((i: any) => ({ ...writingTaskView(i.writingTask), minWords: minimumWordsFor(i.writingTask) })),
     speaking: items.filter((i: any) => i.speakingPart).map((i: any) => speakingPartView(i.speakingPart))
   }
 }
@@ -177,12 +185,15 @@ const skillLabel = (skill: string) => skill[0] + skill.slice(1).toLowerCase()
 
 /**
  * What stands between a test and its candidates. Errors stop it being published; warnings are
- * departures from the Multilevel format a practice test may make on purpose. A mock must follow it.
+ * departures from its exam's format a practice test may make on purpose. A mock must follow it.
  */
 export function readiness(test: any): Readiness {
   const errors: string[] = []
   const warnings: string[] = []
   const strict = test.mode === 'MOCK'
+  const exam = examOfTest(test)
+  const FORMAT = formatOf(exam)
+  const examName = exam === 'IELTS' ? 'IELTS' : 'Multilevel'
   const flag = (message: string) => (strict ? errors : warnings).push(message)
   if (!test.title?.trim()) errors.push('The test has no title')
   if (!test.sections?.length) errors.push('The test has no sections')
@@ -195,7 +206,7 @@ export function readiness(test: any): Readiness {
     if (section.skill === 'LISTENING' || section.skill === 'READING') {
       const format = FORMAT[section.skill as 'LISTENING' | 'READING']
       const parts = section.items.map((item: any) => item.part).filter(Boolean)
-      if (parts.length !== format.parts) flag(`${label}: Multilevel has ${format.parts} parts, this has ${parts.length}`)
+      if (parts.length !== format.parts) flag(`${label}: ${examName} has ${format.parts} parts, this has ${parts.length}`)
       const numbers: number[] = []
       for (const part of parts) {
         if (!part.groups?.length) errors.push(`${label}, part ${part.partNumber}: no questions`)
@@ -210,16 +221,22 @@ export function readiness(test: any): Readiness {
       }
       const doubled = [...new Set(numbers.filter((n, i) => numbers.indexOf(n) !== i))]
       if (doubled.length) errors.push(`${label}: questions ${doubled.join(', ')} appear twice`)
-      if (numbers.length !== format.questions) flag(`${label}: Multilevel has ${format.questions} questions, this has ${numbers.length}`)
+      if (numbers.length !== format.questions) flag(`${label}: ${examName} has ${format.questions} questions, this has ${numbers.length}`)
     }
     if (section.skill === 'WRITING') {
       const tasks = section.items.map((item: any) => item.writingTask?.taskNumber).filter(Boolean)
-      if (!FORMAT.WRITING.tasks.every(n => tasks.includes(n))) flag('Writing: Multilevel has Task 1.1, Task 1.2 and Task 2')
+      if (!FORMAT.WRITING.tasks.every(n => tasks.includes(n))) flag(`Writing: ${examName} has ${FORMAT.WRITING.tasks.map(n => taskName(exam, n)).join(', ')}`)
     }
     if (section.skill === 'SPEAKING') {
       const parts = section.items.map((item: any) => item.speakingPart?.partNumber).filter(Boolean)
-      if (!FORMAT.SPEAKING.parts.every(n => parts.includes(n))) flag('Speaking: Multilevel has Part 1.1, Part 1.2, Part 2 and Part 3')
+      if (!FORMAT.SPEAKING.parts.every(n => parts.includes(n))) flag(`Speaking: ${examName} has ${FORMAT.SPEAKING.parts.map(n => speakingPartName(exam, n)).join(', ')}`)
     }
+    // Everything in a test is written for its exam: the numbering and the scoring follow it.
+    const strays = section.items.filter((item: any) => {
+      const own = item.part?.exam ?? item.writingTask?.exam ?? item.speakingPart?.exam
+      return own && own !== exam
+    })
+    if (strays.length) errors.push(`${label}: ${strays.length} ${strays.length === 1 ? 'item is' : 'items are'} written for another exam`)
   }
   return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] }
 }
@@ -242,14 +259,15 @@ export function pickPart(section: any, n: number) {
 export function partSeconds(section: any) {
   const item = section.items?.[0]
   if (item?.part?.timeLimitMinutes) return item.part.timeLimitMinutes * 60
-  if (item?.writingTask) return (item.writingTask.suggestedMinutes ?? (item.writingTask.taskNumber === 1 ? 15 : item.writingTask.taskNumber === 2 ? 20 : 25)) * 60
+  if (item?.writingTask) return (item.writingTask.suggestedMinutes ?? writingTaskDefaults(item.writingTask.exam, item.writingTask.taskNumber).minutes) * 60
+  const exam = examOfSection(section)
   if (item?.part) {
     const questions = (item.part.groups ?? []).reduce((n: number, g: any) => n + (g.items?.length ?? 0), 0)
-    const format = FORMAT[section.skill as 'LISTENING' | 'READING']
-    const whole = section.durationSeconds ?? OFFICIAL_SECONDS[section.skill as Skill]
+    const format = formatOf(exam)[section.skill as 'LISTENING' | 'READING']
+    const whole = section.durationSeconds ?? officialSeconds(exam, section.skill)
     return Math.max(300, Math.round((whole * questions) / (format?.questions ?? 35) / 60) * 60)
   }
-  return section.durationSeconds ?? OFFICIAL_SECONDS[section.skill as Skill]
+  return section.durationSeconds ?? officialSeconds(exam, section.skill)
 }
 
 /** One part's paper: the part alone, its own recording rather than the whole section's, its time. */

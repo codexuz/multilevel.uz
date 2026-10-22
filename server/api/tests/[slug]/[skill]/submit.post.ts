@@ -54,7 +54,7 @@ export default defineEventHandler(async (event) => {
   const recordings = [...recorded.values()]
 
   const objective = skill === 'LISTENING' || skill === 'READING'
-  const marked = markSection(section, given)
+  const marked = markSection(section, given, test.module)
   const startedAt = body.startedAt && !Number.isNaN(Date.parse(body.startedAt)) ? new Date(body.startedAt) : null
 
   let liveMockId: string | null = null
@@ -76,8 +76,8 @@ export default defineEventHandler(async (event) => {
     const [attempt] = await tx.insert(attempts).values({
       userId: user.id, testId: test.id, sectionId: section.id, skill, partNumber, mode: test.mode,
       status: objective ? 'GRADED' : 'SUBMITTED', startedAt, gradedAt: objective ? new Date() : null,
-      correct: objective ? marked.correct : null, total: objective ? marked.total : null,
-      score: objective ? marked.score : null, cefrLevel: objective ? marked.cefrLevel : null, liveMockId
+      correct: objective ? marked.correct : null, total: objective ? marked.total : null, exam: marked.exam,
+      score: objective ? marked.score : null, band: objective ? marked.band : null, cefrLevel: objective ? marked.cefrLevel : null, liveMockId
     }).returning({ id: attempts.id })
     const rows = [...ids].filter(id => given.has(id)).map(itemId => ({ attemptId: attempt!.id, itemId, response: given.get(itemId)!, isCorrect: marked.marks.get(itemId) ?? false }))
     if (rows.length) await tx.insert(answers).values(rows)
@@ -104,13 +104,15 @@ export default defineEventHandler(async (event) => {
     submittedAt: new Date(),
     correct: objective ? marked.correct : null,
     total: objective ? marked.total : null,
+    exam: marked.exam,
     score: objective ? marked.score : null,
+    band: objective ? marked.band : null,
     cefrLevel: objective ? marked.cefrLevel : null,
     review: {
       sections: [reviewSection(section, {
         explanations: access.premium,
         given, marks: marked.marks,
-        correct: objective ? marked.correct : null, total: objective ? marked.total : null, score: objective ? marked.score : null,
+        correct: objective ? marked.correct : null, total: objective ? marked.total : null, score: objective ? marked.score : null, band: objective ? marked.band : null,
         essays: essayMap
       })]
     }

@@ -9,11 +9,16 @@
  * high on fluency or task achievement, whatever the words were.
  */
 
-export const LEVELS = ['none', 'A1', 'A2', 'B1-', 'B1', 'B1+', 'B2-', 'B2', 'B2+', 'C1-', 'C1', 'C1+'] as const
+export const LEVELS = ['none', 'A1', 'A2', 'B1-', 'B1', 'B1+', 'B2-', 'B2', 'B2+', 'C1-', 'C1', 'C1+', 'C2'] as const
 export type SubLevel = typeof LEVELS[number]
 
 export const LEVEL_POINTS: Record<SubLevel, number> = {
-  'none': 0, 'A1': 14, 'A2': 27, 'B1-': 38, 'B1': 44, 'B1+': 49, 'B2-': 52, 'B2': 58, 'B2+': 63, 'C1-': 66, 'C1': 71, 'C1+': 75
+  'none': 0, 'A1': 14, 'A2': 27, 'B1-': 38, 'B1': 44, 'B1+': 49, 'B2-': 52, 'B2': 58, 'B2+': 63, 'C1-': 66, 'C1': 71, 'C1+': 75, 'C2': 75
+}
+
+/** IELTS: the band each sub-level stands for (B1 4–5, B2 5.5–6.5, C1 7–8, C2 8.5+). */
+export const LEVEL_BAND: Record<SubLevel, number> = {
+  'none': 0, 'A1': 2, 'A2': 3, 'B1-': 4, 'B1': 4.5, 'B1+': 5, 'B2-': 5.5, 'B2': 6, 'B2+': 6.5, 'C1-': 7, 'C1': 7.5, 'C1+': 8, 'C2': 9
 }
 
 export const SPEAKING_CRITERIA = ['fluency', 'vocabulary', 'grammar', 'pronunciation', 'taskAchievement'] as const
@@ -30,7 +35,7 @@ export function lengthCap(words: number, allowedSeconds: number): SubLevel {
   if (ratio < 0.3) return 'A2'
   if (ratio < 0.5) return 'B1'
   if (ratio < 0.7) return 'B2'
-  return 'C1+'
+  return 'C2'
 }
 
 /** One part: the model's sub-levels with the length rule applied, and the part's points. */
@@ -55,3 +60,18 @@ export function speakingScore(parts: { partNumber: number, points: number }[]) {
 
 /** A sub-level as a mark out of 5, in halves (the scale the feedback screens and weak spots use). */
 export const outOfFive = (l: SubLevel) => Math.round((LEVEL_POINTS[l] / 15) * 2) / 2
+
+/**
+ * IELTS: a part's four criteria as whole bands (Fluency and Coherence reads the model's fluency and
+ * how fully the questions were answered together), and the part's band, their mean half-band rounded.
+ */
+export function ieltsPartBands(labels: Record<SpeakingCriterion, SubLevel>) {
+  const whole = (n: number) => Math.min(9, Math.max(0, Math.round(n)))
+  const criteria = {
+    fluency: whole((LEVEL_BAND[labels.fluency] + LEVEL_BAND[labels.taskAchievement]) / 2),
+    vocabulary: whole(LEVEL_BAND[labels.vocabulary]),
+    grammar: whole(LEVEL_BAND[labels.grammar]),
+    pronunciation: whole(LEVEL_BAND[labels.pronunciation])
+  }
+  return { criteria, band: roundToHalfBand((criteria.fluency + criteria.vocabulary + criteria.grammar + criteria.pronunciation) / 4) }
+}

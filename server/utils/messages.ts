@@ -79,20 +79,23 @@ const aiReviews = (l: Locale, n: number) => (l === 'ru' ? `${n} ${ruPlural(n, 'A
 
 export interface Offer { code: string, text: string }
 
+/** A result as the exam writes it: an IELTS band ("6.5") or a Multilevel score ("51/75"). */
+const resultText = (value: number, band: boolean) => (band ? Number(value).toFixed(1) : `${value}/75`)
+
 export const MSG = {
   open: { en: 'Open Mockmee', uz: 'Mockmee’ni ochish', ru: 'Открыть Mockmee' },
 
-  marked: (l: Locale, skill: string, score: number, cefr: string) => ({
-    en: `✅ <b>Your ${skillName(l, skill)} is marked</b>\nScore: <b>${score}/75</b> (${levelText(l, cefr)}). The examiner's feedback is waiting for you.`,
-    uz: `✅ <b>${skillName(l, skill)} bo‘limingiz baholandi</b>\nBall: <b>${score}/75</b> (${levelText(l, cefr)}). Imtihon oluvchining izohi sizni kutmoqda.`,
-    ru: `✅ <b>${skillName(l, skill)}: работа проверена</b>\nБалл: <b>${score}/75</b> (${levelText(l, cefr)}). Комментарий экзаменатора уже ждёт вас.`
+  marked: (l: Locale, skill: string, score: number, cefr: string, band = false) => ({
+    en: `✅ <b>Your ${skillName(l, skill)} is marked</b>\n${band ? 'Band' : 'Score'}: <b>${resultText(score, band)}</b> (${levelText(l, cefr)}). The examiner's feedback is waiting for you.`,
+    uz: `✅ <b>${skillName(l, skill)} bo‘limingiz baholandi</b>\n${band ? 'Band' : 'Ball'}: <b>${resultText(score, band)}</b> (${levelText(l, cefr)}). Imtihon oluvchining izohi sizni kutmoqda.`,
+    ru: `✅ <b>${skillName(l, skill)}: работа проверена</b>\n${band ? 'Band' : 'Балл'}: <b>${resultText(score, band)}</b> (${levelText(l, cefr)}). Комментарий экзаменатора уже ждёт вас.`
   })[l],
   markedButton: { en: 'See the feedback', uz: 'Izohni ko‘rish', ru: 'Смотреть отзыв' },
 
-  aiReview: (l: Locale, skill: string, score: number, cefr: string) => ({
-    en: `✨ <b>Your AI feedback is ready</b>\nEstimated ${skillName(l, skill)} score: <b>${score}/75</b> (${levelText(l, cefr)}), with corrections for each ${skill === 'SPEAKING' ? 'part' : 'task'}.`,
-    uz: `✨ <b>AI tahlilingiz tayyor</b>\nTaxminiy ${skillName(l, skill)} bali: <b>${score}/75</b> (${levelText(l, cefr)}), har bir ${skill === 'SPEAKING' ? 'qism' : 'topshiriq'} bo‘yicha tuzatishlar bilan.`,
-    ru: `✨ <b>AI-разбор готов</b>\nПримерный балл (${skillName(l, skill)}): <b>${score}/75</b> (${levelText(l, cefr)}), с исправлениями по каждой ${skill === 'SPEAKING' ? 'части' : 'задаче'}.`
+  aiReview: (l: Locale, skill: string, score: number, cefr: string, band = false) => ({
+    en: `✨ <b>Your AI feedback is ready</b>\nEstimated ${skillName(l, skill)} ${band ? 'band' : 'score'}: <b>${resultText(score, band)}</b> (${levelText(l, cefr)}), with corrections for each ${skill === 'SPEAKING' ? 'part' : 'task'}.`,
+    uz: `✨ <b>AI tahlilingiz tayyor</b>\nTaxminiy ${skillName(l, skill)} ${band ? 'bandi' : 'bali'}: <b>${resultText(score, band)}</b> (${levelText(l, cefr)}), har bir ${skill === 'SPEAKING' ? 'qism' : 'topshiriq'} bo‘yicha tuzatishlar bilan.`,
+    ru: `✨ <b>AI-разбор готов</b>\nПримерный ${band ? 'band' : 'балл'} (${skillName(l, skill)}): <b>${resultText(score, band)}</b> (${levelText(l, cefr)}), с исправлениями по каждой ${skill === 'SPEAKING' ? 'части' : 'задаче'}.`
   })[l],
   aiReviewButton: { en: 'Read it', uz: 'O‘qish', ru: 'Читать' },
 
@@ -238,9 +241,9 @@ export const MSG = {
     ru: 'Я присылаю новости о ваших тестах: проверка, AI-разборы и кредиты. Всё остальное — на сайте.'
   },
 
-  shareText: (l: Locale, skill: string, score: number, cefr: string) => ({
-    en: `I scored ${score}/75 (${levelText(l, cefr)}) in Multilevel ${skillName(l, skill)}. Can you beat it? Practise free:`,
-    uz: `Multilevel ${skillName(l, skill)} bo‘limida ${score}/75 (${levelText(l, cefr)}) ball oldim. Undan yuqori ola olasizmi? Bepul mashq qiling:`,
-    ru: `Я набрал(а) ${score}/75 (${levelText(l, cefr)}) в Multilevel, раздел «${skillName(l, skill)}». Сможете лучше? Тренируйтесь бесплатно:`
+  shareText: (l: Locale, skill: string, score: number, cefr: string, band = false) => ({
+    en: `I scored ${band ? `band ${resultText(score, true)}` : `${score}/75`} (${levelText(l, cefr)}) in ${band ? 'IELTS' : 'Multilevel'} ${skillName(l, skill)}. Can you beat it? Practise free:`,
+    uz: `${band ? 'IELTS' : 'Multilevel'} ${skillName(l, skill)} bo‘limida ${band ? `${resultText(score, true)} band` : `${score}/75 ball`} (${levelText(l, cefr)}) oldim. Undan yuqori ola olasizmi? Bepul mashq qiling:`,
+    ru: `Я набрал(а) ${band ? `band ${resultText(score, true)}` : `${score}/75`} (${levelText(l, cefr)}) в ${band ? 'IELTS' : 'Multilevel'}, раздел «${skillName(l, skill)}». Сможете лучше? Тренируйтесь бесплатно:`
   })[l]
 }

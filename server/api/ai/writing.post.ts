@@ -39,7 +39,7 @@ export default defineEventHandler(async (event) => {
     tasks = section.items.filter((i: any) => i.writingTask).map((i: any) => {
       const t = i.writingTask
       const text = given.get(t.id) ?? ''
-      return { taskId: t.id, taskNumber: t.taskNumber, label: taskLabel(t.taskNumber), prompt: t.prompt, minWords: minimumWordsFor(t.taskNumber, t.minWords), text, wordCount: countWords(text) }
+      return { taskId: t.id, taskNumber: t.taskNumber, label: taskLabel(t.taskNumber, t.exam), prompt: t.prompt, minWords: minimumWordsFor(t), text, wordCount: countWords(text), exam: t.exam, module: test.module }
     }).sort((a: AiTaskInput, b: AiTaskInput) => a.taskNumber - b.taskNumber)
     testId = test.id
   }

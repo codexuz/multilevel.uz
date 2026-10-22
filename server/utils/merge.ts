@@ -136,6 +136,8 @@ export async function mergeAccounts(keepId: string, otherId: string) {
       learningDuration: keep.learningDuration ?? other.learningDuration,
       targetLevel: keep.targetLevel ?? other.targetLevel,
       targetScore: keep.targetScore ?? other.targetScore,
+      exam: keep.exam ?? other.exam,
+      targetBand: keep.targetBand ?? other.targetBand,
       examDate: keep.examDate ?? other.examDate,
       aiBonusReviews: keep.aiBonusReviews + other.aiBonusReviews,
       updatedAt: new Date()
