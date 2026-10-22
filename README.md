@@ -158,6 +158,15 @@ mock again as it stands; if Telegram refuses, the page says why.
 A mock can be edited (**Edit**): before it opens, its title, test and window; while it runs, its title
 and when it closes (the board so far stays); once it has ended, its title. Windows still may not overlap.
 
+### Tests as PDF (Premium)
+
+Premium users (and staff) have a **PDF** button on each test card and **Download PDF** on a test's
+page. It opens `/tests/{slug}/pdf`: the whole test as an A4 paper (Reading passages and questions
+with lines in the gaps, Writing tasks with lines to write on, Speaking cards, a note that Listening's
+recording is played on the site) and, if wanted, the answer key at the end. The browser's print
+window opens by itself; "Save as PDF" saves it. The paper comes from `/api/tests/{slug}/paper`,
+which answers 402 without Premium.
+
 ### Exam plan
 
 On **My results** a user sets the day of their exam and a target (B1 38+, B2 51+, C1 65+). They

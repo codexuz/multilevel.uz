@@ -1030,5 +1030,20 @@
     "finishAnswer": "Javobni tugatish",
     "qOf": "{total} tadan {n}-savol",
     "saving": "Javoblaringiz saqlanmoqda…"
+  },
+  "pdf": {
+    "download": "PDF yuklab olish",
+    "short": "PDF",
+    "hint": "Chop etish oynasida printer sifatida «PDF sifatida saqlash»ni tanlang.",
+    "withKey": "Javoblar kaliti bilan",
+    "key": "Javoblar kaliti",
+    "time": "{n} daqiqa",
+    "listeningNote": "yozuvni {site} saytida, test sahifasida tinglang",
+    "part": "{n}-qism",
+    "questions": "{from}–{to}-savollar",
+    "minWords": "kamida {n} so‘z",
+    "premium": "PDF yuklab olish Premiumga kiradi",
+    "premiumText": "Premium bilan har bir testni javoblar kaliti bilan chop etish uchun PDF qilib yuklab olasiz.",
+    "notFound": "Bu test topilmadi"
   }
 }
