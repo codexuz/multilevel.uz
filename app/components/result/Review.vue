@@ -21,7 +21,7 @@ export interface ResultView {
   score?: number | null
   cefrLevel?: string | null
   feedback?: string | null
-  recordings?: { partId: string, audioUrl: string, durationSeconds?: number | null }[]
+  recordings?: { partId: string, position?: number, audioUrl: string, durationSeconds?: number | null }[]
   review: { sections: (ReviewSection & { speaking?: any[], locked?: number })[] } | null
 }
 
@@ -80,7 +80,6 @@ watch(part, () => nextTick(() => {
 // ─── Writing ───
 const taskTabs = computed(() => tasks.value.map((t, i) => ({ label: writingTaskLabel(t.task.taskNumber), value: i })))
 const essay = computed(() => task.value?.essay ?? null)
-const recordingFor = (partId: string) => props.view.recordings?.find(r => r.partId === partId) ?? null
 const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') as keyof typeof SKILL_META])
 </script>
 
@@ -348,34 +347,11 @@ const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') 
                 <span class="text-sm font-semibold">{{ speakingPartLabel(p.partNumber) }}<span v-if="p.title"> — {{ p.title.replace(/^Part [\d.]+\s*[—-]\s*/, '') }}</span></span>
               </div>
             </template>
-            <div
-              v-if="p.cueCard"
-              class="rich-content text-sm mb-3"
-              v-html="p.cueCard"
+            <SpeakingAnswers
+              :part="{ ...p, imageUrl: null }"
+              :recordings="view.recordings ?? []"
+              :empty-text="t('review.noRecording')"
             />
-            <ol
-              v-if="p.questions?.length"
-              class="list-decimal pl-5 text-sm mb-3"
-            >
-              <li
-                v-for="q in p.questions"
-                :key="q.id"
-              >
-                {{ q.text }}
-              </li>
-            </ol>
-            <audio
-              v-if="recordingFor(p.id)"
-              :src="recordingFor(p.id)!.audioUrl"
-              controls
-              class="w-full"
-            />
-            <p
-              v-else
-              class="text-sm text-muted"
-            >
-              {{ t('review.noRecording') }}
-            </p>
           </UCard>
         </div>
       </div>

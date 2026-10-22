@@ -1,6 +1,6 @@
-const siteName = 'Multilevel'
-const siteUrl = (process.env.NUXT_PUBLIC_SITE_URL || 'https://multilevel.uz').replace(/\/$/, '')
-const siteDescription = 'Free online Multilevel (CEFR) English mock tests: Listening, Reading, Writing and Speaking in the official format, checked instantly.'
+const siteName = 'Mockmee'
+const siteUrl = (process.env.NUXT_PUBLIC_SITE_URL || 'https://mockmee.uz').replace(/\/$/, '')
+const siteDescription = 'Mockmee: online Multilevel (CEFR) English mock tests in the official format: Listening, Reading, Writing and Speaking, checked instantly.'
 const noIndex = { robots: false, sitemap: false }
 
 // https://nuxt.com/docs/api/configuration/nuxt-config

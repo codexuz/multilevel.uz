@@ -9,13 +9,13 @@ withDefaults(defineProps<{ collapsed?: boolean, to?: string }>(), { to: '/' })
   >
     <UAvatar
       src="/icon.svg"
-      alt="Multilevel"
+      alt="Mockmee"
       size="sm"
       :ui="{ root: 'bg-transparent rounded-md', image: 'object-contain' }"
     />
     <span
       v-if="!collapsed"
       class="text-lg tracking-tight"
-    >Multilevel</span>
+    >Mockmee</span>
   </ULink>
 </template>

@@ -427,7 +427,7 @@ const readiness = computed(() => test.value?.readiness ?? { errors: [], warnings
             </UFormField>
             <UFormField
               label="Address"
-              :help="`multilevel.uz/tests/${meta.slug || '…'}`"
+              :help="`mockmee.uz/tests/${meta.slug || '…'}`"
             >
               <UInput
                 v-model="meta.slug"

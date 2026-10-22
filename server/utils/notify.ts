@@ -9,7 +9,7 @@ import { MSG, asLocale, criterionLabel, typeLabel, type Locale, type Offer } fro
  * the bot, or a bot that is not set up, is skipped quietly.
  */
 
-const siteUrl = () => String(useRuntimeConfig().public.siteUrl || 'https://multilevel.uz').replace(/\/$/, '')
+const siteUrl = () => String(useRuntimeConfig().public.siteUrl || 'https://mockmee.uz').replace(/\/$/, '')
 
 type Message = { text: string, path?: string, button?: string }
 

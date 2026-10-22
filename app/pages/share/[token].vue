@@ -15,7 +15,7 @@ const { data } = await useFetch<Shared>(`/api/share/${token}`)
 if (!data.value) throw createError({ statusCode: 404, statusMessage: t('sharedPage.notAvailable'), fatal: true })
 
 const d = data.value
-const site = String(config.public.siteUrl || 'https://multilevel.uz').replace(/\/$/, '')
+const site = String(config.public.siteUrl || 'https://mockmee.uz').replace(/\/$/, '')
 const skill = skillLabel(d.skill)
 const level = d.cefrLevel === 'A2' ? t('common.belowB1') : d.cefrLevel
 const title = t('sharedPage.title', { name: d.name, score: d.score, level, skill })

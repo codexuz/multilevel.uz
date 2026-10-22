@@ -78,6 +78,6 @@ export async function downloadEssaysDocx(title: string, essays: EssayForExport[]
     children.push(...lines(essay.text.trim() || '(not written)', t => new TextRun({ text: t, size: 24 })))
     children.push(new Paragraph({ children: [new TextRun({ text: `${essay.wordCount} words${essay.minWords ? ` (at least ${essay.minWords} expected)` : ''}`, italics: true, size: 18 })] }))
   }
-  const blob = await Packer.toBlob(new Document({ creator: 'multilevel.uz', title, sections: [{ children }] }))
+  const blob = await Packer.toBlob(new Document({ creator: 'mockmee.uz', title, sections: [{ children }] }))
   save(blob, fileName(title, 'docx'))
 }

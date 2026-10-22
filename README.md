@@ -1,7 +1,8 @@
-# multilevel.uz
+# Mockmee (mockmee.uz)
 
-Free, open Multilevel (CEFR) English mock tests. Anyone can sit a test; signing in keeps
-the results and sends Writing and Speaking to an examiner.
+Multilevel (CEFR) English mock tests. Anyone can look through the tests; sitting one needs a
+free sign-in (Telegram or Google), which keeps every result and sends Writing and Speaking to
+an examiner.
 
 Built with Nuxt 4 (SSR), Nuxt UI, Nitro, Drizzle ORM on PostgreSQL, and JWT cookie auth
 with Google sign-in. The tests, the exam screens, the review and the builder follow the
@@ -10,20 +11,22 @@ and `erp-lms/ielts-test` import/export format, set to the Multilevel format.
 
 ## What it does
 
-- **Open to everyone.** `/tests` and each test's page `/tests/{slug}` are rendered on the
+- **Open to look at, signed in to sit.** `/tests` and each test's page `/tests/{slug}` are rendered on the
   server with the test's title, description and structured data (Quiz, BreadcrumbList),
   and listed in `/sitemap.xml`, so search engines show a test when its title is searched.
 - **Full tests or one part at a time.** `/tests` lists full tests or single parts (Listening and
   Reading parts, Writing tasks, Speaking parts), filtered by words, skill, part, question type and
   "all four skills"; the filters live in the address. A part is sat at
-  `/tests/{slug}/{skill}?part=N`, with its own share of the time, and saved as that part.
-- **Checked for everyone, saved for members.** Listening and Reading are checked on the
-  server when handed in. A guest sees the score, CEFR level and a full review once, and
-  nothing is stored. A signed-in candidate's attempt is saved under **My results**.
-- **Writing and Speaking.** A guest writes or records for practice: Writing downloads as
-  PDF or Word, recordings play back and download; nothing is marked. A signed-in
-  candidate hands them in, and an examiner gives a score out of 75 with feedback
-  (the candidate is told live and by push).
+  `/tests/{slug}/{skill}?part=N`, with its own share of the time, and saved as that part. Its
+  score is what its right answers are worth on the official table (only all 35 right in a whole
+  section reach the top), not its share scaled up.
+- **Signed in to sit.** Sitting a section (`/tests/{slug}/{skill}`, its paper and its hand-in)
+  needs sign-in: a guest who presses Start signs in first and comes back to the test.
+- **Checked and saved.** Listening and Reading are checked on the server when handed in, and
+  every attempt is saved under **My results**.
+- **Writing and Speaking.** A candidate with a marking credit hands them in, and an examiner
+  gives a score out of 75 with feedback (the candidate is told live and by push); without one
+  they practise: Writing downloads as PDF or Word, recordings play back and download.
 - **Builder** (`/builder`, admins): Listening parts, Reading passages, Writing tasks and
   Speaking parts in a library, put together into tests section by section. Publishing
   checks the test against the official format; import and export use
@@ -42,8 +45,8 @@ and `erp-lms/ielts-test` import/export format, set to the Multilevel format.
 - Tests are Free or Premium (Builder → test → Details → Access).
 - **Click.uz**: set `CLICK_SERVICE_ID`, `CLICK_MERCHANT_ID` and `CLICK_SECRET_KEY` (and optionally
   `CLICK_MERCHANT_USER_ID`), and give Click these URLs:
-  - Prepare: `https://multilevel.uz/api/billing/click/prepare`
-  - Complete: `https://multilevel.uz/api/billing/click/complete`
+  - Prepare: `https://mockmee.uz/api/billing/click/prepare`
+  - Complete: `https://mockmee.uz/api/billing/click/complete`
 
   Buy then sends the buyer to Click; the plan switches on when Click confirms (signed with the
   secret key, safe to repeat), and `/billing/return` waits for it.
@@ -67,15 +70,37 @@ says when it is ready. Without Premium a user gets `AI_FEEDBACK_FREE_PER_MONTH` 
 Premium `AI_FEEDBACK_PREMIUM_PER_DAY` (10) a day; staff have no limit; failed ones do not count.
 Reward bonuses an admin grants (`users.ai_bonus_reviews`) are used once the allowance runs out.
 
+### Speaking, as the exam runs it
+
+Speaking runs by itself, like the exam (and like the edumoschool speaking bot it follows): a
+microphone check (record three seconds, hear it back), then for each part a short introduction,
+and for each turn the examiner reading the question aloud, the time to prepare, a beep and the
+recording, straight on to the next. Part 1.1 and 1.2 are answered question by question (5 + 30
+seconds; the pictures of Part 1.2 10 + 45), Part 2 and Part 3 in one turn of 60 + 120 seconds
+(`shared/utils/speaking.ts`; a part's own times from the builder win). There is no going back and
+no second take; "Start now" and "Finish answer" only cut a wait short. Each answer is its own
+recording (`speaking_responses.position`), uploaded while the exam goes on.
+
+The examiner's voice is OpenAI text-to-speech (`AI_TTS_MODEL`, `gpt-4o-mini-tts` by default;
+`AI_TTS_VOICE`, `sage`), made once per question and kept in storage (`tts/…`); without OpenAI or
+storage the browser's own voice reads the question.
+
 ### AI feedback on Speaking
 
-Speaking works the same way. Each recording is read from our own storage (never from an address
-the browser sends; a practice recording must be the user's own upload), transcribed by
-Deepgram (`DEEPGRAM_API_KEY`; model `nova-3`, or `DEEPGRAM_MODEL`; fillers like "um" are kept so
-hesitation shows), and the transcripts are rated per part on fluency,
-vocabulary, grammar and task achievement, with corrections and a model answer a level up. The
-score out of 75 weights Part 1.1 and 1.2 at 20% each, Part 2 and 3 at 30%. Pronunciation cannot be
-judged from a transcript, so it is left to the examiner. The page shows what was heard.
+Each recording is read from our own storage (never from an address the browser sends; a practice
+recording must be the user's own upload) and transcribed with its word timings by Deepgram
+(`DEEPGRAM_API_KEY`; `nova-3`, or `DEEPGRAM_MODEL`) or ElevenLabs (`ELEVENLABS_API_KEY`;
+`scribe_v2`, or `ELEVENLABS_MODEL`). With both, `TRANSCRIBER` (`deepgram` or `elevenlabs`) picks the
+first and the other is its backup. Fillers like "um" are kept, and the timings give each answer's
+speed, pauses, fillers and how clearly each word came through (`server/utils/speech-metrics.ts`).
+
+Each part is then marked on its own, all at once, as an examiner would: a CEFR sub-level (A1 …
+C1+) on fluency, vocabulary, grammar, pronunciation (judged from the recognition's evidence, since
+the model cannot hear) and task achievement, a comment on every answer, corrections, better words,
+pronunciation tips and a model answer a level up. Each sub-level has its points on the 0–75 scale
+(set so a part marked B2 throughout lands in the B2 band), an answer far shorter than its time
+caps fluency and task achievement, and the parts weigh 20% (1.1), 25% (1.2), 25% (Part 2) and 30%
+(Part 3) (`server/utils/speaking-score.ts`). A short last call writes the summary.
 
 A handed-in Writing or Speaking gets one AI review automatically, free (it does not count toward the
 allowance). On the marking page examiners see it as **AI suggests …** and can fill an empty score and
@@ -199,7 +224,7 @@ confused with marking credits, shown as "Markings"). One credit opens one Premiu
 the test page offers it when they have enough. `/earn` shows the balance, the invite link and the
 tasks.
 
-- **Invite friends**: each user's link is `https://multilevel.uz/r/<code>`. A friend who opens it
+- **Invite friends**: each user's link is `https://mockmee.uz/r/<code>`. A friend who opens it
   and makes an account within 30 days on that device starts with `REWARD_REFERRED_CREDITS` (1);
   the inviter gets `REWARD_REFERRER_CREDITS` (2) when that friend finishes their first test, at
   most `REFERRAL_MONTHLY_CAP` (30) friends in 30 days, so made-up accounts do not pay.
@@ -246,7 +271,7 @@ Google, Telegram, or both: each button shows only when it is set up.
 - **Google**: `NUXT_OAUTH_GOOGLE_CLIENT_ID` / `NUXT_OAUTH_GOOGLE_CLIENT_SECRET`, with the redirect
   URI `<origin>/auth/google`.
 - **Telegram**: create a bot with [@BotFather](https://t.me/BotFather) (`/newbot`), then
-  `/setdomain` → your site's domain (e.g. `multilevel.uz`), and set `TELEGRAM_BOT_TOKEN`.
+  `/setdomain` → your site's domain (e.g. `mockmee.uz`), and set `TELEGRAM_BOT_TOKEN`.
   Telegram's own window asks the user to confirm; the server accepts the result only if
   Telegram signed it with that bot's token, within a day. Telegram gives no email, so such an
   account is known by its Telegram id and username. A Google user can add Telegram on their

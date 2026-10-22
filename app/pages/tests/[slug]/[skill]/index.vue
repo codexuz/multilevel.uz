@@ -78,7 +78,7 @@ function onEssays(next: Record<string, string>) {
 const submitting = ref(false)
 usePreventLeave(() => !!section.value && !submitting.value && !practice.value && (Object.keys(answers.value).length > 0 || Object.values(essays.value).some(t => !!t?.trim())))
 
-async function handIn(extra: { recordings?: { partId: string, audioRef: string, durationSeconds?: number }[] } = {}) {
+async function handIn(extra: { recordings?: { partId: string, position: number, audioRef: string, durationSeconds?: number }[] } = {}) {
   submitting.value = true
   try {
     const result = await $fetch<any>(`/api/tests/${slug}/${skill.toLowerCase()}/submit${partQuery}`, {
@@ -129,6 +129,10 @@ function finishWriting(next: Record<string, string>) {
   practice.value = 'WRITING'
 }
 
+/** A signed-in candidate's answers go to storage one by one while the exam goes on. */
+const uploadAnswer = (blob: Blob, step: { partId: string, position: number }) =>
+  uploadFile(new File([blob], `speaking-${step.partId}-${step.position + 1}.webm`, { type: blob.type || 'audio/webm' }), { purpose: 'recording' }).then(f => f.url)
+
 async function finishSpeaking(list: SpeakingRecording[]) {
   recordings.value = list
   if (!canBeMarked.value) {
@@ -137,16 +141,23 @@ async function finishSpeaking(list: SpeakingRecording[]) {
   }
   submitting.value = true
   try {
-    const uploaded = []
-    for (const r of list) {
-      const file = await uploadFile(new File([r.blob], `speaking-${r.partId}.webm`, { type: r.blob.type || 'audio/webm' }), { purpose: 'recording' })
-      uploaded.push({ partId: r.partId, audioRef: file.url, durationSeconds: r.durationSeconds })
-    }
+    // Waits for the uploads still under way; one that failed is tried once more.
+    const uploaded = await Promise.all(list.map(async (r) => {
+      const stored = (await r.audioRef) ?? await uploadAnswer(r.blob, r)
+      r.audioRef = Promise.resolve(stored)
+      return { partId: r.partId, position: r.position, audioRef: stored, durationSeconds: r.durationSeconds }
+    }))
     await handIn({ recordings: uploaded })
   } catch (e: any) {
     toast.add({ title: t('sit.recordingsNotSent'), description: e?.message || t('common.tryAgain'), color: 'error' })
     submitting.value = false
   }
+}
+
+/** The question an answer was to (Part 1.1 and 1.2), for the list of recordings. */
+const answerLabel = (r: { partId: string, position: number }) => {
+  const p = section.value?.speaking?.find(x => x.id === r.partId)
+  return p && answeredByQuestion(p.partNumber) ? p.questions?.[r.position]?.text ?? '' : ''
 }
 
 const essayExport = computed(() => (section.value?.tasks ?? []).map(t => ({
@@ -361,8 +372,14 @@ const pageError = computed(() => {
           />
           <UCard
             v-for="r in recordings"
-            :key="r.partId"
+            :key="`${r.partId}:${r.position}`"
           >
+            <p
+              v-if="answerLabel(r)"
+              class="text-sm text-toned mb-2"
+            >
+              {{ answerLabel(r) }}
+            </p>
             <div class="flex flex-wrap items-center gap-3">
               <span class="font-medium">{{ speakingPartLabel(section?.speaking?.find(p => p.id === r.partId)?.partNumber) }}</span>
               <audio
@@ -372,7 +389,7 @@ const pageError = computed(() => {
               />
               <UButton
                 :href="r.url"
-                :download="`speaking-${speakingPartLabel(section?.speaking?.find(p => p.id === r.partId)?.partNumber)}.webm`"
+                :download="`speaking-${speakingPartLabel(section?.speaking?.find(p => p.id === r.partId)?.partNumber)}-${r.position + 1}.webm`"
                 icon="i-lucide-download"
                 color="neutral"
                 variant="outline"
@@ -441,6 +458,7 @@ const pageError = computed(() => {
           v-else
           :parts="section.speaking ?? []"
           :leave-to="leaveTo"
+          :upload="loggedIn ? uploadAnswer : undefined"
           @submit="finishSpeaking"
         />
       </template>

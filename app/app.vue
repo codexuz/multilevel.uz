@@ -6,10 +6,10 @@ const config = useRuntimeConfig()
 const { t, locale } = useI18n()
 const uiLocale = computed(() => ({ en, uz, ru }[locale.value as 'en' | 'uz' | 'ru'] ?? en))
 
-const siteName = 'Multilevel'
+const siteName = 'Mockmee'
 const title = computed(() => t('site.title'))
 const description = computed(() => t('site.description'))
-const siteUrl = computed(() => String(config.public.siteUrl || 'https://multilevel.uz').replace(/\/$/, ''))
+const siteUrl = computed(() => String(config.public.siteUrl || 'https://mockmee.uz').replace(/\/$/, ''))
 const canonicalUrl = computed(() => `${siteUrl.value}${route.path === '/' ? '/' : route.path}`)
 const socialImage = computed(() => `${siteUrl.value}/logo.png`)
 

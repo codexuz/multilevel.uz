@@ -19,7 +19,7 @@ async function init() {
     const messaging = firebase.messaging()
     messaging.onBackgroundMessage((payload) => {
       const n = payload.notification || {}
-      self.registration.showNotification(n.title || 'Multilevel', {
+      self.registration.showNotification(n.title || 'Mockmee', {
         body: n.body,
         icon: '/favicon.ico',
         data: payload.data || {}

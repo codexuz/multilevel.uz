@@ -60,7 +60,7 @@ export async function attemptView(id: string, viewer: { id: string, role: string
     ...attemptSummary(row),
     saved: true,
     examiner: examiner ? { name: userLabel(examiner) } : null,
-    recordings: recorded.map(r => ({ partId: r.partId, audioUrl: r.audioRef, durationSeconds: r.durationSeconds })),
+    recordings: recorded.sort((a, b) => a.position - b.position).map(r => ({ partId: r.partId, position: r.position, audioUrl: r.audioRef, durationSeconds: r.durationSeconds })),
     review: review ? { sections: [review] } : null
   }
 }

@@ -25,7 +25,7 @@ export function markSection(section: any, given: Map<string, string>) {
     }
   }
   const objective = section.skill === 'LISTENING' ? 'listening' : section.skill === 'READING' ? 'reading' : null
-  const score = objective && total ? sectionScore(objective, correct, total, section.settings) : null
+  const score = objective && total ? sectionScore(objective, correct, section.settings) : null
   return { marks, correct, total, score, cefrLevel: score == null ? null : cefrLevel(score) }
 }
 

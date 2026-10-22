@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
   if (current) {
     const [owner] = await db.select({ id: users.id }).from(users).where(eq(users.telegramId, telegramId)).limit(1)
     if (owner && owner.id !== current.id) {
-      throw createError({ statusCode: 409, message: 'This Telegram already has its own Multilevel account.', data: { code: 'ACCOUNT_EXISTS', mergeToken: mergeToken(current.id, owner.id) } })
+      throw createError({ statusCode: 409, message: 'This Telegram already has its own Mockmee account.', data: { code: 'ACCOUNT_EXISTS', mergeToken: mergeToken(current.id, owner.id) } })
     }
     const [me] = await db.select().from(users).where(eq(users.id, current.id)).limit(1)
     if (!me) throw createError({ statusCode: 404, message: 'User not found' })

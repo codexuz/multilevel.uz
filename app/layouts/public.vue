@@ -175,7 +175,7 @@ const year = new Date().getFullYear()
               src="/icon.svg"
               alt=""
               class="size-7 rounded-md"
-            >Multilevel
+            >Mockmee
           </NuxtLink>
           <p class="text-sm max-w-xs">
             {{ t('pub.footerAbout') }}
@@ -225,7 +225,7 @@ const year = new Date().getFullYear()
         </div>
         <div>
           <p class="text-sm font-semibold text-white mb-3">
-            Multilevel
+            Mockmee
           </p>
           <ul class="flex flex-col gap-2 text-sm">
             <li>
@@ -286,7 +286,7 @@ const year = new Date().getFullYear()
       </div>
       <div class="border-t border-white/10">
         <p class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-5 text-xs text-white/50">
-          © {{ year }} multilevel.uz
+          © {{ year }} mockmee.uz
         </p>
       </div>
     </footer>

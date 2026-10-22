@@ -4,11 +4,11 @@
   "exportedAt": "2026-10-20T00:00:00.000Z",
   "test": {
     "title": "Multilevel Practice Test 1",
-    "description": "A Multilevel (CEFR) practice test: Reading (5 parts, 35 questions), Writing (Task 1.1, Task 1.2 and Task 2) and Speaking (4 parts). Check your Reading answers instantly, free and without signing up.",
+    "description": "A Multilevel (CEFR) practice test: Reading (5 parts, 35 questions), Writing (Task 1.1, Task 1.2 and Task 2) and Speaking (4 parts). Your Reading answers are checked instantly.",
     "mode": "PRACTICE",
     "category": "CUSTOM",
     "module": "MULTILEVEL",
-    "source": "multilevel.uz sample",
+    "source": "Mockmee sample",
     "sections": [
       {
         "skill": "READING",

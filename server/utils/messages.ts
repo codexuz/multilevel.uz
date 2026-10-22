@@ -65,9 +65,9 @@ const TYPES: Record<Locale, Record<string, string>> = {
 }
 export const typeLabel = (l: Locale, t: string) => TYPES[l][t] ?? TYPES.en[t] ?? t
 const CRITERIA: Record<Locale, Record<string, string>> = {
-  en: { taskAchievement: 'Task achievement', organisation: 'Organisation', vocabulary: 'Vocabulary', grammar: 'Grammar', fluency: 'Fluency' },
-  uz: { taskAchievement: 'Topshiriqni bajarish', organisation: 'Tuzilish', vocabulary: 'Lug‘at', grammar: 'Grammatika', fluency: 'Ravonlik' },
-  ru: { taskAchievement: 'Выполнение задачи', organisation: 'Структура', vocabulary: 'Лексика', grammar: 'Грамматика', fluency: 'Беглость' }
+  en: { taskAchievement: 'Task achievement', organisation: 'Organisation', vocabulary: 'Vocabulary', grammar: 'Grammar', fluency: 'Fluency', pronunciation: 'Pronunciation' },
+  uz: { taskAchievement: 'Topshiriqni bajarish', organisation: 'Tuzilish', vocabulary: 'Lug‘at', grammar: 'Grammatika', fluency: 'Ravonlik', pronunciation: 'Talaffuz' },
+  ru: { taskAchievement: 'Выполнение задачи', organisation: 'Структура', vocabulary: 'Лексика', grammar: 'Грамматика', fluency: 'Беглость', pronunciation: 'Произношение' }
 }
 export const criterionLabel = (l: Locale, k: string) => CRITERIA[l][k] ?? CRITERIA.en[k] ?? k
 
@@ -80,7 +80,7 @@ const aiReviews = (l: Locale, n: number) => (l === 'ru' ? `${n} ${ruPlural(n, 'A
 export interface Offer { code: string, text: string }
 
 export const MSG = {
-  open: { en: 'Open Multilevel', uz: 'Multilevelni ochish', ru: 'Открыть Multilevel' },
+  open: { en: 'Open Mockmee', uz: 'Mockmee’ni ochish', ru: 'Открыть Mockmee' },
 
   marked: (l: Locale, skill: string, score: number, cefr: string) => ({
     en: `✅ <b>Your ${skillName(l, skill)} is marked</b>\nScore: <b>${score}/75</b> (${levelText(l, cefr)}). The examiner's feedback is waiting for you.`,
@@ -178,9 +178,9 @@ export const MSG = {
   })[l],
   centreRequestButton: { en: 'Review it', uz: 'Ko‘rib chiqish', ru: 'Рассмотреть' },
   centreApproved: (l: Locale, name: string) => ({
-    en: `🎉 <b>${escapeHtml(name)} is on Multilevel</b>\nYour centre is open: make groups, share their join links and set work.`,
-    uz: `🎉 <b>${escapeHtml(name)} Multilevelga qo‘shildi</b>\nMarkazingiz ochildi: guruhlar yarating, qo‘shilish havolalarini ulashing va vazifalar bering.`,
-    ru: `🎉 <b>${escapeHtml(name)} теперь на Multilevel</b>\nВаш центр открыт: создавайте группы, делитесь ссылками для вступления и давайте задания.`
+    en: `🎉 <b>${escapeHtml(name)} is on Mockmee</b>\nYour centre is open: make groups, share their join links and set work.`,
+    uz: `🎉 <b>${escapeHtml(name)} Mockmee’ga qo‘shildi</b>\nMarkazingiz ochildi: guruhlar yarating, qo‘shilish havolalarini ulashing va vazifalar bering.`,
+    ru: `🎉 <b>${escapeHtml(name)} теперь на Mockmee</b>\nВаш центр открыт: создавайте группы, делитесь ссылками для вступления и давайте задания.`
   })[l],
   centreApprovedButton: { en: 'Open my centre', uz: 'Markazimni ochish', ru: 'Открыть мой центр' },
   centreRejected: (l: Locale, name: string) => ({
@@ -191,7 +191,7 @@ export const MSG = {
 
   gift: (l: Locale, credit: number, ai: number) => {
     const parts = [credit > 0 ? credits(l, credit) : null, ai > 0 ? aiReviews(l, ai) : null].filter(Boolean).join(({ en: ' and ', uz: ' va ', ru: ' и ' })[l])
-    return ({ en: `🎁 <b>A gift from Multilevel</b>\nYou received ${parts}.`, uz: `🎁 <b>Multilevel’dan sovg‘a</b>\nSizga ${parts} berildi.`, ru: `🎁 <b>Подарок от Multilevel</b>\nВы получили: ${parts}.` })[l]
+    return ({ en: `🎁 <b>A gift from Mockmee</b>\nYou received ${parts}.`, uz: `🎁 <b>Mockmee’dan sovg‘a</b>\nSizga ${parts} berildi.`, ru: `🎁 <b>Подарок от Mockmee</b>\nВы получили: ${parts}.` })[l]
   },
 
   botConnectedFromSite: {
@@ -205,15 +205,15 @@ export const MSG = {
     ru: '✅ <b>Вы подключены</b>\nЗдесь вы узнаете, когда работа проверена, готов AI-разбор или приглашение принесло кредиты.'
   },
   botWelcome: {
-    en: '👋 <b>Welcome to Multilevel</b>\nFree CEFR Multilevel mock tests, checked instantly. Sign in with Telegram on the site and your results will come here.',
-    uz: '👋 <b>Multilevelga xush kelibsiz</b>\nBepul CEFR Multilevel mock testlari, darhol tekshiriladi. Saytga Telegram orqali kiring, natijalaringiz shu yerga keladi.',
-    ru: '👋 <b>Добро пожаловать в Multilevel</b>\nБесплатные пробные тесты CEFR Multilevel с мгновенной проверкой. Войдите на сайт через Telegram, и результаты будут приходить сюда.'
+    en: '👋 <b>Welcome to Mockmee</b>\nFree CEFR Multilevel mock tests, checked instantly. Sign in with Telegram on the site and your results will come here.',
+    uz: '👋 <b>Mockmee’ga xush kelibsiz</b>\nBepul CEFR Multilevel mock testlari, darhol tekshiriladi. Saytga Telegram orqali kiring, natijalaringiz shu yerga keladi.',
+    ru: '👋 <b>Добро пожаловать в Mockmee</b>\nБесплатные пробные тесты CEFR Multilevel с мгновенной проверкой. Войдите на сайт через Telegram, и результаты будут приходить сюда.'
   },
   botSignIn: { en: 'Sign in with Telegram', uz: 'Telegram orqali kirish', ru: 'Войти через Telegram' },
   botMergeOffer: {
-    en: 'This Telegram already has its own Multilevel account. Combine it with the account you came from, so everything is in one place?',
-    uz: 'Bu Telegramning o‘z Multilevel hisobi bor. Hammasi bir joyda bo‘lishi uchun uni siz kelgan hisob bilan birlashtiramizmi?',
-    ru: 'У этого Telegram уже есть свой аккаунт Multilevel. Объединить его с аккаунтом, из которого вы пришли, чтобы всё было в одном месте?'
+    en: 'This Telegram already has its own Mockmee account. Combine it with the account you came from, so everything is in one place?',
+    uz: 'Bu Telegramning o‘z Mockmee hisobi bor. Hammasi bir joyda bo‘lishi uchun uni siz kelgan hisob bilan birlashtiramizmi?',
+    ru: 'У этого Telegram уже есть свой аккаунт Mockmee. Объединить его с аккаунтом, из которого вы пришли, чтобы всё было в одном месте?'
   },
   botMergeButton: { en: 'Combine my accounts', uz: 'Hisoblarni birlashtirish', ru: 'Объединить аккаунты' },
   botOther: {

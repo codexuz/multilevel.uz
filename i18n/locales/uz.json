@@ -71,7 +71,7 @@
       "SPEAKING": "Tayyorgarlik va gapirish taymerlari bilan to‘rtta qism. O‘zingizni qayta eshiting, AI tahlil oling yoki imtihon oluvchiga yuboring."
     },
     "step1": "Test tanlang",
-    "step1Text": "Har bir bepul test hisobsiz ochiladi.",
+    "step1Text": "Testlarni hamma ko‘ra oladi; topshirish uchun Telegram yoki Google orqali kiring.",
     "step2": "Imtihondagidek topshiring",
     "step2Text": "Rasmiy vaqt, ko‘rinish va savol turlari.",
     "step3": "Natijangizni ko‘ring",
@@ -81,11 +81,11 @@
     "step5": "O‘sishingizni kuzating",
     "step5Text": "Barcha natijalarni saqlash va eng yaxshisini ko‘rish uchun kiring.",
     "faq1": "Haqiqatan ham bepulmi?",
-    "faq1Answer": "Ha. Bepul testlar hisobsiz ochiladi va darhol tekshiriladi. Premium butun kutubxonani, har bir javob izohini va ko‘proq AI tahlilni qo‘shadi.",
+    "faq1Answer": "Ha. Bepul testlar uchun pul to‘lanmaydi: kiring va topshiring, darhol tekshiriladi. Premium butun kutubxonani, har bir javob izohini va ko‘proq AI tahlilni qo‘shadi.",
     "faq2": "Ballim qanday hisoblanadi?",
     "faq2Answer": "Tinglash va O‘qish javoblari kalit bilan solishtiriladi va rasmiy jadvallar asosida 75 ballik Multilevel shkalasiga o‘tkaziladi. 65+ — C1, 51+ — B2, 38+ — B1.",
     "faq3": "Hisob ochish shartmi?",
-    "faq3Answer": "Yo‘q. Hisobsiz javoblaringiz tekshiriladi va bir marta ko‘rsatiladi. Natijalarni saqlash va Yozish hamda Gapirishni baholatish uchun Telegram yoki Google orqali kiring.",
+    "faq3Answer": "Ha, bepul hisob. Testlarni hamma ko‘ra oladi, lekin topshirish uchun Telegram yoki Google orqali kirasiz: har bir natija saqlanadi, Yozish va Gapirish baholanishi mumkin.",
     "faq4": "Haqiqiy Multilevel imtihoniga o‘xshaydimi?",
     "faq4Answer": "Bo‘limlar, vaqt, qismlar tuzilishi va savol turlari rasmiy formatga mos, ekran ham imtihondagidek joylashgan.",
     "faq5": "Telefonda ishlaydimi?",
@@ -100,9 +100,9 @@
     "invitedAction": "Bepul ro‘yxatdan o‘tish",
     "welcomeBack": "Xush kelibsiz, {name}",
     "heroTitle": "Bepul {accent} ingliz tili mock testlari va CEFR darajasini aniqlash",
-    "heroText": "Rasmiy formatdagi Tinglash, O‘qish, Yozish va Gapirish. Kirsangiz ham, kirmasangiz ham javoblaringiz tekshiriladi: 75 ballik natija va CEFR darajangiz bilan.",
+    "heroText": "Rasmiy formatdagi Tinglash, O‘qish, Yozish va Gapirish. Bepul kiring — javoblaringiz darhol tekshiriladi: 75 ballik natija va CEFR darajangiz bilan.",
     "seePremium": "Premium haqida",
-    "noAccount": "Bepul testlar uchun hisob kerak emas",
+    "noAccount": "Telegram yoki Google orqali bepul kiring",
     "upperInt": "Upper-int.",
     "heroCard": "58 / 75 · B2, 41 daqiqada",
     "allFour": "Multilevel imtihoni tekshirgandek {accent} mashq qiling",
@@ -127,7 +127,7 @@
     "demoFeedbackText": "Fikr aniq, xatboshilar yaxshi tuzilgan. Xatboshi ichida g‘oyalarni bog‘lashga va gap boshlanishlarini xilma-xil qilishga e’tibor bering.",
     "newest": "Eng yangi {accent}",
     "newestAccent": "testlar",
-    "newestText": "Bepullari hisobsiz ochiladi.",
+    "newestText": "Bepullari uchun faqat kirish kifoya.",
     "emptyTitle": "Testlar tez orada",
     "emptyText": "Birozdan keyin qaytib keling.",
     "why": "Nega {accent}da mashq qilish kerak?",
@@ -236,7 +236,7 @@
     "openedText": "Endi uni xohlagancha topshirishingiz mumkin.",
     "notOpened": "Ochilmadi",
     "tryAgain": "Qayta urinib ko‘ring.",
-    "description": "Bepul Multilevel (CEFR) mashq testi: {skills}. Javoblaringizni hisob bilan yoki hisobsiz darhol tekshiring.",
+    "description": "Bepul Multilevel (CEFR) mashq testi: {skills}. Kiring va javoblaringizni darhol tekshiring.",
     "minWords": "{n}+ so‘z",
     "how": {
       "LISTENING": "Darhol tekshiriladi, javoblar kaliti va izohlar bilan.",
@@ -248,11 +248,12 @@
     "openWith": "Bu testni {credits} bilan oching",
     "openWithText": "Sizda {n} kredit bor. Ochilgandan keyin test butunlay sizniki: har bir bo‘lim, xohlagancha.",
     "openFor": "{credits} evaziga ochish",
-    "noAccount": "Hisob kerak emas",
-    "noAccountText": "Istalgan bo‘limni hozir topshiring: Tinglash va O‘qish darhol tekshiriladi. Natijalarni saqlash va Yozish hamda Gapirishni imtihon oluvchiga baholatish uchun kiring.",
+    "noAccount": "Boshlash uchun kiring",
+    "noAccountText": "Test topshirish uchun bepul hisob kerak: Telegram yoki Google orqali kiring — har bir natija saqlanadi, Tinglash va O‘qish darhol tekshiriladi, Yozish va Gapirishni imtihon oluvchi baholashi mumkin.",
     "practiseAlone": "{part}ni alohida mashq qilish",
     "unlockPremium": "Premium bilan ochish",
-    "startSkill": "{skill}ni boshlash"
+    "startSkill": "{skill}ni boshlash",
+    "signInToStart": "{skill}ni boshlash uchun kiring"
   },
   "paywall": {
     "premiumTitle": "Bu test Premiumga kiradi",
@@ -354,14 +355,15 @@
     "organisation": "Tuzilish",
     "vocabulary": "Lug‘at",
     "grammar": "Grammatika",
-    "fluency": "Ravonlik"
+    "fluency": "Ravonlik",
+    "pronunciation": "Talaffuz"
   },
   "ai": {
     "noFeedback": "Hozircha AI tahlil yo‘q",
     "leftToday": "Bugun {limit} tadan {left} tasi qoldi",
     "leftMonth": "Bu oy {limit} tadan {left} tasi qoldi",
     "wordsOf": "{n} / {min}+ so‘z",
-    "introSpeaking": "Gapirganingiz asosida 75 ballik taxminiy baho: har bir qism ravonlik, lug‘at, grammatika va topshiriq bo‘yicha qanday ekani, tuzatishlar bilan. Taxminan bir daqiqa.",
+    "introSpeaking": "Gapirganingiz asosida imtihon oluvchi kabi 75 ballik taxminiy baho: har bir qism bo‘yicha ravonlik, lug‘at, grammatika, talaffuz va topshiriq, nutq tezligi va pauzalaringiz, tuzatishlar va yaxshiroq so‘zlar bilan. Taxminan bir daqiqa.",
     "introWriting": "75 ballik taxminiy baho, har bir topshiriq to‘rt mezon bo‘yicha qanday ekani va eng muhim tuzatishlar. Taxminan bir daqiqa.",
     "instant": "Tezkor AI tahlil",
     "signIn": "AI tahlil uchun kiring",
@@ -378,7 +380,13 @@
     "heard": "Biz eshitgan",
     "corrections": "Tuzatishlar",
     "stepUp": "Bir pog‘ona yuqori",
-    "guide": "Bu yo‘l ko‘rsatuvchi AI bahosi, imtihon oluvchining bahosi emas."
+    "guide": "Bu yo‘l ko‘rsatuvchi AI bahosi, imtihon oluvchining bahosi emas.",
+    "byAnswer": "Har bir javob",
+    "nothingHeard": "Hech narsa eshitilmadi",
+    "wpm": "daqiqasiga {n} so‘z",
+    "pauses": "{n} ta pauza",
+    "fillers": "{n} ta to‘ldiruvchi so‘z",
+    "upgrades": "Yaxshiroq so‘zlar"
   },
   "result": {
     "level": {
@@ -566,13 +574,13 @@
     "perk1": "Har bir natijani saqlang va eng yaxshisini ko‘ring",
     "perk2": "Yozish va Gapirishni imtihon oluvchi baholaydi",
     "perk3": "Testni to‘xtagan joyingizdan davom ettiring",
-    "intro": "Har bir test hisobsiz ham bepul. Natijalaringizni saqlash uchun kiring.",
+    "intro": "Test topshirish uchun kiring: har bir natija saqlanadi, bu bepul.",
     "failed": "Kirib bo‘lmadi. Qayta urinib ko‘ring.",
     "google": "Google orqali davom etish",
     "lastUsed": "Oxirgi marta",
     "telegram": "Telegram orqali davom etish",
     "sameButton": "Avval ro‘yxatdan o‘tganmisiz? O‘tgan safargi tugmadan foydalaning: Profilda bog‘lamaguningizcha Google va Telegram alohida hisob ochadi.",
-    "guest": "Hisobsiz davom etish",
+    "guest": "Avval testlarni ko‘rish",
     "terms": "Kirish orqali testlardan halol foydalanishga rozilik bildirasiz. Biz faqat kirishda ko‘rsatilgan ism, email yoki Telegram foydalanuvchi nomi va rasmdan foydalanamiz."
   },
   "onboarding": {
@@ -589,7 +597,7 @@
     "s3Text": "Maqsad darajani tanlang yoki ball maqsadini afzal ko‘rsangiz, o‘tkazib yuboring.",
     "s4Title": "Maqsad ballingiz bormi?",
     "s4Text": "Multilevel ballari odatda 0 dan 75 gacha bo‘ladi.",
-    "usedBefore": "Avval Multilevel’dan {way} orqali foydalanganmisiz?",
+    "usedBefore": "Avval Mockmee’dan {way} orqali foydalanganmisiz?",
     "usedBeforeText": "Avvalgi natijalar, Premium va kreditlarni shu hisobda saqlash uchun uni bog‘lang.",
     "connect": "{way}ni bog‘lash",
     "preferScore": "Men maqsad ballini afzal ko‘raman",
@@ -660,7 +668,7 @@
     "markings": "{n} ta baholash"
   },
   "pricing": {
-    "seo": "Multilevel Premium: barcha mashq testlari, har bir javob izohi va imtihon oluvchi baholaydigan Yozish hamda Gapirish.",
+    "seo": "Mockmee Premium: barcha mashq testlari, har bir javob izohi va imtihon oluvchi baholaydigan Yozish hamda Gapirish.",
     "free1": "Bepul mashq testlari",
     "free2": "Tinglash va O‘qish darhol tekshiriladi",
     "free3": "75 ballik natija va CEFR darajasi",
@@ -728,7 +736,7 @@
     "seoTitle": "Bepul kredit ishlang",
     "seoText": "Do‘stlaringizni Multilevel imtihoniga tayyorlanishga taklif qiling va Telegram kanalimizga qo‘shiling: Premium testlarni ochadigan kreditlar oling.",
     "shareText": "Bepul Multilevel (CEFR) mashq testlari, darhol tekshiriladi. Mening havolam orqali ro‘yxatdan o‘ting va Premium test uchun {credits} oling:",
-    "shareTitle": "Multilevel mashq testlari",
+    "shareTitle": "Mockmee: Multilevel mashq testlari",
     "already": "Allaqachon hisoblangan",
     "thanks": "Kanalga qo‘shilganingiz uchun rahmat.",
     "alreadyText": "Kanal kreditlarini avval olgansiz.",
@@ -737,7 +745,7 @@
       "WELCOME": "Taklif orqali qo‘shilganingiz uchun sovg‘a",
       "TELEGRAM_CHANNEL": "Telegram kanalga qo‘shildingiz",
       "UNLOCK": "Ochildi",
-      "GRANT": "Multilevel’dan"
+      "GRANT": "Mockmee’dan"
     },
     "title": "{accent} ishlang",
     "titleAccent": "Bepul kredit",
@@ -889,7 +897,7 @@
     "backToProfile": "Profilga qaytish",
     "heading": "{accent}",
     "headingAccent": "Hisoblaringizni birlashtiring",
-    "intro": "Sizda ikkinchi Multilevel hisobi bor. Natijalar, Premium va kreditlar bir joyda bo‘lishi va ikkala kirish usuli ham shu hisobni ochishi uchun uni shu hisobga qo‘shing.",
+    "intro": "Sizda ikkinchi Mockmee hisobi bor. Natijalar, Premium va kreditlar bir joyda bo‘lishi va ikkala kirish usuli ham shu hisobni ochishi uchun uni shu hisobga qo‘shing.",
     "other": "Boshqa hisob",
     "kept": "Shu hisob (saqlanadi)",
     "cannot": "Bu ikki hisobni birlashtirib bo‘lmaydi",
@@ -904,15 +912,15 @@
     "description": "Darhol tekshiriladigan bepul Multilevel (CEFR) ingliz tili mock testlari. Xuddi shu testni topshiring va 75 ballik natijangizni ko‘ring.",
     "og": "Undan yuqori ola olasizmi? Xuddi shu Multilevel testni bepul topshiring va darhol 75 ballik natija oling.",
     "beat": "{accent} dan yuqori ola olasizmi?",
-    "takeTest": "{title} testini bepul topshiring va tugatishingiz bilan 75 ballik natija va CEFR darajangizni oling. Hisob kerak emas.",
-    "takeAny": "Multilevel mock testini bepul topshiring va tugatishingiz bilan 75 ballik natija va CEFR darajangizni oling. Hisob kerak emas.",
+    "takeTest": "{title} testini bepul topshiring va tugatishingiz bilan 75 ballik natija va CEFR darajangizni oling.",
+    "takeAny": "Mockmee’da Multilevel mock testini bepul topshiring va tugatishingiz bilan 75 ballik natija va CEFR darajangizni oling.",
     "takeSkill": "{skill} testini topshirish",
     "takeFree": "Bepul test topshirish",
-    "what": "Multilevel.uz nima?"
+    "what": "Mockmee nima?"
   },
   "site": {
-    "title": "Multilevel - ingliz tili imtihoniga tayyorgarlik",
-    "description": "Bepul Multilevel (CEFR) ingliz tili mashq testlari: Tinglash, O‘qish, Yozish va Gapirish. Javoblaringizni hisob bilan yoki hisobsiz darhol tekshiring."
+    "title": "Mockmee - Multilevel ingliz tili imtihoniga tayyorgarlik",
+    "description": "Mockmee’da bepul Multilevel (CEFR) ingliz tili mashq testlari: Tinglash, O‘qish, Yozish va Gapirish, 75 ballik natija bilan darhol tekshiriladi."
   },
   "promo": {
     "title": "Promokodni faollashtirish",
@@ -947,7 +955,7 @@
     "ctaText": "Har bir o‘quvchiga Premium bering, qo‘shilish havolali guruhlar yarating, uy vazifalari bering va har bir o‘quvchining darajasini kuzating.",
     "apply": "Ariza qoldirish",
     "applyTitle": "O‘quv markazi sifatida qo‘shiling",
-    "applyLead": "Markazingiz haqida yozing. Sizga qo‘ng‘iroq qilamiz, o‘rinlar sonini kelishamiz va markazingizni Multilevelda ochamiz.",
+    "applyLead": "Markazingiz haqida yozing. Sizga qo‘ng‘iroq qilamiz, o‘rinlar sonini kelishamiz va markazingizni Mockmee’da ochamiz.",
     "b1": "Har bir o‘quvchiga Premium",
     "b1Text": "Litsenziya amal qilganda markazingizdagi har bir o‘quvchi barcha testlar va izohlardan foydalanadi.",
     "b2": "Guruhlar va qo‘shilish havolalari",
@@ -992,5 +1000,35 @@
     "uploadLogo": "Logotip yuklash",
     "listingSaved": "Saqlandi",
     "seeCatalogue": "Katalogni ko‘rish"
+  },
+  "speak": {
+    "checkTitle": "Mikrofoningizni tekshiring",
+    "checkText": "Uch soniya yozib, qayta tinglang: imtihon oluvchi sizni eshitishiga ishonch hosil qiling. Keyin imtihon o‘zi davom etadi: tinglang, tayyorlaning, signaldan keyin gapiring.",
+    "testRecord": "3 soniya yozish",
+    "testAgain": "Qayta yozish",
+    "testing": "Yozilmoqda…",
+    "sounds": "O‘zimni eshityapman — boshlash",
+    "readAloud": "Imtihon oluvchi har bir savolni ovoz chiqarib o‘qiydi",
+    "micDenied": "Mikrofon bloklangan",
+    "micDeniedText": "Brauzer sozlamalarida ushbu sayt uchun mikrofonga ruxsat bering va qayta urinib ko‘ring.",
+    "p1": "Shaxsiy savollar",
+    "p2": "Rasmlar",
+    "p3": "Uzun javob",
+    "p4": "Munozara",
+    "p1Info": "Imtihon oluvchi sizga o‘zingiz haqingizda {n} ta savol beradi. Har biriga o‘ylash uchun {prep} va javob berish uchun {speak} bor.",
+    "p2Info": "Rasmlarga qarang: ularni {speak} ichida tasvirlab, taqqoslang. So‘ng yana {n} ta savolga har biriga {then} ichida javob bering.",
+    "p3Info": "Kartani o‘qing. Tayyorlanish uchun {prep}, gapirish uchun {speak} bor. Kartadagi har bir bandni yoriting.",
+    "p4Info": "Fikrni hamda tarafdor va qarshi dalillarni o‘qing. Tayyorlanish uchun {prep}, fikringizni aytish uchun {speak} bor.",
+    "seconds": "{n} soniya",
+    "minutes": "{n} daqiqa",
+    "ready": "Tayyorman",
+    "listen": "Tinglang",
+    "prepare": "Tayyorlaning",
+    "speakNow": "Gapiring",
+    "skipListening": "O‘tkazib yuborish",
+    "startNow": "Hozir gapirishni boshlash",
+    "finishAnswer": "Javobni tugatish",
+    "qOf": "{total} tadan {n}-savol",
+    "saving": "Javoblaringiz saqlanmoqda…"
   }
 }

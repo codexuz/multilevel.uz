@@ -17,7 +17,7 @@ const props = withDefaults(defineProps<{
   slug?: string
   part?: number | null
   essays?: Record<string, string>
-  recordings?: { partId: string, blob: Blob, durationSeconds: number }[]
+  recordings?: { partId: string, position: number, blob: Blob, durationSeconds: number, audioRef?: Promise<string | null> }[]
 }>(), { skill: 'WRITING' })
 
 type Correction = { original: string, corrected: string, why: string }
@@ -31,7 +31,22 @@ interface Review {
   strengths?: string[]
   priorities?: string[]
   tasks?: { taskId: string, label: string, wordCount: number, minWords: number, criteria: Record<string, number>, level: string | null, comment: string, corrections: Correction[], betterSentence: string }[]
-  parts?: { partId: string, label: string, durationSeconds: number | null, transcript: string, criteria: Record<string, number>, level: string | null, comment: string, corrections: Correction[], betterAnswer: string }[]
+  parts?: {
+    partId: string
+    label: string
+    durationSeconds: number | null
+    transcript: string
+    criteria: Record<string, number>
+    /** CEFR sub-levels per criterion (reviews since answers are marked one by one). */
+    labels?: Record<string, string>
+    level: string | null
+    comment: string
+    corrections: Correction[]
+    betterAnswer: string
+    upgrades?: { basic: string, better: string, example: string }[]
+    pronunciationTips?: string[]
+    answers?: { position: number, question: string | null, transcript: string, comment: string, metrics: { words: number, wpm: number, pauses: number, fillers: number } | null }[]
+  }[]
 }
 interface Status { enabled: boolean, speaking?: boolean, allowance: { limit: number | null, used: number, left: number | null, period: 'month' | 'day' | null } | null }
 
@@ -68,12 +83,11 @@ onMounted(async () => {
 
 async function practiceBody() {
   if (props.skill === 'WRITING') return { slug: props.slug, part: props.part ?? null, essays: Object.entries(props.essays ?? {}).map(([taskId, text]) => ({ taskId, text: text ?? '' })) }
-  // Recorded in the browser: uploaded first, so the server can read them from storage.
-  const recordings = []
-  for (const r of props.recordings ?? []) {
-    const file = await uploadFile(new File([r.blob], `speaking-${r.partId}.webm`, { type: r.blob.type || 'audio/webm' }), { purpose: 'recording' })
-    recordings.push({ partId: r.partId, audioRef: file.url, durationSeconds: r.durationSeconds })
-  }
+  // Recorded in the browser: in storage already (uploaded during the exam), or uploaded now.
+  const recordings = await Promise.all((props.recordings ?? []).map(async (r) => {
+    const stored = (await r.audioRef) ?? (await uploadFile(new File([r.blob], `speaking-${r.partId}-${r.position + 1}.webm`, { type: r.blob.type || 'audio/webm' }), { purpose: 'recording' })).url
+    return { partId: r.partId, position: r.position, audioRef: stored, durationSeconds: r.durationSeconds }
+  }))
   return { slug: props.slug, part: props.part ?? null, recordings }
 }
 
@@ -100,12 +114,22 @@ const leftText = computed(() => {
 })
 const speaking = computed(() => !!review.value?.parts || props.skill === 'SPEAKING')
 const CRITERIA = computed(() => speaking.value
-  ? ['fluency', 'vocabulary', 'grammar', 'taskAchievement'].map(key => ({ key, label: tr(`criterion.${key}`) }))
+  ? ['fluency', 'vocabulary', 'grammar', 'pronunciation', 'taskAchievement'].map(key => ({ key, label: tr(`criterion.${key}`) }))
   : ['taskAchievement', 'organisation', 'vocabulary', 'grammar'].map(key => ({ key, label: tr(`criterion.${key}`) })))
 /** Tasks or parts, alike: what each card shows. */
 const items = computed(() => review.value?.parts
-  ? review.value.parts.map(p => ({ id: p.partId, label: p.label, level: p.level, criteria: p.criteria, comment: p.comment, corrections: p.corrections, better: p.betterAnswer, meta: p.durationSeconds ? `${p.durationSeconds}s` : '', warn: false, transcript: p.transcript }))
-  : (review.value?.tasks ?? []).map(t => ({ id: t.taskId, label: t.label, level: t.level, criteria: t.criteria, comment: t.comment, corrections: t.corrections, better: t.betterSentence, meta: tr('ai.wordsOf', { n: t.wordCount, min: t.minWords }), warn: t.wordCount < t.minWords, transcript: null as string | null })))
+  ? review.value.parts.map(p => ({
+      id: p.partId, label: p.label, level: p.level, criteria: p.criteria, labels: p.labels, comment: p.comment, corrections: p.corrections, better: p.betterAnswer,
+      meta: p.durationSeconds ? `${p.durationSeconds}s` : '', warn: false, transcript: p.transcript,
+      answers: p.answers ?? [], upgrades: p.upgrades ?? [], tips: p.pronunciationTips ?? []
+    }))
+  : (review.value?.tasks ?? []).map(t => ({
+      id: t.taskId, label: t.label, level: t.level, criteria: t.criteria, labels: undefined as Record<string, string> | undefined, comment: t.comment, corrections: t.corrections, better: t.betterSentence,
+      meta: tr('ai.wordsOf', { n: t.wordCount, min: t.minWords }), warn: t.wordCount < t.minWords, transcript: null as string | null,
+      answers: [] as NonNullable<NonNullable<Review['parts']>[number]['answers']>, upgrades: [] as { basic: string, better: string, example: string }[], tips: [] as string[]
+    })))
+/** The criteria a card marks: a review from before pronunciation was assessed has four. */
+const criteriaOf = (c: Record<string, number>) => CRITERIA.value.filter(x => c[x.key] != null)
 const intro = computed(() => speaking.value
   ? tr('ai.introSpeaking')
   : tr('ai.introWriting'))
@@ -284,13 +308,17 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? tr('common.b
         <div class="flex flex-col gap-4">
           <ul class="grid sm:grid-cols-2 gap-x-6 gap-y-2.5">
             <li
-              v-for="c in CRITERIA"
+              v-for="c in criteriaOf(t.criteria)"
               :key="c.key"
               class="text-sm"
             >
               <div class="flex justify-between mb-1">
                 <span class="text-toned">{{ c.label }}</span>
-                <span class="font-semibold tabular-nums text-highlighted">{{ t.criteria[c.key] }}/5</span>
+                <span class="font-semibold tabular-nums text-highlighted">
+                  <span
+                    v-if="t.labels?.[c.key] && t.labels[c.key] !== 'none'"
+                    class="text-xs font-medium text-primary me-1.5"
+                  >{{ t.labels[c.key] }}</span>{{ t.criteria[c.key] }}/5</span>
               </div>
               <div class="h-1.5 rounded-full bg-elevated overflow-hidden">
                 <div
@@ -303,8 +331,60 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? tr('common.b
           <p class="text-sm text-toned text-pretty">
             {{ t.comment }}
           </p>
+          <!-- Answer by answer: what was heard, how it was spoken, a word on it -->
+          <div v-if="t.answers.length">
+            <p class="text-xs font-semibold text-muted mb-2">
+              {{ tr('ai.byAnswer') }}
+            </p>
+            <ul class="flex flex-col divide-y divide-default rounded-lg ring ring-default">
+              <li
+                v-for="a in t.answers"
+                :key="a.position"
+                class="px-3 py-2.5 text-sm flex flex-col gap-1.5"
+              >
+                <p
+                  v-if="a.question"
+                  class="font-medium text-highlighted"
+                >
+                  {{ a.question }}
+                </p>
+                <p class="text-toned leading-6 italic">
+                  “{{ a.transcript || tr('ai.nothingHeard') }}”
+                </p>
+                <div
+                  v-if="a.metrics?.words"
+                  class="flex flex-wrap gap-1.5"
+                >
+                  <UBadge
+                    :label="tr('ai.wpm', { n: a.metrics.wpm })"
+                    color="neutral"
+                    variant="soft"
+                    size="sm"
+                  />
+                  <UBadge
+                    :label="tr('ai.pauses', { n: a.metrics.pauses }, a.metrics.pauses)"
+                    color="neutral"
+                    variant="soft"
+                    size="sm"
+                  />
+                  <UBadge
+                    :label="tr('ai.fillers', { n: a.metrics.fillers }, a.metrics.fillers)"
+                    color="neutral"
+                    variant="soft"
+                    size="sm"
+                  />
+                </div>
+                <p
+                  v-if="a.comment"
+                  class="text-muted"
+                >
+                  {{ a.comment }}
+                </p>
+              </li>
+            </ul>
+          </div>
           <details
-            v-if="t.transcript"
+            v-else-if="t.transcript"
             class="rounded-lg ring ring-default px-3 py-2 text-sm"
           >
             <summary class="cursor-pointer text-xs font-semibold text-muted">
@@ -335,6 +415,46 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? tr('common.b
                 <p class="text-xs text-muted mt-0.5">
                   {{ c.why }}
                 </p>
+              </li>
+            </ul>
+          </div>
+          <div v-if="t.upgrades.length">
+            <p class="text-xs font-semibold text-muted mb-2">
+              {{ tr('ai.upgrades') }}
+            </p>
+            <ul class="flex flex-col divide-y divide-default rounded-lg ring ring-default">
+              <li
+                v-for="(u, i) in t.upgrades"
+                :key="i"
+                class="px-3 py-2.5 text-sm"
+              >
+                <p>
+                  <span class="text-muted">{{ u.basic }}</span>
+                  <UIcon
+                    name="i-lucide-arrow-right"
+                    class="size-3.5 mx-1.5 align-[-2px] text-dimmed"
+                  />
+                  <span class="font-medium text-primary">{{ u.better }}</span>
+                </p>
+                <p class="text-xs text-muted mt-0.5 italic">
+                  {{ u.example }}
+                </p>
+              </li>
+            </ul>
+          </div>
+          <div
+            v-if="t.tips.length"
+            class="rounded-lg bg-warning/10 px-4 py-3"
+          >
+            <p class="text-xs font-semibold text-warning mb-1.5">
+              {{ tr('criterion.pronunciation') }}
+            </p>
+            <ul class="text-sm text-toned flex flex-col gap-1 list-disc ps-4">
+              <li
+                v-for="tip in t.tips"
+                :key="tip"
+              >
+                {{ tip }}
               </li>
             </ul>
           </div>

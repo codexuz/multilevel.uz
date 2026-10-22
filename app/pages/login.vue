@@ -158,8 +158,9 @@ const perks = computed(() => [t('login.perk1'), t('login.perk2'), t('login.perk3
         class="my-6"
       />
 
+      <!-- Guests can look through the tests; sitting one brings them back here. -->
       <UButton
-        :to="next"
+        to="/tests"
         block
         size="lg"
         color="neutral"
