@@ -177,10 +177,10 @@ async function remove(p: Pack) {
       <template #body>
         <form
           v-if="form"
-          class="grid gap-4"
+          class="grid gap-4 min-w-0 [&>*]:min-w-0"
           @submit.prevent="save"
         >
-          <div class="grid sm:grid-cols-2 gap-3">
+          <div class="grid sm:grid-cols-2 gap-3 [&>*]:min-w-0">
             <UFormField label="Title">
               <UInput
                 v-model="form.title"
@@ -207,7 +207,7 @@ async function remove(p: Pack) {
               class="w-full"
             />
           </UFormField>
-          <div class="grid sm:grid-cols-3 gap-3">
+          <div class="grid sm:grid-cols-3 gap-3 [&>*]:min-w-0">
             <UFormField label="Exam">
               <USelect
                 v-model="form.exam"
@@ -245,8 +245,13 @@ async function remove(p: Pack) {
               value-key="value"
               multiple
               placeholder="Pick the tests"
-              class="w-full"
-            />
+              class="w-full min-w-0"
+            >
+              <!-- The list below shows them in order: the field just says how many. -->
+              <template #default>
+                <span class="truncate">{{ form.testIds.length ? `${form.testIds.length} ${form.testIds.length === 1 ? 'test' : 'tests'} chosen` : 'Pick the tests' }}</span>
+              </template>
+            </USelectMenu>
           </UFormField>
           <ol
             v-if="form.testIds.length"

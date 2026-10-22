@@ -90,7 +90,7 @@ const BENEFITS = computed(() => [1, 2, 3, 4].map(n => t(`packs.benefit${n}`)))
       <div class="flex flex-col gap-5 min-w-0">
         <div>
           <UButton
-            :to="`/packs?exam=${pack.exam}`"
+            to="/tests?view=packs"
             :label="t('packs.title')"
             icon="i-lucide-arrow-left"
             color="neutral"

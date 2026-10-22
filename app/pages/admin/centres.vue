@@ -2,7 +2,7 @@
 /**
  * Learning centres: each buys seats for a time. Its students have Premium while the licence runs;
  * its owner (and the teachers they invite) run groups and set work at /centre. Centres that asked
- * to join at /centres/apply wait on top: opening one from its request makes the sender its owner.
+ * to join (Apply on /centres) wait on top: opening one from its request makes the sender its owner.
  */
 definePageMeta({ middleware: 'admin' })
 useSeoMeta({ title: 'Learning centres', robots: 'noindex' })

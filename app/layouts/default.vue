@@ -12,7 +12,6 @@ const route = useRoute()
 
 const mainNav = computed<NavigationMenuItem[]>(() => [
   { label: t('nav.tests'), icon: 'i-lucide-clipboard-list', to: '/tests' },
-  { label: t('nav.packs'), icon: 'i-lucide-package', to: '/packs' },
   { label: t('nav.live'), icon: 'i-lucide-trophy', to: '/live', badge: live.value ? { label: t('nav.liveBadge'), color: 'error' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined },
   // The centres catalogue is for guests choosing where to study; signed-in users don't need it in the menu.
   ...(loggedIn.value ? [] : [{ label: t('nav.centres'), icon: 'i-lucide-building-2', to: '/centres' }]),

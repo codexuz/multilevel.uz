@@ -1,7 +1,7 @@
 import { desc, eq } from 'drizzle-orm'
 import { centreRequests } from '../../../database/schema'
 
-// My latest request to join as a centre, if any (for /centres/apply).
+// My latest request to join as a centre, if any (for the Apply form on /centres).
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   const [row] = await useDb().select().from(centreRequests).where(eq(centreRequests.userId, user.id))

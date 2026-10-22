@@ -321,7 +321,7 @@ export const centres = pgTable('centres', {
   createdAt: created()
 })
 
-/** A learning centre asking to join (/centres/apply); an admin opens the centre from it or turns it down. */
+/** A learning centre asking to join (Apply on /centres); an admin opens the centre from it or turns it down. */
 export const centreRequests = pgTable('centre_requests', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
