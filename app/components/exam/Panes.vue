@@ -51,11 +51,16 @@ const tabs = computed(() => props.labels.map((label, value) => ({ label, value }
     :items="[{ slot: 'first', defaultSize: sizes[0], minSize: minSizes[0] }, { slot: 'second', defaultSize: sizes[1], minSize: minSizes[1] }]"
     class="flex-1 min-h-0"
   >
+    <!-- A panel lays out its content in a row: without this the content is only as wide as its text. -->
     <template #first>
-      <slot name="first" />
+      <div class="flex-1 min-w-0 min-h-0">
+        <slot name="first" />
+      </div>
     </template>
     <template #second>
-      <slot name="second" />
+      <div class="flex-1 min-w-0 min-h-0">
+        <slot name="second" />
+      </div>
     </template>
   </USplitter>
 </template>
