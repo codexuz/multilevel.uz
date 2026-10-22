@@ -1,25 +1,30 @@
 <script setup lang="ts">
-import type { Pack } from '~/utils/billing'
+import type { PublicCentre } from '~/components/centre/Card.vue'
 
 /**
- * The landing page, in the manner of SmallTalk2Me's: what the site is over a soft glow (mock tests
- * for IELTS and for Multilevel, the exam picked here), the two exams side by side, what you get
- * (shown, not told), test packs, the newest tests of the exam (rendered on the server, so search
- * engines read them), the four skills, how a test is taken, the questions people ask, and the way
- * in. Always the public site.
+ * The landing page, laid out the way multi-exam prep sites are: one clear promise and one way in,
+ * then "choose your exam" as a card for each exam with its own button, what you get (shown, not
+ * told), the four skills, how it works, the learning centres that use Mockmee, the questions
+ * people ask, and the way in again. No catalogue here: the exam card leads to it. Always the public site.
  */
 definePageMeta({ layout: 'public' })
 
 const { loggedIn, me } = useMe()
 const { t } = useI18n()
-const { exam } = useExam()
+const { setExam } = useExam()
 
-const { data } = await useFetch<{ items: any[], total: number }>('/api/tests', { query: computed(() => ({ limit: 6, exam: exam.value })) })
-const { data: packs } = await useFetch<Pack[]>('/api/packs', { query: computed(() => ({ exam: exam.value })), default: () => [] })
+const { data: centres } = await useFetch<PublicCentre[]>('/api/centres', { default: () => [] })
 const EXAM_CARDS = computed(() => [
-  { exam: 'IELTS' as const, icon: 'i-lucide-globe-2', title: 'IELTS', points: [1, 2, 3, 4].map(n => t(`home.ielts${n}`)) },
-  { exam: 'MULTILEVEL' as const, icon: 'i-lucide-flag', title: 'Multilevel', points: [1, 2, 3, 4].map(n => t(`home.multilevel${n}`)) }
+  { exam: 'IELTS' as const, icon: 'i-lucide-globe-2', title: 'IELTS', tag: t('exam.ieltsHint'), lead: t('home.ieltsLead'), points: [1, 2, 3, 4].map(n => t(`home.ielts${n}`)), cta: t('home.ieltsCta') },
+  { exam: 'MULTILEVEL' as const, icon: 'i-lucide-flag', title: 'Multilevel', tag: t('exam.multilevelHint'), lead: t('home.multilevelLead'), points: [1, 2, 3, 4].map(n => t(`home.multilevel${n}`)), cta: t('home.multilevelCta') }
 ])
+/** The way in: a guest signs up (onboarding asks their exam); a signed-in user goes to their tests. */
+const startTo = computed(() => (loggedIn.value ? '/tests' : '/login?next=/onboarding'))
+/** An exam's card: a guest looks round that exam's tests; a signed-in user goes to their own. */
+async function openExam(exam: Exam) {
+  if (!loggedIn.value) await setExam(exam)
+  await navigateTo(loggedIn.value ? '/tests' : `/tests?exam=${exam}`)
+}
 
 useSeoMeta({
   title: () => t('home.seoTitle'),
@@ -30,11 +35,11 @@ useSeoMeta({
 
 const firstName = computed(() => me.value?.name?.split(' ')[0])
 
-const skills = computed(() => ['LISTENING', 'READING', 'WRITING', 'SPEAKING'].map(key => ({ key, title: skillLabel(key), text: t(exam.value === 'IELTS' ? `home.skillTextIelts.${key}` : `home.skillText.${key}`) })))
+const skills = computed(() => ['LISTENING', 'READING', 'WRITING', 'SPEAKING'].map(key => ({ key, title: skillLabel(key), text: t(`home.skillTextBoth.${key}`) })))
 const steps = computed(() => [1, 2, 3, 4, 5].map(n => ({ title: t(`home.step${n}`), text: t(`home.step${n}Text`) })))
 const faq = computed(() => [1, 2, 3, 4, 5].map(n => ({ label: t(`home.faq${n}`), content: t(`home.faq${n}Answer`) })))
 const stats = computed(() => [
-  { n: '2', l: t('home.statExams') }, { n: exam.value === 'IELTS' ? '0–9' : '0–75', l: exam.value === 'IELTS' ? t('home.statBand') : t('home.statScore') }, { n: 'A2–C2', l: t('home.statLevel') }, { n: t('home.statHours'), l: t('home.statMarked') }
+  { n: '2', l: t('home.statExams') }, { n: '0–9', l: t('home.statBand') }, { n: '0–75', l: t('home.statScore') }, { n: t('home.statHours'), l: t('home.statMarked') }
 ])
 
 const wrap = 'mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8'
@@ -93,22 +98,17 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
           <p class="text-lg text-toned max-w-xl text-pretty">
             {{ t('home.heroText') }}
           </p>
-          <div class="flex flex-col gap-2 max-lg:items-center">
-            <p class="text-sm font-semibold text-muted">
-              {{ t('exam.choose') }}
-            </p>
-            <ExamSwitch size="lg" />
-          </div>
           <div class="flex flex-wrap gap-3 max-lg:justify-center">
             <UButton
-              :to="`/tests?exam=${exam}`"
-              :label="t('pub.startNow')"
+              :to="startTo"
+              :label="loggedIn ? t('home.toMyTests') : t('home.startFree')"
+              trailing-icon="i-lucide-arrow-right"
               size="xl"
               class="px-9 rounded-full text-base font-semibold"
             />
             <UButton
-              :to="loggedIn ? '/results' : '/pricing'"
-              :label="loggedIn ? t('nav.results') : t('home.seePremium')"
+              to="/#exams"
+              :label="t('home.chooseExam')"
               size="xl"
               color="neutral"
               variant="outline"
@@ -137,7 +137,7 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
             >
           </div>
           <div class="absolute left-[2%] top-[14%] -rotate-12 rounded-xl bg-default px-3 py-2 shadow-glow ring ring-default">
-            <span class="text-lg font-bold text-primary">{{ exam === 'IELTS' ? 'IELTS' : 'CEFR' }}</span>
+            <span class="text-lg font-bold text-primary">IELTS</span>
           </div>
           <div class="absolute right-[0%] top-[10%] rotate-6 rounded-xl bg-default p-2 shadow-glow ring ring-default">
             <img
@@ -148,10 +148,10 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
           </div>
           <div class="absolute right-[2%] bottom-[22%] rotate-12 rounded-xl bg-primary px-3 py-2 text-white shadow-glow">
             <p class="text-xl font-bold leading-none">
-              {{ exam === 'IELTS' ? '7.0' : 'B2' }}
+              B2
             </p>
             <p class="text-[10px] font-medium opacity-90">
-              {{ exam === 'IELTS' ? t('result.band') : t('home.upperInt') }}
+              Multilevel
             </p>
           </div>
           <div class="absolute left-[4%] bottom-[24%] -rotate-6 rounded-xl bg-default p-2 shadow-glow ring ring-default">
@@ -163,20 +163,21 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
           </div>
           <div class="absolute inset-x-[12%] bottom-[4%] rounded-xl bg-default px-4 py-2.5 text-center shadow-glow ring ring-default">
             <p class="text-[11px] text-muted">
-              {{ skillLabel('READING') }} · {{ exam === 'IELTS' ? 'IELTS Academic Test 1' : 'Multilevel Practice Test 1' }}
+              {{ skillLabel('READING') }} · IELTS Academic Test 1
             </p>
             <p class="text-sm font-semibold text-highlighted">
-              {{ exam === 'IELTS' ? t('home.heroCardIelts') : t('home.heroCard') }}
+              {{ t('home.heroCardIelts') }}
             </p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- The two exams -->
+    <!-- Choose your exam: a card for each, with its own way in -->
     <section
+      id="exams"
       :class="wrap"
-      class="flex flex-col items-center gap-8 text-center"
+      class="flex flex-col items-center gap-8 text-center scroll-mt-24"
     >
       <div class="flex flex-col gap-2 items-center">
         <h2 class="text-3xl sm:text-[2.6rem] leading-tight font-bold text-highlighted text-balance max-w-3xl">
@@ -186,45 +187,60 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
           {{ t('home.twoExamsText') }}
         </p>
       </div>
-      <div class="grid md:grid-cols-2 gap-4 w-full max-w-4xl text-left">
-        <NuxtLink
+      <div class="grid md:grid-cols-2 gap-5 w-full max-w-5xl text-left">
+        <article
           v-for="c in EXAM_CARDS"
           :key="c.exam"
-          :to="`/tests?exam=${c.exam}`"
-          class="group flex flex-col gap-4 rounded-2xl p-6 ring transition-all hover:-translate-y-0.5 hover:shadow-md"
-          :class="exam === c.exam ? 'ring-2 ring-primary bg-primary/5' : 'ring-default bg-default'"
+          class="flex flex-col gap-5 rounded-3xl p-6 sm:p-8 ring ring-default bg-default shadow-sm"
         >
-          <div class="flex items-center gap-3">
-            <div class="size-11 rounded-xl bg-primary/10 text-primary grid place-items-center">
-              <UIcon
-                :name="c.icon"
-                class="size-6"
-              />
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="size-12 rounded-2xl bg-linear-to-br from-primary-400 to-primary-600 text-white grid place-items-center shadow-md shadow-primary-500/25">
+                <UIcon
+                  :name="c.icon"
+                  class="size-6"
+                />
+              </div>
+              <div>
+                <h3 class="text-2xl font-bold text-highlighted leading-tight">
+                  {{ c.title }}
+                </h3>
+                <p class="text-sm text-muted">
+                  {{ c.tag }}
+                </p>
+              </div>
             </div>
-            <h3 class="text-xl font-bold text-highlighted">
-              {{ c.title }}
-            </h3>
           </div>
-          <ul class="flex flex-col gap-2 text-sm text-toned">
+          <p class="text-toned text-pretty">
+            {{ c.lead }}
+          </p>
+          <ul class="flex flex-col gap-2.5 text-sm text-toned">
             <li
               v-for="point in c.points"
               :key="point"
-              class="flex gap-2"
+              class="flex gap-2.5"
             >
               <UIcon
-                name="i-lucide-check"
-                class="size-4 mt-0.5 shrink-0 text-success"
+                name="i-lucide-circle-check"
+                class="size-5 shrink-0 text-success"
               />{{ point }}
             </li>
           </ul>
-          <span class="mt-auto text-sm font-semibold text-primary flex items-center gap-1 group-hover:gap-1.5 transition-all">
-            {{ t('home.seeTests', { exam: c.title }) }}<UIcon
-              name="i-lucide-arrow-right"
-              class="size-4"
-            />
-          </span>
-        </NuxtLink>
+          <UButton
+            :label="c.cta"
+            trailing-icon="i-lucide-arrow-right"
+            size="lg"
+            class="mt-auto self-start rounded-full px-6"
+            @click="openExam(c.exam)"
+          />
+        </article>
       </div>
+      <p class="text-sm text-muted flex items-center gap-2">
+        <UIcon
+          name="i-lucide-badge-check"
+          class="size-4 text-success"
+        />{{ t('home.freeTier') }}
+      </p>
     </section>
 
     <!-- In numbers -->
@@ -290,22 +306,30 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
           <p class="text-center font-semibold text-highlighted mb-3">
             {{ t('home.yourScore') }}
           </p>
-          <div class="rounded-xl bg-gradient-to-br from-[#5870f5] to-[#8b9cff] py-7 text-center text-white">
-            <p
-              v-if="exam === 'IELTS'"
-              class="text-6xl font-bold leading-none"
-            >
-              <span class="text-2xl opacity-80 me-2">{{ t('result.band') }}</span>7.0
-            </p>
-            <p
-              v-else
-              class="text-6xl font-bold leading-none"
-            >
-              58<span class="text-2xl opacity-80"> / 75</span>
-            </p>
-            <p class="mt-2 font-medium">
-              {{ exam === 'IELTS' ? 'CEFR C1' : 'CEFR B2' }}
-            </p>
+          <!-- Each exam on its own scale: an IELTS band, a Multilevel score -->
+          <div class="grid grid-cols-2 gap-2">
+            <div class="rounded-xl bg-gradient-to-br from-[#5870f5] to-[#8b9cff] py-6 text-center text-white">
+              <p class="text-xs font-semibold uppercase tracking-wide opacity-80">
+                IELTS
+              </p>
+              <p class="mt-1 text-5xl font-bold leading-none">
+                7.0
+              </p>
+              <p class="mt-2 text-sm font-medium">
+                CEFR C1
+              </p>
+            </div>
+            <div class="rounded-xl bg-gradient-to-br from-[#5870f5] to-[#8b9cff] py-6 text-center text-white">
+              <p class="text-xs font-semibold uppercase tracking-wide opacity-80">
+                Multilevel
+              </p>
+              <p class="mt-1 text-5xl font-bold leading-none">
+                58<span class="text-lg opacity-80"> / 75</span>
+              </p>
+              <p class="mt-2 text-sm font-medium">
+                CEFR B2
+              </p>
+            </div>
           </div>
           <ul class="mt-4 flex flex-col gap-2 text-sm">
             <li
@@ -416,65 +440,6 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
       </div>
     </section>
 
-    <!-- Newest tests -->
-    <section
-      :class="wrap"
-      class="flex flex-col gap-6"
-    >
-      <div class="flex items-end justify-between gap-3">
-        <div>
-          <i18n-t
-            keypath="home.newest"
-            tag="h2"
-            scope="global"
-            class="text-2xl sm:text-3xl font-bold text-highlighted"
-          >
-            <template #accent>
-              <span class="text-accent">{{ t('home.newestAccent') }}</span>
-            </template>
-          </i18n-t>
-          <p class="text-muted mt-1">
-            {{ t('home.newestText') }}
-          </p>
-        </div>
-        <UButton
-          :to="`/tests?exam=${exam}`"
-          :label="t('pub.allTests')"
-          trailing-icon="i-lucide-arrow-right"
-          color="neutral"
-          variant="ghost"
-          class="font-semibold"
-        />
-      </div>
-      <div
-        v-if="packs.length"
-        class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
-      >
-        <PackCard
-          v-for="p in packs.slice(0, 3)"
-          :key="p.id"
-          :pack="p"
-        />
-      </div>
-      <div
-        v-if="data?.items?.length"
-        class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-      >
-        <TestCard
-          v-for="test in data.items"
-          :key="test.id"
-          :test="test"
-        />
-      </div>
-      <UEmpty
-        v-else
-        icon="i-lucide-clipboard-list"
-        :title="t('home.emptyTitle')"
-        :description="t('home.emptyText')"
-        variant="naked"
-      />
-    </section>
-
     <!-- The four skills -->
     <section
       :class="wrap"
@@ -550,6 +515,23 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
       </ol>
     </section>
 
+    <!-- The learning centres that use Mockmee -->
+    <section
+      v-if="centres.length"
+      :class="wrap"
+      class="flex flex-col gap-8"
+    >
+      <div class="flex flex-col gap-2 items-center text-center">
+        <h2 class="text-3xl sm:text-[2.6rem] leading-tight font-bold text-highlighted text-balance">
+          {{ t('home.centresTitle') }}
+        </h2>
+        <p class="text-toned text-lg max-w-2xl text-pretty">
+          {{ t('home.centresText') }}
+        </p>
+      </div>
+      <CentreStrip :centres="centres" />
+    </section>
+
     <!-- Questions -->
     <section
       id="faq"
@@ -599,8 +581,8 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
             {{ t('home.ctaText') }}
           </p>
           <UButton
-            to="/tests"
-            :label="t('pub.startNow')"
+            :to="startTo"
+            :label="loggedIn ? t('home.toMyTests') : t('home.startFree')"
             size="xl"
             color="neutral"
             class="self-start px-9 rounded-full text-base font-semibold bg-white text-[#3f49c9] hover:bg-white/90"

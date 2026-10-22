@@ -83,6 +83,10 @@ export default defineNuxtConfig({
   routeRules: {
     '/': { prerender: false },
     '/dashboard': { redirect: '/results' },
+    // The request form is a modal on the catalogue now.
+    '/centres/apply': { redirect: '/centres?apply=1' },
+    // Packs are a segment of the catalogue.
+    '/packs': { redirect: '/tests?view=packs' },
     '/admin/**': noIndex,
     '/billing/**': noIndex,
     '/builder/**': noIndex,

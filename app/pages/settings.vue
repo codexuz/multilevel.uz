@@ -21,6 +21,18 @@ async function revoke(id: string) {
     icon="i-lucide-settings"
   >
     <div class="flex flex-col gap-4 max-w-2xl">
+      <!-- The exam they prepare for: the catalogue, results and plan follow it -->
+      <UCard :ui="{ body: 'flex flex-col gap-3' }">
+        <div>
+          <p class="font-medium">
+            {{ t('settings.exam') }}
+          </p>
+          <p class="text-sm text-muted">
+            {{ t('settings.examText') }}
+          </p>
+        </div>
+        <ExamSwitch />
+      </UCard>
       <UCard :ui="{ body: 'flex items-center justify-between gap-3' }">
         <div>
           <p class="font-medium">

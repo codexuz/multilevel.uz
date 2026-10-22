@@ -69,7 +69,6 @@ async function logout() {
 }
 const accountLinks = computed(() => [
   ...(me.value?.centres?.some(c => c.role !== 'STUDENT') ? [{ label: t('nav.centre'), description: t('profile.centreText'), icon: 'i-lucide-school', to: '/centre' }] : []),
-  { label: t('nav.packs'), description: t('profile.packsText'), icon: 'i-lucide-package', to: '/packs' },
   { label: t('nav.live'), description: t('profile.liveText'), icon: 'i-lucide-trophy', to: '/live' },
   { label: t('nav.earn'), icon: 'i-lucide-gift', to: '/earn' },
   { label: t('nav.promo'), description: t('profile.promoText'), icon: 'i-lucide-ticket', to: '/promo' },

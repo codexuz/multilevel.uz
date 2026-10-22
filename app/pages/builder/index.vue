@@ -40,7 +40,10 @@ watch(search, (v) => {
 })
 // 'ALL' rather than empty: a select cannot hold an empty value.
 const testStatus = ref('ALL')
-const { exam, setExam } = useExam()
+// Staff build for either exam: the library's own choice, apart from the exam they prepare for.
+const builderExam = useCookie<string | null>('builder-exam', { maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' })
+const exam = computed<Exam>(() => (isExam(builderExam.value) ? builderExam.value : 'IELTS'))
+const setExam = (next: Exam) => (builderExam.value = next)
 watch([tab, q, testStatus, exam], () => (page.value = 1))
 
 const { data, status, refresh } = useAsyncData(

@@ -6,22 +6,26 @@ definePageMeta({ guestLayout: true })
 
 /**
  * The open catalogue, rendered on the server so every title and description is in the page Google
- * reads. One exam at a time (IELTS, with Academic or General Training, or Multilevel), with its
- * test packs on top. Full tests, or parts to practise on their own, filtered by words, skill, part,
- * question type, and whether a test has all four skills. The filters live in the address, so a
- * filtered list can be shared and comes back on reload.
+ * reads. One exam: a signed-in user's own (from onboarding), or the one a guest picked. Three
+ * segments: full tests, parts to practise on their own, and test packs. Tests and parts are filtered
+ * by words, skill, part, question type, and whether a test has all four skills (and, for IELTS,
+ * Academic or General Training). The filters live in the address, so a filtered list can be shared
+ * and comes back on reload.
  */
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
 const ALL = 'ALL'
 const str = (v: unknown, fallback = '') => (typeof v === 'string' ? v : fallback)
-// ?exam= (a shared link) switches the exam and keeps it; otherwise the one the user prepares for.
+// A signed-in user sees their own exam only; a guest's ?exam= (from the home page, or a shared link) picks one.
+const { loggedIn } = useMe()
 const { exam, setExam } = useExam()
-if (isExam(route.query.exam) && route.query.exam !== exam.value) await setExam(route.query.exam)
+if (!loggedIn.value && isExam(route.query.exam) && route.query.exam !== exam.value) await setExam(route.query.exam)
 const ieltsModule = ref(str(route.query.module, ALL))
 
-const view = ref<'tests' | 'parts'>(route.query.view === 'parts' ? 'parts' : 'tests')
+type View = 'tests' | 'parts' | 'packs'
+const viewOf = (v: unknown): View => (v === 'parts' || v === 'packs' ? v : 'tests')
+const view = ref<View>(viewOf(route.query.view))
 const search = ref(str(route.query.q))
 const q = ref(search.value)
 const skill = ref(str(route.query.skill, ALL))
@@ -50,7 +54,7 @@ watch(skill, (s) => {
 })
 // The address can also change from outside (the Tests link, back and forward): follow it.
 watch(() => route.query, (rq) => {
-  const nextView = rq.view === 'parts' ? 'parts' : 'tests'
+  const nextView = viewOf(rq.view)
   if (view.value !== nextView) view.value = nextView
   if (q.value !== str(rq.q)) search.value = q.value = str(rq.q)
   if (skill.value !== str(rq.skill, ALL)) skill.value = str(rq.skill, ALL)
@@ -58,14 +62,14 @@ watch(() => route.query, (rq) => {
   if (type.value !== str(rq.type, ALL)) type.value = str(rq.type, ALL)
   if (full.value !== (rq.full === '1')) full.value = rq.full === '1'
   if (ieltsModule.value !== str(rq.module, ALL)) ieltsModule.value = str(rq.module, ALL)
-  if (isExam(rq.exam) && rq.exam !== exam.value) setExam(rq.exam)
+  if (!loggedIn.value && isExam(rq.exam) && rq.exam !== exam.value) setExam(rq.exam)
 })
 watch([view, q, skill, part, type, full, exam, ieltsModule], () => (page.value = 1))
 watch([view, q, skill, part, type, full, page, exam, ieltsModule], () => router.replace({
   query: {
     exam: exam.value,
     ...(exam.value === 'IELTS' && ieltsModule.value !== ALL ? { module: ieltsModule.value } : {}),
-    ...(view.value === 'parts' ? { view: 'parts' } : {}),
+    ...(view.value !== 'tests' ? { view: view.value } : {}),
     ...(q.value ? { q: q.value } : {}),
     ...(skill.value !== ALL ? { skill: skill.value } : {}),
     ...(view.value === 'parts' && part.value !== ALL ? { part: part.value } : {}),
@@ -93,7 +97,11 @@ const moduleItems = computed(() => [
   { label: t('exam.academic'), value: 'ACADEMIC' },
   { label: t('exam.general'), value: 'GENERAL_TRAINING' }
 ])
-const views = computed(() => [{ label: t('tests.fullTests'), value: 'tests', icon: 'i-lucide-files' }, { label: t('tests.byPart'), value: 'parts', icon: 'i-lucide-puzzle' }])
+const views = computed(() => [
+  { label: t('tests.fullTests'), value: 'tests', icon: 'i-lucide-files' },
+  { label: t('tests.byPart'), value: 'parts', icon: 'i-lucide-puzzle' },
+  { label: t('packs.title'), value: 'packs', icon: 'i-lucide-package' }
+])
 const skillItems = computed(() => [{ label: t('tests.allSkills'), value: ALL }, ...(['LISTENING', 'READING', 'WRITING', 'SPEAKING'] as const).map(s => ({ label: skillLabel(s), value: s, icon: SKILL_META[s].icon }))])
 const partItems = computed(() => [{ label: t('tests.anyPart'), value: ALL }, ...partNumbers.value.map(n => ({ label: skill.value === ALL ? t('part.part', { n }) : partName(skill.value, n, exam.value), value: String(n) }))])
 /** How many tests (with the other filters) have all four skills: shown on the switch. */
@@ -144,49 +152,60 @@ useSeoMeta({
         </p>
       </div>
 
-      <ExamSwitch />
+      <ExamSwitch v-if="!loggedIn" />
 
       <LiveMockBanner />
-
-      <section
-        v-if="packs.length"
-        class="flex flex-col gap-3"
-      >
-        <div class="flex items-end justify-between gap-3">
-          <div>
-            <h2 class="font-semibold text-highlighted">
-              {{ t('packs.title') }}
-            </h2>
-            <p class="text-sm text-muted">
-              {{ t('packs.lead') }}
-            </p>
-          </div>
-          <UButton
-            :to="`/packs?exam=${exam}`"
-            :label="t('packs.all')"
-            trailing-icon="i-lucide-arrow-right"
-            color="neutral"
-            variant="ghost"
-            size="sm"
-          />
-        </div>
-        <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
-          <PackCard
-            v-for="p in packs.slice(0, 3)"
-            :key="p.id"
-            :pack="p"
-          />
-        </div>
-      </section>
 
       <UTabs
         v-model="view"
         :items="views"
         :content="false"
-        class="w-full sm:w-80"
+        class="w-full sm:w-[28rem]"
       />
 
-      <div class="flex flex-col gap-3">
+      <!-- Test packs: several tests bought once, each the buyer's for good -->
+      <template v-if="view === 'packs'">
+        <p class="text-sm text-muted -mt-2">
+          {{ t('packs.intro') }}
+        </p>
+        <div
+          v-if="packs.length"
+          class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4"
+        >
+          <PackCard
+            v-for="p in packs"
+            :key="p.id"
+            :pack="p"
+          />
+        </div>
+        <div
+          v-else
+          class="flex flex-col items-center text-center gap-3 rounded-xl ring ring-default px-6 py-12"
+        >
+          <UIcon
+            name="i-lucide-package-open"
+            class="size-12 text-dimmed"
+          />
+          <p class="font-semibold text-highlighted">
+            {{ t('packs.none', { exam: examLabel(exam) }) }}
+          </p>
+          <p class="text-sm text-muted max-w-sm">
+            {{ t('packs.noneText') }}
+          </p>
+          <UButton
+            to="/pricing"
+            label="Premium"
+            icon="i-lucide-sparkles"
+            color="neutral"
+            variant="outline"
+          />
+        </div>
+      </template>
+
+      <div
+        v-else
+        class="flex flex-col gap-3"
+      >
         <div class="grid gap-2 grid-cols-2 lg:flex lg:flex-wrap lg:items-center">
           <UInput
             v-model="search"
@@ -249,8 +268,9 @@ useSeoMeta({
         </div>
       </div>
 
+      <template v-if="view === 'packs'" />
       <div
-        v-if="status === 'pending' && !data?.items?.length"
+        v-else-if="status === 'pending' && !data?.items?.length"
         class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4"
       >
         <USkeleton
@@ -305,7 +325,7 @@ useSeoMeta({
       </div>
 
       <div
-        v-if="(data?.pages ?? 1) > 1"
+        v-if="view !== 'packs' && (data?.pages ?? 1) > 1"
         class="flex justify-center"
       >
         <UPagination

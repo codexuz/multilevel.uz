@@ -1,7 +1,7 @@
 // Anyone can look around: the home page, the catalogue and each test's page, Premium and the other
 // open pages. Sitting a test (its papers, result and review) needs sign-in, as do results kept,
 // the profile, settings and the staff pages.
-const isPublic = (path: string) => path === '/' || path === '/login' || path === '/pricing' || path === '/earn' || path === '/promo' || path === '/centres' || path === '/centres/apply' || path === '/live' || path.startsWith('/join/') || path.startsWith('/share/') || path === '/tests' || path === '/packs' || /^\/packs\/[^/]+\/?$/.test(path) || /^\/tests\/[^/]+\/?$/.test(path)
+const isPublic = (path: string) => path === '/' || path === '/login' || path === '/pricing' || path === '/earn' || path === '/promo' || path === '/centres' || path === '/live' || path.startsWith('/join/') || path.startsWith('/share/') || path === '/tests' || path === '/packs' || /^\/packs\/[^/]+\/?$/.test(path) || /^\/tests\/[^/]+\/?$/.test(path)
 
 export default defineNuxtRouteMiddleware(async (to) => {
   const { me, refresh } = useMe()
@@ -13,9 +13,16 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   if (!user) return isPublic(to.path) ? undefined : navigateTo(`/login?next=${encodeURIComponent(to.fullPath)}`)
 
-  // Signed in but hasn't completed onboarding: asked once, outside the open pages.
-  // (Combining with an older account comes first: that account may be onboarded already.)
-  if (!user.onboarded && to.path !== '/onboarding' && to.path !== '/account/merge' && !isPublic(to.path)) return navigateTo('/onboarding')
-  if (user.onboarded && to.path === '/onboarding') return navigateTo('/results')
-  if (to.path === '/login') return navigateTo(typeof to.query.next === 'string' && to.query.next.startsWith('/') ? to.query.next : '/tests')
+  // Signed in without an exam chosen (or onboarding not finished): onboarding comes first, wherever
+  // they were going, and brings them back there. A few pages are let through: combining with an
+  // older account (it may be onboarded already), joining a class, a payment coming back, a share.
+  const next = to.path === '/login'
+    ? (typeof to.query.next === 'string' && to.query.next.startsWith('/') && !to.query.next.startsWith('//') ? to.query.next : '/tests')
+    : to.fullPath
+  // Staff are let be: they work on both exams (and may set theirs in Settings).
+  const needsOnboarding = (!user.onboarded || !user.exam) && user.role === 'student'
+  const letThrough = to.path === '/onboarding' || to.path === '/account/merge' || to.path.startsWith('/join/') || to.path.startsWith('/billing/') || to.path.startsWith('/share/')
+  if (needsOnboarding && !letThrough) return navigateTo(`/onboarding${next === '/' || next === '/tests' ? '' : `?next=${encodeURIComponent(next)}`}`)
+  if (!needsOnboarding && to.path === '/onboarding') return navigateTo('/tests')
+  if (to.path === '/login') return navigateTo(next)
 })

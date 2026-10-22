@@ -4,7 +4,7 @@ import { users } from '../database/schema'
 
 /**
  * The public catalogue of learning centres (/centres) and how a centre asks to join
- * (/centres/apply). A centre is in the catalogue when it chose to be listed and its licence runs.
+ * (Apply on /centres). A centre is in the catalogue when it chose to be listed and its licence runs.
  */
 
 type Listing = Pick<typeof centres.$inferInsert, 'city' | 'address' | 'description' | 'phone' | 'telegram' | 'website' | 'logoUrl' | 'listed'>
