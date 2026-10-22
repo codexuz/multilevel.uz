@@ -1145,21 +1145,6 @@
     "i2Info": "Вы получите карточку с темой: {prep} на подготовку, затем говорите до {speak}.",
     "i3Info": "Экзаменатор задаст {n} более общих вопросов, связанных с частью 2. Отвечайте сразу, примерно {speak} на каждый."
   },
-  "pdf": {
-    "download": "Скачать PDF",
-    "short": "PDF",
-    "hint": "В окне печати выберите принтер «Сохранить как PDF».",
-    "withKey": "С ключом ответов",
-    "key": "Ключ ответов",
-    "time": "{n} мин",
-    "listeningNote": "запись слушайте на {site}, на странице теста",
-    "part": "Часть {n}",
-    "questions": "Вопросы {from}–{to}",
-    "minWords": "не менее {n} слов",
-    "premium": "Скачивание PDF входит в Premium",
-    "premiumText": "С Premium любой тест можно скачать в PDF для печати, с ключом ответов.",
-    "notFound": "Тест не найден"
-  },
   "ieltsCriterion": {
     "taskAchievement": "Task achievement / response",
     "organisation": "Coherence and cohesion",

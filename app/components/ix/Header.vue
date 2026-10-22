@@ -71,7 +71,12 @@ const messagesOpen = ref(false)
       class="ix-logo"
       aria-label="Mockmee"
     >
-      <span>mockmee</span>
+      <img
+        src="/icon.svg"
+        alt=""
+        class="ix-logo-mark"
+      >
+      <span>Mockmee</span>
     </NuxtLink>
     <div class="ix-candidate">
       <strong data-testid="candidate">{{ candidate || 'Test taker ID' }}</strong>

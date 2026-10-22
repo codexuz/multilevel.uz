@@ -36,9 +36,9 @@
 
 /* ── header ─────────────────────────────────────────────────────────────────────────────── */
 .ix-header { position: relative; height: 56px; flex-shrink: 0; display: flex; align-items: stretch; background: var(--ix-bg); border-bottom: 1px solid var(--ix-line); }
-.ix-logo { display: flex; align-items: center; padding: 0 16px; width: 125px; flex-shrink: 0; text-decoration: none; }
-.ix-logo span { font-family: 'Arial Black', Arial, sans-serif; font-weight: 900; font-size: 22px; line-height: 1; letter-spacing: -0.5px; color: #4f57de; }
-.ix.is-dark .ix-logo span { color: var(--ix-text); }
+.ix-logo { display: flex; align-items: center; gap: 8px; padding: 0 16px; flex-shrink: 0; text-decoration: none; }
+.ix-logo-mark { width: 28px; height: 28px; border-radius: 6px; }
+.ix-logo span { font-family: 'Roboto', Arial, sans-serif; font-weight: 600; font-size: 18px; line-height: 1; letter-spacing: -0.2px; color: var(--ix-text); }
 .ix-logo sup { font-size: 6px; vertical-align: top; position: relative; top: 2px; font-family: Arial, sans-serif; letter-spacing: 0; }
 .ix-candidate { padding: 8px 16px 0; min-width: 0; font-size: 16px; }
 .ix-candidate strong { display: block; font-weight: 700; line-height: 18px; white-space: nowrap; }
