@@ -51,7 +51,7 @@ export async function shareData(attemptId: string): Promise<ShareData | null> {
 
 export const skillLabel = (s: string) => s.charAt(0) + s.slice(1).toLowerCase()
 export const levelLabel = (l: string) => (l === 'A2' || l === 'A1' ? 'Below B1' : `CEFR ${l}`)
-export const siteHost = () => String(useRuntimeConfig().public.siteUrl || 'https://multilevel.uz').replace(/^https?:\/\//, '').replace(/\/$/, '')
+export const siteHost = () => String(useRuntimeConfig().public.siteUrl || 'https://mockmee.uz').replace(/^https?:\/\//, '').replace(/\/$/, '')
 
 // ---------- the picture ----------
 
@@ -72,7 +72,7 @@ async function loadFonts() {
   return fonts
 }
 
-/** The Multilevel mark as it sits on the card: a white tile with the indigo M (public/icon.svg, reversed). */
+/** The Mockmee mark as it sits on the card: a white tile with the indigo M (public/icon.svg, reversed). */
 const MARK = `data:image/svg+xml;base64,${Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="116" fill="#fff"/><path d="M132 384 V214 L250 330 L380 150 V384" fill="none" stroke="#4f57de" stroke-width="66" stroke-linecap="round" stroke-linejoin="round"/></svg>').toString('base64')}`
 
 /** The card as a 1200×630 PNG (the size link previews use). */
@@ -85,7 +85,7 @@ export async function renderShareCard(d: ShareData): Promise<Buffer> {
     h('div', { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
       h('div', { display: 'flex', alignItems: 'center', fontSize: 34, fontWeight: 900 },
         { type: 'img', props: { src: MARK, width: 48, height: 48, style: { marginRight: 14 } } },
-        'Multilevel'),
+        'Mockmee'),
       h('div', { display: 'flex', fontSize: 24, fontWeight: 700, padding: '8px 18px', borderRadius: 999, background: 'rgba(255,255,255,0.18)' }, 'CEFR English mock test')),
     h('div', { display: 'flex', flexDirection: 'column' },
       h('div', { display: 'flex', fontSize: 40, fontWeight: 700, opacity: 0.9 }, `${d.name} scored`),

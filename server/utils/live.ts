@@ -76,7 +76,7 @@ export async function leaderboard(m: Mock, viewerId: string | null, limit = 50) 
   }
 }
 
-const siteUrl = () => String(useRuntimeConfig().public.siteUrl || 'https://multilevel.uz').replace(/\/$/, '')
+const siteUrl = () => String(useRuntimeConfig().public.siteUrl || 'https://mockmee.uz').replace(/\/$/, '')
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
 
 async function send(chatId: string, text: string, path: string, button: string) {

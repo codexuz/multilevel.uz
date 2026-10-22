@@ -1,7 +1,8 @@
-# multilevel.uz
+# Mockmee (mockmee.uz)
 
-Free, open Multilevel (CEFR) English mock tests. Anyone can sit a test; signing in keeps
-the results and sends Writing and Speaking to an examiner.
+Multilevel (CEFR) English mock tests. Anyone can look through the tests; sitting one needs a
+free sign-in (Telegram or Google), which keeps every result and sends Writing and Speaking to
+an examiner.
 
 Built with Nuxt 4 (SSR), Nuxt UI, Nitro, Drizzle ORM on PostgreSQL, and JWT cookie auth
 with Google sign-in. The tests, the exam screens, the review and the builder follow the
@@ -10,20 +11,22 @@ and `erp-lms/ielts-test` import/export format, set to the Multilevel format.
 
 ## What it does
 
-- **Open to everyone.** `/tests` and each test's page `/tests/{slug}` are rendered on the
+- **Open to look at, signed in to sit.** `/tests` and each test's page `/tests/{slug}` are rendered on the
   server with the test's title, description and structured data (Quiz, BreadcrumbList),
   and listed in `/sitemap.xml`, so search engines show a test when its title is searched.
 - **Full tests or one part at a time.** `/tests` lists full tests or single parts (Listening and
   Reading parts, Writing tasks, Speaking parts), filtered by words, skill, part, question type and
   "all four skills"; the filters live in the address. A part is sat at
-  `/tests/{slug}/{skill}?part=N`, with its own share of the time, and saved as that part.
-- **Checked for everyone, saved for members.** Listening and Reading are checked on the
-  server when handed in. A guest sees the score, CEFR level and a full review once, and
-  nothing is stored. A signed-in candidate's attempt is saved under **My results**.
-- **Writing and Speaking.** A guest writes or records for practice: Writing downloads as
-  PDF or Word, recordings play back and download; nothing is marked. A signed-in
-  candidate hands them in, and an examiner gives a score out of 75 with feedback
-  (the candidate is told live and by push).
+  `/tests/{slug}/{skill}?part=N`, with its own share of the time, and saved as that part. Its
+  score is what its right answers are worth on the official table (only all 35 right in a whole
+  section reach the top), not its share scaled up.
+- **Signed in to sit.** Sitting a section (`/tests/{slug}/{skill}`, its paper and its hand-in)
+  needs sign-in: a guest who presses Start signs in first and comes back to the test.
+- **Checked and saved.** Listening and Reading are checked on the server when handed in, and
+  every attempt is saved under **My results**.
+- **Writing and Speaking.** A candidate with a marking credit hands them in, and an examiner
+  gives a score out of 75 with feedback (the candidate is told live and by push); without one
+  they practise: Writing downloads as PDF or Word, recordings play back and download.
 - **Builder** (`/builder`, admins): Listening parts, Reading passages, Writing tasks and
   Speaking parts in a library, put together into tests section by section. Publishing
   checks the test against the official format; import and export use
@@ -42,8 +45,8 @@ and `erp-lms/ielts-test` import/export format, set to the Multilevel format.
 - Tests are Free or Premium (Builder → test → Details → Access).
 - **Click.uz**: set `CLICK_SERVICE_ID`, `CLICK_MERCHANT_ID` and `CLICK_SECRET_KEY` (and optionally
   `CLICK_MERCHANT_USER_ID`), and give Click these URLs:
-  - Prepare: `https://multilevel.uz/api/billing/click/prepare`
-  - Complete: `https://multilevel.uz/api/billing/click/complete`
+  - Prepare: `https://mockmee.uz/api/billing/click/prepare`
+  - Complete: `https://mockmee.uz/api/billing/click/complete`
 
   Buy then sends the buyer to Click; the plan switches on when Click confirms (signed with the
   secret key, safe to repeat), and `/billing/return` waits for it.
@@ -221,7 +224,7 @@ confused with marking credits, shown as "Markings"). One credit opens one Premiu
 the test page offers it when they have enough. `/earn` shows the balance, the invite link and the
 tasks.
 
-- **Invite friends**: each user's link is `https://multilevel.uz/r/<code>`. A friend who opens it
+- **Invite friends**: each user's link is `https://mockmee.uz/r/<code>`. A friend who opens it
   and makes an account within 30 days on that device starts with `REWARD_REFERRED_CREDITS` (1);
   the inviter gets `REWARD_REFERRER_CREDITS` (2) when that friend finishes their first test, at
   most `REFERRAL_MONTHLY_CAP` (30) friends in 30 days, so made-up accounts do not pay.
@@ -268,7 +271,7 @@ Google, Telegram, or both: each button shows only when it is set up.
 - **Google**: `NUXT_OAUTH_GOOGLE_CLIENT_ID` / `NUXT_OAUTH_GOOGLE_CLIENT_SECRET`, with the redirect
   URI `<origin>/auth/google`.
 - **Telegram**: create a bot with [@BotFather](https://t.me/BotFather) (`/newbot`), then
-  `/setdomain` → your site's domain (e.g. `multilevel.uz`), and set `TELEGRAM_BOT_TOKEN`.
+  `/setdomain` → your site's domain (e.g. `mockmee.uz`), and set `TELEGRAM_BOT_TOKEN`.
   Telegram's own window asks the user to confirm; the server accepts the result only if
   Telegram signed it with that bot's token, within a day. Telegram gives no email, so such an
   account is known by its Telegram id and username. A Google user can add Telegram on their

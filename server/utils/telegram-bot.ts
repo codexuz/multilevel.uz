@@ -11,7 +11,7 @@ import { MSG, asLocale, fromTelegram } from './messages'
  * webhook. Pressing Start through the link is what marks a user as joined.
  */
 
-const siteUrl = () => String(useRuntimeConfig().public.siteUrl || 'https://multilevel.uz').replace(/\/$/, '')
+const siteUrl = () => String(useRuntimeConfig().public.siteUrl || 'https://mockmee.uz').replace(/\/$/, '')
 const LINK_TTL_SECONDS = 24 * 60 * 60
 
 let username: string | null = null

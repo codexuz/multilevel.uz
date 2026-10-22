@@ -1,6 +1,6 @@
 {
-  "name": "Multilevel",
-  "short_name": "Multilevel",
+  "name": "Mockmee",
+  "short_name": "Mockmee",
   "description": "Free Multilevel (CEFR) English mock tests, checked instantly.",
   "start_url": "/tests",
   "display": "standalone",

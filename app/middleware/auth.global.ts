@@ -1,6 +1,7 @@
-// The site is open: the home page, the catalog, every test, its papers, a guest's result and Premium
-// need no sign-in. Results kept, the profile, settings and the staff pages do.
-const isPublic = (path: string) => path === '/' || path === '/login' || path === '/pricing' || path === '/earn' || path === '/promo' || path === '/centres' || path === '/centres/apply' || path === '/live' || path.startsWith('/join/') || path.startsWith('/share/') || path === '/tests' || path.startsWith('/tests/')
+// Anyone can look around: the home page, the catalogue and each test's page, Premium and the other
+// open pages. Sitting a test (its papers, result and review) needs sign-in, as do results kept,
+// the profile, settings and the staff pages.
+const isPublic = (path: string) => path === '/' || path === '/login' || path === '/pricing' || path === '/earn' || path === '/promo' || path === '/centres' || path === '/centres/apply' || path === '/live' || path.startsWith('/join/') || path.startsWith('/share/') || path === '/tests' || /^\/tests\/[^/]+\/?$/.test(path)
 
 export default defineNuxtRouteMiddleware(async (to) => {
   const { me, refresh } = useMe()

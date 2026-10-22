@@ -33,7 +33,7 @@ const skills = computed(() => t.sections.filter((s: any) => s.items > 0))
 const minutes = (seconds?: number | null) => (seconds ? Math.round(seconds / 60) : null)
 const summary = computed(() => skills.value.map((s: any) => skillLabel(s.skill)).join(', '))
 const description = computed(() => t.description || tr('test.description', { skills: summary.value }))
-const siteUrl = String(config.public.siteUrl || 'https://multilevel.uz').replace(/\/$/, '')
+const siteUrl = String(config.public.siteUrl || 'https://mockmee.uz').replace(/\/$/, '')
 const url = `${siteUrl}/tests/${t.slug}`
 
 const partLine = (p: any) => p.kind === 'part'
@@ -44,6 +44,8 @@ const partLine = (p: any) => p.kind === 'part'
 
 const howChecked = (skill: string) => tr(`test.how.${skill}`)
 const creditsText = (n: number) => tr('test.credits', { n }, n)
+/** Sitting a section needs sign-in: a guest goes to sign in first and comes back to it. */
+const sitTo = (path: string) => (loggedIn.value ? path : `/login?next=${encodeURIComponent(path)}`)
 
 useSeoMeta({
   title: t.title,
@@ -219,7 +221,7 @@ useHead({
               <span class="min-w-0">{{ partLine(p) }}</span>
               <NuxtLink
                 v-if="!locked && (p.partNumber || p.taskNumber)"
-                :to="`/tests/${t.slug}/${String(s.skill).toLowerCase()}?part=${p.partNumber ?? p.taskNumber}`"
+                :to="sitTo(`/tests/${t.slug}/${String(s.skill).toLowerCase()}?part=${p.partNumber ?? p.taskNumber}`)"
                 class="shrink-0 text-xs font-semibold text-primary hover:underline"
                 :aria-label="tr('test.practiseAlone', { part: partLine(p) })"
               >{{ tr('tests.practise') }}</NuxtLink>
@@ -242,9 +244,9 @@ useHead({
           <UButton
             v-else
             class="mt-auto self-start"
-            :to="`/tests/${t.slug}/${String(s.skill).toLowerCase()}`"
-            :label="tr('test.startSkill', { skill: skillLabel(s.skill) })"
-            icon="i-lucide-play"
+            :to="sitTo(`/tests/${t.slug}/${String(s.skill).toLowerCase()}`)"
+            :label="loggedIn ? tr('test.startSkill', { skill: skillLabel(s.skill) }) : tr('test.signInToStart', { skill: skillLabel(s.skill) })"
+            :icon="loggedIn ? 'i-lucide-play' : 'i-lucide-log-in'"
           />
         </UCard>
       </div>
