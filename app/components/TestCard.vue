@@ -8,8 +8,6 @@ const skills = computed(() => props.test.sections.filter(s => (s.items ?? 1) > 0
 const questions = computed(() => skills.value.reduce((n, s) => n + (s.questions ?? 0), 0))
 const { t } = useI18n()
 const minutes = computed(() => Math.round(skills.value.reduce((n, s) => n + (s.durationSeconds ?? 0), 0) / 60))
-// Premium can download the whole test as a PDF to print (it opens in a new tab, ready to save).
-const { isPremium } = useMe()
 </script>
 
 <template>
@@ -59,17 +57,5 @@ const { isPremium } = useMe()
         class="pointer-events-none absolute -bottom-2 -right-2 size-20 sm:size-24 drop-shadow-xl transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3"
       >
     </NuxtLink>
-    <UButton
-      v-if="isPremium"
-      :to="`/tests/${test.slug}/pdf?download=1`"
-      target="_blank"
-      icon="i-lucide-download"
-      :label="t('pdf.short')"
-      :aria-label="t('pdf.download')"
-      size="xs"
-      color="neutral"
-      variant="soft"
-      class="absolute right-3 top-10 z-2 bg-white/20 text-white hover:bg-white/30"
-    />
   </div>
 </template>

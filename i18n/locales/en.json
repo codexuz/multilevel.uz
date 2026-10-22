@@ -1145,21 +1145,6 @@
     "i2Info": "You get a topic card. You have {prep} to prepare, then talk for up to {speak}.",
     "i3Info": "The examiner asks {n} more abstract questions linked to Part 2. Answer each at once, in about {speak}."
   },
-  "pdf": {
-    "download": "Download PDF",
-    "short": "PDF",
-    "hint": "In the print window, choose “Save as PDF” as the printer.",
-    "withKey": "With the answer key",
-    "key": "Answer key",
-    "time": "{n} minutes",
-    "listeningNote": "play the recording on {site}, on the test's page",
-    "part": "Part {n}",
-    "questions": "Questions {from}–{to}",
-    "minWords": "at least {n} words",
-    "premium": "PDF downloads are part of Premium",
-    "premiumText": "With Premium you can download every test as a PDF to print, with its answer key.",
-    "notFound": "This test could not be found"
-  },
   "ieltsCriterion": {
     "taskAchievement": "Task achievement / response",
     "organisation": "Coherence and cohesion",

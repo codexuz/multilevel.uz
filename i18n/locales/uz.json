@@ -1145,21 +1145,6 @@
     "i2Info": "Sizga mavzu kartasi beriladi. Tayyorlanishga {prep}, so‘ng {speak} gacha gapirasiz.",
     "i3Info": "Imtihon oluvchi 2-qismga bog‘liq {n} ta umumiyroq savol beradi. Har biriga darhol, taxminan {speak} javob bering."
   },
-  "pdf": {
-    "download": "PDF yuklab olish",
-    "short": "PDF",
-    "hint": "Chop etish oynasida printer sifatida «PDF sifatida saqlash»ni tanlang.",
-    "withKey": "Javoblar kaliti bilan",
-    "key": "Javoblar kaliti",
-    "time": "{n} daqiqa",
-    "listeningNote": "yozuvni {site} saytida, test sahifasida tinglang",
-    "part": "{n}-qism",
-    "questions": "{from}–{to}-savollar",
-    "minWords": "kamida {n} so‘z",
-    "premium": "PDF yuklab olish Premiumga kiradi",
-    "premiumText": "Premium bilan har bir testni javoblar kaliti bilan chop etish uchun PDF qilib yuklab olasiz.",
-    "notFound": "Bu test topilmadi"
-  },
   "ieltsCriterion": {
     "taskAchievement": "Task achievement / response",
     "organisation": "Coherence and cohesion",
