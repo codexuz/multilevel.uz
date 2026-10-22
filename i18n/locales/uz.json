@@ -25,6 +25,7 @@
     "premium": "Premium",
     "on": "Faol",
     "earn": "Kredit ishlash",
+    "promo": "Promokod",
     "profile": "Profil",
     "settings": "Sozlamalar",
     "signIn": "Kirish",
@@ -644,7 +645,8 @@
     "sections": "Topshirilgan bo‘limlar",
     "signIn": "Kirish usullari",
     "connect": "Ulash",
-    "connected": "ulangan"
+    "connected": "ulangan",
+    "promoText": "Chegirmalar va bepul Premium"
   },
   "duration": {
     "months": "{n} oy",
@@ -906,5 +908,20 @@
   "site": {
     "title": "Multilevel - ingliz tili imtihoniga tayyorgarlik",
     "description": "Bepul Multilevel (CEFR) ingliz tili mashq testlari: Tinglash, O‘qish, Yozish va Gapirish. Javoblaringizni hisob bilan yoki hisobsiz darhol tekshiring."
+  },
+  "promo": {
+    "title": "Promokodni faollashtirish",
+    "lead": "Promokodingizni kiriting va taklifni faollashtiring.",
+    "label": "Promokod",
+    "placeholder": "PROMOKOD",
+    "submit": "Promokodni faollashtirish",
+    "empty": "Promokodni kiriting",
+    "daysDone": "Premium yoqildi",
+    "daysDoneText": "Hisobingizga {duration}lik Premium qo‘shildi.",
+    "openTests": "Testlarga o‘tish",
+    "discountDone": "{code} promokodi qabul qilindi",
+    "discountDoneText": "Premiumga {offer}. Undan foydalanish uchun tarifni tanlang.",
+    "choosePlan": "Tarifni tanlash",
+    "another": "Boshqa promokod"
   }
 }

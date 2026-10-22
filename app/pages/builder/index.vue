@@ -123,6 +123,7 @@ const createLabel = computed(() => ({ tests: 'New test', listening: 'New Listeni
   <AppPage
     title="Test builder"
     icon="i-lucide-hammer"
+    wide
   >
     <template #actions>
       <template v-if="tab === 'tests'">

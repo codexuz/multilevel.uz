@@ -90,6 +90,7 @@ export default defineNuxtConfig({
     '/login': noIndex,
     '/onboarding': noIndex,
     '/profile': noIndex,
+    '/promo': noIndex,
     '/results/**': noIndex,
     '/settings': noIndex
   },
@@ -141,6 +142,6 @@ export default defineNuxtConfig({
 
   sitemap: {
     sources: ['/api/__sitemap__/urls'],
-    exclude: ['/admin/**', '/builder/**', '/marking/**', '/results/**', '/login', '/onboarding', '/profile', '/settings']
+    exclude: ['/admin/**', '/builder/**', '/marking/**', '/results/**', '/login', '/onboarding', '/profile', '/promo', '/settings']
   }
 })

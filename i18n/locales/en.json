@@ -25,6 +25,7 @@
     "premium": "Premium",
     "on": "On",
     "earn": "Earn credits",
+    "promo": "Promo code",
     "profile": "Profile",
     "settings": "Settings",
     "signIn": "Sign in",
@@ -644,7 +645,8 @@
     "sections": "Sections taken",
     "signIn": "Sign-in",
     "connect": "Connect",
-    "connected": "connected"
+    "connected": "connected",
+    "promoText": "Discounts and free Premium"
   },
   "duration": {
     "months": "{n} month | {n} months",
@@ -906,5 +908,20 @@
   "site": {
     "title": "Multilevel - English Exam Prep",
     "description": "Free Multilevel (CEFR) English practice tests: Listening, Reading, Writing and Speaking. Check your answers instantly, with or without an account."
+  },
+  "promo": {
+    "title": "Activate a promo code",
+    "lead": "Enter your promo code and activate the offer.",
+    "label": "Promo code",
+    "placeholder": "PROMO CODE",
+    "submit": "Activate promo code",
+    "empty": "Enter a promo code",
+    "daysDone": "Premium is on",
+    "daysDoneText": "{duration} of Premium added to your account.",
+    "openTests": "Go to tests",
+    "discountDone": "Code {code} accepted",
+    "discountDoneText": "{offer} on Premium. Choose a plan to use it.",
+    "choosePlan": "Choose a plan",
+    "another": "Use another code"
   }
 }
