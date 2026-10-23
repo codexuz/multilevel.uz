@@ -37,15 +37,19 @@ watch(search, (v) => {
 })
 // 'ALL' rather than empty: a select cannot hold an empty value.
 const testStatus = ref(str(route.query.status, 'ALL'))
+/** Tests with all four skills (FULL), or not yet (PARTIAL). */
+const completeness = ref(str(route.query.full, 'ALL'))
+const completenessItems = [{ label: 'Full or not', value: 'ALL' }, { label: 'Full tests', value: 'FULL' }, { label: 'Not full', value: 'PARTIAL' }]
 /** Library items placed in a test (IN_TEST), or in none yet (UNUSED). */
 const used = ref(str(route.query.used, 'ALL'))
 const usedItems = [{ label: 'In tests or not', value: 'ALL' }, { label: 'In a test', value: 'IN_TEST' }, { label: 'Not in a test', value: 'UNUSED' }]
-watch([tab, page, q, testStatus, used], () => router.replace({
+watch([tab, page, q, testStatus, completeness, used], () => router.replace({
   query: {
     tab: tab.value === 'tests' ? undefined : tab.value,
     page: page.value > 1 ? String(page.value) : undefined,
     q: q.value || undefined,
     status: tab.value === 'tests' && testStatus.value !== 'ALL' ? testStatus.value : undefined,
+    full: tab.value === 'tests' && completeness.value !== 'ALL' ? completeness.value : undefined,
     used: tab.value !== 'tests' && used.value !== 'ALL' ? used.value : undefined
   }
 }))
@@ -61,6 +65,7 @@ watch(() => route.query, (rq) => {
   if (page.value !== Math.max(1, Number(rq.page) || 1)) page.value = Math.max(1, Number(rq.page) || 1)
   if (q.value !== str(rq.q)) search.value = q.value = str(rq.q)
   if (testStatus.value !== str(rq.status, 'ALL')) testStatus.value = str(rq.status, 'ALL')
+  if (completeness.value !== str(rq.full, 'ALL')) completeness.value = str(rq.full, 'ALL')
   if (used.value !== str(rq.used, 'ALL')) used.value = str(rq.used, 'ALL')
 })
 // Staff build for either exam: the library's own choice, apart from the exam they prepare for.
@@ -68,10 +73,10 @@ const builderExam = useCookie<string | null>('builder-exam', { maxAge: 60 * 60 *
 const exam = computed<Exam>(() => (isExam(builderExam.value) ? builderExam.value : 'IELTS'))
 const setExam = (next: Exam) => (builderExam.value = next)
 // Another list (or filter) starts on its first page.
-watch([tab, q, testStatus, used, exam], () => (page.value = 1))
+watch([tab, q, testStatus, completeness, used, exam], () => (page.value = 1))
 // ─── Many tests at once: pick them, then one action for them all ───
 const picked = ref<string[]>([])
-watch([tab, q, testStatus, used, exam, page], () => (picked.value = []))
+watch([tab, q, testStatus, completeness, used, exam, page], () => (picked.value = []))
 const pageTests = computed(() => (tab.value === 'tests' ? ((data.value?.items ?? []) as { id: string }[]).map(x => x.id) : []))
 const allPicked = computed(() => pageTests.value.length > 0 && pageTests.value.every(id => picked.value.includes(id)))
 const togglePick = (id: string, on: boolean) => (picked.value = on ? [...new Set([...picked.value, id])] : picked.value.filter(x => x !== id))
@@ -102,13 +107,18 @@ const { data, status, refresh } = useAsyncData(
   'builder:list',
   (): Promise<any> => {
     const p = { page: page.value, limit: 20, search: q.value || undefined, exam: exam.value, used: used.value === 'ALL' ? undefined : used.value }
-    if (tab.value === 'tests') return libraryAPI.tests({ ...p, status: testStatus.value === 'ALL' ? undefined : testStatus.value })
+    if (tab.value === 'tests') {
+      return libraryAPI.tests({
+        ...p, status: testStatus.value === 'ALL' ? undefined : testStatus.value,
+        full: completeness.value === 'FULL' ? '1' : completeness.value === 'PARTIAL' ? '0' : undefined
+      })
+    }
     if (tab.value === 'listening') return libraryAPI.parts({ ...p, skill: 'LISTENING' })
     if (tab.value === 'reading') return libraryAPI.parts({ ...p, skill: 'READING' })
     if (tab.value === 'writing') return libraryAPI.writingTasks(p)
     return libraryAPI.speakingParts(p)
   },
-  { watch: [tab, page, q, testStatus, used, exam], lazy: true }
+  { watch: [tab, page, q, testStatus, completeness, used, exam], lazy: true }
 )
 
 // ─── Creating ──────────────────────────────────────────────────────────────
@@ -186,6 +196,8 @@ const open = (row: any) => navigateTo(
       : tab.value === 'speaking' ? `/builder/speaking/${row.id}` : `/builder/parts/${row.id}`)
 
 const strip = (html?: string | null) => (html ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+/** All four skills, each with something in it (as the server's full-test filter counts it). */
+const isFull = (t: TestSummary) => new Set(t.sections.filter(x => (x.items ?? 0) > 0).map(x => x.skill)).size === 4
 const statusItems = [{ label: 'Any status', value: 'ALL' }, { label: 'Draft', value: 'DRAFT' }, { label: 'Published', value: 'PUBLISHED' }, { label: 'Archived', value: 'ARCHIVED' }]
 const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS test' : 'New Multilevel test', listening: 'New Listening part', reading: 'New Reading passage', writing: 'New Writing task', speaking: 'New Speaking part' } as Record<string, string>)[tab.value])
 </script>
@@ -259,12 +271,19 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
             size="sm"
           />
           <div class="flex items-center gap-2 ml-auto">
-            <USelect
-              v-if="tab === 'tests'"
-              v-model="testStatus"
-              :items="statusItems"
-              class="w-36"
-            />
+            <template v-if="tab === 'tests'">
+              <USelect
+                v-model="completeness"
+                :items="completenessItems"
+                class="w-36"
+                data-testid="full-filter"
+              />
+              <USelect
+                v-model="testStatus"
+                :items="statusItems"
+                class="w-36"
+              />
+            </template>
             <USelect
               v-else
               v-model="used"
@@ -394,6 +413,14 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
               </p>
             </div>
             <span class="text-xs text-muted tabular-nums max-sm:hidden">{{ t.attempts ?? 0 }} attempts</span>
+            <UBadge
+              v-if="isFull(t)"
+              label="Full test"
+              icon="i-lucide-layers"
+              color="success"
+              variant="subtle"
+              class="max-sm:hidden"
+            />
             <UBadge
               v-if="t.access === 'PREMIUM'"
               label="Premium"

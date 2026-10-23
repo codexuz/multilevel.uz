@@ -453,6 +453,8 @@ const BY_NUMBER = [
 /** A full test: it has all four skills, each with something in it. */
 const FULL_TEST = sql`(select count(distinct s.skill) from ${sections} s where s.test_id = ${tests.id} and exists (select 1 from ${sectionItems} si where si.section_id = s.id)) = 4`
 const wantsFull = (query: Body) => query.full === '1' || query.full === 'true'
+/** ?full=0: tests not full yet (a skill missing, or a section with nothing in it); the builder's filter. */
+const wantsPartial = (query: Body) => query.full === '0' || query.full === 'false'
 
 /**
  * The parts of published tests, each to practise on its own: Listening and Reading parts, Writing
@@ -526,7 +528,7 @@ export async function listTests(query: Body, opts: { publishedOnly?: boolean } =
     search ? or(ilike(tests.title, `%${search}%`), ilike(tests.description, `%${search}%`)) : undefined,
     ...catalogFilters(query)
   )
-  const where = wantsFull(query) ? and(others, FULL_TEST) : others
+  const where = wantsFull(query) ? and(others, FULL_TEST) : wantsPartial(query) ? and(others, sql`not ${FULL_TEST}`) : others
   const [rows, [total], [full], categories] = await Promise.all([
     db.query.tests.findMany({
       where, limit, offset,
