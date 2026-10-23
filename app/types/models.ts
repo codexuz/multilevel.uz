@@ -1,7 +1,7 @@
 // API DTO shapes for accounts and admin lists (camelCase, as returned by /api/*). The test
 // shapes, shared with the erp-lms IELTS app, are in ./ielts.ts.
 
-export type UserRole = 'student' | 'examiner' | 'admin'
+export type UserRole = 'student' | 'teacher' | 'center_owner' | 'admin'
 
 export interface Me {
   id: string

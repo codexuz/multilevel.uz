@@ -16,6 +16,15 @@ export type CentreRole = 'OWNER' | 'TEACHER' | 'STUDENT'
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 export const newCode = (length = 8) => Array.from(randomBytes(length), b => CODE_CHARS[b % CODE_CHARS.length]).join('')
 
+/** The roles in order: a role is only ever raised by joining a centre, never lowered. */
+export const ROLE_RANK: Record<string, number> = { student: 0, teacher: 1, center_owner: 2, admin: 3 }
+
+/** Raises a user's role to `role` when it is lower (a centre's owner becomes center_owner, its teachers teacher). */
+export async function raiseRole(db: Db | Tx, userId: string, role: 'teacher' | 'center_owner') {
+  const [u] = await db.select({ role: users.role }).from(users).where(eq(users.id, userId)).limit(1)
+  if (u && (ROLE_RANK[u.role] ?? 0) < ROLE_RANK[role]!) await db.update(users).set({ role, updatedAt: new Date() }).where(eq(users.id, userId))
+}
+
 export const licenceOpen = (c: { active: boolean, licensedUntil: Date | null }, now = new Date()) => c.active && !!c.licensedUntil && c.licensedUntil > now
 
 /** Whether a user sits in a centre whose licence runs (as a student, teacher or owner): that gives Premium. */

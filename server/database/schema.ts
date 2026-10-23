@@ -5,7 +5,8 @@ import {
 } from 'drizzle-orm/pg-core'
 
 // ---------- Enums ----------
-export const userRole = pgEnum('user_role', ['student', 'examiner', 'admin'])
+/** student; teacher (runs their own mock sessions, teaches at a centre); center_owner (owns a learning centre); admin. */
+export const userRole = pgEnum('user_role', ['student', 'teacher', 'center_owner', 'admin'])
 
 // ---------- users ----------
 export const users = pgTable('users', {

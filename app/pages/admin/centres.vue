@@ -83,6 +83,16 @@ async function save() {
     saving.value = false
   }
 }
+/** Deletes a centre and all that is its: members lose its Premium; their results stay theirs. */
+async function removeCentre(c: Centre) {
+  if (!await confirm({ title: `Delete “${c.name}”?`, description: 'Its members, groups, assignments, mock sessions and mock credits go with it, and its students lose the Premium it gave. Their results stay theirs. This cannot be undone.', confirmLabel: 'Delete', color: 'error' })) return
+  try {
+    await $fetch(`/api/admin/centres/${c.id}`, { method: 'DELETE' })
+    await refresh()
+  } catch (e) {
+    toast.add({ title: 'Not deleted', description: errorMessage(e), color: 'error' })
+  }
+}
 async function toggle(c: Centre) {
   try {
     await $fetch(`/api/admin/centres/${c.id}`, { method: 'PATCH', body: { active: !c.active } })
@@ -250,6 +260,15 @@ const state = (c: Centre) => (!c.active
             :model-value="c.active"
             :aria-label="`${c.name} on`"
             @update:model-value="toggle(c)"
+          />
+          <UButton
+            icon="i-lucide-trash-2"
+            size="sm"
+            color="error"
+            variant="ghost"
+            :aria-label="`Delete ${c.name}`"
+            data-testid="delete-centre"
+            @click="removeCentre(c)"
           />
         </div>
       </UCard>

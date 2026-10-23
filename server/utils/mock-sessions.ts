@@ -4,8 +4,8 @@ import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, or, sql } from 'dri
 import { aiReviews, attempts, centreMembers, centres, mockCandidates, mockCreditTransactions, mockSessions, sections, sessions, tests, users } from '../database/schema'
 
 /**
- * Mock sessions: a learning centre (its owner or a teacher, while its licence runs) or a Premium
- * teacher runs a mock on its own computers, as erp-lms's IELTS mock centre does.
+ * Mock sessions: a learning centre (its owner or a teacher, while its licence runs) or a teacher
+ * runs a mock on its own computers, as erp-lms's IELTS mock centre does.
  *
  * - The session: a test, a time, a room; walk-ins pay at the desk; results can be held.
  * - Candidates: the centre's students, or walk-ins registered with their name, phone and ID number
@@ -34,6 +34,9 @@ const conflict = (message: string) => createError({ statusCode: 409, message })
 
 // ---------- who may run sessions ----------
 
+/** The roles that run mock sessions. */
+export const MOCK_ROLES = ['teacher', 'center_owner', 'admin']
+
 export interface MockScope { kind: 'CENTRE' | 'TEACHER', centreId: string | null, name: string, credits: number }
 
 /** Mock credits left: a centre's, or a teacher's own. */
@@ -43,20 +46,23 @@ export async function creditBalance(owner: { centreId: string | null, userId?: s
   return row?.n ?? 0
 }
 
-/** Where this user can run sessions: each centre they own or teach at (licence running), and their own as a Premium teacher. */
+/**
+ * Where this user can run sessions, by their role: a teacher or centre owner, each centre they own or
+ * teach at (licence running); a teacher (or an admin), their own as well. Students run none.
+ */
 export async function scopesOf(user: { id: string, role: string }): Promise<MockScope[]> {
+  if (!MOCK_ROLES.includes(user.role)) return []
   const db = useDb()
-  const [rows, access, [me]] = await Promise.all([
+  const [rows, [me]] = await Promise.all([
     db.select({ id: centres.id, name: centres.name, active: centres.active, licensedUntil: centres.licensedUntil }).from(centreMembers)
       .innerJoin(centres, eq(centres.id, centreMembers.centreId))
       .where(and(eq(centreMembers.userId, user.id), inArray(centreMembers.role, ['OWNER', 'TEACHER']))),
-    accessOf(user),
     db.select({ mockOnly: users.mockOnly }).from(users).where(eq(users.id, user.id)).limit(1)
   ])
   if (me?.mockOnly) return []
   const out: MockScope[] = []
   for (const c of rows.filter(r => licenceOpen(r))) out.push({ kind: 'CENTRE', centreId: c.id, name: c.name, credits: await creditBalance({ centreId: c.id }) })
-  if (access.premium) out.push({ kind: 'TEACHER', centreId: null, name: 'Own', credits: await creditBalance({ centreId: null, userId: user.id }) })
+  if (user.role === 'teacher' || user.role === 'admin') out.push({ kind: 'TEACHER', centreId: null, name: 'Own', credits: await creditBalance({ centreId: null, userId: user.id }) })
   return out
 }
 
@@ -88,7 +94,9 @@ export async function listSessions(user: { id: string, role: string }) {
   const rows = await useDb().select({
     s: mockSessions, testTitle: tests.title, module: tests.module, centreName: centres.name,
     candidates: sql<number>`(select count(*)::int from ${mockCandidates} c where c.session_id = ${mockSessions.id})`,
-    checkedIn: sql<number>`(select count(*)::int from ${mockCandidates} c where c.session_id = ${mockSessions.id} and c.checked_in_at is not null)`
+    checkedIn: sql<number>`(select count(*)::int from ${mockCandidates} c where c.session_id = ${mockSessions.id} and c.checked_in_at is not null)`,
+    // Started: someone took a seat or handed a section in (then it stays, for their results).
+    started: sql<boolean>`exists (select 1 from ${mockCandidates} c where c.session_id = ${mockSessions.id} and (c.seated_at is not null or exists (select 1 from ${attempts} a where a.mock_candidate_id = c.id)))`
   }).from(mockSessions)
     .innerJoin(tests, eq(tests.id, mockSessions.testId))
     .leftJoin(centres, eq(centres.id, mockSessions.centreId))
@@ -99,7 +107,7 @@ export async function listSessions(user: { id: string, role: string }) {
     .orderBy(desc(mockSessions.opensAt)).limit(200)
   return {
     scopes,
-    sessions: rows.map(r => ({ ...r.s, test: { title: r.testTitle, exam: examOfModule(r.module) }, centreName: r.centreName, candidates: r.candidates, checkedIn: r.checkedIn }))
+    sessions: rows.map(r => ({ ...r.s, test: { title: r.testTitle, exam: examOfModule(r.module) }, centreName: r.centreName, candidates: r.candidates, checkedIn: r.checkedIn, started: r.started }))
   }
 }
 
@@ -140,16 +148,54 @@ async function sessionValues(body: SessionBody, partial: boolean) {
   return out
 }
 
-/** A new session, for a centre this user runs sessions for, or their own as a Premium teacher. */
+/** A new session, for a centre this user runs sessions for, or their own as a teacher. */
 export async function createSession(user: { id: string, role: string }, body: SessionBody) {
   const scopes = await scopesOf(user)
   const centreId = body.centreId || null
   if (!scopes.some(s => s.centreId === centreId)) {
-    throw createError({ statusCode: 403, message: centreId ? 'Mock sessions are for centres whose licence runs' : 'Mock sessions are for Premium teachers and learning centres' })
+    throw createError({ statusCode: 403, message: centreId ? 'Mock sessions are for centres whose licence runs' : 'Mock sessions are for teachers and learning centres' })
+  }
+  // A session needs credits to check anyone in: none left, none made.
+  if (scopes.find(s => s.centreId === centreId)!.credits < 1) {
+    throw createError({ statusCode: 402, message: 'No mock credits left: buy credits to make a session', data: { code: 'MOCK_CREDIT_REQUIRED' } })
   }
   const values = await sessionValues(body, false)
   const [row] = await useDb().insert(mockSessions).values({ ...values, centreId, ownerId: user.id } as typeof mockSessions.$inferInsert).returning()
   return row!
+}
+
+/** Whether anyone has begun: taken a seat, or handed a section in. */
+async function hasStarted(sessionId: string) {
+  const [row] = await useDb().select({ id: mockCandidates.id }).from(mockCandidates)
+    .where(and(eq(mockCandidates.sessionId, sessionId), or(isNotNull(mockCandidates.seatedAt), sql`exists (select 1 from ${attempts} a where a.mock_candidate_id = ${mockCandidates.id})`))).limit(1)
+  return !!row
+}
+
+/**
+ * Deletes a session nobody has begun (no seat taken, nothing handed in). The credits spent on its
+ * check-ins come back, and its walk-ins' accounts go with it.
+ */
+export async function deleteSession(session: Session, actorId: string) {
+  if (await hasStarted(session.id)) throw conflict('Candidates have begun: archive it instead')
+  const db = useDb()
+  const list = await db.select({ userId: mockCandidates.userId, external: mockCandidates.external, checkedInAt: mockCandidates.checkedInAt }).from(mockCandidates)
+    .where(eq(mockCandidates.sessionId, session.id))
+  const refund = list.filter(c => c.checkedInAt).length
+  await db.transaction(async (tx) => {
+    if (refund) await tx.insert(mockCreditTransactions).values({ ...ownerOf(session), delta: refund, reason: 'REFUND', note: `Session deleted: ${session.title}`.slice(0, 200), createdById: actorId })
+    await tx.delete(mockSessions).where(eq(mockSessions.id, session.id))
+    const walkIns = list.filter(c => c.external).map(c => c.userId)
+    if (walkIns.length) await tx.delete(users).where(and(inArray(users.id, walkIns), eq(users.mockOnly, true)))
+  })
+  return { deleted: true, refunded: refund }
+}
+
+/** The walk-ins' accounts of a centre's sessions (they go when the centre does). */
+export async function walkInsOfCentre(centreId: string) {
+  const rows = await useDb().select({ userId: mockCandidates.userId }).from(mockCandidates)
+    .innerJoin(mockSessions, eq(mockSessions.id, mockCandidates.sessionId))
+    .where(and(eq(mockSessions.centreId, centreId), eq(mockCandidates.external, true)))
+  return rows.map(r => r.userId)
 }
 
 export async function updateSession(session: Session, body: SessionBody) {

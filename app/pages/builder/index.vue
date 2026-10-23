@@ -13,7 +13,7 @@ useSeoMeta({ title: 'Test builder', robots: 'noindex' })
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
-const { prompt } = useDialogs()
+const { prompt, confirm } = useDialogs()
 
 const TABS = [
   { label: 'Tests', value: 'tests', icon: 'i-lucide-files' },
@@ -45,6 +45,34 @@ const builderExam = useCookie<string | null>('builder-exam', { maxAge: 60 * 60 *
 const exam = computed<Exam>(() => (isExam(builderExam.value) ? builderExam.value : 'IELTS'))
 const setExam = (next: Exam) => (builderExam.value = next)
 watch([tab, q, testStatus, exam], () => (page.value = 1))
+// ─── Many tests at once: pick them, then one action for them all ───
+const picked = ref<string[]>([])
+watch([tab, q, testStatus, exam, page], () => (picked.value = []))
+const pageTests = computed(() => (tab.value === 'tests' ? ((data.value?.items ?? []) as { id: string }[]).map(x => x.id) : []))
+const allPicked = computed(() => pageTests.value.length > 0 && pageTests.value.every(id => picked.value.includes(id)))
+const togglePick = (id: string, on: boolean) => (picked.value = on ? [...new Set([...picked.value, id])] : picked.value.filter(x => x !== id))
+const bulkBusy = ref(false)
+const BULK_DONE: Record<string, string> = { PUBLISH: 'published', DRAFT: 'moved to draft', ARCHIVE: 'archived', DELETE: 'deleted', FREE: 'made free', PREMIUM: 'made Premium' }
+async function bulk(action: 'PUBLISH' | 'DRAFT' | 'ARCHIVE' | 'DELETE' | 'FREE' | 'PREMIUM') {
+  const n = picked.value.length
+  if (!n) return
+  if (action === 'DELETE' && !await confirm({ title: `Delete ${n} test${n === 1 ? '' : 's'}?`, description: 'A test somebody sat stays (archive it instead). This cannot be undone.', confirmLabel: 'Delete', color: 'error' })) return
+  bulkBusy.value = true
+  try {
+    const res = await $fetch<{ done: number, failed: { title: string, message: string }[] }>('/api/admin/tests/bulk', { method: 'POST', body: { ids: picked.value, action } })
+    toast.add({
+      title: `${res.done} test${res.done === 1 ? '' : 's'} ${BULK_DONE[action]}`,
+      description: res.failed.length ? res.failed.slice(0, 4).map(f => `${f.title}: ${f.message}`).join(' · ') + (res.failed.length > 4 ? ` · and ${res.failed.length - 4} more` : '') : undefined,
+      color: res.failed.length ? 'warning' : 'success'
+    })
+    picked.value = []
+    await refresh()
+  } catch (e) {
+    toast.add({ title: 'Not done', description: errorMessage(e), color: 'error' })
+  } finally {
+    bulkBusy.value = false
+  }
+}
 
 const { data, status, refresh } = useAsyncData(
   'builder:list',
@@ -192,7 +220,83 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
       </UDashboardToolbar>
     </template>
 
-    <UCard :ui="{ body: 'p-0 sm:p-0' }">
+    <UCard :ui="{ body: 'p-0 sm:p-0', header: 'px-4 py-2.5 sm:px-4' }">
+      <!-- Tests: pick some, then one action for them all -->
+      <template
+        v-if="tab === 'tests' && pageTests.length"
+        #header
+      >
+        <div
+          class="flex flex-wrap items-center gap-2 min-h-8"
+          data-testid="bulk-bar"
+        >
+          <UCheckbox
+            :model-value="allPicked"
+            :indeterminate="picked.length > 0 && !allPicked"
+            :label="picked.length ? `${picked.length} selected` : 'Select all on this page'"
+            @update:model-value="v => (picked = v ? [...pageTests] : [])"
+          />
+          <template v-if="picked.length">
+            <UButton
+              label="Publish"
+              icon="i-lucide-send"
+              size="sm"
+              :loading="bulkBusy"
+              data-testid="bulk-publish"
+              @click="bulk('PUBLISH')"
+            />
+            <UButton
+              label="To draft"
+              icon="i-lucide-file-pen"
+              size="sm"
+              color="neutral"
+              variant="outline"
+              :loading="bulkBusy"
+              @click="bulk('DRAFT')"
+            />
+            <UButton
+              label="Archive"
+              icon="i-lucide-archive"
+              size="sm"
+              color="neutral"
+              variant="outline"
+              :loading="bulkBusy"
+              @click="bulk('ARCHIVE')"
+            />
+            <UDropdownMenu
+              :items="[[
+                { label: 'Make free', icon: 'i-lucide-gift', onSelect: () => bulk('FREE') },
+                { label: 'Make Premium', icon: 'i-lucide-sparkles', onSelect: () => bulk('PREMIUM') }
+              ]]"
+            >
+              <UButton
+                label="Access"
+                trailing-icon="i-lucide-chevron-down"
+                size="sm"
+                color="neutral"
+                variant="outline"
+                :loading="bulkBusy"
+              />
+            </UDropdownMenu>
+            <UButton
+              label="Delete"
+              icon="i-lucide-trash-2"
+              size="sm"
+              color="error"
+              variant="soft"
+              :loading="bulkBusy"
+              @click="bulk('DELETE')"
+            />
+            <UButton
+              label="Clear"
+              size="sm"
+              color="neutral"
+              variant="ghost"
+              @click="picked = []"
+            />
+          </template>
+        </div>
+      </template>
       <ul class="divide-y divide-default">
         <li
           v-if="status === 'pending' && !data"
@@ -206,8 +310,16 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
             v-for="t in (data?.items ?? []) as TestSummary[]"
             :key="t.id"
             class="px-4 py-3 flex items-center gap-3 hover:bg-elevated/50 cursor-pointer"
+            :class="picked.includes(t.id) ? 'bg-primary/5' : ''"
+            data-testid="test-row"
             @click="open(t)"
           >
+            <UCheckbox
+              :model-value="picked.includes(t.id)"
+              :aria-label="`Select ${t.title}`"
+              @click.stop
+              @update:model-value="v => togglePick(t.id, !!v)"
+            />
             <div class="min-w-0 flex-1">
               <p class="font-medium text-highlighted truncate">
                 {{ t.title }}

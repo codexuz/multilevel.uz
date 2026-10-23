@@ -9,8 +9,8 @@ const toast = useToast()
 useSeoMeta({ title: () => t('mocks.title'), robots: 'noindex' })
 
 interface Scope { kind: 'CENTRE' | 'TEACHER', centreId: string | null, name: string, credits: number }
-interface Row { id: string, title: string, opensAt: string, closesAt: string, room: string | null, status: string, centreId: string | null, centreName: string | null, candidates: number, checkedIn: number, test: { title: string, exam: string } }
-const { data } = await useFetch<{ scopes: Scope[], sessions: Row[] }>('/api/mocks', { default: () => ({ scopes: [], sessions: [] }) })
+interface Row { id: string, title: string, opensAt: string, closesAt: string, room: string | null, status: string, centreId: string | null, centreName: string | null, candidates: number, checkedIn: number, started: boolean, test: { title: string, exam: string } }
+const { data, refresh } = await useFetch<{ scopes: Scope[], sessions: Row[] }>('/api/mocks', { default: () => ({ scopes: [], sessions: [] }) })
 const scopeName = (s: Scope) => (s.kind === 'TEACHER' ? t('mocks.own') : s.name)
 
 const { data: testData } = await useFetch<{ items: { id: string, title: string, module: string }[] }>('/api/tests', { query: { limit: 60 }, default: () => ({ items: [] }) })
@@ -23,8 +23,12 @@ function today() {
   return { opensAt: `${day}T10:00`, closesAt: `${day}T14:00` }
 }
 const form = ref<{ centreId: string | null, title: string, testId?: string, opensAt: string, closesAt: string, room: string, capacity?: number, priceUzs?: number, holdResults: boolean } | null>(null)
+/** Where a session can be made now: a place with mock credits left (none left, none made). */
+const withCredits = computed(() => data.value.scopes.filter(s => s.credits > 0))
+const canCreate = computed(() => withCredits.value.length > 0)
 function startCreate() {
-  form.value = { centreId: data.value.scopes[0]?.centreId ?? null, title: t('mocks.defaultTitle'), ...today(), room: '', holdResults: true }
+  if (!canCreate.value) return
+  form.value = { centreId: withCredits.value[0]!.centreId, title: t('mocks.defaultTitle'), ...today(), room: '', holdResults: true }
 }
 const saving = ref(false)
 async function save() {
@@ -47,6 +51,18 @@ async function save() {
 const when = (d: string) => localeDate(d, intlLocale(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 const state = (r: Row) => (r.status === 'ARCHIVED' ? 'archived' : Date.now() > Date.parse(r.closesAt) ? 'closed' : Date.now() >= Date.parse(r.opensAt) ? 'running' : 'upcoming')
 const STATE_COLOR = { archived: 'neutral', closed: 'neutral', running: 'success', upcoming: 'info' } as const
+
+// A session nobody has begun can be deleted (credits spent on its check-ins come back).
+const { confirm } = useDialogs()
+async function remove(r: Row) {
+  if (!await confirm({ title: t('mocks.deleteTitle', { title: r.title }), description: r.checkedIn ? t('mocks.deleteRefund', { n: r.checkedIn }, r.checkedIn) : t('mocks.deleteText'), confirmLabel: t('mocks.delete'), color: 'error' })) return
+  try {
+    await $fetch(`/api/mocks/${r.id}`, { method: 'DELETE' })
+    await refresh()
+  } catch (e) {
+    toast.add({ title: t('common.notSaved'), description: errorMessage(e), color: 'error' })
+  }
+}
 </script>
 
 <template>
@@ -59,6 +75,7 @@ const STATE_COLOR = { archived: 'neutral', closed: 'neutral', running: 'success'
         v-if="data.scopes.length"
         :label="t('mocks.new')"
         icon="i-lucide-plus"
+        :disabled="!canCreate"
         @click="startCreate"
       />
     </template>
@@ -68,31 +85,23 @@ const STATE_COLOR = { archived: 'neutral', closed: 'neutral', running: 'success'
         {{ t('mocks.lead') }}
       </p>
 
-      <!-- Credits, for each place sessions run from -->
+      <!-- Credits, for each place sessions run from: one compact line each, as tall as the button -->
       <div
         v-if="data.scopes.length"
-        class="flex flex-wrap gap-3"
+        class="flex flex-wrap items-center gap-2"
       >
         <div
           v-for="s in data.scopes"
           :key="s.centreId ?? 'own'"
-          class="flex items-center gap-3 rounded-xl ring ring-default px-4 py-3"
+          class="h-8 flex items-center gap-1.5 rounded-md ring ring-default px-2.5 text-sm"
+          data-testid="credit-chip"
         >
           <UIcon
             :name="s.kind === 'CENTRE' ? 'i-lucide-school' : 'i-lucide-user-round'"
-            class="size-5 text-primary"
+            class="size-4 shrink-0 text-primary"
           />
-          <div>
-            <p class="text-sm font-medium text-highlighted">
-              {{ scopeName(s) }}
-            </p>
-            <p
-              class="text-xs"
-              :class="s.credits ? 'text-muted' : 'text-error'"
-            >
-              {{ t('mocks.credits', { n: s.credits }, s.credits) }}
-            </p>
-          </div>
+          <span class="font-medium text-highlighted">{{ scopeName(s) }}</span>
+          <span :class="s.credits ? 'text-muted' : 'text-error'">· {{ t('mocks.credits', { n: s.credits }, s.credits) }}</span>
         </div>
         <UButton
           :href="useRuntimeConfig().public.salesTelegram as string"
@@ -101,7 +110,7 @@ const STATE_COLOR = { archived: 'neutral', closed: 'neutral', running: 'success'
           icon="i-simple-icons-telegram"
           color="neutral"
           variant="outline"
-          class="self-center"
+          class="h-8"
         />
       </div>
 
@@ -112,43 +121,68 @@ const STATE_COLOR = { archived: 'neutral', closed: 'neutral', running: 'success'
         icon="i-lucide-info"
         :title="t('mocks.notYet')"
         :description="t('mocks.notYetText')"
-        :actions="[{ label: t('mocks.getPremium'), to: '/pricing', color: 'primary' }]"
+        :actions="[{ label: t('mocks.askUs'), href: useRuntimeConfig().public.salesTelegram as string, target: '_blank', icon: 'i-simple-icons-telegram', color: 'primary' }]"
       />
 
+      <!-- No credits anywhere: no session can be made until some are bought -->
+      <UAlert
+        v-if="data.scopes.length && !canCreate"
+        color="warning"
+        variant="subtle"
+        icon="i-lucide-coins"
+        :title="t('mocks.noCreditsTitle')"
+        :description="t('mocks.noCreditsText')"
+        data-testid="no-credits"
+      />
       <UEmpty
         v-if="data.scopes.length && !data.sessions.length"
         icon="i-lucide-monitor-check"
         :title="t('mocks.none')"
-        :description="t('mocks.noneText')"
-        :actions="[{ label: t('mocks.new'), icon: 'i-lucide-plus', onClick: startCreate }]"
+        :description="canCreate ? t('mocks.noneText') : undefined"
+        :actions="canCreate ? [{ label: t('mocks.new'), icon: 'i-lucide-plus', onClick: startCreate }] : []"
       />
-      <NuxtLink
+      <div
         v-for="r in data.sessions"
         :key="r.id"
-        :to="`/mocks/${r.id}`"
-        class="flex flex-col sm:flex-row sm:items-center gap-2 rounded-xl ring ring-default p-4 hover:ring-primary/40"
+        class="flex items-center gap-2 rounded-xl ring ring-default hover:ring-primary/40"
         data-testid="mock-row"
       >
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2">
-            <span class="font-semibold text-highlighted truncate">{{ r.title }}</span>
-            <UBadge
-              :label="t(`mocks.state.${state(r)}`)"
-              :color="STATE_COLOR[state(r)]"
-              variant="subtle"
-              size="sm"
-            />
+        <NuxtLink
+          :to="`/mocks/${r.id}`"
+          class="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-2 p-4"
+        >
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-highlighted truncate">{{ r.title }}</span>
+              <UBadge
+                :label="t(`mocks.state.${state(r)}`)"
+                :color="STATE_COLOR[state(r)]"
+                variant="subtle"
+                size="sm"
+              />
+            </div>
+            <p class="text-sm text-muted truncate">
+              {{ examLabel(r.test.exam) }} · {{ r.test.title }} · {{ when(r.opensAt) }}<template v-if="r.room">
+                · {{ r.room }}
+              </template><template v-if="r.centreName">
+                · {{ r.centreName }}
+              </template>
+            </p>
           </div>
-          <p class="text-sm text-muted truncate">
-            {{ examLabel(r.test.exam) }} · {{ r.test.title }} · {{ when(r.opensAt) }}<template v-if="r.room">
-              · {{ r.room }}
-            </template><template v-if="r.centreName">
-              · {{ r.centreName }}
-            </template>
-          </p>
-        </div>
-        <span class="text-sm text-muted">{{ t('mocks.checkedInOf', { n: r.checkedIn, total: r.candidates }) }}</span>
-      </NuxtLink>
+          <span class="text-sm text-muted">{{ t('mocks.checkedInOf', { n: r.checkedIn, total: r.candidates }) }}</span>
+        </NuxtLink>
+        <UButton
+          v-if="!r.started"
+          icon="i-lucide-trash-2"
+          color="error"
+          variant="ghost"
+          size="sm"
+          class="me-3"
+          :aria-label="t('mocks.delete')"
+          data-testid="delete-session"
+          @click="remove(r)"
+        />
+      </div>
     </div>
 
     <UModal
@@ -163,12 +197,12 @@ const STATE_COLOR = { archived: 'neutral', closed: 'neutral', running: 'success'
           @submit.prevent="save"
         >
           <UFormField
-            v-if="data.scopes.length > 1"
+            v-if="withCredits.length > 1"
             :label="t('mocks.runBy')"
           >
             <USelect
               v-model="form.centreId as any"
-              :items="data.scopes.map(s => ({ label: scopeName(s), value: s.centreId as any }))"
+              :items="withCredits.map(s => ({ label: `${scopeName(s)} · ${t('mocks.credits', { n: s.credits }, s.credits)}`, value: s.centreId as any }))"
               class="w-full"
             />
           </UFormField>

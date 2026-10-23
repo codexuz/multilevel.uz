@@ -34,7 +34,7 @@ export async function attemptView(id: string, viewer: { id: string, role: string
   const db = useDb()
   const row = await db.query.attempts.findFirst({ where: eq(attempts.id, id), with: { test: true, user: true } })
   if (!row) throw createError({ statusCode: 404, message: 'Attempt not found' })
-  const staff = viewer.role === 'admin' || viewer.role === 'examiner'
+  const staff = viewer.role === 'admin'
   // A learning centre's teachers may see their students' results.
   // …and whoever runs the mock session it was sat in, a walk-in's too.
   if (row.userId !== viewer.id && !staff && !(await teachesStudent(viewer.id, row.userId)) && !(await runsSessionOf(viewer.id, row.mockCandidateId))) throw createError({ statusCode: 404, message: 'Attempt not found' })

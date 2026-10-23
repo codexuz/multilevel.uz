@@ -40,7 +40,7 @@ export async function requireUser(event: H3Event): Promise<AuthUser> {
 
 export async function requireStaff(event: H3Event): Promise<AuthUser> {
   const user = await requireUser(event)
-  if (user.role !== 'admin' && user.role !== 'examiner') {
+  if (user.role !== 'admin') {
     throw createError({ statusCode: 403, message: 'Forbidden' })
   }
   return user

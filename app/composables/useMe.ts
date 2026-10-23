@@ -23,7 +23,8 @@ export function useMe() {
 
   const loggedIn = computed(() => !!me.value)
   const role = computed(() => me.value?.role ?? 'student')
-  const isStaff = computed(() => role.value === 'examiner' || role.value === 'admin')
+  // Mockmee's staff are its admins (marking and the test builder are theirs).
+  const isStaff = computed(() => role.value === 'admin')
   const isAdmin = computed(() => role.value === 'admin')
   const isPremium = computed(() => !!me.value?.premium)
   const credits = computed(() => me.value?.credits ?? 0)
