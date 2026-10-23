@@ -92,7 +92,7 @@ const subtitle = computed(() => [
 
     <div class="ix-body">
       <IxSubmissionPage v-if="chrome.submissionOpen.value" :parts="summary" :last="last" @submit="submit" />
-      <IxSplitPane v-else>
+      <IxSplitPane v-else :labels="['Task', 'Answer']">
         <template #left>
           <IxHighlightablePanel>
             <div v-if="part.prompt" class="ix-task" v-html="part.prompt" />

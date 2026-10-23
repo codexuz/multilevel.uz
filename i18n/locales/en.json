@@ -1197,5 +1197,25 @@
     "seePack": "See the pack",
     "seoTitle": "IELTS and Multilevel test packs",
     "seoDescription": "Sets of IELTS and Multilevel mock tests, bought once and kept for good."
+  },
+  "ixReview": {
+    "rubricListening": "Questions {from}–{to}. You got {correct} of {total}.",
+    "rubricReading": "Questions {from}–{to}. You got {correct} of {total}.",
+    "estBand": "Est. band",
+    "notAnswered": "Not answered",
+    "transcript": "Transcript",
+    "passage": "Passage",
+    "questions": "Questions",
+    "writingRubric": "You should spend about {minutes} minutes on this task. Write at least {words} words.",
+    "task": "Task",
+    "response": "Response",
+    "nothingWritten": "Nothing was written for this task.",
+    "words": "Words: {n}",
+    "underMin": "under {n}",
+    "examinerFeedback": "Examiner's feedback",
+    "notMarked": "This task has not been marked yet.",
+    "overallFeedback": "Overall feedback",
+    "showKey": "Show correct answers",
+    "review": "Review"
   }
 }

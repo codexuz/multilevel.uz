@@ -1197,5 +1197,25 @@
     "seePack": "Смотреть пакет",
     "seoTitle": "Пакеты тестов IELTS и Multilevel",
     "seoDescription": "Наборы пробных тестов IELTS и Multilevel: покупаются один раз и остаются у вас навсегда."
+  },
+  "ixReview": {
+    "rubricListening": "Вопросы {from}–{to}. Верно {correct} из {total}.",
+    "rubricReading": "Вопросы {from}–{to}. Верно {correct} из {total}.",
+    "estBand": "Прогноз балла",
+    "notAnswered": "Нет ответа",
+    "transcript": "Транскрипт",
+    "passage": "Текст",
+    "questions": "Вопросы",
+    "writingRubric": "Потратьте на это задание около {minutes} минут. Напишите не менее {words} слов.",
+    "task": "Задание",
+    "response": "Ответ",
+    "nothingWritten": "Для этого задания ничего не написано.",
+    "words": "Слов: {n}",
+    "underMin": "меньше {n}",
+    "examinerFeedback": "Отзыв экзаменатора",
+    "notMarked": "Это задание ещё не проверено.",
+    "overallFeedback": "Общий отзыв",
+    "showKey": "Показать правильные ответы",
+    "review": "Разбор"
   }
 }
