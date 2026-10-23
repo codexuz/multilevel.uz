@@ -18,8 +18,14 @@ useSeoMeta({ title: () => t('review.review'), robots: 'noindex' })
     :back-to="`/results/${id}`"
     :back-label="t('review.backToResult')"
   >
+    <!-- An IELTS paper is reviewed on the test's own screen; a Speaking one keeps its recordings page. -->
+    <IxReview
+      v-if="data && data.exam === 'IELTS' && data.skill !== 'SPEAKING'"
+      :view="data"
+      :back="`/results/${id}`"
+    />
     <ResultReview
-      v-if="data"
+      v-else-if="data"
       :view="data"
       :back="`/results/${id}`"
     />

@@ -1,9 +1,15 @@
 <script setup lang="ts">
 /**
  * Two panes side by side with the ⟷ handle between them, dragged to give either more room (on a
- * narrow screen they are stacked, and the handle moves the line between them up and down).
+ * tablet they are stacked, and the handle moves the line between them up and down). On a phone,
+ * given `labels`, one pane fills the screen and two tabs above switch between them; a question
+ * picked in the bottom bar brings the questions' pane back.
  */
-const props = withDefaults(defineProps<{ initial?: number, min?: number }>(), { initial: 50, min: 20 })
+const props = withDefaults(defineProps<{ initial?: number, min?: number, labels?: [string, string] }>(), { initial: 50, min: 20, labels: undefined })
+
+const tab = ref<'left' | 'right'>('left')
+const focus = inject(QUESTION_FOCUS, null)
+if (focus) watch(focus.current, (n) => { if (n != null) tab.value = 'right' })
 
 const share = ref(props.initial)
 const root = ref<HTMLElement>()
@@ -31,30 +37,67 @@ function nudge(by: number) {
 </script>
 
 <template>
-  <div ref="root" class="ix-split">
-    <div class="ix-pane" :style="{ flex: `0 0 calc(${share}% - 1px)` }" data-testid="pane-left">
-      <slot name="left" />
-    </div>
+  <div class="ix-splitbox">
     <div
-      class="ix-divider"
-      @pointerdown="onDown"
-      @pointermove="onMove"
-      @pointerup="onUp"
-      @pointercancel="onUp"
+      v-if="labels"
+      class="ix-tabs"
+      role="tablist"
+      data-testid="pane-tabs"
     >
       <button
+        v-for="(label, i) in labels"
+        :key="label"
         type="button"
-        aria-label="Resize the panes (arrow keys)"
-        @keydown.left.prevent="nudge(-5)"
-        @keydown.right.prevent="nudge(5)"
-        @keydown.up.prevent="nudge(-5)"
-        @keydown.down.prevent="nudge(5)"
+        role="tab"
+        class="ix-tab"
+        :class="{ 'is-current': tab === (i ? 'right' : 'left') }"
+        :aria-selected="tab === (i ? 'right' : 'left')"
+        :data-testid="`pane-tab-${i ? 'right' : 'left'}`"
+        @click="tab = i ? 'right' : 'left'"
       >
-        <UIcon name="i-lucide-move-horizontal" class="size-4" />
+        {{ label }}
       </button>
     </div>
-    <div class="ix-pane" :style="{ flex: '1 1 0' }" data-testid="pane-right">
-      <slot name="right" />
+    <div
+      ref="root"
+      class="ix-split"
+      :class="labels && `is-tabbed shows-${tab}`"
+    >
+      <div
+        class="ix-pane is-left"
+        :style="{ flex: `0 0 calc(${share}% - 1px)` }"
+        data-testid="pane-left"
+      >
+        <slot name="left" />
+      </div>
+      <div
+        class="ix-divider"
+        @pointerdown="onDown"
+        @pointermove="onMove"
+        @pointerup="onUp"
+        @pointercancel="onUp"
+      >
+        <button
+          type="button"
+          aria-label="Resize the panes (arrow keys)"
+          @keydown.left.prevent="nudge(-5)"
+          @keydown.right.prevent="nudge(5)"
+          @keydown.up.prevent="nudge(-5)"
+          @keydown.down.prevent="nudge(5)"
+        >
+          <UIcon
+            name="i-lucide-move-horizontal"
+            class="size-4"
+          />
+        </button>
+      </div>
+      <div
+        class="ix-pane is-right"
+        :style="{ flex: '1 1 0' }"
+        data-testid="pane-right"
+      >
+        <slot name="right" />
+      </div>
     </div>
   </div>
 </template>

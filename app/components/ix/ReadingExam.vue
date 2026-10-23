@@ -92,7 +92,7 @@ const summary = computed(() => props.parts.map((p) => {
 
     <div class="ix-body">
       <IxSubmissionPage v-if="chrome.submissionOpen.value" :parts="summary" :last="last" @submit="submit" />
-      <IxSplitPane v-else>
+      <IxSplitPane v-else :labels="['Passage', 'Questions']">
         <template #left>
           <IxHighlightablePanel>
             <div>

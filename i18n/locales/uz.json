@@ -1197,5 +1197,25 @@
     "seePack": "To‘plamni ko‘rish",
     "seoTitle": "IELTS va Multilevel test to‘plamlari",
     "seoDescription": "Bir marta sotib olinadigan va doim sizda qoladigan IELTS va Multilevel mock test to‘plamlari."
+  },
+  "ixReview": {
+    "rubricListening": "{from}–{to}-savollar. {total} tadan {correct} tasi to'g'ri.",
+    "rubricReading": "{from}–{to}-savollar. {total} tadan {correct} tasi to'g'ri.",
+    "estBand": "Taxminiy band",
+    "notAnswered": "Javob berilmagan",
+    "transcript": "Transkript",
+    "passage": "Matn",
+    "questions": "Savollar",
+    "writingRubric": "Bu topshiriqqa taxminan {minutes} daqiqa sarflang. Kamida {words} so'z yozing.",
+    "task": "Topshiriq",
+    "response": "Javob",
+    "nothingWritten": "Bu topshiriq uchun hech narsa yozilmagan.",
+    "words": "So'zlar: {n}",
+    "underMin": "{n} dan kam",
+    "examinerFeedback": "Imtihonchi fikri",
+    "notMarked": "Bu topshiriq hali baholanmagan.",
+    "overallFeedback": "Umumiy fikr",
+    "showKey": "To'g'ri javoblarni ko'rsatish",
+    "review": "Tahlil"
   }
 }

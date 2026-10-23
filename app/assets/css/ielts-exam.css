@@ -285,6 +285,7 @@
 .ix-section:hover { background: var(--ix-option-hover); }
 .ix-section.is-current { color: var(--ix-bg); background: var(--ix-text); font-weight: 700; }
 .ix-keyswitch { display: flex; align-items: center; gap: 8px; margin: 0 10px; font-size: 14px; white-space: nowrap; cursor: pointer; }
+.ix-keyswitch-icon { display: none; }
 .ix-keyswitch input { width: 16px; height: 16px; margin: 0; accent-color: var(--ix-answered); cursor: pointer; }
 .ix-band { margin: 0 8px; font-size: 14px; white-space: nowrap; }
 .ix-band strong { font-size: 18px; margin-left: 2px; }
@@ -292,7 +293,8 @@ a.ix-icon { text-decoration: none; }
 @media (max-width: 900px) {
   .ix-sections { position: static; transform: none; align-self: center; margin-left: 8px; }
   .ix-candidate small { display: none; }
-  .ix-keyswitch span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .ix-keyswitch-icon { display: inline-block; }
+  .ix-keyswitch-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 }
 @media (max-width: 640px) { .ix-candidate { display: none; } .ix-logo { width: auto; } }
 
@@ -326,3 +328,50 @@ a.ix-icon { text-decoration: none; }
 .ix-ai-head { display: flex; align-items: center; gap: 12px; }
 .ix-link { margin-left: auto; padding: 0; color: #2a6ebb; background: none; border: 0; cursor: pointer; font-weight: 400; }
 .ix-link:hover { text-decoration: underline; }
+
+/* ── phones ─────────────────────────────────────────────────────────────────────────────── */
+/* The split pane's frame, and its Passage / Questions tabs (shown on a phone only). */
+.ix-splitbox { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.ix-tabs { display: none; }
+@media (max-width: 767px) {
+  .ix-tabs { display: flex; flex-shrink: 0; margin: 0 12px 8px; border: 1px solid var(--ix-text); border-radius: 3px; overflow: hidden; }
+  .ix-tab { flex: 1; padding: 7px 8px; color: inherit; background: var(--ix-bg); border: 0; font-size: 15px; cursor: pointer; }
+  .ix-tab + .ix-tab { border-left: 1px solid var(--ix-text); }
+  .ix-tab.is-current { color: var(--ix-bg); background: var(--ix-text); font-weight: 700; }
+  .ix-split.is-tabbed > .ix-divider { display: none; }
+  .ix-split.is-tabbed > .ix-pane { flex: 1 1 auto !important; }
+  .ix-split.is-tabbed.shows-left > .is-right, .ix-split.is-tabbed.shows-right > .is-left { display: none; }
+
+  /* The bar along the top: the mark, the time in the middle, the icons closer together. */
+  .ix-header { height: 52px; }
+  .ix-logo { padding: 0 10px; }
+  .ix-timer { position: static; transform: none; margin: 0 auto; padding: 0 6px; font-size: 15px; }
+  .ix-timer + .ix-icons, .ix-sections + .ix-icons { margin-left: 0; }
+  .ix-icons { padding-right: 4px; }
+  .ix-icon { margin: 0 6px; }
+  .ix-sections { margin: 0 auto; }
+  .ix-section { padding: 5px 10px; font-size: 14px; }
+  .ix-band { margin: 0 4px; }
+  .ix-fullscreen { display: none; }
+
+  .ix-rubric { margin: 10px 12px; padding: 8px 12px; }
+  .ix-pane, .ix-split .ix-pane, .ix-split .ix-pane + .ix-divider + .ix-pane { padding: 12px 12px 140px; }
+  .ix-single { padding: 8px 12px 140px; }
+  .ix-audio { margin: -2px 12px 8px; }
+  .ix-questions > * + * { margin-top: 28px; }
+  .ix-essay { height: max(14em, calc(100dvh - 330px)); }
+  .ix-response { min-height: 8em; }
+
+  /* The bottom bar: smaller arrows over it; the other parts show only their names. */
+  .ix-arrows { right: 12px; bottom: 60px; }
+  .ix-arrow { width: 44px; height: 44px; }
+  .ix-arrow svg { width: 22px; height: 22px; }
+  .ix-footer { height: 48px; }
+  .ix-fpart { gap: 8px; padding: 0 10px; }
+  .ix-fpart:not(.is-current) .ix-fcount { display: none; }
+  .ix-qnum { min-width: 28px; padding: 2px 3px; }
+  .ix-deliver { flex-basis: 52px; }
+}
+@media (max-width: 420px) {
+  .ix-logo span { display: none; }
+}

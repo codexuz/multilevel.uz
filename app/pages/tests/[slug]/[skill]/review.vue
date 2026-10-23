@@ -28,8 +28,14 @@ const back = `/tests/${slug}/${skill.toLowerCase()}/result`
     :back-to="`/tests/${slug}`"
     :back-label="t('sit.backToTest')"
   >
+    <!-- An IELTS paper is reviewed on the test's own screen; a Speaking one keeps its recordings page. -->
+    <IxReview
+      v-if="view && view.exam === 'IELTS' && view.skill !== 'SPEAKING'"
+      :view="view"
+      :back="back"
+    />
     <ResultReview
-      v-if="view"
+      v-else-if="view"
       :view="view"
       :back="back"
     />
