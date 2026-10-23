@@ -35,6 +35,19 @@ const usedFilter = (link: 'part_id' | 'writing_task_id' | 'speaking_part_id', id
   const placed = sql`exists (select 1 from ${sectionItems} si where si.${sql.raw(link)} = ${id})`
   return value === 'IN_TEST' ? placed : value === 'UNUSED' ? sql`not ${placed}` : undefined
 }
+/** The tests each item is placed in (each once), for the library's rows: id, title and status. */
+async function testsOf(link: 'part' | 'writing' | 'speaking', ids: string[]) {
+  const column = link === 'part' ? sectionItems.partId : link === 'writing' ? sectionItems.writingTaskId : sectionItems.speakingPartId
+  const rows = ids.length
+    ? await useDb().selectDistinct({ itemId: column, id: tests.id, title: tests.title, status: tests.status }).from(sectionItems)
+        .innerJoin(sections, eq(sections.id, sectionItems.sectionId)).innerJoin(tests, eq(tests.id, sections.testId))
+        .where(inArray(column, ids)).orderBy(tests.title)
+    : []
+  const by = new Map<string, { id: string, title: string, status: string }[]>()
+  for (const r of rows) by.set(r.itemId!, [...(by.get(r.itemId!) ?? []), { id: r.id, title: r.title, status: r.status }])
+  return by
+}
+
 /**
  * How many tests an item is placed in. In a plain select `id` must be written out with its table
  * ("writing_tasks"."id"): a bare column in a subquery is read as the subquery's own.
@@ -63,18 +76,14 @@ export async function listParts(query: Body) {
     db.query.parts.findMany({ where, limit, offset, orderBy: [desc(parts.updatedAt)], with: { groups: { with: { items: { columns: { id: true } } } } } }),
     db.select({ n: count() }).from(parts).where(where)
   ])
-  const placed = rows.length
-    ? await db.select({ partId: sectionItems.partId, testId: tests.id, title: tests.title, status: tests.status, skill: sections.skill })
-        .from(sectionItems).innerJoin(sections, eq(sections.id, sectionItems.sectionId)).innerJoin(tests, eq(tests.id, sections.testId))
-        .where(inArray(sectionItems.partId, rows.map(r => r.id)))
-    : []
+  const placed = await testsOf('part', rows.map(r => r.id))
   return paged(rows.map(({ groups, passage, ...rest }) => ({
     ...rest,
     audioUrl: sign(rest.audioRef),
     questionCount: groups.reduce((sum, g) => sum + g.items.length, 0),
     types: [...new Set(groups.map(g => g.type))],
     excerpt: passage ? passage.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240) : null,
-    tests: placed.filter(p => p.partId === rest.id).map(p => ({ id: p.testId, title: p.title, status: p.status }))
+    tests: placed.get(rest.id) ?? []
   })), total?.n ?? 0, page, limit)
 }
 
@@ -296,7 +305,8 @@ export async function listWritingTasks(query: Body) {
       .from(writingTasks).where(where).orderBy(desc(writingTasks.updatedAt)).limit(limit).offset(offset),
     db.select({ n: count() }).from(writingTasks).where(where)
   ])
-  return paged(rows.map(r => ({ ...writingTaskView(r.task), essays: r.essays, inTests: r.inTests })), total?.n ?? 0, page, limit)
+  const placed = await testsOf('writing', rows.map(r => r.task.id))
+  return paged(rows.map(r => ({ ...writingTaskView(r.task), essays: r.essays, inTests: r.inTests, tests: placed.get(r.task.id) ?? [] })), total?.n ?? 0, page, limit)
 }
 
 async function writingTaskRow(id: string) {
@@ -369,7 +379,8 @@ export async function listSpeakingParts(query: Body) {
     }),
     db.select({ n: count() }).from(speakingParts).where(where)
   ])
-  return paged(rows.map(r => speakingPartView(r, true)), total?.n ?? 0, page, limit)
+  const placed = await testsOf('speaking', rows.map(r => r.id))
+  return paged(rows.map(r => ({ ...speakingPartView(r, true), tests: placed.get(r.id) ?? [] })), total?.n ?? 0, page, limit)
 }
 
 export async function getSpeakingPart(id: string) {

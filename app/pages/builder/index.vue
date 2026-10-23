@@ -560,16 +560,9 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
                 <span v-if="p.types?.length"> · {{ p.types.map(questionTypeLabel).join(', ') }}</span>
               </p>
             </div>
-            <span
-              v-if="p.tests?.length"
-              class="text-xs text-muted max-sm:hidden"
-            >in {{ p.tests.length }} test{{ p.tests.length === 1 ? '' : 's' }}</span>
-            <UBadge
-              v-else
-              label="Not in a test"
-              color="warning"
-              variant="subtle"
-              size="sm"
+            <BuilderTestBadges
+              :tests="p.tests"
+              class="max-sm:hidden"
             />
             <UBadge
               v-if="p.isActive === false"
@@ -608,16 +601,9 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
                 At least {{ w.minWords ?? writingDefaults(w.taskNumber, w.exam).minWords }} words<span v-if="w.essays"> · {{ w.essays }} essays</span>
               </p>
             </div>
-            <span
-              v-if="w.inTests"
-              class="text-xs text-muted max-sm:hidden"
-            >in {{ w.inTests }} test{{ w.inTests === 1 ? '' : 's' }}</span>
-            <UBadge
-              v-else
-              label="Not in a test"
-              color="warning"
-              variant="subtle"
-              size="sm"
+            <BuilderTestBadges
+              :tests="w.tests"
+              class="max-sm:hidden"
             />
           </li>
         </template>
@@ -664,16 +650,9 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
                 /> samples {{ speakingExtras(s).samples }}/{{ speakingExtras(s).of }}</span>
               </p>
             </div>
-            <span
-              v-if="s.inTests"
-              class="text-xs text-muted max-sm:hidden"
-            >in {{ s.inTests }} test{{ s.inTests === 1 ? '' : 's' }}</span>
-            <UBadge
-              v-else
-              label="Not in a test"
-              color="warning"
-              variant="subtle"
-              size="sm"
+            <BuilderTestBadges
+              :tests="s.tests"
+              class="max-sm:hidden"
             />
           </li>
         </template>
