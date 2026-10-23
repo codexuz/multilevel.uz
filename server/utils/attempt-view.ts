@@ -30,11 +30,12 @@ export function attemptSummary(row: any) {
 }
 
 /** A saved attempt with its marked review: keys, answers given, essays, recordings and the examiner's word. */
-export async function attemptView(id: string, viewer: { id: string, role: string }) {
+/** `marker`: the caller checked that the viewer marks this attempt (markers.ts). */
+export async function attemptView(id: string, viewer: { id: string, role: string }, opts: { marker?: boolean } = {}) {
   const db = useDb()
   const row = await db.query.attempts.findFirst({ where: eq(attempts.id, id), with: { test: true, user: true } })
   if (!row) throw createError({ statusCode: 404, message: 'Attempt not found' })
-  const staff = viewer.role === 'admin'
+  const staff = viewer.role === 'admin' || !!opts.marker
   // A learning centre's teachers may see their students' results.
   // …and whoever runs the mock session it was sat in, a walk-in's too.
   if (row.userId !== viewer.id && !staff && !(await teachesStudent(viewer.id, row.userId)) && !(await runsSessionOf(viewer.id, row.mockCandidateId))) throw createError({ statusCode: 404, message: 'Attempt not found' })

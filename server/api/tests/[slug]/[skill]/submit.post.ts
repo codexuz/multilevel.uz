@@ -66,8 +66,10 @@ export default defineEventHandler(async (event) => {
 
   let liveMockId: string | null = null
   if (skill === 'SPEAKING' && !recordings.length) throw createError({ statusCode: 400, message: 'Record at least one answer before handing in' })
-  // An examiner's time is what a marking credit pays for; staff hand in freely.
-  const needsCredit = !seat && !objective && !isStaffRole(user.role)
+  // An examiner's time is what a marking credit pays for; staff hand in freely, and so do students
+  // of a centre whose licence runs: their own teachers mark them (markers.ts).
+  const byTeacher = !seat && !objective && await studiesAtCentre(user.id)
+  const needsCredit = !seat && !objective && !byTeacher && !isStaffRole(user.role)
   if (needsCredit && access.credits < 1) paymentRequired('CREDIT_REQUIRED', 'Marking by an examiner needs a marking credit')
   const db = useDb()
   // A whole section sat during a live mock of this test counts there, the first one of each skill.
@@ -99,6 +101,7 @@ export default defineEventHandler(async (event) => {
   // A friend's invite pays off once they finish a test.
   if (!seat) await rewardInviter(user.id).catch(e => console.error('[rewards] inviter reward failed:', e))
   // Writing for an examiner: an AI estimate for the candidate now, and a draft for the examiner.
+  if (byTeacher) await tellTeachersToMark({ id: attemptId, userId: user.id, skill }).catch(e => console.error('[marking] teachers not told:', e))
   if (skill === 'WRITING') await reviewHandedInWriting({ id: attemptId, userId: user.id, testId: test.id }, getCookie(event, 'lang')).catch(e => console.error('[ai-writing] auto review failed:', e))
   if (skill === 'SPEAKING') await reviewHandedInSpeaking({ id: attemptId, userId: user.id, testId: test.id }, getCookie(event, 'lang')).catch(e => console.error('[ai-speaking] auto review failed:', e))
 

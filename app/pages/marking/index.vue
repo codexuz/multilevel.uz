@@ -1,14 +1,23 @@
 <script setup lang="ts">
-/** Writing and Speaking handed in by signed-in candidates (the IELTS app's Marking), newest first. */
-definePageMeta({ middleware: 'staff' })
+/**
+ * Writing and Speaking handed in for practice (the IELTS app's Marking), newest first: a centre's
+ * teachers see their students', markers the rest; admins see all and can narrow it.
+ */
+definePageMeta({ middleware: 'marker' })
 useSeoMeta({ title: 'Marking', robots: 'noindex' })
 
-interface Row { id: string, skill: string, exam?: string, status: string, user?: { name: string, avatarUrl?: string | null }, test: { title: string } | null, submittedAt: string, score: number | null, band?: number | null, cefrLevel: string | null }
+interface Row { id: string, skill: string, exam?: string, status: string, user?: { name: string, avatarUrl?: string | null }, test: { title: string } | null, submittedAt: string, score: number | null, band?: number | null, cefrLevel: string | null, centre: string | null }
 
 const status = ref<'SUBMITTED' | 'GRADED'>('SUBMITTED')
+const from = ref<'ALL' | 'POOL' | 'CENTRES'>('ALL')
 const page = ref(1)
-watch(status, () => (page.value = 1))
-const { data, status: loadState } = await useFetch<{ items: Row[], total: number, pages: number }>('/api/admin/marking', { query: { status, page, limit: 20 }, lazy: true })
+watch([status, from], () => (page.value = 1))
+const { isAdmin } = useMe()
+const { data, status: loadState } = await useFetch<{ items: Row[], total: number, pages: number }>('/api/admin/marking', {
+  query: { status, page, limit: 20, from: computed(() => (from.value === 'ALL' ? undefined : from.value)) },
+  lazy: true
+})
+const fromItems = [{ label: 'Everyone', value: 'ALL' }, { label: 'Outside centres', value: 'POOL' }, { label: 'Centre students', value: 'CENTRES' }]
 const tabs = [{ label: 'To mark', value: 'SUBMITTED' }, { label: 'Marked', value: 'GRADED' }]
 </script>
 
@@ -19,13 +28,25 @@ const tabs = [{ label: 'To mark', value: 'SUBMITTED' }, { label: 'Marked', value
   >
     <template #toolbar>
       <UDashboardToolbar>
-        <UTabs
-          v-model="status"
-          :items="tabs"
-          :content="false"
-          size="sm"
-          class="py-1"
-        />
+        <template #left>
+          <UTabs
+            v-model="status"
+            :items="tabs"
+            :content="false"
+            size="sm"
+            class="py-1"
+          />
+        </template>
+        <template #right>
+          <USelect
+            v-if="isAdmin"
+            v-model="from"
+            :items="fromItems"
+            size="sm"
+            class="w-40"
+            data-testid="marking-from"
+          />
+        </template>
       </UDashboardToolbar>
     </template>
 
@@ -52,7 +73,17 @@ const tabs = [{ label: 'To mark', value: 'SUBMITTED' }, { label: 'Marked', value
               class="w-44 shrink-0 max-sm:w-auto"
             />
             <div class="min-w-0 flex-1">
-              <p class="font-medium text-highlighted truncate">{{ skillLabel(a.skill) }}</p>
+              <p class="font-medium text-highlighted truncate flex items-center gap-2">
+                {{ skillLabel(a.skill) }}
+                <UBadge
+                  v-if="a.centre"
+                  :label="a.centre"
+                  icon="i-lucide-school"
+                  color="neutral"
+                  variant="subtle"
+                  size="sm"
+                />
+              </p>
               <p class="text-xs text-muted truncate">{{ a.test?.title ?? 'Removed test' }} · {{ relativeTime(a.submittedAt) }}</p>
             </div>
             <UBadge

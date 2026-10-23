@@ -1,4 +1,4 @@
-// Route middleware: staff pages (marking, the test builder): admins.
+// Route middleware: staff pages (the test builder, the overview): admins.
 export default defineNuxtRouteMiddleware(async () => {
   const { me, isStaff, refresh } = useMe()
   if (!me.value) await refresh()

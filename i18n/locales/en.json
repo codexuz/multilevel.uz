@@ -471,6 +471,8 @@
     "correct": "Correct answers",
     "time": "Time",
     "withExaminer": "With an examiner",
+    "withTeacher": "With your teacher",
+    "waitingTeacherText": "Your {skill} is saved and sent to your centre's teachers. The mark and feedback appear here once they mark it.",
     "practiceOnly": "Practice only",
     "waitingText": "Your {skill} is saved and waiting for an examiner. The score and feedback appear here once it is marked, usually within 24 hours.",
     "practiceText": "{skill} is marked by an examiner. Sign in and hand it in to have it marked; this practice is not saved.",

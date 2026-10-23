@@ -46,6 +46,8 @@ export const users = pgTable('users', {
   onboarded: boolean('onboarded').notNull().default(false),
   /** Made for a walk-in candidate of a mock session: it signs in only at their seat (mock-sessions.ts). */
   mockOnly: boolean('mock_only').notNull().default(false),
+  /** Marks Writing and Speaking handed in by students outside a learning centre (switched on by an admin). */
+  marker: boolean('marker').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 })
@@ -284,6 +286,8 @@ export const attempts = pgTable('attempts', {
   integrityReviewedById: uuid('integrity_reviewed_by_id').references(() => users.id, { onDelete: 'set null' }),
   /** Sat at a mock session's seat: whose seat it was. */
   mockCandidateId: uuid('mock_candidate_id').references((): AnyPgColumn => mockCandidates.id, { onDelete: 'set null' }),
+  /** When the candidate's centre teachers were reminded that this script still waits for a mark. */
+  markRemindedAt: timestamp('mark_reminded_at', { withTimezone: true }),
   createdAt: created(),
   updatedAt: updated()
 }, t => [index('attempts_integrity_idx').on(t.integrityStatus, t.submittedAt),

@@ -105,7 +105,7 @@ export default defineNuxtConfig({
   nitro: {
     experimental: { tasks: true },
     scheduledTasks: {
-      '7 * * * *': ['reminders:premium', 'live:mocks'],
+      '7 * * * *': ['reminders:premium', 'live:mocks', 'reminders:marking'],
       // 09:41 in Tashkent
       '41 4 * * *': ['reminders:plan']
     }

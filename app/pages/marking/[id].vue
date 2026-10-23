@@ -5,7 +5,7 @@
  * on each essay on the other.
  * An AI draft (made when the Writing was handed in, or on request) can fill the empty fields in.
  */
-definePageMeta({ middleware: 'staff' })
+definePageMeta({ middleware: 'marker' })
 
 const route = useRoute()
 const toast = useToast()

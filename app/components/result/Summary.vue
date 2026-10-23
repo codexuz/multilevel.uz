@@ -8,7 +8,9 @@ const { t } = useI18n()
  * what the CEFR level means, how each part went, and what to do next. For a guest, how to keep it.
  */
 const props = defineProps<{ view: ResultView & { correct?: number | null, total?: number | null, durationSeconds?: number | null, submittedAt?: string | null }, reviewTo: string }>()
-const { loggedIn } = useMe()
+const { loggedIn, me } = useMe()
+// A centre's student: their own teachers mark Writing and Speaking.
+const byTeacher = computed(() => !!me.value?.teacherMarks)
 
 const skill = computed(() => props.view.skill as keyof typeof SKILL_META)
 const objective = computed(() => skill.value === 'LISTENING' || skill.value === 'READING')
@@ -134,11 +136,11 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
         >
         <div>
           <p class="font-semibold text-highlighted">
-            {{ view.saved ? t('result.withExaminer') : t('result.practiceOnly') }}
+            {{ view.saved ? t(byTeacher ? 'result.withTeacher' : 'result.withExaminer') : t('result.practiceOnly') }}
           </p>
           <p class="text-sm text-muted text-pretty">
             {{ view.saved
-              ? t('result.waitingText', { skill: skillLabel(view.skill) })
+              ? t(byTeacher ? 'result.waitingTeacherText' : 'result.waitingText', { skill: skillLabel(view.skill) })
               : t('result.practiceText', { skill: skillLabel(view.skill) }) }}
           </p>
         </div>
