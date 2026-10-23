@@ -1,18 +1,27 @@
 import { desc, sql } from 'drizzle-orm'
 import { liveMocks, tests } from '../../../database/schema'
 
-// Every live mock, newest first, with how many took part; and the channel posts go to, if any.
+// Every live mock, newest first, with how many took part and the channels it goes to; and every channel.
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)
   const rows = await useDb().select({
     m: liveMocks,
     testTitle: tests.title,
     testStatus: tests.status,
+    testModule: tests.module,
     participants: sql<number>`(select count(distinct a.user_id)::int from attempts a where a.live_mock_id = live_mocks.id)`
   }).from(liveMocks).leftJoin(tests, sql`${tests.id} = ${liveMocks.testId}`).orderBy(desc(liveMocks.startsAt)).limit(100)
   const now = new Date()
+  const channels = await postChannels()
   return {
-    channel: telegramChannel()?.url ?? null,
-    mocks: rows.map(r => ({ ...r.m, state: mockState(r.m, now), test: { title: r.testTitle, status: r.testStatus }, participants: r.participants }))
+    channels,
+    mocks: rows.map(r => ({
+      ...r.m,
+      state: mockState(r.m, now),
+      exam: examOfModule(r.testModule),
+      channelIds: channelsOfMock(r.m, examOfModule(r.testModule), channels).map(c => c.id),
+      test: { title: r.testTitle, status: r.testStatus },
+      participants: r.participants
+    }))
   }
 })
