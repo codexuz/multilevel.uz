@@ -29,7 +29,10 @@ const { data, status } = await useFetch<{ items: Row[], total: number, pages: nu
       <template v-if="page === 1">
         <MyAssignments />
         <ExamPlan />
-        <ProgressInsights />
+        <ProgressInsights
+          id="insights"
+          class="scroll-mt-20"
+        />
       </template>
 
       <h2

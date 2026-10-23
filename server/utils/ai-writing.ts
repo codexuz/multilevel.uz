@@ -9,6 +9,7 @@ import { accessOf, isStaffRole } from './billing'
 import { notifyAiReview } from './notify'
 import { minimumWordsFor } from './content'
 import { assessSpeaking, attemptSpeakingParts, type AiSpeakingPart } from './ai-speaking'
+import { assessObjective, type ObjectiveInput } from './ai-objective'
 
 /**
  * Instant AI feedback on Multilevel Writing: an OpenAI reasoning model (gpt-6-luna by default, chosen
@@ -333,21 +334,24 @@ async function run(id: string, notify = true) {
   const [row] = await db.select().from(aiReviews).where(eq(aiReviews.id, id)).limit(1)
   if (!row || row.status !== 'PENDING') return
   try {
-    // Speaking is transcribed first; the transcripts are kept with the review's input.
+    // Speaking is transcribed first; the transcripts are kept with the review's input. Listening and
+    // Reading are an analysis of the mistakes (ai-objective.ts), with no score of their own.
     const done = row.skill === 'SPEAKING'
       ? await assessSpeaking(row.input as AiSpeakingPart[], row.userId, row.locale)
-      : await (async () => {
-          const tasks = row.input as AiTaskInput[]
-          const { parsed, model, usage } = await assess(tasks, row.userId, row.locale)
-          const marked = isIelts(tasks) ? finishIelts(tasks, parsed as z.infer<typeof IeltsWritingReview>) : finish(tasks, parsed as WritingReviewResult)
-          return { ...marked, model, usage, input: tasks }
-        })()
+      : row.skill === 'READING' || row.skill === 'LISTENING'
+        ? await assessObjective(row.input, row.userId, row.locale)
+        : await (async () => {
+            const tasks = row.input as AiTaskInput[]
+            const { parsed, model, usage } = await assess(tasks, row.userId, row.locale)
+            const marked = isIelts(tasks) ? finishIelts(tasks, parsed as z.infer<typeof IeltsWritingReview>) : finish(tasks, parsed as WritingReviewResult)
+            return { ...marked, model, usage, input: tasks }
+          })()
     await db.update(aiReviews).set({
       status: 'DONE', result: done.result, score: done.score, band: done.band, cefrLevel: done.cefrLevel, model: done.model, input: done.input,
       inputTokens: done.usage?.input_tokens ?? 0,
       outputTokens: done.usage?.output_tokens ?? 0, completedAt: new Date()
     }).where(eq(aiReviews.id, id))
-    if (notify) await notifyAiReview(row.userId, id, row.attemptId, (done.band ?? done.score)!, done.cefrLevel ?? '', row.skill, done.band != null).catch(() => {})
+    if (notify && (done.band ?? done.score) != null) await notifyAiReview(row.userId, id, row.attemptId, (done.band ?? done.score)!, done.cefrLevel ?? '', row.skill, done.band != null).catch(() => {})
   } catch (e) {
     const message = e instanceof OpenAI.RateLimitError
       ? 'Many people are being assessed right now. Please try again in a minute.'
@@ -367,7 +371,7 @@ async function run(id: string, notify = true) {
  * when an examiner asks for a draft). `free` skips the allowance: a review that comes with a paid
  * marking. `notify` tells the owner in Telegram when it is ready.
  */
-export async function startWritingReview(user: { id: string, role: string }, opts: { attemptId?: string | null, testId: string | null, tasks: AiTaskInput[] | AiSpeakingPart[], skill?: 'WRITING' | 'SPEAKING', ownerId?: string, free?: boolean, notify?: boolean, locale?: string | null }) {
+export async function startWritingReview(user: { id: string, role: string }, opts: { attemptId?: string | null, testId: string | null, tasks: AiTaskInput[] | AiSpeakingPart[] | ObjectiveInput, skill?: 'WRITING' | 'SPEAKING' | 'READING' | 'LISTENING', ownerId?: string, free?: boolean, notify?: boolean, locale?: string | null }) {
   const db = useDb()
   const id = await db.transaction(async (tx) => {
     await tx.execute(sql`select 1 from ${users} where ${users.id} = ${user.id} for update`)
@@ -429,7 +433,7 @@ export async function aiReviewView(id: string) {
     id: r.id, userId: r.userId, attemptId: r.attemptId, status: r.status, score: r.score, band: r.band, cefrLevel: r.cefrLevel, error: r.error,
     createdAt: r.createdAt, completedAt: r.completedAt,
     ...(r.result as object | null ?? {}),
-    texts: (r.input as (AiTaskInput | AiSpeakingPart)[]).map(t => 'taskId' in t ? { taskId: t.taskId, text: t.text } : { taskId: t.partId, text: t.transcript ?? '' })
+    texts: Array.isArray(r.input) ? (r.input as (AiTaskInput | AiSpeakingPart)[]).map(t => 'taskId' in t ? { taskId: t.taskId, text: t.text } : { taskId: t.partId, text: t.transcript ?? '' }) : []
   }
 }
 

@@ -588,7 +588,8 @@
     "onAverage": "on your average before",
     "fromReviews": "From {n} AI review | From {n} AI reviews",
     "moreTypes": "and {n} more task type you do better on | and {n} more task types you do better on",
-    "lastReview": "From your last AI review"
+    "lastReview": "From your last AI review",
+    "whyCount": "{why} (1 of your mistakes) | {why} ({n} of your mistakes)"
   },
   "plan": {
     "goalSection": "A whole {skill} section",
@@ -1421,5 +1422,27 @@
     "note": "A practice mock held by {by} on Mockmee, marked to the exam's public descriptors. It is not an official result.",
     "keepPractising": "Keep practising on Mockmee: full tests, parts and AI feedback on Writing and Speaking.",
     "practise": "Practise"
+  },
+  "explain": {
+    "missing": "{n} question in this part has no explanation yet. The AI can write it, with where the answer is. | {n} questions in this part have no explanation yet. The AI can write them, with where each answer is.",
+    "ask": "Explain with AI",
+    "writing": "Writing explanations…",
+    "failed": "Not explained"
+  },
+  "objective": {
+    "title": "AI analysis",
+    "introReading": "Why you lost marks, not just where: the patterns behind your mistakes, a technique for your weakest question types, and the paraphrases you missed. About half a minute.",
+    "introListening": "Why you lost marks, not just where: the patterns behind your mistakes, a technique for your weakest question types, and what the speakers said in other words. About half a minute.",
+    "get": "Analyse my mistakes",
+    "working": "Looking at your mistakes…",
+    "perfect": "Everything right: nothing to fix here. Try a harder test, or a whole section against the clock.",
+    "patterns": "Why marks were lost",
+    "strategies": "Try this next time",
+    "paraphrases": "Paraphrases you missed",
+    "paraphrasesHelp": "The questions rarely use the passage's words: these say the same thing.",
+    "paraphrasesHelpListening": "The questions rarely use the speakers' words: these say the same thing.",
+    "seeWhy": "See each answer explained",
+    "practise": "Practise {type}",
+    "guide": "An AI analysis to guide your practice; your mark is the one above."
   }
 }

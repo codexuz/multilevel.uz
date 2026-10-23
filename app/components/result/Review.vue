@@ -74,6 +74,15 @@ function jump(n: number) {
     pendingJump = null
   }))
 }
+// Opened at a question (?q=, from the AI analysis): its part, and the question in view.
+onMounted(() => {
+  const q = Number(route.query.q)
+  if (!q) return
+  const at = parts.value.findIndex(p => partItems(p).some(i => i.number === q))
+  if (at < 0) return
+  current.value = at
+  setTimeout(() => jump(q), 300)
+})
 watch(part, () => nextTick(() => {
   if (pendingJump != null) return
   questionsEl.value?.scrollTo({ top: 0 })
@@ -135,6 +144,11 @@ const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') 
 
     <!-- Listening and Reading -->
     <template v-if="(section.skill === 'LISTENING' || section.skill === 'READING') && part">
+      <ReviewExplainBar
+        :attempt-id="view.saved ? view.id : null"
+        :part="part"
+        :locked="section.locked"
+      />
       <ExamPartHeader
         :label="`${skillLabel(section.skill)} ${t('part.part', { n: part.partNumber })}${part.title ? ` — ${part.title}` : ''}`"
         :instruction="instruction"

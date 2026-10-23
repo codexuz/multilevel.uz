@@ -588,7 +588,8 @@
     "onAverage": "avvalgi o‘rtachangizga nisbatan",
     "fromReviews": "{n} ta AI tahlil asosida",
     "moreTypes": "va siz yaxshiroq bajaradigan yana {n} ta savol turi",
-    "lastReview": "Oxirgi AI tahlilingizdan"
+    "lastReview": "Oxirgi AI tahlilingizdan",
+    "whyCount": "{why} ({n} ta xatoingiz)"
   },
   "plan": {
     "goalSection": "To‘liq {skill} bo‘limi",
@@ -1421,5 +1422,27 @@
     "note": "{by} Mockmee’da o‘tkazgan mashq mocki, imtihonning ochiq mezonlari bo‘yicha baholangan. Bu rasmiy natija emas.",
     "keepPractising": "Mockmee’da mashqni davom eting: to‘liq testlar, qismlar va Writing hamda Speaking uchun AI fikri.",
     "practise": "Mashq qilish"
+  },
+  "explain": {
+    "missing": "Bu qismdagi {n} ta savolga hali izoh yo‘q. AI izoh va javob matnning qayerida ekanini yozib beradi.",
+    "ask": "AI bilan izohlash",
+    "writing": "Izohlar yozilmoqda…",
+    "failed": "Izohlab bo‘lmadi"
+  },
+  "objective": {
+    "title": "AI tahlil",
+    "introReading": "Ball qayerda emas, nega yo‘qotilganini ko‘rsatadi: xatolaringiz ortidagi qonuniyatlar, eng zaif savol turlari uchun usul va siz sezmagan parafrazalar. Taxminan yarim daqiqa.",
+    "introListening": "Ball qayerda emas, nega yo‘qotilganini ko‘rsatadi: xatolaringiz ortidagi qonuniyatlar, eng zaif savol turlari uchun usul va gapiruvchilar boshqa so‘zlar bilan aytgan narsalar. Taxminan yarim daqiqa.",
+    "get": "Xatolarimni tahlil qilish",
+    "working": "Xatolaringiz ko‘rib chiqilmoqda…",
+    "perfect": "Hammasi to‘g‘ri: tuzatadigan narsa yo‘q. Qiyinroq test yoki vaqtga qarshi to‘liq bo‘limni sinab ko‘ring.",
+    "patterns": "Ball nega yo‘qotildi",
+    "strategies": "Keyingi safar shunday qiling",
+    "paraphrases": "Siz sezmagan parafrazalar",
+    "paraphrasesHelp": "Savollar matndagi so‘zlarni kamdan-kam ishlatadi: bular bir xil ma’noni anglatadi.",
+    "paraphrasesHelpListening": "Savollar gapiruvchilarning so‘zlarini kamdan-kam ishlatadi: bular bir xil ma’noni anglatadi.",
+    "seeWhy": "Har bir javob izohini ko‘rish",
+    "practise": "{type} bo‘yicha mashq",
+    "guide": "Mashqingizga yo‘l ko‘rsatuvchi AI tahlil; sizning bahoingiz yuqoridagisi."
   }
 }
