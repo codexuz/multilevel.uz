@@ -1126,6 +1126,7 @@
     "seeCatalogue": "Katalogni ko‘rish"
   },
   "speak": {
+    "sampleAnswer": "Namunaviy javob",
     "checkTitle": "Mikrofoningizni tekshiring",
     "checkText": "Uch soniya yozib, qayta tinglang: imtihon oluvchi sizni eshitishiga ishonch hosil qiling. Keyin imtihon o‘zi davom etadi: tinglang, tayyorlaning, signaldan keyin gapiring.",
     "testRecord": "3 soniya yozish",

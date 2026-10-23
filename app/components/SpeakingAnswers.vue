@@ -3,9 +3,11 @@
  * A Speaking part with what was recorded for it: Part 1.1 and 1.2 question by question, each
  * with its answer; Part 2 and Part 3 the card and the one long answer. Answers recorded before
  * they were kept one by one (a single recording for the whole part) are shown under the part.
+ * The test's sample answers, when it has them, follow each answer.
  */
+const { t } = useI18n()
 const props = defineProps<{
-  part: { id: string, partNumber: number, exam?: string | null, cueCard?: string | null, imageUrl?: string | null, questions?: { id: string, text: string }[] }
+  part: { id: string, partNumber: number, exam?: string | null, cueCard?: string | null, imageUrl?: string | null, sampleAnswer?: string | null, questions?: { id: string, text: string, sampleAnswer?: string | null }[] }
   recordings: { partId: string, position?: number, audioUrl: string }[]
   emptyText: string
 }>()
@@ -52,6 +54,17 @@ const at = (position: number) => mine.value.find(r => (r.position ?? 0) === posi
         >
           {{ emptyText }}
         </p>
+        <details
+          v-if="q.sampleAnswer"
+          class="text-sm"
+        >
+          <summary class="cursor-pointer text-primary font-medium">
+            {{ t('speak.sampleAnswer') }}
+          </summary>
+          <p class="mt-1.5 whitespace-pre-line text-toned leading-6">
+            {{ q.sampleAnswer }}
+          </p>
+        </details>
       </li>
     </ol>
     <template v-else>
@@ -79,6 +92,17 @@ const at = (position: number) => mine.value.find(r => (r.position ?? 0) === posi
       >
         {{ emptyText }}
       </p>
+      <details
+        v-if="part.sampleAnswer"
+        class="text-sm"
+      >
+        <summary class="cursor-pointer text-primary font-medium">
+          {{ t('speak.sampleAnswer') }}
+        </summary>
+        <p class="mt-1.5 whitespace-pre-line text-toned leading-6">
+          {{ part.sampleAnswer }}
+        </p>
+      </details>
     </template>
   </div>
 </template>

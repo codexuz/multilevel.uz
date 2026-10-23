@@ -189,6 +189,10 @@ export const speakingParts = pgTable('speaking_parts', {
   cueCard: text('cue_card'),
   /** Multilevel picture tasks (Part 1.2, Part 2). */
   imageRef: text('image_ref'),
+  /** The examiner reading the card or statement (a long turn), recorded or imported; none: generated once. */
+  audioRef: text('audio_ref'),
+  /** A model answer to the long turn, shown after the attempt; the AI review uses it instead of writing one. */
+  sampleAnswer: text('sample_answer'),
   prepSeconds: integer('prep_seconds'),
   speakSeconds: integer('speak_seconds'),
   createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
@@ -201,6 +205,10 @@ export const speakingQuestions = pgTable('speaking_questions', {
   partId: uuid('part_id').notNull().references(() => speakingParts.id, { onDelete: 'cascade' }),
   text: text('text').notNull(),
   position: integer('position').notNull().default(1),
+  /** The examiner asking it, recorded or imported; none: generated once (examiner-voice.ts). */
+  audioRef: text('audio_ref'),
+  /** A model answer, shown after the attempt; the AI review uses it instead of writing one. */
+  sampleAnswer: text('sample_answer'),
   createdAt: created(),
   updatedAt: updated()
 }, t => [index('speaking_questions_part_idx').on(t.partId)])

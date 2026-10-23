@@ -30,7 +30,7 @@ const EXT: Record<string, string> = {
 }
 
 /** A data: URI is stored as a file and replaced by its address; anything else is kept as it is. */
-async function keepEmbedded(ref: unknown, name: string): Promise<string | null> {
+export async function keepEmbedded(ref: unknown, name: string): Promise<string | null> {
   if (typeof ref !== 'string' || !ref) return null
   if (!ref.startsWith('data:')) return ref
   const match = /^data:([\w.+-]+\/[\w.+-]+)(?:;[^,;]*)*;base64,([A-Za-z0-9+/=\s]+)$/.exec(ref)
@@ -56,6 +56,14 @@ async function keepEmbeddedMedia(test: any) {
       }
       if (item.writingTask?.imageRef) item.writingTask.imageRef = await keepEmbedded(item.writingTask.imageRef, `${where}-task`)
       if (item.speakingPart?.imageRef) item.speakingPart.imageRef = await keepEmbedded(item.speakingPart.imageRef, `${where}-picture`)
+      if (item.speakingPart) {
+        const sp = item.speakingPart
+        if (typeof (sp.audioRef ?? sp.audioUrl) === 'string' && String(sp.audioRef ?? sp.audioUrl).startsWith('data:')) sp.audioRef = await keepEmbedded(sp.audioRef ?? sp.audioUrl, `${where}-audio`)
+        for (const [q, question] of (Array.isArray(sp.questions) ? sp.questions : []).entries()) {
+          const ref = question && typeof question === 'object' ? question.audioRef ?? question.audioUrl : null
+          if (typeof ref === 'string' && ref.startsWith('data:')) sp.questions[q] = { ...question, audioRef: await keepEmbedded(ref, `${where}-q${q + 1}-audio`), audioUrl: undefined }
+        }
+      }
     }
   }
   return test
@@ -77,7 +85,7 @@ export function exportTest(test: any) {
         items: (section.items ?? []).map((item: any) => ({
           part: item.part ? { ...strip(item.part), isActive: undefined, groups: item.part.groups.map((group: any) => ({ ...strip(group), items: group.items.map(strip) })) } : undefined,
           writingTask: item.writingTask ? strip(item.writingTask) : undefined,
-          speakingPart: item.speakingPart ? { ...strip(item.speakingPart), questions: item.speakingPart.questions.map((q: any) => q.text) } : undefined
+          speakingPart: item.speakingPart ? { ...strip(item.speakingPart), questions: item.speakingPart.questions.map(questionOut) } : undefined
         }))
       }))
     }
@@ -139,12 +147,14 @@ export async function importTest(payload: any, userId: string | null) {
           }).returning({ id: writingTasks.id })
           link.writingTaskId = task!.id
         } else if (item.speakingPart) {
+          const where = `Speaking ${index + 1}`
           const [part] = await tx.insert(speakingParts).values({
             exam, partNumber: Number(item.speakingPart.partNumber) || index + 1, title: item.speakingPart.title ?? null, cueCard: item.speakingPart.cueCard ?? null,
             imageRef: item.speakingPart.imageRef ?? null, prepSeconds: item.speakingPart.prepSeconds ?? null, speakSeconds: item.speakingPart.speakSeconds ?? null,
-            createdById: userId
+            ...partExtrasOf(item.speakingPart, where), createdById: userId
           }).returning({ id: speakingParts.id })
-          const questions = (item.speakingPart.questions ?? []).map((text: unknown, i: number) => ({ partId: part!.id, text: String(text), position: i + 1 }))
+          // Each question is text, or text with its audio and a sample answer.
+          const questions = speakingQuestionsOf(item.speakingPart.questions, where).map((q, i) => ({ partId: part!.id, ...q, position: i + 1 }))
           if (questions.length) await tx.insert(speakingQuestions).values(questions)
           link.speakingPartId = part!.id
         } else continue

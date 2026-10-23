@@ -123,9 +123,25 @@ export interface SpeakingPart {
   cueCard?: string | null
   imageRef?: string | null
   imageUrl?: string | null
+  /** The examiner's audio for a long turn (the card or statement), when the test has its own. */
+  audioRef?: string | null
+  audioUrl?: string | null
+  /** A model answer to the long turn: the builder and a review only. */
+  sampleAnswer?: string | null
   prepSeconds?: number | null
   speakSeconds?: number | null
-  questions: { id: string, text: string, position: number }[]
+  questions: SpeakingQuestion[]
+}
+
+export interface SpeakingQuestion {
+  id: string
+  text: string
+  position: number
+  /** The examiner asking it, when the test has its own audio. */
+  audioRef?: string | null
+  audioUrl?: string | null
+  /** A model answer: the builder and a review only. */
+  sampleAnswer?: string | null
 }
 
 export interface SectionItem {
