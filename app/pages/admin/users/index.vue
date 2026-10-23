@@ -26,25 +26,68 @@ interface AdminUser {
   marker: boolean
   createdAt: string
   premiumUntil: string | null
+  /** Premium through a seat at a centre whose licence runs. */
+  centrePremium: boolean
   credits: number
   rewardCredits: number
   aiBonusReviews: number
+  /** Their own mock credits, for mock sessions they run as a teacher. */
+  mockCredits: number
 }
-const page = ref(1)
-const search = ref('')
-const q = ref('')
+// ─── The list: searched, filtered, sorted and paged on the server; kept in the address ───
+const route = useRoute()
+const router = useRouter()
+const str = (v: unknown, fallback = '') => (typeof v === 'string' && v ? v : fallback)
+const filters = reactive({
+  role: str(route.query.role, 'ALL'),
+  plan: str(route.query.plan, 'ALL'),
+  status: str(route.query.status, 'ALL'),
+  extra: str(route.query.extra, 'ALL'),
+  sort: str(route.query.sort, 'NEWEST')
+})
+const page = ref(Math.max(1, Number(route.query.page) || 1))
+const pageSize = ref([20, 50, 100].includes(Number(route.query.size)) ? Number(route.query.size) : 20)
+const search = ref(str(route.query.q))
+const q = ref(search.value)
 let searchTimer: ReturnType<typeof setTimeout> | undefined
 watch(search, (v) => {
   clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => {
-    q.value = v.trim()
-    page.value = 1
-  }, 300)
+  searchTimer = setTimeout(() => (q.value = v.trim()), 300)
 })
-const { data, refresh } = await useFetch<Paginated<AdminUser>>('/api/admin/users', { query: { page, q } })
+watch([q, filters, pageSize], () => (page.value = 1))
+const query = computed(() => ({
+  q: q.value || undefined,
+  role: filters.role === 'ALL' ? undefined : filters.role,
+  plan: filters.plan === 'ALL' ? undefined : filters.plan,
+  status: filters.status === 'ALL' ? undefined : filters.status,
+  marker: filters.extra === 'MARKER' ? '1' : undefined,
+  telegram: filters.extra === 'TELEGRAM' ? '1' : undefined,
+  sort: filters.sort === 'NEWEST' ? undefined : filters.sort,
+  page: page.value > 1 ? page.value : undefined,
+  pageSize: pageSize.value
+}))
+watch(query, ({ marker, telegram, pageSize: size, ...rest }) => {
+  router.replace({ query: { ...rest, extra: marker ? 'MARKER' : telegram ? 'TELEGRAM' : undefined, size: size === 20 ? undefined : size } })
+})
+const { data, refresh, status: loadState } = await useFetch<Paginated<AdminUser>>('/api/admin/users', { query })
 const usersList = computed(() => data.value?.items ?? [])
 const total = computed(() => data.value?.total ?? 0)
-const pageSize = computed(() => data.value?.pageSize ?? 20)
+const shownFrom = computed(() => (total.value ? (page.value - 1) * pageSize.value + 1 : 0))
+const shownTo = computed(() => Math.min(total.value, page.value * pageSize.value))
+const filtered = computed(() => !!q.value || filters.role !== 'ALL' || filters.plan !== 'ALL' || filters.status !== 'ALL' || filters.extra !== 'ALL')
+function clearFilters() {
+  Object.assign(filters, { role: 'ALL', plan: 'ALL', status: 'ALL', extra: 'ALL' })
+  search.value = ''
+  q.value = ''
+}
+const filterItems = {
+  role: [{ label: 'All roles', value: 'ALL' }, { label: 'Students', value: 'student' }, { label: 'Teachers', value: 'teacher' }, { label: 'Centre owners', value: 'center_owner' }, { label: 'Admins', value: 'admin' }],
+  plan: [{ label: 'Any plan', value: 'ALL' }, { label: 'Premium', value: 'PREMIUM' }, { label: 'Free', value: 'FREE' }],
+  status: [{ label: 'Any status', value: 'ALL' }, { label: 'Active', value: 'ACTIVE' }, { label: 'Banned', value: 'BANNED' }],
+  extra: [{ label: 'Everyone', value: 'ALL' }, { label: 'Markers', value: 'MARKER' }, { label: 'With Telegram', value: 'TELEGRAM' }],
+  sort: [{ label: 'Newest first', value: 'NEWEST' }, { label: 'Oldest first', value: 'OLDEST' }, { label: 'Name A–Z', value: 'NAME' }],
+  size: [20, 50, 100].map(n => ({ label: `${n} per page`, value: n }))
+}
 
 const ROLE_LABEL: Record<UserRole, string> = { student: 'Student', teacher: 'Teacher', center_owner: 'Centre owner', admin: 'Admin' }
 const roles = (Object.keys(ROLE_LABEL) as UserRole[]).map(value => ({ label: ROLE_LABEL[value], value }))
@@ -152,8 +195,6 @@ const planItems = computed(() => [
   ...packData.value.map(p => ({ label: `Pack: ${p.title} — ${fmtUzs(p.priceUzs)}${p.active ? '' : ' (off sale)'}`, value: `pack:${p.slug}` }))
 ])
 const granting = ref<AdminUser | null>(null)
-// Mock credits sold to a Premium teacher (their own mock sessions).
-const mockFor = ref<{ userId: string, name: string } | null>(null)
 const grant = reactive({ plan: '', amount: null as number | null, note: '' })
 const grantSaving = ref(false)
 function openGrant(p: AdminUser) {
@@ -179,26 +220,34 @@ async function saveGrant() {
     grantSaving.value = false
   }
 }
-// ─── Reward credits and extra AI reviews: support cases and giveaways ───
-const gifting = ref<AdminUser | null>(null)
-const gift = reactive({ credits: 0, aiReviews: 0 })
-const giftSaving = ref(false)
-function openGift(p: AdminUser) {
-  Object.assign(gift, { credits: 0, aiReviews: 0 })
-  gifting.value = p
+// ─── What they hold: given (plus) or taken back (minus), for support cases, giveaways and sales ───
+const BALANCES = [
+  { key: 'markingCredits', label: 'Marking credits', help: 'One has an examiner mark a Writing or Speaking.', icon: 'i-lucide-pen-line', of: (p: AdminUser) => p.credits },
+  { key: 'testCredits', label: 'Test credits', help: 'One opens one Premium test for good.', icon: 'i-lucide-gift', of: (p: AdminUser) => p.rewardCredits },
+  { key: 'aiReviews', label: 'Extra AI reviews', help: 'Used after their regular AI allowance runs out.', icon: 'i-lucide-sparkles', of: (p: AdminUser) => p.aiBonusReviews },
+  { key: 'mockCredits', label: 'Mock credits', help: 'Their own mock sessions: one per candidate checked in.', icon: 'i-lucide-monitor-check', of: (p: AdminUser) => p.mockCredits }
+] as const
+type BalanceKey = typeof BALANCES[number]['key']
+const holding = ref<AdminUser | null>(null)
+const change = reactive<Record<BalanceKey, number> & { note: string }>({ markingCredits: 0, testCredits: 0, aiReviews: 0, mockCredits: 0, note: '' })
+const changed = computed(() => BALANCES.some(b => change[b.key]))
+const balanceSaving = ref(false)
+function openBalances(p: AdminUser) {
+  Object.assign(change, { markingCredits: 0, testCredits: 0, aiReviews: 0, mockCredits: 0, note: '' })
+  holding.value = p
 }
-async function saveGift() {
-  if (!gifting.value) return
-  giftSaving.value = true
+async function saveBalances() {
+  if (!holding.value || !changed.value) return
+  balanceSaving.value = true
   try {
-    await $fetch(`/api/admin/users/${gifting.value.id}/rewards`, { method: 'POST', body: { ...gift } })
-    toast.add({ title: 'Saved', description: `${gifting.value.name || accountHandle(gifting.value)} has been told in Telegram (if connected).`, color: 'success' })
-    gifting.value = null
+    await $fetch(`/api/admin/users/${holding.value.id}/balances`, { method: 'POST', body: { ...change } })
+    toast.add({ title: 'Saved', description: `${holding.value.name || accountHandle(holding.value)} is told in Telegram of what was given (if connected).`, color: 'success' })
+    holding.value = null
     await refresh()
   } catch (e) {
     fail(e)
   } finally {
-    giftSaving.value = false
+    balanceSaving.value = false
   }
 }
 
@@ -220,13 +269,52 @@ async function endPremium(p: AdminUser) {
     icon="i-lucide-users"
   >
     <template #toolbar>
-      <UDashboardToolbar>
-        <UInput
-          v-model="search"
-          icon="i-lucide-search"
-          placeholder="Name, email or @username"
-          class="w-full sm:w-72"
-        />
+      <UDashboardToolbar :ui="{ root: 'flex-wrap gap-2 py-2 h-auto min-h-(--ui-header-height)' }">
+        <div
+          class="flex flex-wrap items-center gap-2 w-full"
+          data-testid="user-filters"
+        >
+          <UInput
+            v-model="search"
+            icon="i-lucide-search"
+            placeholder="Name, email or @username"
+            class="w-full sm:w-64"
+          />
+          <USelect
+            v-model="filters.role"
+            :items="filterItems.role"
+            class="w-36"
+          />
+          <USelect
+            v-model="filters.plan"
+            :items="filterItems.plan"
+            class="w-32"
+          />
+          <USelect
+            v-model="filters.status"
+            :items="filterItems.status"
+            class="w-32"
+          />
+          <USelect
+            v-model="filters.extra"
+            :items="filterItems.extra"
+            class="w-36"
+          />
+          <USelect
+            v-model="filters.sort"
+            :items="filterItems.sort"
+            icon="i-lucide-arrow-down-up"
+            class="w-40"
+          />
+          <UButton
+            v-if="filtered"
+            label="Clear"
+            icon="i-lucide-x"
+            color="neutral"
+            variant="ghost"
+            @click="clearFilters"
+          />
+        </div>
       </UDashboardToolbar>
     </template>
 
@@ -357,12 +445,12 @@ async function endPremium(p: AdminUser) {
                 />{{ accountHandle(p) }} · joined {{ localeDate(p.createdAt, 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) }}
               </p>
               <p class="text-xs mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
-                <span :class="p.premiumUntil ? 'text-success' : 'text-muted'">
+                <span :class="p.premiumUntil || p.centrePremium ? 'text-success' : 'text-muted'">
                   <UIcon
                     name="i-lucide-sparkles"
                     class="size-3 align-[-1px]"
                   />
-                  {{ p.premiumUntil ? `Premium until ${formatDate(p.premiumUntil)}` : 'Free' }}
+                  {{ p.premiumUntil ? `Premium until ${formatDate(p.premiumUntil)}` : p.centrePremium ? 'Premium (centre)' : 'Free' }}
                 </span>
                 <span class="text-muted tabular-nums"><UIcon
                   name="i-lucide-pen-line"
@@ -374,7 +462,7 @@ async function endPremium(p: AdminUser) {
                 ><UIcon
                   name="i-lucide-gift"
                   class="size-3 align-[-1px]"
-                /> {{ p.rewardCredits }} {{ p.rewardCredits === 1 ? 'credit' : 'credits' }}</span>
+                /> {{ p.rewardCredits }} test {{ p.rewardCredits === 1 ? 'credit' : 'credits' }}</span>
                 <span
                   v-if="p.aiBonusReviews"
                   class="text-muted tabular-nums"
@@ -382,15 +470,22 @@ async function endPremium(p: AdminUser) {
                   name="i-lucide-sparkles"
                   class="size-3 align-[-1px]"
                 /> +{{ p.aiBonusReviews }} AI</span>
+                <span
+                  v-if="p.mockCredits"
+                  class="text-muted tabular-nums"
+                ><UIcon
+                  name="i-lucide-monitor-check"
+                  class="size-3 align-[-1px]"
+                /> {{ p.mockCredits }} mock</span>
               </p>
             </div>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2 lg:shrink-0">
+          <div class="flex items-center gap-2 lg:shrink-0">
             <USelect
               :model-value="p.role"
               :items="roles"
-              class="w-36"
+              class="w-32 sm:w-36"
               @update:model-value="setRole(p, $event as UserRole)"
             />
             <UButton
@@ -401,12 +496,21 @@ async function endPremium(p: AdminUser) {
               variant="soft"
               @click="openGrant(p)"
             />
+            <UButton
+              size="sm"
+              icon="i-lucide-coins"
+              color="neutral"
+              variant="outline"
+              aria-label="Balances"
+              data-testid="balances"
+              @click="openBalances(p)"
+            >
+              <span class="hidden sm:inline">Balances</span>
+            </UButton>
             <UDropdownMenu
               :items="[[
                 { label: 'Attempts', icon: 'i-lucide-clipboard-check', to: `/admin/attempts?user=${p.id}` },
-                { label: 'Credits & AI reviews', icon: 'i-lucide-gift', onSelect: () => openGift(p) },
                 { label: p.marker ? 'Switch marking off' : 'Switch marking on', icon: p.marker ? 'i-lucide-pen-off' : 'i-lucide-pen-line', onSelect: () => toggleMarker(p) },
-                { label: 'Mock credits (teacher)', icon: 'i-lucide-monitor-check', onSelect: () => (mockFor = { userId: p.id, name: p.name || p.email || 'User' }) },
                 ...(p.premiumUntil ? [{ label: 'End Premium', icon: 'i-lucide-circle-stop', onSelect: () => endPremium(p) }] : []),
                 ...(p.id !== me?.id ? [
                   { label: p.banned ? 'Unban' : 'Ban', icon: p.banned ? 'i-lucide-circle-check' : 'i-lucide-ban', onSelect: () => toggleBan(p) },
@@ -426,12 +530,14 @@ async function endPremium(p: AdminUser) {
           </div>
         </div>
         <div
-          v-if="!usersList.length"
+          v-if="!usersList.length && loadState !== 'pending'"
           class="p-8"
         >
           <UEmpty
             icon="i-lucide-users"
             title="No users found"
+            :description="filtered ? 'Nobody matches these filters.' : undefined"
+            :actions="filtered ? [{ label: 'Clear filters', icon: 'i-lucide-x', color: 'neutral', variant: 'outline', onClick: clearFilters }] : []"
             variant="naked"
           />
         </div>
@@ -439,13 +545,26 @@ async function endPremium(p: AdminUser) {
     </UCard>
 
     <div
-      v-if="total > pageSize"
-      class="flex justify-center"
+      v-if="total"
+      class="flex flex-wrap items-center justify-between gap-3"
+      data-testid="users-pager"
     >
+      <p class="text-sm text-muted tabular-nums">
+        {{ shownFrom }}–{{ shownTo }} of {{ total }}
+      </p>
       <UPagination
+        v-if="total > pageSize"
         v-model:page="page"
         :total="total"
         :items-per-page="pageSize"
+        show-edges
+        :sibling-count="1"
+      />
+      <USelect
+        v-model="pageSize"
+        :items="filterItems.size"
+        size="sm"
+        class="w-32"
       />
     </div>
 
@@ -513,32 +632,58 @@ async function endPremium(p: AdminUser) {
       </template>
     </UModal>
     <UModal
-      :open="!!gifting"
-      title="Credits & AI reviews"
-      :description="gifting ? `For ${gifting.name || accountHandle(gifting)}: they have ${gifting.rewardCredits} credits and ${gifting.aiBonusReviews} extra AI reviews. Use a minus to take some back.` : ''"
-      @update:open="v => !v && (gifting = null)"
+      :open="!!holding"
+      title="Balances"
+      :description="holding ? `What ${holding.name || accountHandle(holding)} holds. A plus gives, a minus takes back; nothing goes below zero.` : ''"
+      @update:open="v => !v && (holding = null)"
     >
       <template #body>
         <form
-          class="grid gap-4"
-          @submit.prevent="saveGift"
+          v-if="holding"
+          class="grid gap-3"
+          data-testid="balances-form"
+          @submit.prevent="saveBalances"
         >
-          <UFormField
-            label="Credits to open Premium tests"
-            help="One credit opens one Premium test for good."
+          <div
+            v-for="b in BALANCES"
+            :key="b.key"
+            class="flex items-center gap-3 rounded-lg ring ring-default p-3"
           >
-            <UInputNumber
-              v-model="gift.credits"
-              class="w-40"
+            <UIcon
+              :name="b.icon"
+              class="size-5 shrink-0 text-primary"
             />
-          </UFormField>
-          <UFormField
-            label="Extra AI reviews"
-            help="Used after their regular AI allowance runs out."
-          >
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-highlighted">
+                {{ b.label }}
+              </p>
+              <p class="text-xs text-muted">
+                {{ b.help }}
+              </p>
+            </div>
+            <div class="text-end text-sm tabular-nums w-20 shrink-0">
+              <p class="text-muted">
+                {{ b.of(holding) }}<template v-if="change[b.key]">
+                  → <span :class="b.of(holding) + change[b.key] < 0 ? 'text-error' : 'text-highlighted font-semibold'">{{ b.of(holding) + change[b.key] }}</span>
+                </template>
+              </p>
+            </div>
             <UInputNumber
-              v-model="gift.aiReviews"
-              class="w-40"
+              v-model="change[b.key]"
+              :min="-b.of(holding)"
+              :max="10000"
+              class="w-32 shrink-0"
+              :data-testid="`balance-${b.key}`"
+            />
+          </div>
+          <UFormField
+            label="Note"
+            help="Kept with mock credits: how they paid, the Telegram chat."
+          >
+            <UInput
+              v-model="change.note"
+              placeholder="Paid 500 000 so'm on Telegram"
+              class="w-full"
             />
           </UFormField>
           <div class="flex justify-end gap-2">
@@ -546,21 +691,17 @@ async function endPremium(p: AdminUser) {
               label="Cancel"
               color="neutral"
               variant="ghost"
-              @click="gifting = null"
+              @click="holding = null"
             />
             <UButton
               type="submit"
               label="Save"
-              :loading="giftSaving"
-              :disabled="!gift.credits && !gift.aiReviews"
+              :loading="balanceSaving"
+              :disabled="!changed"
             />
           </div>
         </form>
       </template>
     </UModal>
-    <AdminMockCredits
-      :target="mockFor"
-      @close="mockFor = null"
-    />
   </AppPage>
 </template>

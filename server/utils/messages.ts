@@ -75,6 +75,7 @@ export const levelText = (l: Locale, cefr: string) => (cefr === 'A2' || cefr ===
 
 const days = (l: Locale, n: number) => (l === 'ru' ? `${n} ${ruPlural(n, 'день', 'дня', 'дней')}` : l === 'uz' ? `${n} kun` : `${n} ${n === 1 ? 'day' : 'days'}`)
 const credits = (l: Locale, n: number) => (l === 'ru' ? `${n} ${ruPlural(n, 'кредит', 'кредита', 'кредитов')}` : l === 'uz' ? `${n} kredit` : `${n} ${n === 1 ? 'credit' : 'credits'}`)
+const markingCredits = (l: Locale, n: number) => (l === 'ru' ? `${n} ${ruPlural(n, 'кредит', 'кредита', 'кредитов')} на проверку` : l === 'uz' ? `${n} ta baholash krediti` : `${n} marking ${n === 1 ? 'credit' : 'credits'}`)
 const aiReviews = (l: Locale, n: number) => (l === 'ru' ? `${n} ${ruPlural(n, 'AI-разбор', 'AI-разбора', 'AI-разборов')}` : l === 'uz' ? `${n} ta AI tahlil` : `${n} AI ${n === 1 ? 'review' : 'reviews'}`)
 
 export interface Offer { code: string, text: string }
@@ -220,8 +221,8 @@ export const MSG = {
     ru: `<b>О центре ${escapeHtml(name)}</b>\nВ этот раз мы не смогли открыть ваш центр. Напишите нам в Telegram, и мы поможем.`
   })[l],
 
-  gift: (l: Locale, credit: number, ai: number) => {
-    const parts = [credit > 0 ? credits(l, credit) : null, ai > 0 ? aiReviews(l, ai) : null].filter(Boolean).join(({ en: ' and ', uz: ' va ', ru: ' и ' })[l])
+  gift: (l: Locale, credit: number, ai: number, marking = 0) => {
+    const parts = [credit > 0 ? credits(l, credit) : null, ai > 0 ? aiReviews(l, ai) : null, marking > 0 ? markingCredits(l, marking) : null].filter(Boolean).join(({ en: ' and ', uz: ' va ', ru: ' и ' })[l])
     return ({ en: `🎁 <b>A gift from Mockmee</b>\nYou received ${parts}.`, uz: `🎁 <b>Mockmee’dan sovg‘a</b>\nSizga ${parts} berildi.`, ru: `🎁 <b>Подарок от Mockmee</b>\nВы получили: ${parts}.` })[l]
   },
 

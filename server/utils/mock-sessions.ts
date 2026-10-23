@@ -22,6 +22,7 @@ import { aiReviews, attempts, centreMembers, centres, mockCandidates, mockCredit
  */
 
 type Db = ReturnType<typeof useDb>
+type Tx = Parameters<Parameters<Db['transaction']>[0]>[0]
 type Session = typeof mockSessions.$inferSelect
 type Candidate = typeof mockCandidates.$inferSelect
 
@@ -40,7 +41,7 @@ export const MOCK_ROLES = ['teacher', 'center_owner', 'admin']
 export interface MockScope { kind: 'CENTRE' | 'TEACHER', centreId: string | null, name: string, credits: number }
 
 /** Mock credits left: a centre's, or a teacher's own. */
-export async function creditBalance(owner: { centreId: string | null, userId?: string | null }, db: Db = useDb()) {
+export async function creditBalance(owner: { centreId: string | null, userId?: string | null }, db: Db | Tx = useDb()) {
   const [row] = await db.select({ n: sql<number>`coalesce(sum(${mockCreditTransactions.delta}), 0)::int` }).from(mockCreditTransactions)
     .where(owner.centreId ? eq(mockCreditTransactions.centreId, owner.centreId) : and(eq(mockCreditTransactions.userId, owner.userId!), isNull(mockCreditTransactions.centreId)))
   return row?.n ?? 0
