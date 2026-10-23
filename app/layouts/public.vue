@@ -222,6 +222,16 @@ const year = new Date().getFullYear()
                 class="hover:text-white"
               >{{ skillLabel(s) }}</NuxtLink>
             </li>
+            <!-- The public answers and Writing samples -->
+            <li
+              v-for="l in [['/listening', 'pub.listeningAnswers'], ['/reading', 'pub.readingAnswers'], ['/writing', 'pub.writingSamples']]"
+              :key="l[0]"
+            >
+              <NuxtLink
+                :to="l[0]"
+                class="hover:text-white"
+              >{{ t(l[1]!) }}</NuxtLink>
+            </li>
           </ul>
         </div>
         <div>

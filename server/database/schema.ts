@@ -270,9 +270,18 @@ export const attempts = pgTable('attempts', {
   feedback: text('feedback'),
   /** Set on a user's first whole section of each skill sat during a live mock: it counts there. */
   liveMockId: uuid('live_mock_id').references(() => liveMocks.id, { onDelete: 'set null' }),
+  /** What the exam page saw while it was sat (away from the page, full screen left, pasting): see integrity.ts. */
+  integrity: jsonb('integrity'),
+  /** Why it looks wrong (AWAY, PASTE, FAST, PARALLEL, DEVICES); null when nothing did. */
+  integrityFlags: text('integrity_flags').array(),
+  /** FLAGGED (to look at) | CLEARED | WARNED | DISQUALIFIED (off a live mock's board); null: nothing to look at. */
+  integrityStatus: text('integrity_status'),
+  integrityNote: text('integrity_note'),
+  integrityReviewedAt: timestamp('integrity_reviewed_at', { withTimezone: true }),
+  integrityReviewedById: uuid('integrity_reviewed_by_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: created(),
   updatedAt: updated()
-}, t => [
+}, t => [index('attempts_integrity_idx').on(t.integrityStatus, t.submittedAt),
   index('attempts_user_idx').on(t.userId, t.submittedAt), index('attempts_status_idx').on(t.status), index('attempts_submitted_idx').on(t.submittedAt),
   uniqueIndex('attempts_live_mock_uq').on(t.liveMockId, t.userId, t.skill).where(sql`${t.liveMockId} is not null`)
 ])
@@ -293,9 +302,13 @@ export const essays = pgTable('essays', {
   text: text('text').notNull().default(''),
   wordCount: integer('word_count').notNull().default(0),
   feedback: text('feedback'),
+  /** When the writer chose to show it, unnamed, as a sample on the task's public page; null: not shown. */
+  sharedAt: timestamp('shared_at', { withTimezone: true }),
+  /** When an admin took it off the public page (it stays the writer's). */
+  hiddenAt: timestamp('hidden_at', { withTimezone: true }),
   createdAt: created(),
   updatedAt: updated()
-}, t => [uniqueIndex('essays_attempt_task_uq').on(t.attemptId, t.taskId)])
+}, t => [uniqueIndex('essays_attempt_task_uq').on(t.attemptId, t.taskId), index('essays_shared_idx').on(t.taskId, t.sharedAt)])
 
 /**
  * One recorded answer: Part 1.1 and 1.2 are answered question by question (`position` is the

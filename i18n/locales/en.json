@@ -49,7 +49,8 @@
     "staffOverview": "Overview",
     "packs": "Test packs",
     "staffPacks": "Test packs",
-    "exams": "Exams"
+    "exams": "Exams",
+    "staffIntegrity": "Integrity"
   },
   "pub": {
     "how": "How it works",
@@ -61,7 +62,10 @@
     "footerAbout": "IELTS and Multilevel mock tests, marked instantly: an IELTS band or a Multilevel score out of 75, with your level.",
     "practise": "Practise",
     "allTests": "All tests",
-    "contact": "Contact us"
+    "contact": "Contact us",
+    "listeningAnswers": "Listening answers",
+    "readingAnswers": "Reading answers",
+    "writingSamples": "Writing samples"
   },
   "home": {
     "seoTitle": "IELTS and Multilevel mock tests online",
@@ -451,7 +455,11 @@
     "pauses": "{n} pause | {n} pauses",
     "fillers": "{n} filler | {n} fillers",
     "upgrades": "Better words",
-    "guideIelts": "An estimate on the IELTS band descriptors. Bands 6.5–7 are what most universities ask for."
+    "guideIelts": "An estimate on the IELTS band descriptors. Bands 6.5–7 are what most universities ask for.",
+    "modelAnswer": "Model answer (C1)",
+    "modelAnswerIelts": "Model answer (band 8–9)",
+    "listen": "Listen",
+    "stopListening": "Stop"
   },
   "result": {
     "level": {
@@ -1226,5 +1234,56 @@
     "overallFeedback": "Overall feedback",
     "showKey": "Show correct answers",
     "review": "Review"
+  },
+  "answers": {
+    "allExams": "All exams",
+    "allTasks": "All tasks",
+    "countParts": "{n} part | {n} parts",
+    "countTasks": "{n} task | {n} tasks",
+    "answersFor": "{n} answer | {n} answers",
+    "samples": "{n} sample | {n} samples",
+    "none": "Nothing here yet.",
+    "notFound": "This page was not found",
+    "listeningTitle": "Listening answers with explanations",
+    "listeningLead": "IELTS and Multilevel Listening parts with every answer, why it is right and the words in the recording it comes from. Practise each part in the exam interface.",
+    "readingTitle": "Reading answers with explanations",
+    "readingLead": "IELTS and Multilevel Reading passages with every answer, why it is right and the line of the passage it comes from. Practise each passage in the exam interface.",
+    "writingTitle": "Writing tasks with sample answers",
+    "writingLead": "IELTS and Multilevel Writing tasks, with essays candidates chose to share and the feedback on each criterion. Write your own in the exam interface and get it marked.",
+    "partSeoTitle": "{title}: {skill} answers with explanations",
+    "partSeoDescription": "All {n} answers to the {skill} part “{title}”, with explanations and the words each comes from.",
+    "partHeading": "{title}: {skill} answers",
+    "partLead": "Answers to questions {range} ({n} in all), each with why it is right.",
+    "practiseTitle": "Sit it first, then check",
+    "practiseListening": "Hear the recording and answer in the exam interface, timed as on the day.",
+    "practiseReading": "Read the whole passage and answer in the exam interface, timed as on the day.",
+    "practise": "Practise this part",
+    "passageOpening": "The passage opens",
+    "answersHeading": "Answers {range}",
+    "more": "More {skill} answers",
+    "disclaimer": "Mockmee is not affiliated with, endorsed by or connected to IELTS, the British Council, IDP or Cambridge.",
+    "taskSeoTitle": "{title}: {task} question and sample answer",
+    "taskRubric": "Spend about {minutes} minutes on this task. Write at least {words} words.",
+    "chartAlt": "The chart for “{title}”",
+    "writeIt": "Write it in the exam interface",
+    "samplesHeading": "Sample answers",
+    "samplesLead": "Written by Mockmee candidates in the exam interface and shared unnamed and unedited, with the AI marks they got.",
+    "noSamples": "No samples yet. Write yours, get it marked, and share it to be the first.",
+    "bandMark": "Band {band}",
+    "wordsN": "{n} words",
+    "feedback": "Feedback",
+    "examinerSaid": "The examiner:",
+    "hideSample": "Hide",
+    "sampleHidden": "Taken off the page",
+    "moreTasks": "More {task} questions",
+    "shareLabel": "Show this essay as a sample",
+    "shareHelp": "Unnamed and unedited, with its marks, on the task's public page. You can stop at any time.",
+    "shared": "Shown as a sample",
+    "unshared": "No longer shown",
+    "sampleHiddenByAdmin": "An admin took this sample off the public page."
+  },
+  "integrity": {
+    "noticedTitle": "You left the test page",
+    "noticedText": "Leaving the page during a test is noted, and a test with a lot of it is looked at by our team."
   }
 }

@@ -194,7 +194,11 @@ const PartAssessment = z.object({
   pronunciation: Level.describe('From the recognition evidence only, see the rules'),
   taskAchievement: Level.describe('Relevance, development with reasons and examples, every prompt covered'),
   comment: z.string().describe('Two to four sentences to the candidate ("you"): what worked and what held the part back'),
-  answers: z.array(z.object({ position: z.number(), comment: z.string().describe('One or two sentences on this answer') })),
+  answers: z.array(z.object({
+    position: z.number(),
+    comment: z.string().describe('One or two sentences on this answer'),
+    modelAnswer: z.string().describe('A model answer to the same question at the top level, in English, as it would be spoken; see the rules')
+  })),
   corrections: z.array(z.object({
     original: z.string().describe('The candidate\'s exact words from the transcript'),
     corrected: z.string(),
@@ -216,6 +220,9 @@ const Summary = z.object({
   priorities: z.array(z.string()).describe('Up to 4 concrete next steps')
 })
 
+/** What a model answer is: the same question answered at the top, as a learner could say it in the time. */
+const MODEL_ANSWER_RULE = (level: string) => `- modelAnswer: for every answer, how a candidate at ${level} would answer the same question (or the card, or the statement), as natural speech: about as long as the time allowed lets a fluent speaker talk (a short question two to four sentences; a long turn the full minute or two), developed with a reason and an example, with the linking and less common words the level shows, and no headings or lists. Build on the candidate's own ideas where they work. Always in English, whatever language the comments are in.`
+
 const SYSTEM = `You are a certified examiner for Uzbekistan's national Multilevel (CEFR-based) English speaking exam. You receive speech-recognition transcripts of a candidate's answers for ONE part of the exam, with measurements of how each answer was spoken. Assess strictly and fairly.
 
 Give a CEFR sub-level for each criterion, exactly one of: ${LEVELS.join(', ')}.
@@ -232,7 +239,8 @@ Rules:
 - corrections: quote the candidate's actual words in "original"; the mistakes that matter most first.
 - upgrades: plain words the candidate used and higher-level alternatives.
 - Address the candidate as "you", in clear, simple language, specific and practical.
-- answers: one short comment for every answer you receive, with its position.`
+- answers: one short comment for every answer you receive, with its position.
+${MODEL_ANSWER_RULE('C1 to C2')}`
 
 const IELTS_SYSTEM = `You are a certified IELTS Speaking examiner. You receive speech-recognition transcripts of a candidate's answers for ONE part of the Speaking test, with measurements of how each answer was spoken. Assess strictly and fairly against the public IELTS Speaking band descriptors.
 
@@ -250,7 +258,8 @@ Rules:
 - corrections: quote the candidate's actual words in "original"; the mistakes that matter most first.
 - upgrades: plain words the candidate used and higher-level alternatives.
 - Address the candidate as "you", in clear, simple language, specific and practical.
-- answers: one short comment for every answer you receive, with its position.`
+- answers: one short comment for every answer you receive, with its position.
+${MODEL_ANSWER_RULE('band 8 to 9')}`
 
 function partMessage(p: AiSpeakingPart) {
   return [
@@ -346,7 +355,8 @@ export async function assessSpeaking(input: unknown, userId: string, locale: str
         answers: p.answers.map(a => ({
           position: a.position, question: a.question, allowedSeconds: a.allowedSeconds, durationSeconds: a.durationSeconds,
           transcript: a.transcript ?? '', metrics: a.metrics ?? null,
-          comment: r?.answers.find(x => x.position === a.position)?.comment ?? ''
+          comment: r?.answers.find(x => x.position === a.position)?.comment ?? '',
+          modelAnswer: r?.answers.find(x => x.position === a.position)?.modelAnswer ?? ''
         }))
       }
     }
