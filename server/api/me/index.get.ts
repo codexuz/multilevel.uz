@@ -38,7 +38,7 @@ export default defineEventHandler(async (event) => {
     centres,
     /** A walk-in's account for a mock session: it sits at its seat and nowhere else. */
     mockOnly: u.mockOnly,
-    /** May run mock sessions: Premium (a teacher), or staff of a centre whose licence runs. */
-    runsMocks: !u.mockOnly && access.premium
+    /** May run mock sessions: teachers, centre owners and admins. */
+    runsMocks: !u.mockOnly && (u.role === 'teacher' || u.role === 'center_owner' || u.role === 'admin')
   }
 })

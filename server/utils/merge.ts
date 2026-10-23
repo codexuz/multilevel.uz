@@ -37,7 +37,7 @@ export function accountToMerge(token: string, keepId: string, now = Date.now()):
 }
 
 type UserRow = typeof users.$inferSelect
-const RANK: Record<string, number> = { student: 0, examiner: 1, admin: 2 }
+const RANK: Record<string, number> = { student: 0, teacher: 1, center_owner: 2, admin: 3 }
 
 /** Why two accounts cannot be merged (each would bring a different Google or Telegram), or null. */
 export function mergeConflict(keep: UserRow, other: UserRow): string | null {

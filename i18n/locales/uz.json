@@ -1306,12 +1306,11 @@
     "title": "Mock sessiyalar",
     "lead": "O‘z kompyuterlaringizda haqiqiy imtihondek mock o‘tkazing: nomzodlarni ro‘yxatga oling, har biriga joy kodi bering, bo‘limlarni xona uchun oching va natijalarni QR kodli hisobot sifatida e’lon qiling.",
     "new": "Yangi sessiya",
-    "own": "O‘zimniki (Premium)",
+    "own": "O‘zimniki",
     "credits": "{n} ta mock krediti | {n} ta mock krediti",
     "buyCredits": "Mock kreditlarini sotib olish",
-    "notYet": "Mock sessiyalar o‘quv markazlari va Premium o‘qituvchilar uchun",
-    "notYetText": "Premium bilan o‘z sessiyalaringizni o‘tkazasiz; markaz egasi va o‘qituvchilari litsenziya amal qilguncha markaz sessiyalarini o‘tkazadi.",
-    "getPremium": "Premium olish",
+    "notYet": "Mock sessiyalar o‘qituvchilar va o‘quv markazlari uchun",
+    "notYetText": "O‘qituvchi hisobi o‘z sessiyalarini o‘tkazadi; markaz egasi va o‘qituvchilari litsenziya amal qilguncha markaz sessiyalarini o‘tkazadi. Hisobingizni o‘qituvchi qilishimizni so‘rang.",
     "none": "Hozircha sessiya yo‘q",
     "noneText": "Yarating: test, vaqt va xonani tanlang.",
     "defaultTitle": "Shanba mocki",
@@ -1405,7 +1404,8 @@
     "delete": "O‘chirish",
     "deleteTitle": "«{title}» o‘chirilsinmi?",
     "deleteText": "Hali hech kim boshlamagan: sessiya nomzodlari bilan birga o‘chiriladi.",
-    "deleteRefund": "Hali hech kim boshlamagan: sessiya nomzodlari bilan birga o‘chiriladi; ro‘yxatga olishga sarflangan {n} ta kredit qaytariladi. | Hali hech kim boshlamagan: sessiya nomzodlari bilan birga o‘chiriladi; ro‘yxatga olishga sarflangan {n} ta kredit qaytariladi."
+    "deleteRefund": "Hali hech kim boshlamagan: sessiya nomzodlari bilan birga o‘chiriladi; ro‘yxatga olishga sarflangan {n} ta kredit qaytariladi. | Hali hech kim boshlamagan: sessiya nomzodlari bilan birga o‘chiriladi; ro‘yxatga olishga sarflangan {n} ta kredit qaytariladi.",
+    "askUs": "Telegramda so‘rash"
   },
   "report": {
     "title": "{name}: mock natijasi",

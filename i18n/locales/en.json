@@ -1306,12 +1306,11 @@
     "title": "Mock sessions",
     "lead": "Run a mock on your own computers, like the real test: check candidates in, give each a seat code, open the sections for the room, and announce the results as a report with a QR code.",
     "new": "New session",
-    "own": "My own (Premium)",
+    "own": "My own",
     "credits": "{n} mock credit | {n} mock credits",
     "buyCredits": "Buy mock credits",
-    "notYet": "Mock sessions are for learning centres and Premium teachers",
-    "notYetText": "With Premium you can run your own sessions; a centre's owner and teachers run the centre's while its licence runs.",
-    "getPremium": "Get Premium",
+    "notYet": "Mock sessions are for teachers and learning centres",
+    "notYetText": "A teacher's account runs its own sessions; a centre's owner and teachers run the centre's while its licence runs. Ask us to make your account a teacher's.",
     "none": "No sessions yet",
     "noneText": "Make one: pick a test, a time and a room.",
     "defaultTitle": "Saturday mock",
@@ -1405,7 +1404,8 @@
     "delete": "Delete",
     "deleteTitle": "Delete “{title}”?",
     "deleteText": "Nobody has begun it, so it goes with its candidates.",
-    "deleteRefund": "Nobody has begun it, so it goes with its candidates; the {n} credit spent on check-in comes back. | Nobody has begun it, so it goes with its candidates; the {n} credits spent on check-ins come back."
+    "deleteRefund": "Nobody has begun it, so it goes with its candidates; the {n} credit spent on check-in comes back. | Nobody has begun it, so it goes with its candidates; the {n} credits spent on check-ins come back.",
+    "askUs": "Ask on Telegram"
   },
   "report": {
     "title": "{name}: mock result",

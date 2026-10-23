@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { users } from '../../../../database/schema'
 
-const ROLES = ['student', 'examiner', 'admin'] as const
+const ROLES = ['student', 'teacher', 'center_owner', 'admin'] as const
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)

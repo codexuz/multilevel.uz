@@ -59,7 +59,7 @@ export default defineEventHandler(async (event) => {
   if (!filePart) throw createError({ statusCode: 400, message: 'file is required' })
   if (!purpose || !PREFIX[purpose]) throw createError({ statusCode: 400, message: 'Invalid purpose' })
 
-  if (STAFF_PURPOSES.includes(purpose) && user.role !== 'admin' && user.role !== 'examiner') {
+  if (STAFF_PURPOSES.includes(purpose) && user.role !== 'admin') {
     throw createError({ statusCode: 403, message: 'Forbidden' })
   }
 

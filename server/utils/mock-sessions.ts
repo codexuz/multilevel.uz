@@ -4,8 +4,8 @@ import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, or, sql } from 'dri
 import { aiReviews, attempts, centreMembers, centres, mockCandidates, mockCreditTransactions, mockSessions, sections, sessions, tests, users } from '../database/schema'
 
 /**
- * Mock sessions: a learning centre (its owner or a teacher, while its licence runs) or a Premium
- * teacher runs a mock on its own computers, as erp-lms's IELTS mock centre does.
+ * Mock sessions: a learning centre (its owner or a teacher, while its licence runs) or a teacher
+ * runs a mock on its own computers, as erp-lms's IELTS mock centre does.
  *
  * - The session: a test, a time, a room; walk-ins pay at the desk; results can be held.
  * - Candidates: the centre's students, or walk-ins registered with their name, phone and ID number
@@ -34,6 +34,9 @@ const conflict = (message: string) => createError({ statusCode: 409, message })
 
 // ---------- who may run sessions ----------
 
+/** The roles that run mock sessions. */
+export const MOCK_ROLES = ['teacher', 'center_owner', 'admin']
+
 export interface MockScope { kind: 'CENTRE' | 'TEACHER', centreId: string | null, name: string, credits: number }
 
 /** Mock credits left: a centre's, or a teacher's own. */
@@ -43,20 +46,23 @@ export async function creditBalance(owner: { centreId: string | null, userId?: s
   return row?.n ?? 0
 }
 
-/** Where this user can run sessions: each centre they own or teach at (licence running), and their own as a Premium teacher. */
+/**
+ * Where this user can run sessions, by their role: a teacher or centre owner, each centre they own or
+ * teach at (licence running); a teacher (or an admin), their own as well. Students run none.
+ */
 export async function scopesOf(user: { id: string, role: string }): Promise<MockScope[]> {
+  if (!MOCK_ROLES.includes(user.role)) return []
   const db = useDb()
-  const [rows, access, [me]] = await Promise.all([
+  const [rows, [me]] = await Promise.all([
     db.select({ id: centres.id, name: centres.name, active: centres.active, licensedUntil: centres.licensedUntil }).from(centreMembers)
       .innerJoin(centres, eq(centres.id, centreMembers.centreId))
       .where(and(eq(centreMembers.userId, user.id), inArray(centreMembers.role, ['OWNER', 'TEACHER']))),
-    accessOf(user),
     db.select({ mockOnly: users.mockOnly }).from(users).where(eq(users.id, user.id)).limit(1)
   ])
   if (me?.mockOnly) return []
   const out: MockScope[] = []
   for (const c of rows.filter(r => licenceOpen(r))) out.push({ kind: 'CENTRE', centreId: c.id, name: c.name, credits: await creditBalance({ centreId: c.id }) })
-  if (access.premium) out.push({ kind: 'TEACHER', centreId: null, name: 'Own', credits: await creditBalance({ centreId: null, userId: user.id }) })
+  if (user.role === 'teacher' || user.role === 'admin') out.push({ kind: 'TEACHER', centreId: null, name: 'Own', credits: await creditBalance({ centreId: null, userId: user.id }) })
   return out
 }
 
@@ -142,12 +148,12 @@ async function sessionValues(body: SessionBody, partial: boolean) {
   return out
 }
 
-/** A new session, for a centre this user runs sessions for, or their own as a Premium teacher. */
+/** A new session, for a centre this user runs sessions for, or their own as a teacher. */
 export async function createSession(user: { id: string, role: string }, body: SessionBody) {
   const scopes = await scopesOf(user)
   const centreId = body.centreId || null
   if (!scopes.some(s => s.centreId === centreId)) {
-    throw createError({ statusCode: 403, message: centreId ? 'Mock sessions are for centres whose licence runs' : 'Mock sessions are for Premium teachers and learning centres' })
+    throw createError({ statusCode: 403, message: centreId ? 'Mock sessions are for centres whose licence runs' : 'Mock sessions are for teachers and learning centres' })
   }
   // A session needs credits to check anyone in: none left, none made.
   if (scopes.find(s => s.centreId === centreId)!.credits < 1) {

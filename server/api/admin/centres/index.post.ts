@@ -37,6 +37,7 @@ export default defineEventHandler(async (event) => {
       ...(request ? { city: request.city, phone: request.phone, telegram: request.telegram } : {})
     }).returning()
     await tx.insert(centreMembers).values({ centreId: c!.id, userId: owner.id, role: 'OWNER' })
+    await raiseRole(tx, owner.id, 'center_owner')
     if (request) {
       await tx.update(centreRequests).set({ status: 'APPROVED', centreId: c!.id, reviewedById: admin.id, reviewedAt: new Date() })
         .where(eq(centreRequests.id, request.id))

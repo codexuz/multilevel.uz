@@ -44,10 +44,47 @@ const usersList = computed(() => data.value?.items ?? [])
 const total = computed(() => data.value?.total ?? 0)
 const pageSize = computed(() => data.value?.pageSize ?? 20)
 
-const roles: UserRole[] = ['student', 'examiner', 'admin']
+const ROLE_LABEL: Record<UserRole, string> = { student: 'Student', teacher: 'Teacher', center_owner: 'Centre owner', admin: 'Admin' }
+const roles = (Object.keys(ROLE_LABEL) as UserRole[]).map(value => ({ label: ROLE_LABEL[value], value }))
 
 function fail(e: unknown) {
   toast.add({ title: (e as { data?: { message?: string } })?.data?.message ?? 'Failed', color: 'error' })
+}
+
+// ─── Many at once: pick users on this page, then one action for them all (never yourself) ───
+const selected = ref<string[]>([])
+watch([page, q], () => (selected.value = []))
+const selectable = computed(() => (usersList.value ?? []).filter(u => u.id !== me.value?.id).map(u => u.id))
+const allPicked = computed(() => selectable.value.length > 0 && selectable.value.every(id => selected.value.includes(id)))
+function pickAll(on: boolean) {
+  selected.value = on ? [...selectable.value] : []
+}
+function pick(id: string, on: boolean) {
+  selected.value = on ? [...new Set([...selected.value, id])] : selected.value.filter(x => x !== id)
+}
+const bulkRole = ref<UserRole | undefined>(undefined)
+const bulkBusy = ref(false)
+async function bulk(action: 'ROLE' | 'BAN' | 'UNBAN' | 'DELETE', role?: UserRole) {
+  const n = selected.value.length
+  if (!n) return
+  if ((action === 'DELETE' || action === 'BAN') && !await confirm({
+    title: action === 'DELETE' ? `Delete ${n} user${n === 1 ? '' : 's'}?` : `Ban ${n} user${n === 1 ? '' : 's'}?`,
+    description: action === 'DELETE' ? 'This permanently removes the accounts and all their attempts and results. This cannot be undone.' : 'They are signed out everywhere and cannot sign in until unbanned.',
+    confirmLabel: action === 'DELETE' ? 'Delete' : 'Ban',
+    color: 'error'
+  })) return
+  bulkBusy.value = true
+  try {
+    const res = await $fetch<{ updated: number }>('/api/admin/users/bulk', { method: 'POST', body: { ids: selected.value, action, role } })
+    toast.add({ title: `${res.updated} user${res.updated === 1 ? '' : 's'} ${action === 'ROLE' ? `set to ${ROLE_LABEL[role!]}` : action === 'BAN' ? 'banned' : action === 'UNBAN' ? 'unbanned' : 'deleted'}`, color: 'success' })
+    selected.value = []
+    bulkRole.value = undefined
+    await refresh()
+  } catch (e) {
+    fail(e)
+  } finally {
+    bulkBusy.value = false
+  }
 }
 
 async function setRole(p: AdminUser, role: UserRole) {
@@ -180,14 +217,81 @@ async function endPremium(p: AdminUser) {
       </UDashboardToolbar>
     </template>
 
-    <UCard :ui="{ body: 'p-0 sm:p-0' }">
+    <UCard :ui="{ body: 'p-0 sm:p-0', header: 'px-4 py-2.5 sm:px-4' }">
+      <!-- Bulk: what is picked, and one action for them all -->
+      <template #header>
+        <div
+          class="flex flex-wrap items-center gap-2 min-h-8"
+          data-testid="bulk-bar"
+        >
+          <UCheckbox
+            :model-value="allPicked"
+            :indeterminate="selected.length > 0 && !allPicked"
+            :label="selected.length ? `${selected.length} selected` : 'Select all on this page'"
+            @update:model-value="v => pickAll(!!v)"
+          />
+          <template v-if="selected.length">
+            <USelect
+              v-model="bulkRole"
+              :items="roles"
+              placeholder="Set role…"
+              size="sm"
+              class="w-36 ms-2"
+              @update:model-value="v => v && bulk('ROLE', v as UserRole)"
+            />
+            <UButton
+              label="Ban"
+              icon="i-lucide-ban"
+              size="sm"
+              color="neutral"
+              variant="outline"
+              :loading="bulkBusy"
+              @click="bulk('BAN')"
+            />
+            <UButton
+              label="Unban"
+              icon="i-lucide-circle-check"
+              size="sm"
+              color="neutral"
+              variant="outline"
+              :loading="bulkBusy"
+              @click="bulk('UNBAN')"
+            />
+            <UButton
+              label="Delete"
+              icon="i-lucide-trash-2"
+              size="sm"
+              color="error"
+              variant="soft"
+              :loading="bulkBusy"
+              data-testid="bulk-delete"
+              @click="bulk('DELETE')"
+            />
+            <UButton
+              label="Clear"
+              size="sm"
+              color="neutral"
+              variant="ghost"
+              @click="selected = []"
+            />
+          </template>
+        </div>
+      </template>
       <div class="divide-y divide-default">
         <div
           v-for="p in usersList"
           :key="p.id"
           class="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:gap-4"
+          :class="selected.includes(p.id) ? 'bg-primary/5' : ''"
+          data-testid="user-row"
         >
           <div class="flex items-center gap-3 min-w-0 lg:flex-1">
+            <UCheckbox
+              :model-value="selected.includes(p.id)"
+              :disabled="p.id === me?.id"
+              :aria-label="`Select ${p.name || accountHandle(p)}`"
+              @update:model-value="v => pick(p.id, !!v)"
+            />
             <UAvatar
               :src="p.avatarUrl || undefined"
               :alt="p.name || 'User'"
@@ -248,7 +352,7 @@ async function endPremium(p: AdminUser) {
             <USelect
               :model-value="p.role"
               :items="roles"
-              class="w-32"
+              class="w-36"
               @update:model-value="setRole(p, $event as UserRole)"
             />
             <UButton

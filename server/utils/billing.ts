@@ -14,7 +14,8 @@ import { hasCentreSeat } from './centres'
 type Db = ReturnType<typeof useDb>
 type Tx = Parameters<Parameters<Db['transaction']>[0]>[0]
 
-export const isStaffRole = (role?: string | null) => role === 'admin' || role === 'examiner'
+/** Mockmee's own staff: admins (who also mark Writing and Speaking and build tests). */
+export const isStaffRole = (role?: string | null) => role === 'admin'
 
 export interface Access {
   premium: boolean

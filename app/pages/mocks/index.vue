@@ -121,7 +121,7 @@ async function remove(r: Row) {
         icon="i-lucide-info"
         :title="t('mocks.notYet')"
         :description="t('mocks.notYetText')"
-        :actions="[{ label: t('mocks.getPremium'), to: '/pricing', color: 'primary' }]"
+        :actions="[{ label: t('mocks.askUs'), href: useRuntimeConfig().public.salesTelegram as string, target: '_blank', icon: 'i-simple-icons-telegram', color: 'primary' }]"
       />
 
       <!-- No credits anywhere: no session can be made until some are bought -->
