@@ -125,23 +125,11 @@ const summary = computed(() => props.parts.map((p) => {
       @time-up="submit"
     />
 
-    <IxPartHeader
-      v-if="!chrome.submissionOpen.value"
-      :label="session.part.value.partLabel"
-      :instruction="session.part.value.instruction"
-    />
+    <IxPartHeader v-if="!chrome.submissionOpen.value" :label="session.part.value.partLabel" :instruction="session.part.value.instruction" />
 
     <div class="ix-body">
-      <IxSubmissionPage
-        v-if="chrome.submissionOpen.value"
-        :parts="summary"
-        :last="last"
-        @submit="submit"
-      />
-      <div
-        v-else
-        class="ix-single"
-      >
+      <IxSubmissionPage v-if="chrome.submissionOpen.value" :parts="summary" :last="last" @submit="submit" />
+      <div v-else class="ix-single">
         <IxHighlightablePanel>
           <IxQuestionPanel
             :questions="session.part.value.questions"
@@ -154,11 +142,7 @@ const summary = computed(() => props.parts.map((p) => {
           />
         </IxHighlightablePanel>
       </div>
-      <IxStartCover
-        v-if="showCover"
-        listening
-        @go="begin"
-      />
+      <IxStartCover v-if="showCover" listening @go="begin" />
     </div>
 
     <IxPartNavigator
