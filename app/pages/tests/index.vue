@@ -19,9 +19,13 @@ const { t } = useI18n()
 const ALL = 'ALL'
 const str = (v: unknown, fallback = '') => (typeof v === 'string' ? v : fallback)
 // A signed-in user sees their own exam only; a guest's ?exam= (from the home page, or a shared link) picks one.
-const { loggedIn } = useMe()
-const { exam, setExam } = useExam()
+// An admin looks at either exam's catalogue (?exam=, or the switch here) without changing their own.
+const { loggedIn, isAdmin } = useMe()
+const { exam: ownExam, setExam } = useExam()
+const adminExam = ref<Exam | null>(isAdmin.value && isExam(route.query.exam) ? route.query.exam : null)
+const exam = computed<Exam>(() => adminExam.value ?? ownExam.value)
 if (!loggedIn.value && isExam(route.query.exam) && route.query.exam !== exam.value) await setExam(route.query.exam)
+const examItems = [{ label: 'IELTS', value: 'IELTS' }, { label: 'Multilevel', value: 'MULTILEVEL' }]
 const ieltsModule = ref(str(route.query.module, ALL))
 
 type View = 'tests' | 'parts' | 'packs'
@@ -68,6 +72,7 @@ watch(() => route.query, (rq) => {
   if (category.value !== str(rq.category, ALL)) category.value = str(rq.category, ALL)
   if (ieltsModule.value !== str(rq.module, ALL)) ieltsModule.value = str(rq.module, ALL)
   if (!loggedIn.value && isExam(rq.exam) && rq.exam !== exam.value) setExam(rq.exam)
+  if (isAdmin.value && isExam(rq.exam) && rq.exam !== exam.value) adminExam.value = rq.exam
 })
 watch([view, q, skill, part, type, full, access, category, exam, ieltsModule], () => (page.value = 1))
 // Another exam has other categories.
@@ -235,6 +240,15 @@ useSeoMeta({
             :placeholder="view === 'parts' ? t('tests.searchParts') : t('tests.searchTests')"
             :aria-label="t('tests.search')"
             class="col-span-2 lg:w-72"
+          />
+          <USelect
+            v-if="isAdmin"
+            :model-value="exam"
+            :items="examItems"
+            :aria-label="t('exam.exam')"
+            class="lg:w-36"
+            data-testid="catalogue-exam"
+            @update:model-value="v => (adminExam = v as Exam)"
           />
           <USelect
             v-if="exam === 'IELTS'"

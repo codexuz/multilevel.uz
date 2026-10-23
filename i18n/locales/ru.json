@@ -392,7 +392,8 @@
     "academic": "IELTS Academic",
     "general": "IELTS General Training",
     "allModules": "Academic и General",
-    "module": "Модуль IELTS"
+    "module": "Модуль IELTS",
+    "exam": "Экзамен"
   },
   "sit": {
     "test": "Тест",
