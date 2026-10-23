@@ -101,7 +101,7 @@ const STATE_COLOR = { archived: 'neutral', closed: 'neutral', running: 'success'
           icon="i-simple-icons-telegram"
           color="neutral"
           variant="outline"
-          class="self-center"
+          class="rounded-xl px-4 py-3"
         />
       </div>
 
