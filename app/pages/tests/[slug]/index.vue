@@ -248,7 +248,7 @@ useHead({
             >
               <span class="min-w-0">{{ partLine(p) }}</span>
               <NuxtLink
-                v-if="!locked && (p.partNumber || p.taskNumber)"
+                v-if="(!locked || canOpen(t, p.itemId)) && (p.partNumber || p.taskNumber)"
                 :to="sitTo(`/tests/${t.slug}/${String(s.skill).toLowerCase()}?part=${p.partNumber ?? p.taskNumber}`)"
                 class="shrink-0 text-xs font-semibold text-primary hover:underline"
                 :aria-label="tr('test.practiseAlone', { part: partLine(p) })"

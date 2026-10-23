@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
   // Only a signed-in candidate sits a test (guests may look at tests, not take them).
   const user = await requireUser(event)
   const access = await accessOf(user)
-  if (!(await canOpenTest(user, test, access.premium))) paymentRequired('PREMIUM_REQUIRED', 'This test is part of Premium')
+  if (!(await canOpenTest(user, test, access.premium, partNumber ? section.items[0]?.id : null))) paymentRequired('PREMIUM_REQUIRED', 'This test is part of Premium')
 
   // Only this section's questions and tasks count; anything else in the body is ignored.
   const ids = itemIdsOf(section)

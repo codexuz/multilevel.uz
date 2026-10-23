@@ -37,6 +37,8 @@ export interface Me {
   unlockCost: number
   /** Premium tests opened with credits. */
   unlockedTests: string[]
+  /** Single parts (section items) bought in packs. */
+  unlockedParts?: string[]
   /** Learning centres I belong to, and my role in each. */
   centres?: { id: string, name: string, role: 'OWNER' | 'TEACHER' | 'STUDENT' }[]
 }

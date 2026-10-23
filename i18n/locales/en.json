@@ -1176,11 +1176,11 @@
     "preview": "See",
     "yours": "This pack is yours",
     "yoursText": "Every test in “{title}” is open for good.",
-    "ownedText": "Every test in it is open for good. Sit them in any order, as many times as you like.",
-    "start": "Start the first test",
+    "ownedText": "Everything in it is open for good. Sit it in any order, as many times as you like.",
+    "start": "Start",
     "perTest": "{price} a test",
     "oneOff": "one payment",
-    "benefit1": "Every test in the pack, yours for good",
+    "benefit1": "Everything in the pack, yours for good",
     "benefit2": "Listening and Reading marked instantly, with the key",
     "benefit3": "Works with or without Premium",
     "benefit4": "Writing and Speaking with AI feedback",
@@ -1196,7 +1196,10 @@
     "inPackText": "Buy the pack for {price} and this test, with the others in it, is yours for good.",
     "seePack": "See the pack",
     "seoTitle": "IELTS and Multilevel test packs",
-    "seoDescription": "Sets of IELTS and Multilevel mock tests, bought once and kept for good."
+    "seoDescription": "Sets of IELTS and Multilevel mock tests, bought once and kept for good.",
+    "parts": "{n} part | {n} parts",
+    "partsInside": "Single parts",
+    "practise": "Practise"
   },
   "ixReview": {
     "rubricListening": "Questions {from}–{to}. You got {correct} of {total}.",

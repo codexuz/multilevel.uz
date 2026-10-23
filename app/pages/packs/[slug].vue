@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Pack } from '~/utils/billing'
+import type { Pack, PackPart } from '~/utils/billing'
 
 definePageMeta({ guestLayout: true })
 
 /**
- * One test pack: what is in it, the price, and Buy. Paid through Click when it is set up (a promo
+ * One test pack: what is in it (whole tests, single parts, or both), the price, and Buy. Paid through Click when it is set up (a promo
  * code for every plan works here too); otherwise bought on Telegram, where an admin grants it
  * (Users → Grant). Once bought, its tests are the buyer's for good and the page lists them to sit.
  */
@@ -26,7 +26,11 @@ useSeoMeta({
 const saving = computed(() => (pack.value?.oldPriceUzs && pack.value.oldPriceUzs > pack.value.priceUzs
   ? Math.round((1 - pack.value.priceUzs / pack.value.oldPriceUzs) * 100)
   : 0))
-const perTest = computed(() => (pack.value?.testCount ? Math.round(pack.value.priceUzs / pack.value.testCount / 100) * 100 : null))
+// A price a test only means something when it holds tests alone.
+const perTest = computed(() => (pack.value?.testCount && !pack.value.partCount ? Math.round(pack.value.priceUzs / pack.value.testCount / 100) * 100 : null))
+const contents = computed(() => (pack.value ? packContents(pack.value, t) : ''))
+/** Where a part is sat on its own. */
+const partTo = (p: PackPart) => `/tests/${p.test.slug}/${p.skill.toLowerCase()}?part=${p.number}`
 
 // ─── A promo code, typed here or arriving as ?promo=CODE ───
 const promoInput = ref(typeof route.query.promo === 'string' ? route.query.promo : '')
@@ -104,7 +108,7 @@ const BENEFITS = computed(() => [1, 2, 3, 4].map(n => t(`packs.benefit${n}`)))
               variant="subtle"
             />
             <UBadge
-              :label="t('packs.tests', { n: pack.testCount }, pack.testCount)"
+              :label="contents"
               color="neutral"
               variant="subtle"
             />
@@ -120,7 +124,10 @@ const BENEFITS = computed(() => [1, 2, 3, 4].map(n => t(`packs.benefit${n}`)))
           </p>
         </div>
 
-        <UCard :ui="{ body: 'p-0 sm:p-0' }">
+        <UCard
+          v-if="pack.tests.length"
+          :ui="{ body: 'p-0 sm:p-0' }"
+        >
           <template #header>
             <p class="font-semibold text-highlighted">
               {{ t('packs.inside') }}
@@ -154,6 +161,47 @@ const BENEFITS = computed(() => [1, 2, 3, 4].map(n => t(`packs.benefit${n}`)))
             </li>
           </ul>
         </UCard>
+
+        <UCard
+          v-if="pack.parts.length"
+          :ui="{ body: 'p-0 sm:p-0' }"
+          data-testid="pack-parts"
+        >
+          <template #header>
+            <p class="font-semibold text-highlighted">
+              {{ pack.tests.length ? t('packs.partsInside') : t('packs.inside') }}
+            </p>
+          </template>
+          <ul class="divide-y divide-default">
+            <li
+              v-for="(part, i) in pack.parts"
+              :key="part.id"
+              class="flex items-center gap-3 px-4 py-3"
+            >
+              <img
+                :src="SKILL_ART[part.skill]"
+                alt=""
+                class="size-7 shrink-0"
+              >
+              <div class="min-w-0 flex-1">
+                <p class="font-medium text-highlighted truncate">
+                  {{ packPartLabel(part) }}
+                </p>
+                <p class="text-xs text-muted truncate">
+                  {{ i + 1 }}. {{ part.test.title }}
+                </p>
+              </div>
+              <UButton
+                :to="pack.owned ? partTo(part) : `/tests/${part.test.slug}`"
+                :label="pack.owned ? t('packs.practise') : t('packs.preview')"
+                :icon="pack.owned ? 'i-lucide-play' : undefined"
+                size="sm"
+                :color="pack.owned ? 'primary' : 'neutral'"
+                :variant="pack.owned ? 'solid' : 'ghost'"
+              />
+            </li>
+          </ul>
+        </UCard>
       </div>
 
       <UCard class="lg:sticky lg:top-6">
@@ -169,8 +217,8 @@ const BENEFITS = computed(() => [1, 2, 3, 4].map(n => t(`packs.benefit${n}`)))
               {{ t('packs.ownedText') }}
             </p>
             <UButton
-              v-if="pack.tests[0]"
-              :to="`/tests/${pack.tests[0].slug}`"
+              v-if="pack.tests[0] || pack.parts[0]"
+              :to="pack.tests[0] ? `/tests/${pack.tests[0].slug}` : partTo(pack.parts[0]!)"
               :label="t('packs.start')"
               icon="i-lucide-play"
               block

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import type { Pack } from '~/utils/billing'
+import type { Pack, PackPart } from '~/utils/billing'
 
 /**
- * Test packs: sets of tests sold once, each test the buyer's for good. Pick the exam, the tests in
- * order (drafts can wait in a pack; buyers see the published ones), the price and an old price to
- * strike through. A pack someone bought is taken off sale rather than deleted.
+ * Test packs: sets of tests, single parts, or both, sold once, each the buyer's for good. Pick the
+ * exam, the tests and the parts in order (drafts can wait in a pack; buyers see the published ones),
+ * the price and an old price to strike through. A pack someone bought is taken off sale rather than
+ * deleted.
  */
 definePageMeta({ middleware: 'admin' })
 useSeoMeta({ title: 'Test packs', robots: 'noindex' })
@@ -12,14 +13,14 @@ useSeoMeta({ title: 'Test packs', robots: 'noindex' })
 const toast = useToast()
 const { data: packs, refresh } = await useFetch<Pack[]>('/api/admin/packs', { default: () => [] })
 
-interface Form { id: string, title: string, slug: string, description: string, exam: Exam, priceUzs: number, oldPriceUzs: number | null, featured: boolean, active: boolean, position: number, testIds: string[] }
-const empty = (): Form => ({ id: '', title: '', slug: '', description: '', exam: 'IELTS', priceUzs: 99000, oldPriceUzs: null, featured: false, active: true, position: packs.value.length + 1, testIds: [] })
+interface Form { id: string, title: string, slug: string, description: string, exam: Exam, priceUzs: number, oldPriceUzs: number | null, featured: boolean, active: boolean, position: number, testIds: string[], partIds: string[] }
+const empty = (): Form => ({ id: '', title: '', slug: '', description: '', exam: 'IELTS', priceUzs: 99000, oldPriceUzs: null, featured: false, active: true, position: packs.value.length + 1, testIds: [], partIds: [] })
 const form = ref<Form | null>(null)
 const saving = ref(false)
 
 function edit(p?: Pack) {
   form.value = p
-    ? { id: p.id, title: p.title, slug: p.slug, description: p.description ?? '', exam: p.exam, priceUzs: p.priceUzs, oldPriceUzs: p.oldPriceUzs, featured: p.featured, active: p.active, position: p.position, testIds: p.tests.map(t => t.id) }
+    ? { id: p.id, title: p.title, slug: p.slug, description: p.description ?? '', exam: p.exam, priceUzs: p.priceUzs, oldPriceUzs: p.oldPriceUzs, featured: p.featured, active: p.active, position: p.position, testIds: p.tests.map(t => t.id), partIds: p.parts.map(i => i.id) }
     : empty()
 }
 
@@ -29,12 +30,28 @@ const testItems = computed(() => (testData.value?.items ?? [])
   .filter(t => examOfModule(t.module) === form.value?.exam)
   .map(t => ({ label: `${t.title}${t.status === 'PUBLISHED' ? '' : ` (${t.status.toLowerCase()})`}`, value: t.id, description: examLabel(examOfModule(t.module), t.module) })))
 const titleOf = (id: string) => testData.value?.items.find(t => t.id === id)?.title ?? id
-watch(() => form.value?.exam, (exam, before) => {
-  // Another exam's tests cannot stay.
-  if (form.value && before && exam !== before) form.value.testIds = []
+// The parts that can go in: the pack's exam, newest test first.
+const { data: partData } = await useFetch<PackPart[]>('/api/admin/packs/parts', {
+  query: computed(() => ({ exam: form.value?.exam ?? 'IELTS' })),
+  default: () => []
 })
-function move(i: number, by: number) {
-  const ids = form.value!.testIds
+const partItems = computed(() => partData.value.map(p => ({
+  label: packPartLabel(p),
+  value: p.id,
+  description: `${p.test.title}${p.status === 'PUBLISHED' ? '' : ` (${p.status.toLowerCase()})`}`
+})))
+const partTitleOf = (id: string) => {
+  const p = partData.value.find(x => x.id === id) ?? packs.value.flatMap(pk => pk.parts).find(x => x.id === id)
+  return p ? `${packPartLabel(p)} — ${p.test.title}` : id
+}
+watch(() => form.value?.exam, (exam, before) => {
+  // Another exam's tests and parts cannot stay.
+  if (form.value && before && exam !== before) {
+    form.value.testIds = []
+    form.value.partIds = []
+  }
+})
+function move(ids: string[], i: number, by: number) {
   const j = i + by
   if (j < 0 || j >= ids.length) return
   ;[ids[i], ids[j]] = [ids[j]!, ids[i]!]
@@ -136,8 +153,11 @@ async function remove(p: Pack) {
               (was {{ fmtUzs(p.oldPriceUzs) }})
             </template>
             · {{ p.testCount }} {{ p.testCount === 1 ? 'test' : 'tests' }}
-            <template v-if="p.tests.some(t => t.status !== 'PUBLISHED')">
-              · {{ p.tests.filter(t => t.status !== 'PUBLISHED').length }} not published yet
+            <template v-if="p.partCount">
+              · {{ p.partCount }} {{ p.partCount === 1 ? 'part' : 'parts' }}
+            </template>
+            <template v-if="[...p.tests, ...p.parts].some(t => t.status !== 'PUBLISHED')">
+              · {{ [...p.tests, ...p.parts].filter(t => t.status !== 'PUBLISHED').length }} not published yet
             </template>
             · /packs/{{ p.slug }}
           </p>
@@ -271,7 +291,7 @@ async function remove(p: Pack) {
                 variant="ghost"
                 aria-label="Up"
                 :disabled="i === 0"
-                @click="move(i, -1)"
+                @click="move(form.testIds, i, -1)"
               />
               <UButton
                 icon="i-lucide-arrow-down"
@@ -280,7 +300,56 @@ async function remove(p: Pack) {
                 variant="ghost"
                 aria-label="Down"
                 :disabled="i === form.testIds.length - 1"
-                @click="move(i, 1)"
+                @click="move(form.testIds, i, 1)"
+              />
+            </li>
+          </ol>
+          <UFormField
+            label="Single parts"
+            :help="`${form.partIds.length} in the pack, in this order: a Reading passage or a Writing task on its own, say`"
+          >
+            <USelectMenu
+              v-model="form.partIds"
+              :items="partItems"
+              value-key="value"
+              multiple
+              placeholder="Pick parts"
+              class="w-full min-w-0"
+              data-testid="pack-parts"
+            >
+              <template #default>
+                <span class="truncate">{{ form.partIds.length ? `${form.partIds.length} ${form.partIds.length === 1 ? 'part' : 'parts'} chosen` : 'Pick parts' }}</span>
+              </template>
+            </USelectMenu>
+          </UFormField>
+          <ol
+            v-if="form.partIds.length"
+            class="flex flex-col gap-1 rounded-lg ring ring-default p-2"
+          >
+            <li
+              v-for="(id, i) in form.partIds"
+              :key="id"
+              class="flex items-center gap-2 text-sm"
+            >
+              <span class="w-6 text-right text-dimmed">{{ i + 1 }}.</span>
+              <span class="flex-1 truncate">{{ partTitleOf(id) }}</span>
+              <UButton
+                icon="i-lucide-arrow-up"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                aria-label="Up"
+                :disabled="i === 0"
+                @click="move(form.partIds, i, -1)"
+              />
+              <UButton
+                icon="i-lucide-arrow-down"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                aria-label="Down"
+                :disabled="i === form.partIds.length - 1"
+                @click="move(form.partIds, i, 1)"
               />
             </li>
           </ol>

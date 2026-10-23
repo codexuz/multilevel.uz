@@ -28,7 +28,12 @@ export function useMe() {
   const isPremium = computed(() => !!me.value?.premium)
   const credits = computed(() => me.value?.credits ?? 0)
   const rewardCredits = computed(() => me.value?.rewardCredits ?? 0)
-  /** Whether a test opens for this user: free, Premium, or opened with credits. */
-  const canOpen = (test: { id?: string, access?: string }) => test.access !== 'PREMIUM' || isPremium.value || (!!test.id && !!me.value?.unlockedTests?.includes(test.id))
+  /**
+   * Whether a test opens for this user: free, Premium, or opened with credits or a pack; given
+   * `partId` (a section item), whether that one part does, as one bought in a pack on its own.
+   */
+  const canOpen = (test: { id?: string, access?: string }, partId?: string | null) => test.access !== 'PREMIUM' || isPremium.value
+    || (!!test.id && !!me.value?.unlockedTests?.includes(test.id))
+    || (!!partId && !!me.value?.unlockedParts?.includes(partId))
   return { me, loggedIn, role, isStaff, isAdmin, isPremium, credits, rewardCredits, canOpen, refresh, pending }
 }

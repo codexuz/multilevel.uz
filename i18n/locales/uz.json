@@ -1176,11 +1176,11 @@
     "preview": "Ko‘rish",
     "yours": "Bu to‘plam sizniki",
     "yoursText": "“{title}” dagi har bir test doim ochiq.",
-    "ownedText": "Undagi har bir test doim ochiq. Istalgan tartibda, xohlagancha topshiring.",
-    "start": "Birinchi testni boshlash",
+    "ownedText": "Undagi hamma narsa doim ochiq. Istalgan tartibda, xohlagancha topshiring.",
+    "start": "Boshlash",
     "perTest": "bitta test {price}",
     "oneOff": "bir martalik to‘lov",
-    "benefit1": "To‘plamdagi har bir test doim sizniki",
+    "benefit1": "To‘plamdagi hamma narsa doim sizniki",
     "benefit2": "Tinglash va O‘qish darhol tekshiriladi, javoblar kaliti bilan",
     "benefit3": "Premium bilan ham, usiz ham ishlaydi",
     "benefit4": "Yozish va Gapirish uchun AI tahlili",
@@ -1196,7 +1196,10 @@
     "inPackText": "To‘plamni {price} ga oling — bu test va undagi boshqalar doim sizniki bo‘ladi.",
     "seePack": "To‘plamni ko‘rish",
     "seoTitle": "IELTS va Multilevel test to‘plamlari",
-    "seoDescription": "Bir marta sotib olinadigan va doim sizda qoladigan IELTS va Multilevel mock test to‘plamlari."
+    "seoDescription": "Bir marta sotib olinadigan va doim sizda qoladigan IELTS va Multilevel mock test to‘plamlari.",
+    "parts": "{n} ta qism | {n} ta qism",
+    "partsInside": "Alohida qismlar",
+    "practise": "Mashq qilish"
   },
   "ixReview": {
     "rubricListening": "{from}–{to}-savollar. {total} tadan {correct} tasi to'g'ri.",

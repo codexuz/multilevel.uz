@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   const db = useDb()
   const [u] = await db.select().from(users).where(eq(users.id, auth.id)).limit(1)
   if (!u) throw createError({ statusCode: 404, message: 'User not found' })
-  const [access, rewardCredits, unlockedTests, centres] = await Promise.all([accessOf(auth, db), rewardBalance(auth.id), unlockedTestIds(auth.id), centresOf(auth.id)])
+  const [access, rewardCredits, unlockedTests, unlockedParts, centres] = await Promise.all([accessOf(auth, db), rewardBalance(auth.id), unlockedTestIds(auth.id), unlockedPartIds(auth.id), centresOf(auth.id)])
 
   return {
     id: u.id,
@@ -33,6 +33,7 @@ export default defineEventHandler(async (event) => {
     rewardCredits,
     unlockCost: rewardRules().unlockCost,
     unlockedTests,
+    unlockedParts,
     /** Learning centres I belong to, and my role in each (OWNER, TEACHER or STUDENT). */
     centres
   }

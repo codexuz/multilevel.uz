@@ -30,10 +30,10 @@ export default defineEventHandler(async (event) => {
     if (attempt.userId !== user.id) ownerId = attempt.userId
   } else {
     const test = await loadTest({ slug: String(body.slug ?? '') }, { publishedOnly: true })
-    if (!(await canOpenTest(user, test, (await accessOf(user)).premium))) paymentRequired('PREMIUM_REQUIRED', 'This test is part of Premium')
     const whole = test.sections.find((s: any) => s.skill === 'SPEAKING')
     const section = whole && body.part ? pickPart(whole, Number(body.part)) : whole
     if (!section?.items?.length) throw createError({ statusCode: 404, message: 'Speaking not found' })
+    if (!(await canOpenTest(user, test, (await accessOf(user)).premium, body.part ? section.items[0]?.id : null))) paymentRequired('PREMIUM_REQUIRED', 'This test is part of Premium')
     const testParts = new Map<string, any>(section.items.filter((i: any) => i.speakingPart).map((i: any) => [i.speakingPart.id as string, i.speakingPart]))
     const rows = (Array.isArray(body.recordings) ? body.recordings : []).filter(r => testParts.has(String(r?.partId))).map((r) => {
       // Only this user's own uploads (their user id is part of a recording's key).

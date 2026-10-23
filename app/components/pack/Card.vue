@@ -2,11 +2,12 @@
 import type { Pack } from '~/utils/billing'
 
 /**
- * A test pack as a tile: its title, how many tests are in it, the price (and the old one struck
+ * A test pack as a tile: its title, how many tests and parts are in it, the price (and the old one struck
  * through), and whether it is already the user's. The whole tile opens the pack's page.
  */
 const props = defineProps<{ pack: Pack }>()
 const { t } = useI18n()
+const contents = computed(() => packContents(props.pack, t))
 const saving = computed(() => (props.pack.oldPriceUzs && props.pack.oldPriceUzs > props.pack.priceUzs
   ? Math.round((1 - props.pack.priceUzs / props.pack.oldPriceUzs) * 100)
   : 0))
@@ -54,7 +55,7 @@ const saving = computed(() => (props.pack.oldPriceUzs && props.pack.oldPriceUzs 
     </div>
     <div class="mt-auto flex items-end justify-between gap-3">
       <p class="text-sm text-toned">
-        {{ t('packs.tests', { n: pack.testCount }, pack.testCount) }}
+        {{ contents }}
       </p>
       <div class="text-right">
         <p
