@@ -1410,7 +1410,23 @@
     "deleteTitle": "Delete “{title}”?",
     "deleteText": "Nobody has begun it, so it goes with its candidates.",
     "deleteRefund": "Nobody has begun it, so it goes with its candidates; the {n} credit spent on check-in comes back. | Nobody has begun it, so it goes with its candidates; the {n} credits spent on check-ins come back.",
-    "askUs": "Ask on Telegram"
+    "askUs": "Ask on Telegram",
+    "holdShort": "Hold results",
+    "stat": {
+      "total": "Candidates",
+      "checkedIn": "Checked in",
+      "seated": "Seated",
+      "sitting": "Sitting now",
+      "complete": "Marked",
+      "announced": "Announced",
+      "paid": "Collected"
+    },
+    "sections": "Sections",
+    "candidatesTitle": "Candidates",
+    "candidate": "Candidate",
+    "seat": "Seat",
+    "handedIn": "{done} of {total} handed in",
+    "openNow": "{n} open"
   },
   "report": {
     "title": "{name}: mock result",
