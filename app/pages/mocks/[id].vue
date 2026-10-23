@@ -102,7 +102,7 @@ async function checkIn(c: Cand) {
   if (res) codeShown.value = { name: c.fullName, code: res.code }
 }
 async function remove(c: Cand) {
-  if (!confirm(t('mocks.removeConfirm', { name: c.fullName }))) return
+  if (!await confirm({ title: t('mocks.removeConfirm', { name: c.fullName }), confirmLabel: t('mocks.remove'), color: 'error' })) return
   await call(`remove-${c.id}`, `/api/mocks/${id}/candidates/${c.id}`, undefined, 'DELETE')
 }
 async function mark(c: Cand, skill: 'WRITING' | 'SPEAKING', value: string) {
@@ -144,6 +144,14 @@ const when = (d: string) => localeDate(d, intlLocale(), { weekday: 'short', day:
 const hold = (v: boolean) => call('hold', `/api/mocks/${id}`, { holdResults: v }, 'PATCH')
 const archive = () => call('archive', `/api/mocks/${id}`, { status: b.value!.session.status === 'ARCHIVED' ? 'ACTIVE' : 'ARCHIVED' }, 'PATCH')
 const ready = computed(() => (b.value?.candidates ?? []).filter(c => c.complete && !c.releasedAt).length)
+// Nobody has begun (no seat taken, nothing handed in): the session can still be deleted.
+const started = computed(() => (b.value?.candidates ?? []).some(c => c.seatedAt || Object.values(c.sections).some(s => s.status === 'DONE')))
+const { confirm } = useDialogs()
+async function removeSession() {
+  const checked = b.value!.summary.checkedIn
+  if (!await confirm({ title: t('mocks.deleteTitle', { title: b.value!.session.title }), description: checked ? t('mocks.deleteRefund', { n: checked }, checked) : t('mocks.deleteText'), confirmLabel: t('mocks.delete'), color: 'error' })) return
+  if (await call('delete', `/api/mocks/${id}`, undefined, 'DELETE')) await navigateTo('/mocks')
+}
 </script>
 
 <template>
@@ -198,6 +206,17 @@ const ready = computed(() => (b.value?.candidates ?? []).filter(c => c.complete 
             color="neutral"
             variant="ghost"
             @click="archive"
+          />
+          <UButton
+            v-if="!started"
+            :label="t('mocks.delete')"
+            icon="i-lucide-trash-2"
+            size="sm"
+            color="error"
+            variant="ghost"
+            :loading="busy === 'delete'"
+            data-testid="delete-session"
+            @click="removeSession"
           />
         </div>
       </div>

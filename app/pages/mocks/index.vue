@@ -9,8 +9,8 @@ const toast = useToast()
 useSeoMeta({ title: () => t('mocks.title'), robots: 'noindex' })
 
 interface Scope { kind: 'CENTRE' | 'TEACHER', centreId: string | null, name: string, credits: number }
-interface Row { id: string, title: string, opensAt: string, closesAt: string, room: string | null, status: string, centreId: string | null, centreName: string | null, candidates: number, checkedIn: number, test: { title: string, exam: string } }
-const { data } = await useFetch<{ scopes: Scope[], sessions: Row[] }>('/api/mocks', { default: () => ({ scopes: [], sessions: [] }) })
+interface Row { id: string, title: string, opensAt: string, closesAt: string, room: string | null, status: string, centreId: string | null, centreName: string | null, candidates: number, checkedIn: number, started: boolean, test: { title: string, exam: string } }
+const { data, refresh } = await useFetch<{ scopes: Scope[], sessions: Row[] }>('/api/mocks', { default: () => ({ scopes: [], sessions: [] }) })
 const scopeName = (s: Scope) => (s.kind === 'TEACHER' ? t('mocks.own') : s.name)
 
 const { data: testData } = await useFetch<{ items: { id: string, title: string, module: string }[] }>('/api/tests', { query: { limit: 60 }, default: () => ({ items: [] }) })
@@ -51,6 +51,18 @@ async function save() {
 const when = (d: string) => localeDate(d, intlLocale(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 const state = (r: Row) => (r.status === 'ARCHIVED' ? 'archived' : Date.now() > Date.parse(r.closesAt) ? 'closed' : Date.now() >= Date.parse(r.opensAt) ? 'running' : 'upcoming')
 const STATE_COLOR = { archived: 'neutral', closed: 'neutral', running: 'success', upcoming: 'info' } as const
+
+// A session nobody has begun can be deleted (credits spent on its check-ins come back).
+const { confirm } = useDialogs()
+async function remove(r: Row) {
+  if (!await confirm({ title: t('mocks.deleteTitle', { title: r.title }), description: r.checkedIn ? t('mocks.deleteRefund', { n: r.checkedIn }, r.checkedIn) : t('mocks.deleteText'), confirmLabel: t('mocks.delete'), color: 'error' })) return
+  try {
+    await $fetch(`/api/mocks/${r.id}`, { method: 'DELETE' })
+    await refresh()
+  } catch (e) {
+    toast.add({ title: t('common.notSaved'), description: errorMessage(e), color: 'error' })
+  }
+}
 </script>
 
 <template>
@@ -129,33 +141,48 @@ const STATE_COLOR = { archived: 'neutral', closed: 'neutral', running: 'success'
         :description="canCreate ? t('mocks.noneText') : undefined"
         :actions="canCreate ? [{ label: t('mocks.new'), icon: 'i-lucide-plus', onClick: startCreate }] : []"
       />
-      <NuxtLink
+      <div
         v-for="r in data.sessions"
         :key="r.id"
-        :to="`/mocks/${r.id}`"
-        class="flex flex-col sm:flex-row sm:items-center gap-2 rounded-xl ring ring-default p-4 hover:ring-primary/40"
+        class="flex items-center gap-2 rounded-xl ring ring-default hover:ring-primary/40"
         data-testid="mock-row"
       >
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2">
-            <span class="font-semibold text-highlighted truncate">{{ r.title }}</span>
-            <UBadge
-              :label="t(`mocks.state.${state(r)}`)"
-              :color="STATE_COLOR[state(r)]"
-              variant="subtle"
-              size="sm"
-            />
+        <NuxtLink
+          :to="`/mocks/${r.id}`"
+          class="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-2 p-4"
+        >
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-highlighted truncate">{{ r.title }}</span>
+              <UBadge
+                :label="t(`mocks.state.${state(r)}`)"
+                :color="STATE_COLOR[state(r)]"
+                variant="subtle"
+                size="sm"
+              />
+            </div>
+            <p class="text-sm text-muted truncate">
+              {{ examLabel(r.test.exam) }} · {{ r.test.title }} · {{ when(r.opensAt) }}<template v-if="r.room">
+                · {{ r.room }}
+              </template><template v-if="r.centreName">
+                · {{ r.centreName }}
+              </template>
+            </p>
           </div>
-          <p class="text-sm text-muted truncate">
-            {{ examLabel(r.test.exam) }} · {{ r.test.title }} · {{ when(r.opensAt) }}<template v-if="r.room">
-              · {{ r.room }}
-            </template><template v-if="r.centreName">
-              · {{ r.centreName }}
-            </template>
-          </p>
-        </div>
-        <span class="text-sm text-muted">{{ t('mocks.checkedInOf', { n: r.checkedIn, total: r.candidates }) }}</span>
-      </NuxtLink>
+          <span class="text-sm text-muted">{{ t('mocks.checkedInOf', { n: r.checkedIn, total: r.candidates }) }}</span>
+        </NuxtLink>
+        <UButton
+          v-if="!r.started"
+          icon="i-lucide-trash-2"
+          color="error"
+          variant="ghost"
+          size="sm"
+          class="me-3"
+          :aria-label="t('mocks.delete')"
+          data-testid="delete-session"
+          @click="remove(r)"
+        />
+      </div>
     </div>
 
     <UModal

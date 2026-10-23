@@ -1401,7 +1401,11 @@
       "FAST": "Juda tez"
     },
     "noCreditsTitle": "Mock kreditlari yo‘q",
-    "noCreditsText": "Nomzodlarni ro‘yxatga olish uchun mock kreditlari bo‘lgandagina sessiya yaratiladi. Kreditlarni Telegramda sotib oling: ular markazingizga yoki hisobingizga qo‘shiladi."
+    "noCreditsText": "Nomzodlarni ro‘yxatga olish uchun mock kreditlari bo‘lgandagina sessiya yaratiladi. Kreditlarni Telegramda sotib oling: ular markazingizga yoki hisobingizga qo‘shiladi.",
+    "delete": "O‘chirish",
+    "deleteTitle": "«{title}» o‘chirilsinmi?",
+    "deleteText": "Hali hech kim boshlamagan: sessiya nomzodlari bilan birga o‘chiriladi.",
+    "deleteRefund": "Hali hech kim boshlamagan: sessiya nomzodlari bilan birga o‘chiriladi; ro‘yxatga olishga sarflangan {n} ta kredit qaytariladi. | Hali hech kim boshlamagan: sessiya nomzodlari bilan birga o‘chiriladi; ro‘yxatga olishga sarflangan {n} ta kredit qaytariladi."
   },
   "report": {
     "title": "{name}: mock natijasi",

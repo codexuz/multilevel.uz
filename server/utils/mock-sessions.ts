@@ -88,7 +88,9 @@ export async function listSessions(user: { id: string, role: string }) {
   const rows = await useDb().select({
     s: mockSessions, testTitle: tests.title, module: tests.module, centreName: centres.name,
     candidates: sql<number>`(select count(*)::int from ${mockCandidates} c where c.session_id = ${mockSessions.id})`,
-    checkedIn: sql<number>`(select count(*)::int from ${mockCandidates} c where c.session_id = ${mockSessions.id} and c.checked_in_at is not null)`
+    checkedIn: sql<number>`(select count(*)::int from ${mockCandidates} c where c.session_id = ${mockSessions.id} and c.checked_in_at is not null)`,
+    // Started: someone took a seat or handed a section in (then it stays, for their results).
+    started: sql<boolean>`exists (select 1 from ${mockCandidates} c where c.session_id = ${mockSessions.id} and (c.seated_at is not null or exists (select 1 from ${attempts} a where a.mock_candidate_id = c.id)))`
   }).from(mockSessions)
     .innerJoin(tests, eq(tests.id, mockSessions.testId))
     .leftJoin(centres, eq(centres.id, mockSessions.centreId))
@@ -99,7 +101,7 @@ export async function listSessions(user: { id: string, role: string }) {
     .orderBy(desc(mockSessions.opensAt)).limit(200)
   return {
     scopes,
-    sessions: rows.map(r => ({ ...r.s, test: { title: r.testTitle, exam: examOfModule(r.module) }, centreName: r.centreName, candidates: r.candidates, checkedIn: r.checkedIn }))
+    sessions: rows.map(r => ({ ...r.s, test: { title: r.testTitle, exam: examOfModule(r.module) }, centreName: r.centreName, candidates: r.candidates, checkedIn: r.checkedIn, started: r.started }))
   }
 }
 
@@ -154,6 +156,40 @@ export async function createSession(user: { id: string, role: string }, body: Se
   const values = await sessionValues(body, false)
   const [row] = await useDb().insert(mockSessions).values({ ...values, centreId, ownerId: user.id } as typeof mockSessions.$inferInsert).returning()
   return row!
+}
+
+/** Whether anyone has begun: taken a seat, or handed a section in. */
+async function hasStarted(sessionId: string) {
+  const [row] = await useDb().select({ id: mockCandidates.id }).from(mockCandidates)
+    .where(and(eq(mockCandidates.sessionId, sessionId), or(isNotNull(mockCandidates.seatedAt), sql`exists (select 1 from ${attempts} a where a.mock_candidate_id = ${mockCandidates.id})`))).limit(1)
+  return !!row
+}
+
+/**
+ * Deletes a session nobody has begun (no seat taken, nothing handed in). The credits spent on its
+ * check-ins come back, and its walk-ins' accounts go with it.
+ */
+export async function deleteSession(session: Session, actorId: string) {
+  if (await hasStarted(session.id)) throw conflict('Candidates have begun: archive it instead')
+  const db = useDb()
+  const list = await db.select({ userId: mockCandidates.userId, external: mockCandidates.external, checkedInAt: mockCandidates.checkedInAt }).from(mockCandidates)
+    .where(eq(mockCandidates.sessionId, session.id))
+  const refund = list.filter(c => c.checkedInAt).length
+  await db.transaction(async (tx) => {
+    if (refund) await tx.insert(mockCreditTransactions).values({ ...ownerOf(session), delta: refund, reason: 'REFUND', note: `Session deleted: ${session.title}`.slice(0, 200), createdById: actorId })
+    await tx.delete(mockSessions).where(eq(mockSessions.id, session.id))
+    const walkIns = list.filter(c => c.external).map(c => c.userId)
+    if (walkIns.length) await tx.delete(users).where(and(inArray(users.id, walkIns), eq(users.mockOnly, true)))
+  })
+  return { deleted: true, refunded: refund }
+}
+
+/** The walk-ins' accounts of a centre's sessions (they go when the centre does). */
+export async function walkInsOfCentre(centreId: string) {
+  const rows = await useDb().select({ userId: mockCandidates.userId }).from(mockCandidates)
+    .innerJoin(mockSessions, eq(mockSessions.id, mockCandidates.sessionId))
+    .where(and(eq(mockSessions.centreId, centreId), eq(mockCandidates.external, true)))
+  return rows.map(r => r.userId)
 }
 
 export async function updateSession(session: Session, body: SessionBody) {
