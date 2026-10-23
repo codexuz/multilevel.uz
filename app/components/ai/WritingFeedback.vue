@@ -49,7 +49,8 @@ interface Review {
     betterAnswer: string
     upgrades?: { basic: string, better: string, example: string }[]
     pronunciationTips?: string[]
-    answers?: { position: number, question: string | null, transcript: string, comment: string, metrics: { words: number, wpm: number, pauses: number, fillers: number } | null }[]
+    /** `modelAnswer`: the same question answered at the top level (reviews since model answers were added). */
+    answers?: { position: number, question: string | null, transcript: string, comment: string, modelAnswer?: string, metrics: { words: number, wpm: number, pauses: number, fillers: number } | null }[]
   }[]
 }
 interface Status { enabled: boolean, speaking?: boolean, allowance: { limit: number | null, used: number, left: number | null, period: 'month' | 'day' | null } | null }
@@ -73,7 +74,53 @@ async function poll(id: string) {
   if (!review.value || review.value.status === 'PENDING') timer = setTimeout(() => poll(id), 3000)
   else refreshStatus()
 }
-onBeforeUnmount(() => clearTimeout(timer))
+onBeforeUnmount(() => {
+  clearTimeout(timer)
+  stopSpeaking()
+})
+
+// ─── A model answer read aloud, by the browser's own voice (a British English one if it has one) ───
+const speakingKey = ref<string | null>(null)
+const canSpeak = ref(false)
+onMounted(() => (canSpeak.value = typeof window !== 'undefined' && 'speechSynthesis' in window))
+function stopSpeaking() {
+  if (canSpeak.value) window.speechSynthesis.cancel()
+  speakingKey.value = null
+}
+function speak(key: string, text: string) {
+  if (speakingKey.value === key) return stopSpeaking()
+  stopSpeaking()
+  const u = new SpeechSynthesisUtterance(text)
+  const voices = window.speechSynthesis.getVoices()
+  u.voice = voices.find(v => v.lang === 'en-GB') ?? voices.find(v => v.lang.startsWith('en')) ?? null
+  u.lang = u.voice?.lang ?? 'en-GB'
+  u.rate = 0.95
+  u.onend = u.onerror = () => {
+    if (speakingKey.value === key) speakingKey.value = null
+  }
+  speakingKey.value = key
+  window.speechSynthesis.speak(u)
+}
+
+// ─── Showing a marked essay, unnamed, as a sample on its task's public page (a saved attempt's only) ───
+const shares = ref<Record<string, { shared: boolean, hidden: boolean }>>({})
+const canShare = computed(() => !!props.attemptId && props.skill === 'WRITING' && review.value?.status === 'DONE' && !!review.value.tasks?.length)
+watch(canShare, async (yes) => {
+  if (!yes) return
+  const rows = await $fetch<{ taskId: string, shared: boolean, hidden: boolean }[]>('/api/essays/share', { query: { attemptId: props.attemptId } }).catch(() => [])
+  shares.value = Object.fromEntries(rows.map(r => [r.taskId, { shared: r.shared, hidden: r.hidden }]))
+}, { immediate: true })
+async function setShare(taskId: string, share: boolean) {
+  const was = shares.value[taskId]
+  shares.value = { ...shares.value, [taskId]: { shared: share, hidden: was?.hidden ?? false } }
+  try {
+    await $fetch('/api/essays/share', { method: 'POST', body: { attemptId: props.attemptId, taskId, share } })
+    toast.add({ title: share ? tr('answers.shared') : tr('answers.unshared'), color: 'success' })
+  } catch (e: any) {
+    shares.value = { ...shares.value, [taskId]: was ?? { shared: false, hidden: false } }
+    toast.add({ title: tr('common.notSaved'), description: e?.data?.message, color: 'error' })
+  }
+}
 
 onMounted(async () => {
   if (props.reviewId) return poll(props.reviewId)
@@ -329,6 +376,19 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? tr('common.b
           </div>
         </template>
         <div class="flex flex-col gap-4">
+          <div
+            v-if="canShare && shares[t.id]"
+            class="flex items-start gap-3 rounded-lg bg-elevated/50 px-3 py-2.5"
+            data-testid="share-essay"
+          >
+            <USwitch
+              :model-value="shares[t.id]!.shared"
+              :disabled="shares[t.id]!.hidden"
+              :label="tr('answers.shareLabel')"
+              :description="shares[t.id]!.hidden ? tr('answers.sampleHiddenByAdmin') : tr('answers.shareHelp')"
+              @update:model-value="v => setShare(t.id, !!v)"
+            />
+          </div>
           <ul class="grid sm:grid-cols-2 gap-x-6 gap-y-2.5">
             <li
               v-for="c in criteriaOf(t.criteria)"
@@ -403,6 +463,33 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? tr('common.b
                 >
                   {{ a.comment }}
                 </p>
+                <!-- The same question answered at the top level, to read or to hear -->
+                <details
+                  v-if="a.modelAnswer"
+                  class="group rounded-lg bg-success/5 ring ring-success/20 px-3 py-2"
+                  data-testid="model-answer"
+                >
+                  <summary class="cursor-pointer text-xs font-semibold text-success flex items-center gap-1.5">
+                    <UIcon
+                      name="i-lucide-sparkles"
+                      class="size-3.5"
+                    />
+                    {{ ielts ? tr('ai.modelAnswerIelts') : tr('ai.modelAnswer') }}
+                  </summary>
+                  <p class="mt-2 text-highlighted font-serif leading-6 whitespace-pre-line">
+                    {{ a.modelAnswer }}
+                  </p>
+                  <UButton
+                    v-if="canSpeak"
+                    :label="speakingKey === `${t.id}-${a.position}` ? tr('ai.stopListening') : tr('ai.listen')"
+                    :icon="speakingKey === `${t.id}-${a.position}` ? 'i-lucide-square' : 'i-lucide-volume-2'"
+                    size="xs"
+                    color="success"
+                    variant="soft"
+                    class="mt-2"
+                    @click="speak(`${t.id}-${a.position}`, a.modelAnswer)"
+                  />
+                </details>
               </li>
             </ul>
           </div>

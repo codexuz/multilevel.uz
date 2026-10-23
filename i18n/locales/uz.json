@@ -49,7 +49,8 @@
     "staffOverview": "Umumiy ko‘rinish",
     "packs": "Test to‘plamlari",
     "staffPacks": "Test to‘plamlari",
-    "exams": "Imtihonlar"
+    "exams": "Imtihonlar",
+    "staffIntegrity": "Halollik"
   },
   "pub": {
     "how": "Qanday ishlaydi",
@@ -61,7 +62,10 @@
     "footerAbout": "IELTS va Multilevel mock testlari, darhol baholanadi: IELTS bandi yoki Multilevel bo‘yicha 75 ballik natija va darajangiz.",
     "practise": "Mashq",
     "allTests": "Barcha testlar",
-    "contact": "Biz bilan bog‘lanish"
+    "contact": "Biz bilan bog‘lanish",
+    "listeningAnswers": "Listening javoblari",
+    "readingAnswers": "Reading javoblari",
+    "writingSamples": "Writing namunalari"
   },
   "home": {
     "seoTitle": "Onlayn IELTS va Multilevel mock testlari",
@@ -451,7 +455,11 @@
     "pauses": "{n} ta pauza",
     "fillers": "{n} ta to‘ldiruvchi so‘z",
     "upgrades": "Yaxshiroq so‘zlar",
-    "guideIelts": "IELTS band deskriptorlari bo‘yicha taxmin. Ko‘p universitetlar 6.5–7 band so‘raydi."
+    "guideIelts": "IELTS band deskriptorlari bo‘yicha taxmin. Ko‘p universitetlar 6.5–7 band so‘raydi.",
+    "modelAnswer": "Namuna javob (C1)",
+    "modelAnswerIelts": "Namuna javob (8–9 band)",
+    "listen": "Tinglash",
+    "stopListening": "To‘xtatish"
   },
   "result": {
     "level": {
@@ -1226,5 +1234,56 @@
     "overallFeedback": "Umumiy fikr",
     "showKey": "To'g'ri javoblarni ko'rsatish",
     "review": "Tahlil"
+  },
+  "answers": {
+    "allExams": "Barcha imtihonlar",
+    "allTasks": "Barcha topshiriqlar",
+    "countParts": "{n} ta qism | {n} ta qism",
+    "countTasks": "{n} ta topshiriq | {n} ta topshiriq",
+    "answersFor": "{n} ta javob | {n} ta javob",
+    "samples": "{n} ta namuna | {n} ta namuna",
+    "none": "Hozircha hech narsa yo‘q.",
+    "notFound": "Sahifa topilmadi",
+    "listeningTitle": "Listening javoblari va izohlari",
+    "listeningLead": "IELTS va Multilevel Listening qismlari: har bir javob, nega to‘g‘riligi va yozuvdagi aynan qaysi so‘zlardan olingani. Har bir qismni imtihon interfeysida mashq qiling.",
+    "readingTitle": "Reading javoblari va izohlari",
+    "readingLead": "IELTS va Multilevel Reading matnlari: har bir javob, nega to‘g‘riligi va matnning qaysi qatoridan olingani. Har bir matnni imtihon interfeysida mashq qiling.",
+    "writingTitle": "Writing topshiriqlari va namuna javoblar",
+    "writingLead": "IELTS va Multilevel Writing topshiriqlari: nomzodlar ulashgan insholar va har bir mezon bo‘yicha fikr. O‘zingiznikini imtihon interfeysida yozing va baholating.",
+    "partSeoTitle": "{title}: {skill} javoblari va izohlari",
+    "partSeoDescription": "“{title}” {skill} qismining barcha {n} ta javobi, izohlari va qayerdan olingani.",
+    "partHeading": "{title}: {skill} javoblari",
+    "partLead": "{range}-savollarga javoblar (jami {n} ta), har biri izoh bilan.",
+    "practiseTitle": "Avval yeching, keyin tekshiring",
+    "practiseListening": "Yozuvni tinglab, imtihon interfeysida, imtihondagidek vaqt bilan javob bering.",
+    "practiseReading": "Butun matnni o‘qib, imtihon interfeysida, imtihondagidek vaqt bilan javob bering.",
+    "practise": "Bu qismni mashq qilish",
+    "passageOpening": "Matn boshlanishi",
+    "answersHeading": "{range}-javoblar",
+    "more": "Boshqa {skill} javoblari",
+    "disclaimer": "Mockmee IELTS, British Council, IDP yoki Cambridge bilan bog‘liq emas va ular tomonidan tasdiqlanmagan.",
+    "taskSeoTitle": "{title}: {task} savoli va namuna javob",
+    "taskRubric": "Bu topshiriqqa taxminan {minutes} daqiqa sarflang. Kamida {words} so‘z yozing.",
+    "chartAlt": "“{title}” uchun diagramma",
+    "writeIt": "Imtihon interfeysida yozish",
+    "samplesHeading": "Namuna javoblar",
+    "samplesLead": "Mockmee nomzodlari imtihon interfeysida yozgan, ismsiz va tahrirsiz ulashgan insholar, olgan baholari bilan.",
+    "noSamples": "Hozircha namuna yo‘q. O‘zingiznikini yozing, baholating va birinchi bo‘lib ulashing.",
+    "bandMark": "Band {band}",
+    "wordsN": "{n} so‘z",
+    "feedback": "Fikr",
+    "examinerSaid": "Imtihonchi:",
+    "hideSample": "Yashirish",
+    "sampleHidden": "Sahifadan olib tashlandi",
+    "moreTasks": "Boshqa {task} savollari",
+    "shareLabel": "Bu inshoni namuna sifatida ko‘rsatish",
+    "shareHelp": "Ismsiz va tahrirsiz, baholari bilan topshiriqning ochiq sahifasida. Istalgan vaqtda to‘xtatishingiz mumkin.",
+    "shared": "Namuna sifatida ko‘rsatilmoqda",
+    "unshared": "Endi ko‘rsatilmaydi",
+    "sampleHiddenByAdmin": "Admin bu namunani ochiq sahifadan olib tashlagan."
+  },
+  "integrity": {
+    "noticedTitle": "Siz test sahifasidan chiqdingiz",
+    "noticedText": "Test paytida sahifadan chiqish qayd etiladi; bu ko‘p bo‘lgan testni jamoamiz ko‘rib chiqadi."
   }
 }

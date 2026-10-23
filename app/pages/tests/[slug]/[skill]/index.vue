@@ -67,6 +67,7 @@ function keep() {
 }
 const forget = () => {
   try { localStorage.removeItem(key) } catch {}
+  integrity.reset()
 }
 
 function onAnswers(next: AnswerMap) {
@@ -79,6 +80,10 @@ function onEssays(next: Record<string, string>) {
 }
 
 const submitting = ref(false)
+// What the page sees while a signed-in candidate sits it, for integrity (Speaking's microphone prompt can take the focus).
+// Only from Start on (the cover before it is not the test); Speaking has no cover.
+const begun = ref(skill === 'SPEAKING')
+const integrity = useIntegrity(key, { active: () => begun.value && !!section.value && loggedIn.value && !submitting.value && !practice.value, countBlur: skill !== 'SPEAKING' })
 usePreventLeave(() => !!section.value && !submitting.value && !practice.value && (Object.keys(answers.value).length > 0 || Object.values(essays.value).some(t => !!t?.trim())))
 
 async function handIn(extra: { recordings?: { partId: string, position: number, audioRef: string, durationSeconds?: number }[] } = {}) {
@@ -90,7 +95,8 @@ async function handIn(extra: { recordings?: { partId: string, position: number, 
         answers: answersPayload(answers.value, parts.value),
         essays: Object.entries(essays.value).map(([taskId, text]) => ({ taskId, text: text ?? '' })),
         recordings: extra.recordings ?? [],
-        startedAt: startedAt.value
+        startedAt: startedAt.value,
+        integrity: integrity.signals
       }
     })
     forget()
@@ -428,6 +434,7 @@ const pageError = computed(() => {
 
       <template v-else-if="section">
         <IxListeningExam
+          @start="begun = true"
           v-if="ielts && skill === 'LISTENING'"
           :parts="parts"
           :audio-url="mediaUrl(section.audioUrl) || undefined"
@@ -438,6 +445,7 @@ const pageError = computed(() => {
           @submit="finishObjective"
         />
         <IxReadingExam
+          @start="begun = true"
           v-else-if="ielts && skill === 'READING'"
           :parts="parts"
           :timer-seconds="seconds"
@@ -448,6 +456,7 @@ const pageError = computed(() => {
           @submit="finishObjective"
         />
         <IxWritingExam
+          @start="begun = true"
           v-else-if="ielts && skill === 'WRITING'"
           :parts="writingParts"
           :timer-seconds="seconds"
@@ -458,6 +467,7 @@ const pageError = computed(() => {
           @submit="finishWriting"
         />
         <ExamListeningExam
+          @start="begun = true"
           v-else-if="skill === 'LISTENING'"
           :parts="parts"
           :audio-url="mediaUrl(section.audioUrl) || undefined"
@@ -468,6 +478,7 @@ const pageError = computed(() => {
           @submit="finishObjective"
         />
         <ExamReadingExam
+          @start="begun = true"
           v-else-if="skill === 'READING'"
           :parts="parts"
           :timer-seconds="seconds"
@@ -478,6 +489,7 @@ const pageError = computed(() => {
           @submit="finishObjective"
         />
         <ExamWritingExam
+          @start="begun = true"
           v-else-if="skill === 'WRITING'"
           :parts="writingParts"
           :timer-seconds="seconds"

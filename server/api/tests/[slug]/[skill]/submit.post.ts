@@ -11,6 +11,8 @@ interface SubmitBody {
   essays?: { taskId: string, text: string }[]
   recordings?: { partId: string, position?: number, audioRef: string, durationSeconds?: number }[]
   startedAt?: string
+  /** What the exam page saw while it was sat (see integrity.ts). */
+  integrity?: unknown
 }
 
 export default defineEventHandler(async (event) => {
@@ -56,6 +58,17 @@ export default defineEventHandler(async (event) => {
   const objective = skill === 'LISTENING' || skill === 'READING'
   const marked = markSection(section, given, test.module)
   const startedAt = body.startedAt && !Number.isNaN(Date.parse(body.startedAt)) ? new Date(body.startedAt) : null
+  // Anything that looks wrong is flagged for an admin to look at; nothing is blocked here.
+  const signals = cleanSignals(body.integrity)
+  const checked = await flagsFor({
+    userId: user.id, sectionId: section.id, skill, whole: !partNumber,
+    window: { startedAt, submittedAt: new Date() },
+    marked: objective ? { correct: marked.correct, total: marked.total } : null,
+    signals
+  }).catch((e) => {
+    console.error('[integrity] check failed:', e)
+    return { flags: [], seconds: null }
+  })
 
   let liveMockId: string | null = null
   if (skill === 'SPEAKING' && !recordings.length) throw createError({ statusCode: 400, message: 'Record at least one answer before handing in' })
@@ -77,7 +90,8 @@ export default defineEventHandler(async (event) => {
       userId: user.id, testId: test.id, sectionId: section.id, skill, partNumber, mode: test.mode,
       status: objective ? 'GRADED' : 'SUBMITTED', startedAt, gradedAt: objective ? new Date() : null,
       correct: objective ? marked.correct : null, total: objective ? marked.total : null, exam: marked.exam,
-      score: objective ? marked.score : null, band: objective ? marked.band : null, cefrLevel: objective ? marked.cefrLevel : null, liveMockId
+      score: objective ? marked.score : null, band: objective ? marked.band : null, cefrLevel: objective ? marked.cefrLevel : null, liveMockId,
+      ...integrityValues(signals, checked)
     }).returning({ id: attempts.id })
     const rows = [...ids].filter(id => given.has(id)).map(itemId => ({ attemptId: attempt!.id, itemId, response: given.get(itemId)!, isCorrect: marked.marks.get(itemId) ?? false }))
     if (rows.length) await tx.insert(answers).values(rows)

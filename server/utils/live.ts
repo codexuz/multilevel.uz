@@ -62,13 +62,14 @@ function boardName(name: string | null, id: string) {
   return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1]!.charAt(0)}.` : parts[0]!
 }
 
-/** Everyone's place: highest total of the ranked sections first (scores, or IELTS bands), then whoever finished first. */
+/** Everyone's place: highest total of the ranked sections first (scores, or IELTS bands), then whoever finished first; a section an admin disqualified does not count. */
 export async function standings(mockId: string) {
   const rows = await useDb().execute(sql`
     select a.user_id as "userId", u.name, sum(coalesce(a.band, a.score))::float as total, max(a.submitted_at) as finished,
       json_object_agg(a.skill, coalesce(a.band, a.score)) as scores
     from attempts a join users u on u.id = a.user_id
     where a.live_mock_id = ${mockId} and a.skill in ('LISTENING', 'READING') and (a.score is not null or a.band is not null)
+      and a.integrity_status is distinct from 'DISQUALIFIED'
     group by a.user_id, u.name
     order by total desc, finished asc`) as unknown as { userId: string, name: string | null, total: number, finished: string, scores: Record<string, number> }[]
   return [...rows].map((r, i) => ({ rank: i + 1, userId: r.userId, name: boardName(r.name, r.userId), total: r.total, scores: r.scores, finished: r.finished }))
