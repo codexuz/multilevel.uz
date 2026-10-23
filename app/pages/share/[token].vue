@@ -6,7 +6,7 @@
 const { t } = useI18n()
 definePageMeta({ layout: 'public' })
 
-interface Shared { name: string, score: number, cefrLevel: string, skill: string, partNumber: number | null, test: { slug: string, title: string } | null, code: string, image: string }
+interface Shared { name: string, score: number, cefrLevel: string, skill: string, exam: string, band: number | null, partNumber: number | null, test: { slug: string, title: string } | null, code: string, image: string }
 
 const route = useRoute()
 const token = String(route.params.token)
@@ -18,14 +18,17 @@ const d = data.value
 const site = String(config.public.siteUrl || 'https://mockmee.uz').replace(/\/$/, '')
 const skill = skillLabel(d.skill)
 const level = d.cefrLevel === 'A2' ? t('common.belowB1') : d.cefrLevel
-const title = t('sharedPage.title', { name: d.name, score: d.score, level, skill })
+const ielts = d.band != null
+const accent = ielts ? `${t('result.band')} ${fmtBand(d.band)}` : `${d.score}/75`
+const k = (key: string) => `sharedPage.${key}${ielts ? 'Ielts' : ''}`
+const title = t(k('title'), { name: d.name, score: ielts ? fmtBand(d.band) : d.score, level, skill })
 const tryTo = `/r/${d.code}${d.test ? `?to=${encodeURIComponent(`/tests/${d.test.slug}`)}` : ''}`
 
 useSeoMeta({
   title,
-  description: t('sharedPage.description'),
+  description: t(k('description')),
   ogTitle: title,
-  ogDescription: t('sharedPage.og'),
+  ogDescription: t(k('og')),
   ogImage: `${site}${d.image}`,
   ogImageWidth: 1200,
   ogImageHeight: 630,
@@ -50,12 +53,12 @@ useSeoMeta({
           scope="global"
         >
           <template #accent>
-            <span class="text-accent">{{ d.score }}/75</span>
+            <span class="text-accent">{{ accent }}</span>
           </template>
         </i18n-t>
       </h1>
       <p class="text-muted text-pretty max-w-lg">
-        {{ d.test ? t('sharedPage.takeTest', { title: d.test.title }) : t('sharedPage.takeAny') }}
+        {{ d.test ? t(k('takeTest'), { title: d.test.title }) : t(k('takeAny')) }}
       </p>
     </div>
     <div class="grid gap-2 w-full sm:w-auto sm:flex">

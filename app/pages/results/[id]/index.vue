@@ -97,6 +97,7 @@ onBeforeUnmount(() => off?.())
       <AiWritingFeedback
         v-if="data.skill === 'WRITING' || data.skill === 'SPEAKING'"
         :skill="data.skill"
+        :exam="data.exam"
         :attempt-id="id"
       />
     </ResultSummary>

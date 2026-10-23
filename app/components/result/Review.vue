@@ -90,7 +90,7 @@ watch(part, () => nextTick(() => {
 }))
 
 // ─── Writing ───
-const taskTabs = computed(() => tasks.value.map((t, i) => ({ label: writingTaskLabel(t.task.taskNumber), value: i })))
+const taskTabs = computed(() => tasks.value.map((t, i) => ({ label: writingTaskLabel(t.task.taskNumber, section.value?.exam), value: i })))
 const essay = computed(() => task.value?.essay ?? null)
 const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') as keyof typeof SKILL_META])
 </script>
@@ -102,6 +102,7 @@ const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') 
   >
     <ReviewHeader
       v-model:show-key="showKey"
+      :exam="section.exam ?? view.exam"
       :back="back"
       :title="view.test?.title ?? t('review.review')"
       :hide-toggle="section.skill === 'WRITING' || section.skill === 'SPEAKING'"
@@ -256,7 +257,7 @@ const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') 
                     name="i-lucide-file-text"
                     class="text-primary"
                   />
-                  <span class="text-sm font-semibold">{{ writingTaskLabel(task.task.taskNumber) }}</span>
+                  <span class="text-sm font-semibold">{{ writingTaskLabel(task.task.taskNumber, section.exam) }}</span>
                   <UBadge
                     :label="t('tests.atLeastWords', { n: task.task.minWords })"
                     color="neutral"
@@ -361,7 +362,7 @@ const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') 
                   name="i-lucide-mic"
                   class="text-primary"
                 />
-                <span class="text-sm font-semibold">{{ speakingPartLabel(p.partNumber) }}<span v-if="p.title"> — {{ p.title.replace(/^Part [\d.]+\s*[—-]\s*/, '') }}</span></span>
+                <span class="text-sm font-semibold">{{ speakingPartLabel(p.partNumber, p.exam ?? section.exam) }}<span v-if="p.title"> — {{ p.title.replace(/^Part [\d.]+\s*[—-]\s*/, '') }}</span></span>
               </div>
             </template>
             <SpeakingAnswers

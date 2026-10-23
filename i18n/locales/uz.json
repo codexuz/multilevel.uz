@@ -325,7 +325,8 @@
     "explanationsTitle": "Izohlar Premiumga kiradi",
     "explanationsText": "Har bir javob nega to‘g‘ri ekanini va matndagi qaysi qator buni ko‘rsatishini ko‘ring.",
     "buyMarking": "Baholash sotib olish",
-    "earn": "Bepul kredit ishlash"
+    "earn": "Bepul kredit ishlash",
+    "creditTextIelts": "Bitta baholash krediti bilan bu bo‘lim imtihon oluvchidan IELTS’ning to‘rt mezoni bo‘yicha band va yozma izoh oladi. Javoblaringiz shu yerda saqlanadi."
   },
   "exam": {
     "saved": "Saqlandi",
@@ -417,7 +418,8 @@
     "writeAgain": "Qayta yozish",
     "speakingFinished": "Gapirish tugadi",
     "speakingFinishedText": "Javoblaringizni tinglang va yuklab oling.",
-    "download": "Yuklab olish"
+    "download": "Yuklab olish",
+    "practiceNoteIelts": "Quyida darhol AI tahlil oling yoki baholash krediti bilan imtihon oluvchidan band va izoh oling. Ishingiz shu yerda qoladi."
   },
   "criterion": {
     "taskAchievement": "Topshiriqni bajarish",
@@ -460,7 +462,9 @@
     "modelAnswer": "Namuna javob (C1)",
     "modelAnswerIelts": "Namuna javob (8–9 band)",
     "listen": "Tinglash",
-    "stopListening": "To‘xtatish"
+    "stopListening": "To‘xtatish",
+    "introWritingIelts": "IELTS’ning to‘rt mezoni (Task Achievement, Coherence and Cohesion, Lexical Resource, Grammatical Range and Accuracy) bo‘yicha taxminiy band va eng muhim tuzatishlar. Taxminan bir daqiqa.",
+    "introSpeakingIelts": "IELTS imtihon oluvchisi baholagandek aytganlaringiz bo‘yicha taxminiy band: har bir qism uchun ravonlik, lug‘at, grammatika va talaffuz, nutq tezligi va pauzalar, tuzatishlar va yaxshiroq so‘zlar. Taxminan bir daqiqa."
   },
   "result": {
     "level": {
@@ -992,6 +996,7 @@
     "lastActive": "Oxirgi faollik",
     "removeStudent": "{name}ni guruhdan chiqarish",
     "scoresNote": "75 ballik baholar: har bir o‘quvchining oxirgi uchta to‘liq bo‘limi o‘rtachasi.",
+    "scoresNoteBands": "Multilevel 75 ballik, IELTS band bilan: har bir o‘quvchining oxirgi uchta to‘liq bo‘limi o‘rtachasi.",
     "noAssignments": "Hozircha vazifalar yo‘q",
     "noAssignmentsText": "Test bo‘limi yoki uning bir qismini muddat bilan bering. O‘quvchilar Telegramda xabar oladi.",
     "removedTest": "O‘chirilgan test",
@@ -1008,6 +1013,7 @@
     "setIt": "Berish",
     "doneOf": "{of} tadan {done} tasi bajardi",
     "average": "o‘rtacha {n}/75",
+    "averageBand": "o‘rtacha band {n}",
     "removeAssignment": "Vazifani o‘chirish",
     "openTest": "Testni ochish"
   },
@@ -1042,6 +1048,11 @@
     "takeAny": "Mockmee’da Multilevel mock testini bepul topshiring va tugatishingiz bilan 75 ballik natija va CEFR darajangizni oling.",
     "takeSkill": "{skill} testini topshirish",
     "takeFree": "Bepul test topshirish",
+    "titleIelts": "{name} IELTS {skill} bo‘limida {score} band ({level}) oldi",
+    "descriptionIelts": "Darhol tekshiriladigan bepul IELTS ingliz tili mock testlari. Xuddi shu testni topshiring va band natijangizni ko‘ring.",
+    "ogIelts": "Undan yuqori ola olasizmi? Xuddi shu IELTS testni bepul topshiring va darhol band natijangizni oling.",
+    "takeTestIelts": "{title} testini bepul topshiring va tugatishingiz bilan band natijangiz va CEFR darajangizni oling.",
+    "takeAnyIelts": "Mockmee’da IELTS mock testini bepul topshiring va tugatishingiz bilan band natijangiz va CEFR darajangizni oling.",
     "what": "Mockmee nima?"
   },
   "site": {

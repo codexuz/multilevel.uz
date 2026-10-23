@@ -18,6 +18,8 @@ const props = withDefaults(defineProps<{
   part?: number | null
   essays?: Record<string, string>
   recordings?: { partId: string, position: number, blob: Blob, durationSeconds: number, audioRef?: Promise<string | null> }[]
+  /** IELTS | MULTILEVEL: what the estimate is (a band, or a score out of 75) before a review says. */
+  exam?: string | null
 }>(), { skill: 'WRITING' })
 
 type Correction = { original: string, corrected: string, why: string }
@@ -184,9 +186,10 @@ const items = computed(() => review.value?.parts
     })))
 /** The criteria a card marks: a review from before pronunciation was assessed has four. */
 const criteriaOf = (c: Record<string, number>) => CRITERIA.value.filter(x => c[x.key] != null)
+const introIelts = computed(() => (review.value?.scale ? review.value.scale === 9 : props.exam === 'IELTS'))
 const intro = computed(() => speaking.value
-  ? tr('ai.introSpeaking')
-  : tr('ai.introWriting'))
+  ? tr(introIelts.value ? 'ai.introSpeakingIelts' : 'ai.introSpeaking')
+  : tr(introIelts.value ? 'ai.introWritingIelts' : 'ai.introWriting'))
 const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? tr('common.belowB1') : l ? `CEFR ${l}` : '')
 </script>
 

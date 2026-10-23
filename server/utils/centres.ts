@@ -115,15 +115,22 @@ export async function groupStudents(groupId: string) {
   const members = await db.select({ id: users.id, name: users.name, telegramUsername: users.telegramUsername, email: users.email, avatarUrl: users.avatarUrl, joinedAt: classMembers.joinedAt })
     .from(classMembers).innerJoin(users, eq(users.id, classMembers.userId)).where(eq(classMembers.groupId, groupId)).orderBy(users.name)
   if (!members.length) return []
-  const rows = await db.select({ userId: attempts.userId, skill: attempts.skill, score: attempts.score, partNumber: attempts.partNumber, at: attempts.submittedAt })
+  const rows = await db.select({ userId: attempts.userId, skill: attempts.skill, score: attempts.score, band: attempts.band, partNumber: attempts.partNumber, at: attempts.submittedAt })
     .from(attempts).where(inArray(attempts.userId, members.map(m => m.id))).orderBy(desc(attempts.submittedAt)).limit(5000)
   return members.map((m) => {
     const mine = rows.filter(r => r.userId === m.id)
+    // In the exam of their latest section: IELTS as a band (to one decimal), Multilevel out of 75.
+    const bands: string[] = []
     const level = Object.fromEntries(SKILLS.map((s) => {
-      const last = mine.filter(r => r.skill === s && r.partNumber == null && r.score != null).slice(0, 3)
-      return [s, last.length ? Math.round(last.reduce((a, r) => a + r.score!, 0) / last.length) : null]
+      const whole = mine.filter(r => r.skill === s && r.partNumber == null && (r.score != null || r.band != null))
+      const inBands = whole[0]?.score == null && whole[0]?.band != null
+      if (inBands) bands.push(s)
+      const last = whole.map(r => (inBands ? r.band : r.score)).filter((v): v is number => v != null).slice(0, 3)
+      if (!last.length) return [s, null]
+      const mean = last.reduce((a, v) => a + v, 0) / last.length
+      return [s, inBands ? Math.round(mean * 10) / 10 : Math.round(mean)]
     }))
-    return { id: m.id, name: nameOf(m), avatarUrl: m.avatarUrl, joinedAt: m.joinedAt, attempts: mine.length, lastActive: mine[0]?.at ?? null, level }
+    return { id: m.id, name: nameOf(m), avatarUrl: m.avatarUrl, joinedAt: m.joinedAt, attempts: mine.length, lastActive: mine[0]?.at ?? null, level, bands }
   })
 }
 
@@ -131,30 +138,34 @@ type Assignment = { id: string, groupId: string, testId: string, skill: string, 
 
 /** Each member's first hand-in of an assignment since it was set (the same section, or the same part). */
 export async function assignmentHandIns(a: Assignment, memberIds: string[]) {
-  if (!memberIds.length) return new Map<string, { attemptId: string, score: number | null, status: string, at: Date }>()
-  const rows = await useDb().select({ id: attempts.id, userId: attempts.userId, score: attempts.score, status: attempts.status, at: attempts.submittedAt })
+  if (!memberIds.length) return new Map<string, { attemptId: string, score: number | null, band: number | null, status: string, at: Date }>()
+  const rows = await useDb().select({ id: attempts.id, userId: attempts.userId, score: attempts.score, band: attempts.band, status: attempts.status, at: attempts.submittedAt })
     .from(attempts).where(and(
       inArray(attempts.userId, memberIds), eq(attempts.testId, a.testId), eq(attempts.skill, a.skill),
       a.partNumber == null ? isNull(attempts.partNumber) : eq(attempts.partNumber, a.partNumber),
       gte(attempts.submittedAt, a.createdAt)
     )).orderBy(attempts.submittedAt)
-  const first = new Map<string, { attemptId: string, score: number | null, status: string, at: Date }>()
-  for (const r of rows) if (!first.has(r.userId)) first.set(r.userId, { attemptId: r.id, score: r.score, status: r.status, at: r.at })
+  const first = new Map<string, { attemptId: string, score: number | null, band: number | null, status: string, at: Date }>()
+  for (const r of rows) if (!first.has(r.userId)) first.set(r.userId, { attemptId: r.id, score: r.score, band: r.band, status: r.status, at: r.at })
   return first
 }
 
 /** An assignment as lists show it: what to sit, where, and how many have done it. */
 export async function assignmentView(a: Assignment & { note: string | null, dueAt: Date | null }, memberIds: string[]) {
   const [[t], done] = await Promise.all([
-    useDb().select({ slug: tests.slug, title: tests.title }).from(tests).where(eq(tests.id, a.testId)).limit(1),
+    useDb().select({ slug: tests.slug, title: tests.title, module: tests.module }).from(tests).where(eq(tests.id, a.testId)).limit(1),
     assignmentHandIns(a, memberIds)
   ])
-  const scores = [...done.values()].map(d => d.score).filter((s): s is number => s != null)
+  // An IELTS test is marked in bands (its average to one decimal), a Multilevel one out of 75.
+  const exam = examOfTest(t)
+  const ielts = exam === 'IELTS'
+  const scores = [...done.values()].map(d => (ielts ? d.band : d.score)).filter((s): s is number => s != null)
+  const mean = scores.length ? scores.reduce((x, y) => x + y, 0) / scores.length : null
   return {
     id: a.id, skill: a.skill, partNumber: a.partNumber, note: a.note, dueAt: a.dueAt, createdAt: a.createdAt,
     test: t ? { slug: t.slug, title: t.title } : null,
     to: t ? `/tests/${t.slug}/${a.skill.toLowerCase()}${a.partNumber ? `?part=${a.partNumber}` : ''}` : null,
-    done: done.size, of: memberIds.length,
-    average: scores.length ? Math.round(scores.reduce((x, y) => x + y, 0) / scores.length) : null
+    exam, done: done.size, of: memberIds.length,
+    average: mean == null ? null : ielts ? Math.round(mean * 10) / 10 : Math.round(mean)
   }
 }

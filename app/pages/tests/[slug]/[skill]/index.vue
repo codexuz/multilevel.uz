@@ -129,7 +129,7 @@ async function handIn(extra: { recordings?: { partId: string, position: number, 
     sessionStorage.setItem(`ml.result.${slug}.${skill}`, JSON.stringify({ ...result, durationSeconds }))
     return router.replace(`/tests/${slug}/${skill.toLowerCase()}/result`)
   } catch (e: any) {
-    if (e?.statusCode === 402) {
+    if (e?.statusCode === 402 && !atSeat.value) {
       // No marking credit (or no Premium) after all: keep the work here and offer what is missing.
       submitting.value = false
       refreshMe()
@@ -151,8 +151,9 @@ function finishObjective(next: AnswerMap) {
 // ─── Writing and Speaking, where a guest practises: nothing is marked or sent ───
 // A signed-in candidate without a marking credit lands here too, with the offer of one.
 const practice = ref<'WRITING' | 'SPEAKING' | null>(null)
-// A centre's students hand in free: their teachers mark them.
-const canBeMarked = computed(() => loggedIn.value && (isStaff.value || !!me.value?.teacherMarks || credits.value > 0))
+// A centre's students hand in free: their teachers mark them. At a mock session's seat everything is
+// handed in to the session (its invigilator marks it), credits or none: never the practice screen.
+const canBeMarked = computed(() => atSeat.value || (loggedIn.value && (isStaff.value || !!me.value?.teacherMarks || credits.value > 0)))
 const recordings = ref<SpeakingRecording[]>([])
 
 function finishWriting(next: Record<string, string>) {
@@ -194,7 +195,7 @@ const answerLabel = (r: { partId: string, position: number }) => {
 }
 
 const essayExport = computed(() => (section.value?.tasks ?? []).map(t => ({
-  label: writingTaskLabel(t.taskNumber), prompt: t.prompt, text: essays.value[t.id] ?? '', wordCount: countWords(essays.value[t.id] ?? ''), minWords: t.minWords
+  label: writingTaskLabel(t.taskNumber, section.value?.exam), prompt: t.prompt, text: essays.value[t.id] ?? '', wordCount: countWords(essays.value[t.id] ?? ''), minWords: t.minWords
 })))
 const downloading = ref<'pdf' | 'docx' | null>(null)
 async function download(kind: 'pdf' | 'docx') {
@@ -224,7 +225,7 @@ watch(error, (e) => {
   if (e?.statusCode === 402) premiumNeeded.value = true
 }, { immediate: true })
 const practiceNote = computed(() => (loggedIn.value
-  ? t('sit.practiceNote')
+  ? t(ielts.value ? 'sit.practiceNoteIelts' : 'sit.practiceNote')
   : t('sit.practiceNoteGuest')))
 
 const pageError = computed(() => {
@@ -292,10 +293,12 @@ const pageError = computed(() => {
             <BillingPaywall
               v-else
               reason="credit"
+              :exam="section?.exam"
               compact
             />
           </template>
           <AiWritingFeedback
+            :exam="section?.exam"
             :slug="slug"
             :part="partNo"
             :essays="essays"
@@ -394,11 +397,13 @@ const pageError = computed(() => {
             <BillingPaywall
               v-else
               reason="credit"
+              :exam="section?.exam"
               compact
             />
           </template>
           <AiWritingFeedback
             skill="SPEAKING"
+            :exam="section?.exam"
             :slug="slug"
             :part="partNo"
             :recordings="recordings"
@@ -414,7 +419,7 @@ const pageError = computed(() => {
               {{ answerLabel(r) }}
             </p>
             <div class="flex flex-wrap items-center gap-3">
-              <span class="font-medium">{{ speakingPartLabel(section?.speaking?.find(p => p.id === r.partId)?.partNumber) }}</span>
+              <span class="font-medium">{{ speakingPartLabel(section?.speaking?.find(p => p.id === r.partId)?.partNumber, section?.exam) }}</span>
               <audio
                 :src="r.url"
                 controls
@@ -422,7 +427,7 @@ const pageError = computed(() => {
               />
               <UButton
                 :href="r.url"
-                :download="`speaking-${speakingPartLabel(section?.speaking?.find(p => p.id === r.partId)?.partNumber)}-${r.position + 1}.webm`"
+                :download="`speaking-${speakingPartLabel(section?.speaking?.find(p => p.id === r.partId)?.partNumber, section?.exam)}-${r.position + 1}.webm`"
                 icon="i-lucide-download"
                 color="neutral"
                 variant="outline"
