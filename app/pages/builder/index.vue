@@ -22,34 +22,56 @@ const TABS = [
   { label: 'Writing', value: 'writing', icon: SKILL_META.WRITING.icon },
   { label: 'Speaking', value: 'speaking', icon: SKILL_META.SPEAKING.icon }
 ]
-// The tab is kept in the address, written only when it is chosen here: following the query back
-// would pull a click on a row back to this page as the address changes.
+// The list as it is (tab, page, search and filters) lives in the address: going into a test or a
+// part and back, or the browser's back, opens the same page of the same list.
 const tabOf = (v: unknown) => (TABS.some(t => t.value === v) ? String(v) : 'tests')
+const str = (v: unknown, fallback = '') => (typeof v === 'string' && v ? v : fallback)
 const tab = ref(tabOf(route.query.tab))
-watch(tab, v => router.replace({ query: { ...route.query, tab: v, page: undefined } }))
-// The page is kept in the address too, so coming back from a test opens the same page.
 const page = ref(Math.max(1, Number(route.query.page) || 1))
-watch(page, p => router.replace({ query: { ...route.query, page: p > 1 ? String(p) : undefined } }))
-watch(() => route.query.tab, (v) => {
-  if (route.path === '/builder') tab.value = tabOf(v)
-})
-const search = ref('')
-const q = ref('')
+const search = ref(str(route.query.q))
+const q = ref(search.value)
 let searchTimer: ReturnType<typeof setTimeout> | undefined
 watch(search, (v) => {
   clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => (q.value = v), 300)
+  searchTimer = setTimeout(() => (q.value = v.trim()), 300)
 })
 // 'ALL' rather than empty: a select cannot hold an empty value.
-const testStatus = ref('ALL')
+const testStatus = ref(str(route.query.status, 'ALL'))
+/** Library items placed in a test (IN_TEST), or in none yet (UNUSED). */
+const used = ref(str(route.query.used, 'ALL'))
+const usedItems = [{ label: 'In tests or not', value: 'ALL' }, { label: 'In a test', value: 'IN_TEST' }, { label: 'Not in a test', value: 'UNUSED' }]
+watch([tab, page, q, testStatus, used], () => router.replace({
+  query: {
+    tab: tab.value === 'tests' ? undefined : tab.value,
+    page: page.value > 1 ? String(page.value) : undefined,
+    q: q.value || undefined,
+    status: tab.value === 'tests' && testStatus.value !== 'ALL' ? testStatus.value : undefined,
+    used: tab.value !== 'tests' && used.value !== 'ALL' ? used.value : undefined
+  }
+}))
+// Kept for the editors' back arrows (useBuilderList).
+const lastList = useBuilderList()
+watch(() => route.fullPath, (path) => {
+  if (route.path === '/builder') lastList.value = path
+}, { immediate: true })
+// The sidebar's link (or another page) changing the address while this page is open.
+watch(() => route.query, (rq) => {
+  if (route.path !== '/builder') return
+  if (tab.value !== tabOf(rq.tab)) tab.value = tabOf(rq.tab)
+  if (page.value !== Math.max(1, Number(rq.page) || 1)) page.value = Math.max(1, Number(rq.page) || 1)
+  if (q.value !== str(rq.q)) search.value = q.value = str(rq.q)
+  if (testStatus.value !== str(rq.status, 'ALL')) testStatus.value = str(rq.status, 'ALL')
+  if (used.value !== str(rq.used, 'ALL')) used.value = str(rq.used, 'ALL')
+})
 // Staff build for either exam: the library's own choice, apart from the exam they prepare for.
 const builderExam = useCookie<string | null>('builder-exam', { maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' })
 const exam = computed<Exam>(() => (isExam(builderExam.value) ? builderExam.value : 'IELTS'))
 const setExam = (next: Exam) => (builderExam.value = next)
-watch([tab, q, testStatus, exam], () => (page.value = 1))
+// Another list (or filter) starts on its first page.
+watch([tab, q, testStatus, used, exam], () => (page.value = 1))
 // ─── Many tests at once: pick them, then one action for them all ───
 const picked = ref<string[]>([])
-watch([tab, q, testStatus, exam, page], () => (picked.value = []))
+watch([tab, q, testStatus, used, exam, page], () => (picked.value = []))
 const pageTests = computed(() => (tab.value === 'tests' ? ((data.value?.items ?? []) as { id: string }[]).map(x => x.id) : []))
 const allPicked = computed(() => pageTests.value.length > 0 && pageTests.value.every(id => picked.value.includes(id)))
 const togglePick = (id: string, on: boolean) => (picked.value = on ? [...new Set([...picked.value, id])] : picked.value.filter(x => x !== id))
@@ -79,14 +101,14 @@ async function bulk(action: 'PUBLISH' | 'DRAFT' | 'ARCHIVE' | 'DELETE' | 'FREE' 
 const { data, status, refresh } = useAsyncData(
   'builder:list',
   (): Promise<any> => {
-    const p = { page: page.value, limit: 20, search: q.value || undefined, exam: exam.value }
+    const p = { page: page.value, limit: 20, search: q.value || undefined, exam: exam.value, used: used.value === 'ALL' ? undefined : used.value }
     if (tab.value === 'tests') return libraryAPI.tests({ ...p, status: testStatus.value === 'ALL' ? undefined : testStatus.value })
     if (tab.value === 'listening') return libraryAPI.parts({ ...p, skill: 'LISTENING' })
     if (tab.value === 'reading') return libraryAPI.parts({ ...p, skill: 'READING' })
     if (tab.value === 'writing') return libraryAPI.writingTasks(p)
     return libraryAPI.speakingParts(p)
   },
-  { watch: [tab, page, q, testStatus, exam], lazy: true }
+  { watch: [tab, page, q, testStatus, used, exam], lazy: true }
 )
 
 // ─── Creating ──────────────────────────────────────────────────────────────
@@ -242,6 +264,13 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
               v-model="testStatus"
               :items="statusItems"
               class="w-36"
+            />
+            <USelect
+              v-else
+              v-model="used"
+              :items="usedItems"
+              class="w-40"
+              data-testid="used-filter"
             />
             <UInput
               v-model="search"
@@ -406,6 +435,13 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
               class="text-xs text-muted max-sm:hidden"
             >in {{ p.tests.length }} test{{ p.tests.length === 1 ? '' : 's' }}</span>
             <UBadge
+              v-else
+              label="Not in a test"
+              color="warning"
+              variant="subtle"
+              size="sm"
+            />
+            <UBadge
               v-if="p.isActive === false"
               label="Inactive"
               color="neutral"
@@ -434,6 +470,17 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
                 At least {{ w.minWords ?? writingDefaults(w.taskNumber, w.exam).minWords }} words<span v-if="w.essays"> · {{ w.essays }} essays</span>
               </p>
             </div>
+            <span
+              v-if="w.inTests"
+              class="text-xs text-muted max-sm:hidden"
+            >in {{ w.inTests }} test{{ w.inTests === 1 ? '' : 's' }}</span>
+            <UBadge
+              v-else
+              label="Not in a test"
+              color="warning"
+              variant="subtle"
+              size="sm"
+            />
           </li>
         </template>
 
@@ -471,6 +518,17 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
                 /> samples {{ speakingExtras(s).samples }}/{{ speakingExtras(s).of }}</span>
               </p>
             </div>
+            <span
+              v-if="s.inTests"
+              class="text-xs text-muted max-sm:hidden"
+            >in {{ s.inTests }} test{{ s.inTests === 1 ? '' : 's' }}</span>
+            <UBadge
+              v-else
+              label="Not in a test"
+              color="warning"
+              variant="subtle"
+              size="sm"
+            />
           </li>
         </template>
 

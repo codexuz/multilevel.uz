@@ -1,3 +1,4 @@
+import type { SQLWrapper } from 'drizzle-orm'
 import { and, count, desc, eq, ilike, inArray, max, ne, or, sql } from 'drizzle-orm'
 import {
   answers, attempts, essays, parts, questionGroups, questionItems, sectionItems, sections,
@@ -29,6 +30,17 @@ const notFound = (message: string) => createError({ statusCode: 404, message })
 const examFrom = (value: unknown): Exam => (isExam(value) ? value : 'MULTILEVEL')
 /** A filter on an item's exam, when one is asked for. */
 const examFilter = (column: any, value: unknown) => (isExam(value) ? eq(column, value) : undefined)
+/** ?used=IN_TEST: placed in at least one test; ?used=UNUSED: in none yet (the library's spare items). */
+const usedFilter = (link: 'part_id' | 'writing_task_id' | 'speaking_part_id', id: any, value: unknown) => {
+  const placed = sql`exists (select 1 from ${sectionItems} si where si.${sql.raw(link)} = ${id})`
+  return value === 'IN_TEST' ? placed : value === 'UNUSED' ? sql`not ${placed}` : undefined
+}
+/**
+ * How many tests an item is placed in. In a plain select `id` must be written out with its table
+ * ("writing_tasks"."id"): a bare column in a subquery is read as the subquery's own.
+ */
+const testsUsing = (link: 'part_id' | 'writing_task_id' | 'speaking_part_id', id: SQLWrapper) =>
+  sql<number>`(select count(distinct s.test_id)::int from ${sectionItems} si join ${sections} s on s.id = si.section_id where si.${sql.raw(link)} = ${id})`
 /** Tests of an exam: IELTS ones are Academic or General Training. */
 const testExamFilter = (value: unknown) => value === 'IELTS'
   ? inArray(tests.module, [...IELTS_MODULES])
@@ -44,7 +56,8 @@ export async function listParts(query: Body) {
     query.skill ? eq(parts.skill, String(query.skill)) : undefined,
     query.partNumber ? eq(parts.partNumber, Number(query.partNumber)) : undefined,
     query.difficulty ? eq(parts.difficulty, String(query.difficulty)) : undefined,
-    query.search?.trim() ? ilike(parts.title, `%${query.search.trim()}%`) : undefined
+    query.search?.trim() ? ilike(parts.title, `%${query.search.trim()}%`) : undefined,
+    usedFilter('part_id', parts.id, query.used)
   )
   const [rows, [total]] = await Promise.all([
     db.query.parts.findMany({ where, limit, offset, orderBy: [desc(parts.updatedAt)], with: { groups: { with: { items: { columns: { id: true } } } } } }),
@@ -271,14 +284,19 @@ export async function listWritingTasks(query: Body) {
   const where = and(
     examFilter(writingTasks.exam, query.exam),
     query.taskNumber ? eq(writingTasks.taskNumber, Number(query.taskNumber)) : undefined,
-    search ? or(ilike(writingTasks.title, `%${search}%`), ilike(writingTasks.prompt, `%${search}%`)) : undefined
+    search ? or(ilike(writingTasks.title, `%${search}%`), ilike(writingTasks.prompt, `%${search}%`)) : undefined,
+    usedFilter('writing_task_id', writingTasks.id, query.used)
   )
   const [rows, [total]] = await Promise.all([
-    db.select({ task: writingTasks, essays: sql<number>`(select count(*)::int from ${essays} where ${essays.taskId} = ${writingTasks.id})` })
+    db.select({
+      task: writingTasks,
+      essays: sql<number>`(select count(*)::int from ${essays} e where e.task_id = "writing_tasks"."id")`,
+      inTests: testsUsing('writing_task_id', sql`"writing_tasks"."id"`)
+    })
       .from(writingTasks).where(where).orderBy(desc(writingTasks.updatedAt)).limit(limit).offset(offset),
     db.select({ n: count() }).from(writingTasks).where(where)
   ])
-  return paged(rows.map(r => ({ ...writingTaskView(r.task), essays: r.essays })), total?.n ?? 0, page, limit)
+  return paged(rows.map(r => ({ ...writingTaskView(r.task), essays: r.essays, inTests: r.inTests })), total?.n ?? 0, page, limit)
 }
 
 async function writingTaskRow(id: string) {
@@ -340,10 +358,15 @@ export async function listSpeakingParts(query: Body) {
   const where = and(
     examFilter(speakingParts.exam, query.exam),
     query.partNumber ? eq(speakingParts.partNumber, Number(query.partNumber)) : undefined,
-    search ? or(ilike(speakingParts.title, `%${search}%`), ilike(speakingParts.cueCard, `%${search}%`)) : undefined
+    search ? or(ilike(speakingParts.title, `%${search}%`), ilike(speakingParts.cueCard, `%${search}%`)) : undefined,
+    usedFilter('speaking_part_id', speakingParts.id, query.used)
   )
   const [rows, [total]] = await Promise.all([
-    db.query.speakingParts.findMany({ where, limit, offset, orderBy: [desc(speakingParts.updatedAt)], with: { questions: { orderBy: (t, { asc }) => [asc(t.position)] } } }),
+    db.query.speakingParts.findMany({
+      where, limit, offset, orderBy: [desc(speakingParts.updatedAt)],
+      with: { questions: { orderBy: (t, { asc }) => [asc(t.position)] } },
+      extras: { inTests: testsUsing('speaking_part_id', speakingParts.id).as('in_tests') }
+    }),
     db.select({ n: count() }).from(speakingParts).where(where)
   ])
   return paged(rows.map(r => speakingPartView(r, true)), total?.n ?? 0, page, limit)
