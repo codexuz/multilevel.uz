@@ -68,31 +68,23 @@ const STATE_COLOR = { archived: 'neutral', closed: 'neutral', running: 'success'
         {{ t('mocks.lead') }}
       </p>
 
-      <!-- Credits, for each place sessions run from -->
+      <!-- Credits, for each place sessions run from: one compact line each, as tall as the button -->
       <div
         v-if="data.scopes.length"
-        class="flex flex-wrap gap-3"
+        class="flex flex-wrap items-center gap-2"
       >
         <div
           v-for="s in data.scopes"
           :key="s.centreId ?? 'own'"
-          class="flex items-center gap-3 rounded-xl ring ring-default px-4 py-3"
+          class="h-8 flex items-center gap-1.5 rounded-md ring ring-default px-2.5 text-sm"
+          data-testid="credit-chip"
         >
           <UIcon
             :name="s.kind === 'CENTRE' ? 'i-lucide-school' : 'i-lucide-user-round'"
-            class="size-5 text-primary"
+            class="size-4 shrink-0 text-primary"
           />
-          <div>
-            <p class="text-sm font-medium text-highlighted">
-              {{ scopeName(s) }}
-            </p>
-            <p
-              class="text-xs"
-              :class="s.credits ? 'text-muted' : 'text-error'"
-            >
-              {{ t('mocks.credits', { n: s.credits }, s.credits) }}
-            </p>
-          </div>
+          <span class="font-medium text-highlighted">{{ scopeName(s) }}</span>
+          <span :class="s.credits ? 'text-muted' : 'text-error'">· {{ t('mocks.credits', { n: s.credits }, s.credits) }}</span>
         </div>
         <UButton
           :href="useRuntimeConfig().public.salesTelegram as string"
@@ -101,7 +93,7 @@ const STATE_COLOR = { archived: 'neutral', closed: 'neutral', running: 'success'
           icon="i-simple-icons-telegram"
           color="neutral"
           variant="outline"
-          class="rounded-xl px-4 py-3"
+          class="h-8"
         />
       </div>
 
