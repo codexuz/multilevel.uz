@@ -2,7 +2,7 @@ import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, lte, ne, sql } 
 import { attempts, liveMocks, sections, tests, users } from '../database/schema'
 import { telegramApi, telegramBotToken } from './telegram'
 import { MSG, asLocale } from './messages'
-import { telegramChannel } from './rewards'
+import { channelsOfMock, postChannels } from './channels'
 
 /**
  * Live mocks: one test everyone sits in the same window, ranked on Listening and Reading (marked at
@@ -105,41 +105,57 @@ async function send(chatId: string, text: string, path: string, button: string) 
   return res.ok
 }
 
-// ---------- the Telegram channel ----------
-// With TELEGRAM_CHANNEL set (the same channel as the join reward) the bot posts each mock there: when
-// it is scheduled, when it opens, and the top of the board when it closes. The bot must be an admin
-// of the channel allowed to post messages. TELEGRAM_CHANNEL_LOCALE picks the language (uz by default).
+// ---------- the Telegram channels ----------
+// The bot posts each mock to its channels (see channels.ts): when it is scheduled, when it opens, and
+// the top of the board when it closes, each in the channel's language. The bot must be an admin of
+// each channel allowed to post messages.
 
-const channelLocale = () => asLocale(process.env.TELEGRAM_CHANNEL_LOCALE || 'uz')
+export interface ChannelPosts { ok: boolean, error?: string, posts: { channel: string, ok: boolean, error?: string }[] }
 
-/** Posts where a mock stands to the channel: coming, open, or its results. Says why when it cannot. */
-export async function postMockToChannel(m: Mock, now = new Date()): Promise<{ ok: boolean, error?: string }> {
-  const channel = telegramChannel()
-  if (!channel) return { ok: false, error: 'No channel is set up (TELEGRAM_CHANNEL)' }
-  const l = channelLocale()
+/**
+ * Posts where a mock stands to its channels (or to `only`, some of all of them): coming, open, or
+ * its results. Says why when it cannot.
+ */
+export async function postMockToChannel(m: Mock, now = new Date(), only?: string[]): Promise<ChannelPosts> {
+  const [all, [t]] = await Promise.all([
+    postChannels(),
+    useDb().select({ module: tests.module }).from(tests).where(eq(tests.id, m.testId)).limit(1)
+  ])
+  const targets = only ? all.filter(c => only.includes(c.id)) : channelsOfMock(m, examOfModule(t?.module), all)
+  if (!targets.length) return { ok: false, error: all.length ? 'No channel is picked for this mock' : 'No channel is set up: add one on Live mocks', posts: [] }
   const state = mockState(m, now)
-  let text: string
-  let path = '/live'
-  let button: string
-  if (state === 'UPCOMING') {
-    text = MSG.liveSoon(l, m.title, m.startsAt, m.endsAt)
-    button = MSG.liveSoonButton[l]
-  } else if (state === 'LIVE') {
-    text = MSG.liveOpen(l, m.title, m.endsAt)
-    button = MSG.liveOpenButton[l]
-  } else {
-    const board = await standings(m.id)
-    if (!board.length) return { ok: false, error: 'Nobody took part, so there are no results to post' }
-    text = MSG.liveBoard(l, m.title, board.slice(0, 10), board.length)
-    path = `/live?mock=${m.id}`
-    button = MSG.liveOverButton[l]
+  const board = state === 'ENDED' ? await standings(m.id) : []
+  if (state === 'ENDED' && !board.length) return { ok: false, error: 'Nobody took part, so there are no results to post', posts: [] }
+
+  const posts: ChannelPosts['posts'] = []
+  for (const channel of targets) {
+    const l = channel.locale
+    let text: string
+    let path = '/live'
+    let button: string
+    if (state === 'UPCOMING') {
+      text = MSG.liveSoon(l, m.title, m.startsAt, m.endsAt)
+      button = MSG.liveSoonButton[l]
+    } else if (state === 'LIVE') {
+      text = MSG.liveOpen(l, m.title, m.endsAt)
+      button = MSG.liveOpenButton[l]
+    } else {
+      text = MSG.liveBoard(l, m.title, board.slice(0, 10), board.length)
+      path = `/live?mock=${m.id}`
+      button = MSG.liveOverButton[l]
+    }
+    const res = await telegramApi('sendMessage', {
+      chat_id: channel.chat, text, parse_mode: 'HTML', link_preview_options: { is_disabled: true },
+      reply_markup: { inline_keyboard: [[{ text: button, url: `${siteUrl()}${path}` }]] }
+    }).catch((e: any) => ({ ok: false, description: e?.data?.description || e?.message }))
+    if (!res.ok) console.warn(`[live] post to ${channel.chat} failed:`, res.description)
+    posts.push(res.ok ? { channel: channel.title, ok: true } : { channel: channel.title, ok: false, error: res.description || 'the post was refused' })
+    await sleep(40)
   }
-  const res = await telegramApi('sendMessage', {
-    chat_id: channel.chat, text, parse_mode: 'HTML', link_preview_options: { is_disabled: true },
-    reply_markup: { inline_keyboard: [[{ text: button, url: `${siteUrl()}${path}` }]] }
-  }).catch((e: any) => ({ ok: false, description: e?.data?.description || e?.message }))
-  if (!res.ok) console.warn('[live] channel post failed:', res.description)
-  return res.ok ? { ok: true } : { ok: false, error: `Telegram: ${res.description || 'the post was refused'}. The bot must be an admin of the channel that can post messages.` }
+  const failed = posts.filter(p => !p.ok)
+  return failed.length
+    ? { ok: false, error: `${failed.map(p => `${p.channel}: ${p.error}`).join('; ')}. The bot must be an admin of the channel that can post messages.`, posts }
+    : { ok: true, posts }
 }
 
 /**

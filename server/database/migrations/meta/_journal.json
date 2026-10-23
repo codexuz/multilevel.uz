@@ -120,6 +120,13 @@
       "when": 1792688338428,
       "tag": "0016_ielts_and_packs",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792728382721,
+      "tag": "0017_telegram_channels",
+      "breakpoints": true
     }
   ]
 }

@@ -222,9 +222,25 @@ export const liveMocks = pgTable('live_mocks', {
   /** When the bot told everyone it started, and when it told each participant their place. */
   announcedAt: timestamp('announced_at', { withTimezone: true }),
   resultsSentAt: timestamp('results_sent_at', { withTimezone: true }),
+  /** The Telegram channels it is posted to (telegram_channels ids, or 'default' for TELEGRAM_CHANNEL); null: those of its exam. */
+  channelIds: text('channel_ids').array(),
   createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: created()
 }, t => [index('live_mocks_window_idx').on(t.startsAt, t.endsAt)])
+
+// The Telegram channels the bot posts live mocks to, besides TELEGRAM_CHANNEL: one an exam (or both),
+// each in its own language. The bot must be an admin of each that can post messages.
+export const telegramChannels = pgTable('telegram_channels', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  /** @username or the numeric id (-100…). */
+  chat: text('chat').notNull().unique(),
+  title: text('title').notNull(),
+  url: text('url'),
+  /** IELTS | MULTILEVEL; null: both. */
+  exam: text('exam'),
+  locale: text('locale').notNull().default('uz'),
+  createdAt: created()
+})
 
 // ---------- attempts (signed-in users only; a guest's answers are checked and never stored) ----------
 export const attempts = pgTable('attempts', {
