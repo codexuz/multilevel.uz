@@ -153,10 +153,19 @@ export async function updatePart(id: string, body: Body) {
 }
 
 /** A part somebody has answered is hidden rather than deleted, so their results keep their questions. */
+/** How many tests an item is placed in (a delete never takes one out of a test). */
+async function testsPlacedIn(column: typeof sectionItems.partId | typeof sectionItems.writingTaskId | typeof sectionItems.speakingPartId, id: string) {
+  const [row] = await useDb().select({ n: sql<number>`count(distinct ${sections.testId})::int` }).from(sectionItems)
+    .innerJoin(sections, eq(sections.id, sectionItems.sectionId)).where(eq(column, id))
+  return row?.n ?? 0
+}
+const inTestsConflict = (n: number) => conflict(`It is in ${n} test${n === 1 ? '' : 's'}: take it out first`)
+
+/** A part in a test, or with answers, is kept and made inactive: no test loses it, results stay true. */
 export async function deletePart(id: string) {
   await partRow(id)
   const db = useDb()
-  if (await answeredInPart(id)) {
+  if (await testsPlacedIn(sectionItems.partId, id) || await answeredInPart(id)) {
     await db.update(parts).set({ isActive: false }).where(eq(parts.id, id))
     return { deleted: false, archived: true }
   }
@@ -352,6 +361,8 @@ export async function updateWritingTask(id: string, body: Body) {
 
 export async function deleteWritingTask(id: string) {
   await writingTaskRow(id)
+  const placed = await testsPlacedIn(sectionItems.writingTaskId, id)
+  if (placed) throw inTestsConflict(placed)
   const db = useDb()
   const [used] = await db.select({ n: count() }).from(essays).where(eq(essays.taskId, id))
   if (used?.n) throw conflict('Essays were written to this task: it cannot be deleted')
@@ -423,6 +434,8 @@ export async function saveSpeakingPart(id: string | null, body: Body, userId: st
 
 export async function deleteSpeakingPart(id: string) {
   await getSpeakingPart(id)
+  const placed = await testsPlacedIn(sectionItems.speakingPartId, id)
+  if (placed) throw inTestsConflict(placed)
   const db = useDb()
   const [used] = await db.select({ n: count() }).from(speakingResponses).where(eq(speakingResponses.partId, id))
   if (used?.n) throw conflict('Candidates recorded answers to this part: it cannot be deleted')
