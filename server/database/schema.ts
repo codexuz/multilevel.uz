@@ -46,6 +46,8 @@ export const users = pgTable('users', {
   onboarded: boolean('onboarded').notNull().default(false),
   /** Made for a walk-in candidate of a mock session: it signs in only at their seat (mock-sessions.ts). */
   mockOnly: boolean('mock_only').notNull().default(false),
+  /** Marks Writing and Speaking handed in by students outside a learning centre (switched on by an admin). */
+  marker: boolean('marker').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 })

@@ -26,6 +26,8 @@ export function useMe() {
   // Mockmee's staff are its admins (marking and the test builder are theirs).
   const isStaff = computed(() => role.value === 'admin')
   const isAdmin = computed(() => role.value === 'admin')
+  /** Has a marking queue: an admin, a marker, or a centre's owner or teacher. */
+  const canMark = computed(() => !!me.value?.marks)
   const isPremium = computed(() => !!me.value?.premium)
   const credits = computed(() => me.value?.credits ?? 0)
   const rewardCredits = computed(() => me.value?.rewardCredits ?? 0)
@@ -36,5 +38,5 @@ export function useMe() {
   const canOpen = (test: { id?: string, access?: string }, partId?: string | null) => test.access !== 'PREMIUM' || isPremium.value
     || (!!test.id && !!me.value?.unlockedTests?.includes(test.id))
     || (!!partId && !!me.value?.unlockedParts?.includes(partId))
-  return { me, loggedIn, role, isStaff, isAdmin, isPremium, credits, rewardCredits, canOpen, refresh, pending }
+  return { me, loggedIn, role, isStaff, isAdmin, canMark, isPremium, credits, rewardCredits, canOpen, refresh, pending }
 }

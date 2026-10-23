@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
 
   if (body.attemptId) {
     const [attempt] = await db.select().from(attempts).where(eq(attempts.id, String(body.attemptId))).limit(1)
-    if (!attempt || attempt.skill !== 'SPEAKING' || (attempt.userId !== user.id && !isStaffRole(user.role))) throw createError({ statusCode: 404, message: 'Speaking not found' })
+    if (!attempt || attempt.skill !== 'SPEAKING' || (attempt.userId !== user.id && !isStaffRole(user.role) && !(await marksAttempt(user, attempt.id)))) throw createError({ statusCode: 404, message: 'Speaking not found' })
     const [existing] = await db.select({ id: aiReviews.id, status: aiReviews.status }).from(aiReviews).where(eq(aiReviews.attemptId, attempt.id)).limit(1)
     if (existing && existing.status !== 'FAILED') return { id: existing.id, status: existing.status }
     parts = await attemptSpeakingParts(attempt.id)

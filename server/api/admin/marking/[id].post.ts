@@ -2,15 +2,16 @@ import { and, eq } from 'drizzle-orm'
 import { attempts, essays } from '../../../database/schema'
 
 /**
- * The examiner's mark: a Multilevel score out of 75 or an IELTS band (0–9 in halves) for the section,
+ * The marker's mark (an admin, a marker, or the candidate's centre teacher, markers.ts): a Multilevel score out of 75 or an IELTS band (0–9 in halves) for the section,
  * a word for the candidate, and a comment on each essay. The candidate is told (push and the open
  * page), and sees it on their result.
  */
 interface GradeBody { score?: number, band?: number, feedback?: string | null, essays?: { id: string, feedback?: string | null }[] }
 
 export default defineEventHandler(async (event) => {
-  const examiner = await requireStaff(event)
+  const { user: examiner, scope } = await requireMarker(event)
   const id = getRouterParam(event, 'id')!
+  await requireMarkable(scope, id)
   const body = await readBody<GradeBody>(event)
 
   const db = useDb()
@@ -39,5 +40,5 @@ export default defineEventHandler(async (event) => {
   const result = ielts ? `band ${band!.toFixed(1)}` : `${score}/75`
   await sendPush([attempt.userId], { title: `${label} marked`, body: `Your ${label} scored ${result} (${level}).`, data: { url: `/results/${id}` } }).catch(() => {})
   await notifyMarked(attempt.userId, id, attempt.skill, (band ?? score)!, level, ielts).catch(() => {})
-  return attemptView(id, examiner)
+  return attemptView(id, examiner, { marker: true })
 })

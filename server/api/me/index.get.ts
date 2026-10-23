@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   const db = useDb()
   const [u] = await db.select().from(users).where(eq(users.id, auth.id)).limit(1)
   if (!u) throw createError({ statusCode: 404, message: 'User not found' })
-  const [access, rewardCredits, unlockedTests, unlockedParts, centres] = await Promise.all([accessOf(auth, db), rewardBalance(auth.id), unlockedTestIds(auth.id), unlockedPartIds(auth.id), centresOf(auth.id)])
+  const [access, rewardCredits, unlockedTests, unlockedParts, centres, marking] = await Promise.all([accessOf(auth, db), rewardBalance(auth.id), unlockedTestIds(auth.id), unlockedPartIds(auth.id), centresOf(auth.id), markingScopeOf(auth)])
 
   return {
     id: u.id,
@@ -39,6 +39,10 @@ export default defineEventHandler(async (event) => {
     /** A walk-in's account for a mock session: it sits at its seat and nowhere else. */
     mockOnly: u.mockOnly,
     /** May run mock sessions: teachers, centre owners and admins. */
+    /** Switched on by an admin: marks Writing and Speaking of students outside a centre. */
+    marker: u.marker,
+    /** Has a marking queue: an admin, a marker, or a centre's owner or teacher. */
+    marks: marksAnything(marking),
     runsMocks: !u.mockOnly && (u.role === 'teacher' || u.role === 'center_owner' || u.role === 'admin')
   }
 })

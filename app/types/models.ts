@@ -39,6 +39,10 @@ export interface Me {
   unlockedTests: string[]
   mockOnly?: boolean
   runsMocks?: boolean
+  /** Switched on by an admin: marks students outside a centre. */
+  marker?: boolean
+  /** Has a marking queue (an admin, a marker, or a centre's owner or teacher). */
+  marks?: boolean
   /** Single parts (section items) bought in packs. */
   unlockedParts?: string[]
   /** Learning centres I belong to, and my role in each. */

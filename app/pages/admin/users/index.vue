@@ -22,6 +22,8 @@ interface AdminUser {
   avatarUrl: string | null
   role: UserRole
   banned: boolean
+  /** Marks Writing and Speaking of students outside a centre. */
+  marker: boolean
   createdAt: string
   premiumUntil: string | null
   credits: number
@@ -64,7 +66,7 @@ function pick(id: string, on: boolean) {
 }
 const bulkRole = ref<UserRole | undefined>(undefined)
 const bulkBusy = ref(false)
-async function bulk(action: 'ROLE' | 'BAN' | 'UNBAN' | 'DELETE', role?: UserRole) {
+async function bulk(action: 'ROLE' | 'MARKER_ON' | 'MARKER_OFF' | 'BAN' | 'UNBAN' | 'DELETE', role?: UserRole) {
   const n = selected.value.length
   if (!n) return
   if ((action === 'DELETE' || action === 'BAN') && !await confirm({
@@ -76,7 +78,7 @@ async function bulk(action: 'ROLE' | 'BAN' | 'UNBAN' | 'DELETE', role?: UserRole
   bulkBusy.value = true
   try {
     const res = await $fetch<{ updated: number }>('/api/admin/users/bulk', { method: 'POST', body: { ids: selected.value, action, role } })
-    toast.add({ title: `${res.updated} user${res.updated === 1 ? '' : 's'} ${action === 'ROLE' ? `set to ${ROLE_LABEL[role!]}` : action === 'BAN' ? 'banned' : action === 'UNBAN' ? 'unbanned' : 'deleted'}`, color: 'success' })
+    toast.add({ title: `${res.updated} user${res.updated === 1 ? '' : 's'} ${action === 'ROLE' ? `set to ${ROLE_LABEL[role!]}` : action === 'MARKER_ON' ? 'can mark now' : action === 'MARKER_OFF' ? 'no longer mark' : action === 'BAN' ? 'banned' : action === 'UNBAN' ? 'unbanned' : 'deleted'}`, color: 'success' })
     selected.value = []
     bulkRole.value = undefined
     await refresh()
@@ -91,6 +93,17 @@ async function setRole(p: AdminUser, role: UserRole) {
   try {
     await $fetch(`/api/admin/users/${p.id}/role`, { method: 'PATCH', body: { role } })
     toast.add({ title: `Role updated to ${role}`, color: 'success' })
+    await refresh()
+  } catch (e) {
+    fail(e)
+  }
+}
+
+// A marker marks Writing and Speaking handed in by students outside a learning centre.
+async function toggleMarker(p: AdminUser) {
+  try {
+    await $fetch(`/api/admin/users/${p.id}/marker`, { method: 'PATCH', body: { marker: !p.marker } })
+    toast.add({ title: p.marker ? 'Marking switched off' : 'Marking switched on', color: 'success' })
     await refresh()
   } catch (e) {
     fail(e)
@@ -239,6 +252,23 @@ async function endPremium(p: AdminUser) {
               class="w-36 ms-2"
               @update:model-value="v => v && bulk('ROLE', v as UserRole)"
             />
+            <UDropdownMenu
+              :items="[[
+                { label: 'Switch marking on', icon: 'i-lucide-pen-line', onSelect: () => bulk('MARKER_ON') },
+                { label: 'Switch marking off', icon: 'i-lucide-pen-off', onSelect: () => bulk('MARKER_OFF') }
+              ]]"
+            >
+              <UButton
+                label="Marking"
+                icon="i-lucide-pen-line"
+                trailing-icon="i-lucide-chevron-down"
+                size="sm"
+                color="neutral"
+                variant="outline"
+                :loading="bulkBusy"
+                data-testid="bulk-marker"
+              />
+            </UDropdownMenu>
             <UButton
               label="Ban"
               icon="i-lucide-ban"
@@ -301,6 +331,14 @@ async function endPremium(p: AdminUser) {
             <div class="min-w-0">
               <p class="font-medium truncate flex items-center gap-2">
                 {{ p.name || 'Unnamed user' }}
+                <UBadge
+                  v-if="p.marker"
+                  color="primary"
+                  variant="subtle"
+                  size="sm"
+                  icon="i-lucide-pen-line"
+                  label="Marker"
+                />
                 <UBadge
                   v-if="p.banned"
                   color="error"
@@ -367,6 +405,7 @@ async function endPremium(p: AdminUser) {
               :items="[[
                 { label: 'Attempts', icon: 'i-lucide-clipboard-check', to: `/admin/attempts?user=${p.id}` },
                 { label: 'Credits & AI reviews', icon: 'i-lucide-gift', onSelect: () => openGift(p) },
+                { label: p.marker ? 'Switch marking off' : 'Switch marking on', icon: p.marker ? 'i-lucide-pen-off' : 'i-lucide-pen-line', onSelect: () => toggleMarker(p) },
                 { label: 'Mock credits (teacher)', icon: 'i-lucide-monitor-check', onSelect: () => (mockFor = { userId: p.id, name: p.name || p.email || 'User' }) },
                 ...(p.premiumUntil ? [{ label: 'End Premium', icon: 'i-lucide-circle-stop', onSelect: () => endPremium(p) }] : []),
                 ...(p.id !== me?.id ? [

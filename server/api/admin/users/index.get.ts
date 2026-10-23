@@ -42,6 +42,7 @@ export default defineEventHandler(async (event) => {
     avatarUrl: u.avatarUrl,
     role: u.role,
     banned: u.banned,
+    marker: u.marker,
     createdAt: u.createdAt,
     premiumUntil: until.get(u.id) ?? null,
     credits: credits.get(u.id) ?? 0,
