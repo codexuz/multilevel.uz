@@ -28,6 +28,32 @@ export interface Pack {
   owned: boolean
   testCount: number
   tests: { id: string, slug: string, title: string, module: string, exam: string, category: string | null, status: string }[]
+  partCount: number
+  /** Single parts sold in it, beside its whole tests. */
+  parts: PackPart[]
+}
+
+export interface PackPart {
+  /** The section item. */
+  id: string
+  skill: string
+  number: number | null
+  title: string | null
+  exam: string
+  status: string
+  test: { id: string, slug: string, title: string, module: string | null }
+}
+
+/** What is in a pack, as "3 tests · 5 parts" (an empty half left out). */
+export const packContents = (p: Pick<Pack, 'testCount' | 'partCount'>, t: (key: string, named: Record<string, unknown>, plural: number) => string) =>
+  [p.testCount || !p.partCount ? t('packs.tests', { n: p.testCount }, p.testCount) : '', p.partCount ? t('packs.parts', { n: p.partCount }, p.partCount) : '']
+    .filter(Boolean).join(' · ')
+
+/** A pack's part as a line: the skill and part, then its title. */
+export const packPartLabel = (p: { skill: string, number: number | null, title: string | null, exam?: string }) => {
+  const name = `${skillLabel(p.skill)} · ${partName(p.skill, p.number, p.exam)}`
+  const title = (p.title ?? '').replace(/^(Task|Part) [\d.]+\s*[—-]\s*/, '')
+  return title ? `${name}: ${title}` : name
 }
 
 export interface Order {

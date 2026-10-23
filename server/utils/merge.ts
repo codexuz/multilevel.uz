@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 import { and, eq, inArray, ne, sql } from 'drizzle-orm'
 import {
   aiReviews, attempts, creditTransactions, orders, parts, rewardTransactions, sessions, speakingParts,
-  subscriptions, testUnlocks, tests, users, writingTasks
+  partUnlocks, subscriptions, testUnlocks, tests, users, writingTasks
 } from '../database/schema'
 
 /**
@@ -107,6 +107,7 @@ export async function mergeAccounts(keepId: string, otherId: string) {
     await tx.execute(sql`update class_groups set teacher_id = ${keepId} where teacher_id = ${otherId}`)
     // Unlocked tests: the ones the kept account does not have yet.
     await tx.execute(sql`insert into ${testUnlocks} (user_id, test_id, created_at) select ${keepId}, test_id, created_at from ${testUnlocks} where user_id = ${otherId} on conflict do nothing`)
+    await tx.execute(sql`insert into ${partUnlocks} (user_id, section_item_id, created_at) select ${keepId}, section_item_id, created_at from ${partUnlocks} where user_id = ${otherId} on conflict do nothing`)
     // What they did as staff, and whom they invited.
     await tx.update(attempts).set({ examinerId: keepId }).where(eq(attempts.examinerId, otherId))
     await tx.update(orders).set({ grantedById: keepId }).where(eq(orders.grantedById, otherId))

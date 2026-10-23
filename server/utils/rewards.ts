@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import type { H3Event } from 'h3'
 import { and, eq, gt, sql } from 'drizzle-orm'
-import { rewardTransactions, testUnlocks, users } from '../database/schema'
+import { partUnlocks, rewardTransactions, testUnlocks, users } from '../database/schema'
 import { paymentRequired } from './billing'
 import { telegramApi, telegramBotToken } from './telegram'
 import { notifyInviteReward } from './notify'
@@ -46,12 +46,27 @@ export async function unlockedTestIds(userId: string) {
   return rows.map(r => r.testId)
 }
 
-/** Whether this user may open this test: it is free, they have Premium, they unlocked it, or it is a live mock now. */
-export async function canOpenTest(user: { id: string } | null, test: { id: string, access: string }, premium: boolean) {
+/** The single parts (section items) this user bought in packs. */
+export async function unlockedPartIds(userId: string) {
+  const rows = await useDb().select({ id: partUnlocks.sectionItemId }).from(partUnlocks).where(eq(partUnlocks.userId, userId))
+  return rows.map(r => r.id)
+}
+
+/**
+ * Whether this user may open this test (or, given `partId`, that one part of it, a section item):
+ * it is free, they have Premium, they unlocked it, they bought that part in a pack, or it is a live
+ * mock now.
+ */
+export async function canOpenTest(user: { id: string } | null, test: { id: string, access: string }, premium: boolean, partId?: string | null) {
   if (test.access !== 'PREMIUM' || premium) return true
   if (!user) return false
   // A live mock is open to everyone signed in while it runs.
   if (await openMockOfTest(test.id)) return true
+  if (partId) {
+    const [part] = await useDb().select({ id: partUnlocks.sectionItemId }).from(partUnlocks)
+      .where(and(eq(partUnlocks.userId, user.id), eq(partUnlocks.sectionItemId, partId))).limit(1)
+    if (part) return true
+  }
   const [row] = await useDb().select({ testId: testUnlocks.testId }).from(testUnlocks)
     .where(and(eq(testUnlocks.userId, user.id), eq(testUnlocks.testId, test.id))).limit(1)
   return !!row

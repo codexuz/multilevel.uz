@@ -127,6 +127,13 @@
       "when": 1792728382721,
       "tag": "0017_telegram_channels",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792730254906,
+      "tag": "0018_pack_parts",
+      "breakpoints": true
     }
   ]
 }

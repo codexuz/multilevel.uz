@@ -577,6 +577,20 @@ export const packTests = pgTable('pack_tests', {
   position: integer('position').notNull().default(1)
 }, t => [primaryKey({ columns: [t.packId, t.testId] }), index('pack_tests_test_idx').on(t.testId)])
 
+// Single parts in a pack (a Reading passage, a Writing task), beside its whole tests.
+export const packParts = pgTable('pack_parts', {
+  packId: uuid('pack_id').notNull().references(() => packs.id, { onDelete: 'cascade' }),
+  sectionItemId: uuid('section_item_id').notNull().references(() => sectionItems.id, { onDelete: 'cascade' }),
+  position: integer('position').notNull().default(1)
+}, t => [primaryKey({ columns: [t.packId, t.sectionItemId] }), index('pack_parts_item_idx').on(t.sectionItemId)])
+
+/** Single parts of premium tests a user bought in a pack: theirs for good, the rest of the test not. */
+export const partUnlocks = pgTable('part_unlocks', {
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  sectionItemId: uuid('section_item_id').notNull().references(() => sectionItems.id, { onDelete: 'cascade' }),
+  createdAt: created()
+}, t => [primaryKey({ columns: [t.userId, t.sectionItemId] })])
+
 /** Premium tests a user opened with credits or bought in a pack: theirs for good. */
 export const testUnlocks = pgTable('test_unlocks', {
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),

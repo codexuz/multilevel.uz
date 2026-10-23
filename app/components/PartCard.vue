@@ -5,7 +5,7 @@ const props = defineProps<{ part: { id: string, skill: string, exam?: string, nu
 const { canOpen } = useMe()
 const { t } = useI18n()
 
-const locked = computed(() => !canOpen(props.part.test))
+const locked = computed(() => !canOpen(props.part.test, props.part.id))
 const to = computed(() => locked.value
   ? `/tests/${props.part.test.slug}`
   : `/tests/${props.part.test.slug}/${props.part.skill.toLowerCase()}?part=${props.part.number}`)
