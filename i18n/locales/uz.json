@@ -471,6 +471,8 @@
     "correct": "To‘g‘ri javoblar",
     "time": "Vaqt",
     "withExaminer": "Imtihon oluvchida",
+    "withTeacher": "O‘qituvchingizda",
+    "waitingTeacherText": "{skill} saqlandi va markazingiz o‘qituvchilariga yuborildi. Ular baholagach, ball va izoh shu yerda chiqadi.",
     "practiceOnly": "Faqat mashq",
     "waitingText": "{skill} bo‘limingiz saqlandi va imtihon oluvchini kutmoqda. Baho va izoh baholangandan keyin shu yerda chiqadi, odatda 24 soat ichida.",
     "practiceText": "{skill} imtihon oluvchi tomonidan baholanadi. Baholatish uchun kiring va topshiring; bu mashq saqlanmaydi.",

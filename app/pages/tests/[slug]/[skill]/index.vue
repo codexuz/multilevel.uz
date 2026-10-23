@@ -20,7 +20,7 @@ definePageMeta({ layout: 'exam' })
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
-const { loggedIn, isStaff, credits, refresh: refreshMe } = useMe()
+const { me, loggedIn, isStaff, credits, refresh: refreshMe } = useMe()
 const slug = String(route.params.slug)
 const skill = String(route.params.skill).toUpperCase() as 'LISTENING' | 'READING' | 'WRITING' | 'SPEAKING'
 // ?part=N: one part practised on its own.
@@ -151,7 +151,8 @@ function finishObjective(next: AnswerMap) {
 // ─── Writing and Speaking, where a guest practises: nothing is marked or sent ───
 // A signed-in candidate without a marking credit lands here too, with the offer of one.
 const practice = ref<'WRITING' | 'SPEAKING' | null>(null)
-const canBeMarked = computed(() => loggedIn.value && (isStaff.value || credits.value > 0))
+// A centre's students hand in free: their teachers mark them.
+const canBeMarked = computed(() => loggedIn.value && (isStaff.value || !!me.value?.teacherMarks || credits.value > 0))
 const recordings = ref<SpeakingRecording[]>([])
 
 function finishWriting(next: Record<string, string>) {

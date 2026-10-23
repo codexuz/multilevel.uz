@@ -43,6 +43,8 @@ export interface Me {
   marker?: boolean
   /** Has a marking queue (an admin, a marker, or a centre's owner or teacher). */
   marks?: boolean
+  /** Studies at a centre whose licence runs: their teachers mark Writing and Speaking, free. */
+  teacherMarks?: boolean
   /** Single parts (section items) bought in packs. */
   unlockedParts?: string[]
   /** Learning centres I belong to, and my role in each. */

@@ -99,6 +99,18 @@ export const MSG = {
   })[l],
   aiReviewButton: { en: 'Read it', uz: 'O‘qish', ru: 'Читать' },
 
+  toMark: (l: Locale, name: string, skill: string) => ({
+    en: `📝 <b>${name}</b> handed in ${skillName(l, skill)} for you to mark.`,
+    uz: `📝 <b>${name}</b> ${skillName(l, skill)} bo‘limini baholashingiz uchun topshirdi.`,
+    ru: `📝 <b>${name}</b> сдал(а) ${skillName(l, skill)} вам на проверку.`
+  })[l],
+  toMarkWaiting: (l: Locale, n: number) => ({
+    en: `⏰ <b>${n} ${n === 1 ? 'script has' : 'scripts have'} waited over two days</b> for your mark. Your students are waiting for their feedback.`,
+    uz: `⏰ <b>${n} ta ish ikki kundan beri</b> bahoingizni kutmoqda. O‘quvchilaringiz izohingizni kutishyapti.`,
+    ru: `⏰ <b>Работ, ждущих проверки больше двух дней: ${n}</b>. Ученики ждут вашего отзыва.`
+  })[l],
+  toMarkButton: { en: 'Mark it', uz: 'Baholash', ru: 'Проверить' },
+
   inviteReward: (l: Locale, n: number) => ({
     en: `🎁 <b>+${credits(l, n)}</b>\nA friend you invited finished their first test. Use credits to open Premium tests.`,
     uz: `🎁 <b>+${credits(l, n)}</b>\nSiz taklif qilgan do‘stingiz birinchi testini tugatdi. Kreditlar bilan Premium testlarni oching.`,

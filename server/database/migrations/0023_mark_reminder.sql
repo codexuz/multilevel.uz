@@ -1,0 +1,1 @@
+ALTER TABLE "attempts" ADD COLUMN "mark_reminded_at" timestamp with time zone;
