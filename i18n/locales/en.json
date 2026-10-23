@@ -1399,7 +1399,9 @@
       "AWAY": "Left the page",
       "PASTE": "Pasted",
       "FAST": "Too fast"
-    }
+    },
+    "noCreditsTitle": "No mock credits",
+    "noCreditsText": "A session can be made once there are mock credits to check candidates in. Buy credits on Telegram; they are added to your centre or your account."
   },
   "report": {
     "title": "{name}: mock result",

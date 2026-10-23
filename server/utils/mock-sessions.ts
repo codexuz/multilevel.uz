@@ -147,6 +147,10 @@ export async function createSession(user: { id: string, role: string }, body: Se
   if (!scopes.some(s => s.centreId === centreId)) {
     throw createError({ statusCode: 403, message: centreId ? 'Mock sessions are for centres whose licence runs' : 'Mock sessions are for Premium teachers and learning centres' })
   }
+  // A session needs credits to check anyone in: none left, none made.
+  if (scopes.find(s => s.centreId === centreId)!.credits < 1) {
+    throw createError({ statusCode: 402, message: 'No mock credits left: buy credits to make a session', data: { code: 'MOCK_CREDIT_REQUIRED' } })
+  }
   const values = await sessionValues(body, false)
   const [row] = await useDb().insert(mockSessions).values({ ...values, centreId, ownerId: user.id } as typeof mockSessions.$inferInsert).returning()
   return row!

@@ -1399,7 +1399,9 @@
       "AWAY": "Sahifadan chiqdi",
       "PASTE": "Joylashtirdi",
       "FAST": "Juda tez"
-    }
+    },
+    "noCreditsTitle": "Mock kreditlari yo‘q",
+    "noCreditsText": "Nomzodlarni ro‘yxatga olish uchun mock kreditlari bo‘lgandagina sessiya yaratiladi. Kreditlarni Telegramda sotib oling: ular markazingizga yoki hisobingizga qo‘shiladi."
   },
   "report": {
     "title": "{name}: mock natijasi",

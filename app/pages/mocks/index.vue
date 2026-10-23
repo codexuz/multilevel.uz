@@ -23,8 +23,12 @@ function today() {
   return { opensAt: `${day}T10:00`, closesAt: `${day}T14:00` }
 }
 const form = ref<{ centreId: string | null, title: string, testId?: string, opensAt: string, closesAt: string, room: string, capacity?: number, priceUzs?: number, holdResults: boolean } | null>(null)
+/** Where a session can be made now: a place with mock credits left (none left, none made). */
+const withCredits = computed(() => data.value.scopes.filter(s => s.credits > 0))
+const canCreate = computed(() => withCredits.value.length > 0)
 function startCreate() {
-  form.value = { centreId: data.value.scopes[0]?.centreId ?? null, title: t('mocks.defaultTitle'), ...today(), room: '', holdResults: true }
+  if (!canCreate.value) return
+  form.value = { centreId: withCredits.value[0]!.centreId, title: t('mocks.defaultTitle'), ...today(), room: '', holdResults: true }
 }
 const saving = ref(false)
 async function save() {
@@ -59,6 +63,7 @@ const STATE_COLOR = { archived: 'neutral', closed: 'neutral', running: 'success'
         v-if="data.scopes.length"
         :label="t('mocks.new')"
         icon="i-lucide-plus"
+        :disabled="!canCreate"
         @click="startCreate"
       />
     </template>
@@ -107,12 +112,22 @@ const STATE_COLOR = { archived: 'neutral', closed: 'neutral', running: 'success'
         :actions="[{ label: t('mocks.getPremium'), to: '/pricing', color: 'primary' }]"
       />
 
+      <!-- No credits anywhere: no session can be made until some are bought -->
+      <UAlert
+        v-if="data.scopes.length && !canCreate"
+        color="warning"
+        variant="subtle"
+        icon="i-lucide-coins"
+        :title="t('mocks.noCreditsTitle')"
+        :description="t('mocks.noCreditsText')"
+        data-testid="no-credits"
+      />
       <UEmpty
         v-if="data.scopes.length && !data.sessions.length"
         icon="i-lucide-monitor-check"
         :title="t('mocks.none')"
-        :description="t('mocks.noneText')"
-        :actions="[{ label: t('mocks.new'), icon: 'i-lucide-plus', onClick: startCreate }]"
+        :description="canCreate ? t('mocks.noneText') : undefined"
+        :actions="canCreate ? [{ label: t('mocks.new'), icon: 'i-lucide-plus', onClick: startCreate }] : []"
       />
       <NuxtLink
         v-for="r in data.sessions"
@@ -155,12 +170,12 @@ const STATE_COLOR = { archived: 'neutral', closed: 'neutral', running: 'success'
           @submit.prevent="save"
         >
           <UFormField
-            v-if="data.scopes.length > 1"
+            v-if="withCredits.length > 1"
             :label="t('mocks.runBy')"
           >
             <USelect
               v-model="form.centreId as any"
-              :items="data.scopes.map(s => ({ label: scopeName(s), value: s.centreId as any }))"
+              :items="withCredits.map(s => ({ label: `${scopeName(s)} · ${t('mocks.credits', { n: s.credits }, s.credits)}`, value: s.centreId as any }))"
               class="w-full"
             />
           </UFormField>
