@@ -43,6 +43,8 @@ export const users = pgTable('users', {
   /** The last day the bot sent a study plan reminder, so it writes at most once a day. */
   planRemindedOn: date('plan_reminded_on', { mode: 'string' }),
   onboarded: boolean('onboarded').notNull().default(false),
+  /** Made for a walk-in candidate of a mock session: it signs in only at their seat (mock-sessions.ts). */
+  mockOnly: boolean('mock_only').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 })
@@ -279,6 +281,8 @@ export const attempts = pgTable('attempts', {
   integrityNote: text('integrity_note'),
   integrityReviewedAt: timestamp('integrity_reviewed_at', { withTimezone: true }),
   integrityReviewedById: uuid('integrity_reviewed_by_id').references(() => users.id, { onDelete: 'set null' }),
+  /** Sat at a mock session's seat: whose seat it was. */
+  mockCandidateId: uuid('mock_candidate_id').references((): AnyPgColumn => mockCandidates.id, { onDelete: 'set null' }),
   createdAt: created(),
   updatedAt: updated()
 }, t => [index('attempts_integrity_idx').on(t.integrityStatus, t.submittedAt),
@@ -603,6 +607,78 @@ export const partUnlocks = pgTable('part_unlocks', {
   sectionItemId: uuid('section_item_id').notNull().references(() => sectionItems.id, { onDelete: 'cascade' }),
   createdAt: created()
 }, t => [primaryKey({ columns: [t.userId, t.sectionItemId] })])
+
+// ---------- Mock sessions: a centre (or a Premium teacher) runs a mock on its own computers ----------
+// Candidates (its students, or walk-ins registered at the desk) are checked in by the invigilator,
+// who gives each a seat code; the code signs them in at a room computer for that session only.
+// The invigilator opens sections for the room, watches the board, marks Writing and Speaking, and
+// announces the results as a report page. See server/utils/mock-sessions.ts.
+
+export const mockSessions = pgTable('mock_sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  /** The centre that runs it; null for a Premium teacher's own session. */
+  centreId: uuid('centre_id').references(() => centres.id, { onDelete: 'cascade' }),
+  /** Who made it: the teacher for their own session, a centre's owner or teacher for the centre's. */
+  ownerId: uuid('owner_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  testId: uuid('test_id').notNull().references(() => tests.id, { onDelete: 'restrict' }),
+  opensAt: timestamp('opens_at', { withTimezone: true }).notNull(),
+  closesAt: timestamp('closes_at', { withTimezone: true }).notNull(),
+  room: text('room'),
+  capacity: integer('capacity'),
+  /** The fee a walk-in pays at the desk, in so'm (shown on the board; collected by the centre). */
+  priceUzs: integer('price_uzs'),
+  /** Bands are kept from candidates until announced. */
+  holdResults: boolean('hold_results').notNull().default(true),
+  /** ACTIVE | ARCHIVED */
+  status: text('status').notNull().default('ACTIVE'),
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [index('mock_sessions_centre_idx').on(t.centreId, t.opensAt), index('mock_sessions_owner_idx').on(t.ownerId, t.opensAt)])
+
+export const mockCandidates = pgTable('mock_candidates', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sessionId: uuid('session_id').notNull().references(() => mockSessions.id, { onDelete: 'cascade' }),
+  /** The account they sit as: their own (a centre's student) or one made for a walk-in (users.mock_only). */
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  external: boolean('external').notNull().default(false),
+  fullName: text('full_name').notNull(),
+  phone: text('phone'),
+  documentNo: text('document_no'),
+  /** Paid at the desk: so'm, CASH or CARD, when. */
+  paidUzs: integer('paid_uzs'),
+  paymentMethod: text('payment_method'),
+  paidAt: timestamp('paid_at', { withTimezone: true }),
+  /** Identity seen; the seat code then lets them in, once, while the session runs. */
+  checkedInAt: timestamp('checked_in_at', { withTimezone: true }),
+  seatCode: text('seat_code'),
+  seatedAt: timestamp('seated_at', { withTimezone: true }),
+  /** The sign-in the seat code made, ended when they leave the seat or are checked in again. */
+  seatSessionId: uuid('seat_session_id'),
+  /** Sections the invigilator opened for them (LISTENING, READING, WRITING). */
+  unlockedSkills: text('unlocked_skills').array().notNull().default([]),
+  /** What their exam page reports as it goes: the section open on screen, and what it saw (integrity.ts). */
+  live: jsonb('live'),
+  /** Marks given on the board: Writing (over the AI's estimate) and Speaking (held face to face). */
+  marks: jsonb('marks').notNull().default({}),
+  releasedAt: timestamp('released_at', { withTimezone: true }),
+  reportToken: text('report_token').unique(),
+  createdAt: created()
+}, t => [uniqueIndex('mock_candidates_session_user_uq').on(t.sessionId, t.userId), index('mock_candidates_code_idx').on(t.seatCode)])
+
+/** Mock credits: one is spent when a candidate is first checked in. A centre's or a teacher's. */
+export const mockCreditTransactions = pgTable('mock_credit_transactions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  centreId: uuid('centre_id').references(() => centres.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
+  delta: integer('delta').notNull(),
+  /** GRANT (bought) | CHECK_IN | REFUND (a candidate removed before sitting) */
+  reason: text('reason').notNull(),
+  candidateId: uuid('candidate_id').references(() => mockCandidates.id, { onDelete: 'set null' }),
+  note: text('note'),
+  createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: created()
+}, t => [index('mock_credit_centre_idx').on(t.centreId), index('mock_credit_user_idx').on(t.userId)])
 
 /** Premium tests a user opened with credits or bought in a pack: theirs for good. */
 export const testUnlocks = pgTable('test_unlocks', {

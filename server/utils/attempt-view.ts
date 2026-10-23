@@ -36,7 +36,10 @@ export async function attemptView(id: string, viewer: { id: string, role: string
   if (!row) throw createError({ statusCode: 404, message: 'Attempt not found' })
   const staff = viewer.role === 'admin' || viewer.role === 'examiner'
   // A learning centre's teachers may see their students' results.
-  if (row.userId !== viewer.id && !staff && !(await teachesStudent(viewer.id, row.userId))) throw createError({ statusCode: 404, message: 'Attempt not found' })
+  // …and whoever runs the mock session it was sat in, a walk-in's too.
+  if (row.userId !== viewer.id && !staff && !(await teachesStudent(viewer.id, row.userId)) && !(await runsSessionOf(viewer.id, row.mockCandidateId))) throw createError({ statusCode: 404, message: 'Attempt not found' })
+  // A mock session that holds its results keeps them from the candidate until they are announced.
+  if (row.userId === viewer.id && !staff && await heldFrom(id)) throw createError({ statusCode: 403, message: 'Your results are announced by whoever ran the mock', data: { code: 'RESULTS_HELD' } })
 
   const whole = row.sectionId ? await db.query.sections.findFirst({ where: (s, { eq: e }) => e(s.id, row.sectionId!), with: SECTION_WITH as any }) as any : null
   // A part practised on its own is reviewed as that part.

@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
     db.select({ n: count() }).from(tests),
     db.select({ n: count() }).from(tests).where(eq(tests.status, 'PUBLISHED')),
     db.select({ n: count() }).from(attempts).where(eq(attempts.status, 'SUBMITTED')),
-    db.select({ n: count() }).from(users).where(eq(users.role, 'student')),
+    db.select({ n: count() }).from(users).where(and(eq(users.role, 'student'), eq(users.mockOnly, false))),
     db.select({ n: count() }).from(attempts),
     db.select({ n: countDistinct(subscriptions.userId) }).from(subscriptions).where(gt(subscriptions.endsAt, new Date())),
     db.select({ sum: sql<number>`coalesce(sum(${orders.amountUzs}), 0)::int` }).from(orders)

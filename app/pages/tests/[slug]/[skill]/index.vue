@@ -27,7 +27,7 @@ const skill = String(route.params.skill).toUpperCase() as 'LISTENING' | 'READING
 const partNo = Number(route.query.part) || null
 const partQuery = partNo ? `?part=${partNo}` : ''
 
-const { data, error, status } = await useFetch<{ test: { id: string, slug: string, title: string, mode: string }, section: PaperSection & { speaking?: any[] } }>(
+const { data, error, status } = await useFetch<{ test: { id: string, slug: string, title: string, mode: string }, seat?: boolean, section: PaperSection & { speaking?: any[] } }>(
   `/api/tests/${slug}/${skill.toLowerCase()}${partQuery}`,
   { server: false }
 )
@@ -80,10 +80,31 @@ function onEssays(next: Record<string, string>) {
 }
 
 const submitting = ref(false)
-// What the page sees while a signed-in candidate sits it, for integrity (Speaking's microphone prompt can take the focus).
-// Only from Start on (the cover before it is not the test); Speaking has no cover.
-const begun = ref(skill === 'SPEAKING')
-const integrity = useIntegrity(key, { active: () => begun.value && !!section.value && loggedIn.value && !submitting.value && !practice.value, countBlur: skill !== 'SPEAKING' })
+// At a mock session's seat (the paper says so), what the page sees goes to the invigilator's board,
+// from Start on (the cover before it is not the test); practice and live mocks keep nothing.
+const atSeat = computed(() => !!data.value?.seat)
+const begun = ref(false)
+const integrity = useIntegrity(key, { active: () => atSeat.value && begun.value && !submitting.value })
+let pinger: ReturnType<typeof setInterval> | undefined
+const sendPing = () => $fetch('/api/seat/ping', { method: 'POST', body: { skill, signals: integrity.signals } }).catch(() => {})
+watch([atSeat, begun], ([seat, on]) => {
+  clearInterval(pinger)
+  if (seat && on) {
+    sendPing()
+    pinger = setInterval(sendPing, 20_000)
+  }
+})
+// Something seen (left the page, pasted…): the board hears of it at once, not at the next beat.
+let soon: ReturnType<typeof setTimeout> | undefined
+watch(() => ({ ...integrity.signals }), () => {
+  if (!atSeat.value || !begun.value) return
+  clearTimeout(soon)
+  soon = setTimeout(sendPing, 1000)
+})
+onBeforeUnmount(() => {
+  clearInterval(pinger)
+  clearTimeout(soon)
+})
 usePreventLeave(() => !!section.value && !submitting.value && !practice.value && (Object.keys(answers.value).length > 0 || Object.values(essays.value).some(t => !!t?.trim())))
 
 async function handIn(extra: { recordings?: { partId: string, position: number, audioRef: string, durationSeconds?: number }[] } = {}) {
@@ -96,10 +117,12 @@ async function handIn(extra: { recordings?: { partId: string, position: number, 
         essays: Object.entries(essays.value).map(([taskId, text]) => ({ taskId, text: text ?? '' })),
         recordings: extra.recordings ?? [],
         startedAt: startedAt.value,
-        integrity: integrity.signals
+        ...(atSeat.value ? { integrity: integrity.signals } : {})
       }
     })
     forget()
+    // At a seat: back to the seat screen for the next section (no result while it may be held).
+    if (atSeat.value) return router.replace('/seat')
     if (result.id) return router.replace(`/results/${result.id}`)
     // A guest's result: shown once, from this tab, and kept nowhere.
     const durationSeconds = startedAt.value ? Math.round((Date.now() - Date.parse(startedAt.value)) / 1000) : null
@@ -193,7 +216,7 @@ function startOver() {
   startedAt.value = new Date().toISOString()
 }
 
-const leaveTo = `/tests/${slug}`
+const leaveTo = computed(() => (atSeat.value || route.query.seat ? '/seat' : `/tests/${slug}`))
 // A premium test without Premium: the paper is not sent, the offer is shown instead.
 const premiumNeeded = ref(false)
 watch(error, (e) => {
@@ -205,7 +228,7 @@ const practiceNote = computed(() => (loggedIn.value
 
 const pageError = computed(() => {
   if (premiumNeeded.value) return null
-  if (error.value) return error.value.statusCode === 404 ? t('sit.notAvailable') : t('sit.couldNotOpen')
+  if (error.value) return error.value.statusCode === 404 ? t('sit.notAvailable') : error.value.statusCode === 403 || error.value.statusCode === 409 ? (error.value.data?.message || t('sit.couldNotOpen')) : t('sit.couldNotOpen')
   return null
 })
 </script>
@@ -434,68 +457,68 @@ const pageError = computed(() => {
 
       <template v-else-if="section">
         <IxListeningExam
-          @start="begun = true"
           v-if="ielts && skill === 'LISTENING'"
           :parts="parts"
           :audio-url="mediaUrl(section.audioUrl) || undefined"
           :part-audio-urls="partAudio"
           :initial-answers="answers"
           :leave-to="leaveTo"
+          @start="begun = true"
           @save-progress="onAnswers"
           @submit="finishObjective"
         />
         <IxReadingExam
-          @start="begun = true"
           v-else-if="ielts && skill === 'READING'"
           :parts="parts"
           :timer-seconds="seconds"
           :initial-answers="answers"
           :leave-to="leaveTo"
           :auto-start="resumed"
+          @start="begun = true"
           @save-progress="onAnswers"
           @submit="finishObjective"
         />
         <IxWritingExam
-          @start="begun = true"
           v-else-if="ielts && skill === 'WRITING'"
           :parts="writingParts"
           :timer-seconds="seconds"
           :initial-essays="essays"
           :leave-to="leaveTo"
           :auto-start="resumed"
+          @start="begun = true"
           @save-progress="onEssays"
           @submit="finishWriting"
         />
         <ExamListeningExam
-          @start="begun = true"
           v-else-if="skill === 'LISTENING'"
           :parts="parts"
           :audio-url="mediaUrl(section.audioUrl) || undefined"
           :part-audio-urls="partAudio"
           :initial-answers="answers"
           :leave-to="leaveTo"
+          @start="begun = true"
           @save-progress="onAnswers"
           @submit="finishObjective"
         />
         <ExamReadingExam
-          @start="begun = true"
           v-else-if="skill === 'READING'"
           :parts="parts"
           :timer-seconds="seconds"
           :initial-answers="answers"
           :leave-to="leaveTo"
           :auto-start="resumed"
+          @start="begun = true"
           @save-progress="onAnswers"
           @submit="finishObjective"
         />
         <ExamWritingExam
-          @start="begun = true"
           v-else-if="skill === 'WRITING'"
           :parts="writingParts"
           :timer-seconds="seconds"
           :initial-essays="essays"
           :leave-to="leaveTo"
           :auto-start="resumed"
+          @start="begun = true"
           @save-progress="onEssays"
           @submit="finishWriting"
         />
