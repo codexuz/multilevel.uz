@@ -139,7 +139,31 @@ function printCode(name: string, code: string) {
 }
 
 const flagLabel = (f: string) => t(`mocks.flag.${f}`)
-const STATUS_COLOR: Record<Status, 'neutral' | 'info' | 'warning' | 'success' | 'primary'> = { LOCKED: 'neutral', OPEN: 'info', SITTING: 'warning', DONE: 'success', FACE_TO_FACE: 'primary' }
+// A section's state as a coloured dot and text in the candidates table.
+const STATUS_DOT: Record<Status, string> = { LOCKED: 'bg-(--ui-border-accented)', OPEN: 'bg-info', SITTING: 'bg-warning', DONE: 'bg-success', FACE_TO_FACE: 'bg-primary' }
+const STATUS_TEXT: Record<Status, string> = { LOCKED: 'text-dimmed', OPEN: 'text-info', SITTING: 'text-warning', DONE: 'text-success', FACE_TO_FACE: 'text-primary' }
+const sec = (c: Cand, skill: string): Sec => c.sections[skill] ?? { status: 'LOCKED' }
+/** What the exam page counted while this section was sat (live), or null when there is nothing yet. */
+function signalsOf(c: Cand, skill: string) {
+  const s = c.live?.skill === skill ? c.live.signals : null
+  if (!s) return null
+  return { away: s.away ?? 0, pastes: s.pastes ?? 0, fs: s.fullscreenExits ?? 0 }
+}
+const flagsOf = (c: Cand, skill: string) => [...new Set([...(sec(c, skill).flags ?? []), ...(c.live?.skill === skill ? c.live.flags : [])])]
+// The session as the list shows it: upcoming, running, closed or archived.
+const STATE_COLOR = { archived: 'neutral', closed: 'neutral', running: 'success', upcoming: 'info' } as const
+const sessionState = computed<keyof typeof STATE_COLOR>(() => {
+  const s = b.value!.session
+  return s.status === 'ARCHIVED' ? 'archived' : Date.now() > Date.parse(s.closesAt) ? 'closed' : Date.now() >= Date.parse(s.opensAt) ? 'running' : 'upcoming'
+})
+const stats = computed(() => {
+  const m = b.value!.summary
+  return [
+    { key: 'total', value: m.total }, { key: 'checkedIn', value: m.checkedIn }, { key: 'seated', value: m.seated },
+    { key: 'sitting', value: m.sitting }, { key: 'complete', value: m.complete }, { key: 'announced', value: m.announced },
+    ...(m.paidUzs ? [{ key: 'paid', value: fmtUzs(m.paidUzs) }] : [])
+  ]
+})
 const when = (d: string) => localeDate(d, intlLocale(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 const hold = (v: boolean) => call('hold', `/api/mocks/${id}`, { holdResults: v }, 'PATCH')
 const archive = () => call('archive', `/api/mocks/${id}`, { status: b.value!.session.status === 'ARCHIVED' ? 'ACTIVE' : 'ARCHIVED' }, 'PATCH')
@@ -158,125 +182,166 @@ async function removeSession() {
   <AppPage
     v-if="b"
     :title="b.session.title"
-    icon="i-lucide-monitor-check"
+    back="/mocks"
   >
     <template #actions>
       <UButton
         :href="`/api/mocks/${id}/results.csv`"
         :label="t('mocks.export')"
-        icon="i-lucide-sheet"
+        icon="i-lucide-download"
         color="neutral"
-        variant="outline"
+        variant="ghost"
+        class="max-sm:hidden"
       />
+      <UDropdownMenu
+        :items="[[
+          { label: t('mocks.export'), icon: 'i-lucide-download', to: `/api/mocks/${id}/results.csv`, external: true, class: 'sm:hidden' },
+          { label: b.session.status === 'ARCHIVED' ? t('mocks.restore') : t('mocks.archive'), icon: b.session.status === 'ARCHIVED' ? 'i-lucide-archive-restore' : 'i-lucide-archive', onSelect: archive },
+          ...(!started ? [{ label: t('mocks.delete'), icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: removeSession }] : [])
+        ]]"
+        :content="{ align: 'end' }"
+      >
+        <UButton
+          icon="i-lucide-ellipsis"
+          color="neutral"
+          variant="ghost"
+          square
+          :aria-label="t('mocks.more')"
+          data-testid="session-menu"
+        />
+      </UDropdownMenu>
     </template>
 
-    <div class="flex flex-col gap-5 w-full">
-      <div class="flex flex-wrap items-start gap-3">
-        <div class="flex-1 min-w-0">
-          <UButton
-            to="/mocks"
-            :label="t('mocks.title')"
-            icon="i-lucide-arrow-left"
-            color="neutral"
-            variant="link"
-            class="px-0"
+    <div class="flex flex-col gap-6 w-full max-w-6xl">
+      <!-- What the session is -->
+      <div class="flex flex-col lg:flex-row lg:items-center gap-3">
+        <div class="flex-1 min-w-0 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted">
+          <UBadge
+            :label="t(`mocks.state.${sessionState}`)"
+            :color="STATE_COLOR[sessionState]"
+            variant="subtle"
+            class="rounded-full"
           />
-          <p class="text-sm text-muted">
-            {{ examLabel(b.test.exam) }} · {{ b.test.title }} · {{ when(b.session.opensAt) }} – {{ when(b.session.closesAt) }}<template v-if="b.session.room">
-              · {{ b.session.room }}
-            </template><template v-if="b.session.centreName">
-              · {{ b.session.centreName }}
-            </template>
-          </p>
+          <span class="inline-flex items-center gap-1.5"><UIcon
+            name="i-lucide-file-text"
+            class="size-4 text-dimmed"
+          />{{ examLabel(b.test.exam) }} · {{ b.test.title }}</span>
+          <span class="inline-flex items-center gap-1.5"><UIcon
+            name="i-lucide-calendar-clock"
+            class="size-4 text-dimmed"
+          />{{ when(b.session.opensAt) }} – {{ when(b.session.closesAt) }}</span>
+          <span
+            v-if="b.session.room"
+            class="inline-flex items-center gap-1.5"
+          ><UIcon
+            name="i-lucide-door-open"
+            class="size-4 text-dimmed"
+          />{{ b.session.room }}</span>
+          <span
+            v-if="b.session.centreName"
+            class="inline-flex items-center gap-1.5"
+          ><UIcon
+            name="i-lucide-school"
+            class="size-4 text-dimmed"
+          />{{ b.session.centreName }}</span>
         </div>
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="flex items-center gap-4 shrink-0">
           <USwitch
             :model-value="b.session.holdResults"
-            :label="t('mocks.hold')"
+            :label="t('mocks.holdShort')"
+            size="sm"
             @update:model-value="v => hold(!!v)"
           />
-          <UBadge
-            :label="t('mocks.credits', { n: b.credits }, b.credits)"
-            :color="b.credits ? 'neutral' : 'error'"
-            variant="subtle"
-          />
-          <UButton
-            :label="b.session.status === 'ARCHIVED' ? t('mocks.restore') : t('mocks.archive')"
-            size="sm"
-            color="neutral"
-            variant="ghost"
-            @click="archive"
-          />
-          <UButton
-            v-if="!started"
-            :label="t('mocks.delete')"
-            icon="i-lucide-trash-2"
-            size="sm"
-            color="error"
-            variant="ghost"
-            :loading="busy === 'delete'"
-            data-testid="delete-session"
-            @click="removeSession"
-          />
-        </div>
-      </div>
-
-      <!-- The room: sections opened for everyone together -->
-      <div class="grid sm:grid-cols-3 gap-3">
-        <div
-          v-for="skill in online"
-          :key="skill"
-          class="rounded-xl ring ring-default p-4 flex flex-col gap-2"
-          :data-testid="`room-${skill.toLowerCase()}`"
-        >
-          <div class="flex items-center gap-2">
-            <img
-              :src="SKILL_ART[skill]"
-              alt=""
-              class="size-7"
-            >
-            <span class="font-semibold text-highlighted">{{ skillLabel(skill) }}</span>
-          </div>
-          <p class="text-xs text-muted">
-            {{ t('mocks.roomCounts', { open: openFor(skill), done: doneFor(skill), total: b.summary.total }) }}
-          </p>
-          <div class="flex gap-2">
-            <UButton
-              :label="t('mocks.openForRoom')"
-              icon="i-lucide-lock-open"
-              size="sm"
-              :loading="busy === `room-${skill}`"
-              :disabled="!b.summary.checkedIn"
-              @click="roomOpen(skill, true)"
-            />
-            <UButton
-              v-if="openFor(skill)"
-              :label="t('mocks.close')"
-              size="sm"
-              color="neutral"
-              variant="ghost"
-              @click="roomOpen(skill, false)"
-            />
-          </div>
+          <span
+            class="text-sm tabular-nums"
+            :class="b.credits ? 'text-muted' : 'text-error font-medium'"
+          >{{ t('mocks.credits', { n: b.credits }, b.credits) }}</span>
         </div>
       </div>
 
       <!-- Where things stand -->
-      <div class="flex flex-wrap items-center gap-2 text-sm">
-        <UBadge
-          v-for="[k, v] in [['total', b.summary.total], ['checkedIn', b.summary.checkedIn], ['seated', b.summary.seated], ['sitting', b.summary.sitting], ['complete', b.summary.complete], ['announced', b.summary.announced]]"
-          :key="String(k)"
-          :label="t(`mocks.sum.${k}`, { n: v })"
-          color="neutral"
-          variant="soft"
-        />
-        <UBadge
-          v-if="b.summary.paidUzs"
-          :label="t('mocks.sum.paid', { sum: fmtUzs(b.summary.paidUzs) })"
-          color="success"
-          variant="soft"
-        />
-        <div class="ms-auto flex flex-wrap gap-2">
+      <!-- One panel, its cells parted by hairlines (the gap shows the border colour beneath) -->
+      <div
+        class="grid grid-cols-3 sm:grid-cols-6 gap-px rounded-lg overflow-hidden ring ring-default bg-(--ui-border)"
+        :class="b.summary.paidUzs ? 'lg:grid-cols-7' : ''"
+        data-testid="stats"
+      >
+        <div
+          v-for="s in stats"
+          :key="s.key"
+          class="bg-default px-4 py-3"
+          :class="s.key === 'paid' ? 'col-span-3 sm:col-span-6 lg:col-span-1' : ''"
+        >
+          <p class="text-xs text-muted">
+            {{ t(`mocks.stat.${s.key}`) }}
+          </p>
+          <p class="text-xl font-semibold text-highlighted tabular-nums mt-0.5 whitespace-nowrap">
+            {{ s.value }}
+          </p>
+        </div>
+      </div>
+
+      <!-- The room: each section opened for everyone together -->
+      <section class="flex flex-col gap-2">
+        <h2 class="text-sm font-semibold text-highlighted">
+          {{ t('mocks.sections') }}
+        </h2>
+        <div class="rounded-lg ring ring-default divide-y divide-default bg-default">
+          <div
+            v-for="skill in online"
+            :key="skill"
+            class="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3"
+            :data-testid="`room-${skill.toLowerCase()}`"
+          >
+            <div class="flex items-center gap-2.5 w-40 shrink-0">
+              <UIcon
+                :name="SKILL_META[skill as keyof typeof SKILL_META].icon"
+                class="size-4 text-muted"
+              />
+              <span class="font-medium text-highlighted">{{ skillLabel(skill) }}</span>
+            </div>
+            <div class="flex-1 min-w-48 flex items-center gap-3">
+              <UProgress
+                :model-value="b.summary.total ? Math.round((doneFor(skill) / b.summary.total) * 100) : 0"
+                size="xs"
+                class="max-w-56"
+              />
+              <span class="text-sm text-muted tabular-nums whitespace-nowrap">{{ t('mocks.handedIn', { done: doneFor(skill), total: b.summary.total }) }}</span>
+              <span
+                v-if="openFor(skill)"
+                class="inline-flex items-center gap-1 text-xs text-info whitespace-nowrap"
+              ><span class="size-1.5 rounded-full bg-info" />{{ t('mocks.openNow', { n: openFor(skill) }) }}</span>
+            </div>
+            <div class="flex items-center gap-2 ms-auto">
+              <UButton
+                v-if="openFor(skill)"
+                :label="t('mocks.close')"
+                size="sm"
+                color="neutral"
+                variant="ghost"
+                @click="roomOpen(skill, false)"
+              />
+              <UButton
+                :label="t('mocks.openForRoom')"
+                icon="i-lucide-lock-open"
+                size="sm"
+                color="neutral"
+                variant="outline"
+                :loading="busy === `room-${skill}`"
+                :disabled="!b.summary.checkedIn"
+                @click="roomOpen(skill, true)"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- The candidates -->
+      <section class="flex flex-col gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+          <h2 class="text-sm font-semibold text-highlighted me-auto">
+            {{ t('mocks.candidatesTitle') }}
+          </h2>
           <UButton
             v-if="b.session.centreId"
             :label="t('mocks.addStudents')"
@@ -290,219 +355,267 @@ async function removeSession() {
             :label="t('mocks.addWalkIn')"
             icon="i-lucide-user-plus"
             size="sm"
+            color="neutral"
+            variant="outline"
             data-testid="add-walkin"
             @click="startWalkIn"
           />
           <UButton
             :label="t('mocks.announceReady', { n: ready })"
-            icon="i-lucide-megaphone"
+            icon="i-lucide-send"
             size="sm"
-            color="success"
             :disabled="!ready"
             :loading="busy === 'release'"
             data-testid="announce"
             @click="announce()"
           />
         </div>
-      </div>
 
-      <UEmpty
-        v-if="!b.candidates.length"
-        icon="i-lucide-users"
-        :title="t('mocks.noCandidates')"
-        :description="t('mocks.noCandidatesText')"
-      />
-
-      <!-- The candidates -->
-      <div
-        v-else
-        class="flex flex-col gap-3"
-      >
         <div
-          v-for="c in b.candidates"
-          :key="c.id"
-          class="rounded-xl ring ring-default p-4 flex flex-col gap-3"
-          data-testid="candidate"
+          v-if="!b.candidates.length"
+          class="rounded-lg ring ring-default bg-default"
         >
-          <div class="flex flex-wrap items-center gap-2">
-            <div class="min-w-0 flex-1">
-              <p class="font-semibold text-highlighted truncate">
-                {{ c.fullName }}
-                <UBadge
-                  v-if="c.external"
-                  :label="t('mocks.walkIn')"
-                  color="neutral"
-                  variant="soft"
-                  size="sm"
-                  class="ms-1"
-                />
-              </p>
-              <p class="text-xs text-muted">
-                {{ [c.phone, c.documentNo, c.paidUzs ? `${fmtUzs(c.paidUzs)} (${c.paymentMethod === 'CARD' ? t('mocks.card') : t('mocks.cash')})` : null].filter(Boolean).join(' · ') || '—' }}
-              </p>
-            </div>
-            <!-- Check-in and the seat -->
-            <template v-if="!c.checkedInAt">
-              <UButton
-                :label="t('mocks.checkIn')"
-                icon="i-lucide-id-card"
-                size="sm"
-                :loading="busy === `checkin-${c.id}`"
-                data-testid="check-in"
-                @click="checkIn(c)"
-              />
-            </template>
-            <template v-else-if="c.seatCode">
-              <span
-                class="font-mono text-lg font-bold tracking-widest text-highlighted"
-                data-testid="seat-code"
-              >{{ c.seatCode }}</span>
-              <UButton
-                icon="i-lucide-printer"
-                size="xs"
-                color="neutral"
-                variant="ghost"
-                :aria-label="t('mocks.printSlip')"
-                @click="printCode(c.fullName, c.seatCode)"
-              />
-            </template>
-            <UBadge
-              v-else-if="c.seatedAt"
-              :label="t('mocks.seated')"
-              icon="i-lucide-monitor"
-              color="success"
-              variant="subtle"
-            />
-            <UDropdownMenu
-              :items="[[
-                ...(c.checkedInAt ? [{ label: t('mocks.newCode'), icon: 'i-lucide-refresh-cw', onSelect: () => checkIn(c) }] : []),
-                ...(c.releasedAt && c.reportToken ? [
-                  { label: t('mocks.openReport'), icon: 'i-lucide-file-text', to: `/report/${c.reportToken}`, target: '_blank' },
-                  { label: t('mocks.printResult'), icon: 'i-lucide-printer', to: `/report/${c.reportToken}?print=1`, target: '_blank' },
-                  { label: t('mocks.copyLink'), icon: 'i-lucide-link', onSelect: () => copyReport(c) }
-                ] : []),
-                ...(c.complete && !c.releasedAt ? [{ label: t('mocks.announceOne'), icon: 'i-lucide-megaphone', onSelect: () => announce([c.id]) }] : []),
-                { label: t('mocks.remove'), icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: () => remove(c) }
-              ]]"
-              :content="{ align: 'end' }"
-            >
-              <UButton
-                icon="i-lucide-ellipsis"
-                size="sm"
-                color="neutral"
-                variant="ghost"
-                :aria-label="t('mocks.more')"
-              />
-            </UDropdownMenu>
-          </div>
-
-          <!-- Sections -->
-          <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
-            <div
-              v-for="skill in b.skills"
-              :key="skill"
-              class="rounded-lg bg-elevated/50 px-3 py-2 flex flex-col gap-1.5"
-            >
-              <div class="flex items-center gap-2">
-                <span class="text-sm font-medium text-highlighted flex-1">{{ skillLabel(skill) }}</span>
-                <UBadge
-                  :label="t(`mocks.status.${c.sections[skill]?.status ?? 'LOCKED'}`)"
-                  :color="STATUS_COLOR[c.sections[skill]?.status ?? 'LOCKED']"
-                  variant="subtle"
-                  size="sm"
-                />
-              </div>
-              <!-- Listening and Reading: the mark; Writing: the AI's estimate or the mark given; Speaking: given here -->
-              <div
-                v-if="c.sections[skill]?.status === 'DONE' && skill !== 'WRITING'"
-                class="text-sm"
-              >
-                <span class="font-semibold text-highlighted">{{ fmtMark(c.sections[skill]?.mark) }}</span>
-                <span
-                  v-if="c.sections[skill]?.total"
-                  class="text-muted"
-                > · {{ c.sections[skill]?.correct }}/{{ c.sections[skill]?.total }}</span>
-              </div>
-              <div
-                v-else-if="(skill === 'WRITING' && c.sections[skill]?.status === 'DONE') || skill === 'SPEAKING'"
-                class="flex items-center gap-2"
-              >
-                <UInput
-                  :model-value="c.sections[skill]?.given ? String(c.sections[skill]?.mark ?? '') : ''"
-                  :placeholder="c.sections[skill]?.estimate != null ? t('mocks.aiEstimate', { mark: fmtMark(c.sections[skill]?.estimate) }) : (ielts ? '0–9' : '0–75')"
-                  size="xs"
-                  class="w-28"
-                  :disabled="!!c.releasedAt"
-                  :data-testid="`mark-${skill.toLowerCase()}`"
-                  @change="(e: Event) => mark(c, skill as 'WRITING' | 'SPEAKING', (e.target as HTMLInputElement).value)"
-                />
-                <NuxtLink
-                  v-if="c.sections[skill]?.attemptId"
-                  :to="`/results/${c.sections[skill]?.attemptId}`"
-                  target="_blank"
-                  class="text-xs text-primary"
-                >{{ t('mocks.read') }}</NuxtLink>
-              </div>
-              <div
-                v-else-if="skill !== 'SPEAKING' && c.checkedInAt"
-                class="flex gap-1"
-              >
-                <UButton
-                  v-if="c.sections[skill]?.status === 'LOCKED'"
-                  :label="t('mocks.openFor')"
-                  size="xs"
-                  color="neutral"
-                  variant="outline"
-                  @click="candidateOpen(c, skill, true)"
-                />
-              </div>
-              <!-- What the exam page noticed: live while sitting, kept with the hand-in -->
-              <div
-                v-if="(c.sections[skill]?.flags?.length) || (c.live?.skill === skill && c.live.flags.length)"
-                class="flex flex-wrap gap-1"
-              >
-                <UBadge
-                  v-for="f in [...new Set([...(c.sections[skill]?.flags ?? []), ...(c.live?.skill === skill ? c.live.flags : [])])]"
-                  :key="f"
-                  :label="flagLabel(f)"
-                  color="error"
-                  variant="soft"
-                  size="sm"
-                />
-              </div>
-              <p
-                v-if="c.live?.skill === skill && c.live.signals && (c.live.signals.away || c.live.signals.pastes || c.live.signals.fullscreenExits)"
-                class="text-[11px] text-muted"
-              >
-                {{ t('mocks.seen', { away: c.live.signals.away ?? 0, pastes: c.live.signals.pastes ?? 0, fs: c.live.signals.fullscreenExits ?? 0 }) }}
-              </p>
-            </div>
-          </div>
-
-          <div
-            v-if="c.overall != null || c.releasedAt"
-            class="flex items-center gap-2 text-sm"
-          >
-            <span class="text-muted">{{ t('mocks.overall') }}</span>
-            <span class="font-bold text-highlighted">{{ fmtMark(c.overall) }}</span>
-            <UBadge
-              v-if="c.cefr"
-              :label="c.cefr"
-              color="primary"
-              variant="subtle"
-              size="sm"
-            />
-            <UBadge
-              v-if="c.releasedAt"
-              :label="t('mocks.announcedBadge')"
-              icon="i-lucide-check"
-              color="success"
-              variant="subtle"
-              size="sm"
-            />
-          </div>
+          <UEmpty
+            icon="i-lucide-users"
+            :title="t('mocks.noCandidates')"
+            :description="t('mocks.noCandidatesText')"
+            variant="naked"
+          />
         </div>
-      </div>
+
+        <div
+          v-else
+          class="rounded-lg ring ring-default bg-default overflow-x-auto"
+        >
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-xs text-muted text-start border-b border-default">
+                <th class="font-medium text-start px-4 py-2.5 min-w-52">
+                  {{ t('mocks.candidate') }}
+                </th>
+                <th class="font-medium text-start px-3 py-2.5 w-36">
+                  {{ t('mocks.seat') }}
+                </th>
+                <th
+                  v-for="skill in b.skills"
+                  :key="skill"
+                  class="font-medium text-start px-3 py-2.5 min-w-40"
+                >
+                  {{ skillLabel(skill) }}
+                </th>
+                <th class="font-medium text-start px-3 py-2.5 w-24">
+                  {{ t('mocks.overall') }}
+                </th>
+                <th class="w-10" />
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-default">
+              <tr
+                v-for="c in b.candidates"
+                :key="c.id"
+                class="align-top"
+                data-testid="candidate"
+              >
+                <!-- Who -->
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium text-highlighted truncate">{{ c.fullName }}</span>
+                    <span
+                      v-if="c.external"
+                      class="text-[11px] text-muted border border-default rounded px-1 leading-4"
+                    >{{ t('mocks.walkIn') }}</span>
+                  </div>
+                  <p class="text-xs text-muted mt-0.5 truncate">
+                    {{ [c.phone, c.documentNo, c.paidUzs ? `${fmtUzs(c.paidUzs)} · ${c.paymentMethod === 'CARD' ? t('mocks.card') : t('mocks.cash')}` : null].filter(Boolean).join(' · ') || '—' }}
+                  </p>
+                </td>
+
+                <!-- Check-in and the seat -->
+                <td class="px-3 py-3">
+                  <UButton
+                    v-if="!c.checkedInAt"
+                    :label="t('mocks.checkIn')"
+                    icon="i-lucide-id-card"
+                    size="xs"
+                    color="neutral"
+                    variant="outline"
+                    :loading="busy === `checkin-${c.id}`"
+                    data-testid="check-in"
+                    @click="checkIn(c)"
+                  />
+                  <div
+                    v-else-if="c.seatCode"
+                    class="flex items-center gap-1"
+                  >
+                    <span
+                      class="font-mono font-semibold tracking-wider text-highlighted"
+                      data-testid="seat-code"
+                    >{{ c.seatCode }}</span>
+                    <UButton
+                      icon="i-lucide-printer"
+                      size="xs"
+                      color="neutral"
+                      variant="ghost"
+                      :aria-label="t('mocks.printSlip')"
+                      @click="printCode(c.fullName, c.seatCode)"
+                    />
+                  </div>
+                  <span
+                    v-else-if="c.seatedAt"
+                    class="inline-flex items-center gap-1.5 text-success"
+                  ><UIcon
+                    name="i-lucide-monitor-check"
+                    class="size-4"
+                  />{{ t('mocks.seated') }}</span>
+                </td>
+
+                <!-- Each section -->
+                <td
+                  v-for="skill in b.skills"
+                  :key="skill"
+                  class="px-3 py-3"
+                >
+                  <div class="flex flex-col gap-1.5">
+                    <span
+                      class="inline-flex items-center gap-1.5 text-xs"
+                      :class="STATUS_TEXT[sec(c, skill).status]"
+                    >
+                      <span
+                        class="size-1.5 rounded-full"
+                        :class="STATUS_DOT[sec(c, skill).status]"
+                      />{{ t(`mocks.status.${sec(c, skill).status}`) }}
+                    </span>
+                    <!-- Listening and Reading: the mark -->
+                    <span
+                      v-if="sec(c, skill).status === 'DONE' && skill !== 'WRITING'"
+                      class="tabular-nums"
+                    >
+                      <span class="font-semibold text-highlighted">{{ fmtMark(sec(c, skill).mark) }}</span>
+                      <span
+                        v-if="sec(c, skill).total"
+                        class="text-muted text-xs"
+                      > · {{ sec(c, skill).correct }}/{{ sec(c, skill).total }}</span>
+                    </span>
+                    <!-- Writing (handed in) and Speaking: the mark is given here -->
+                    <div
+                      v-else-if="(skill === 'WRITING' && sec(c, skill).status === 'DONE') || (skill === 'SPEAKING' && c.checkedInAt)"
+                      class="flex items-center gap-2"
+                    >
+                      <UInput
+                        :model-value="sec(c, skill).given ? String(sec(c, skill).mark ?? '') : ''"
+                        :placeholder="sec(c, skill).estimate != null ? t('mocks.aiEstimate', { mark: fmtMark(sec(c, skill).estimate) }) : (ielts ? '0–9' : '0–75')"
+                        size="xs"
+                        class="w-24"
+                        :disabled="!!c.releasedAt"
+                        :data-testid="`mark-${skill.toLowerCase()}`"
+                        @change="(e: Event) => mark(c, skill as 'WRITING' | 'SPEAKING', (e.target as HTMLInputElement).value)"
+                      />
+                      <NuxtLink
+                        v-if="sec(c, skill).attemptId"
+                        :to="`/results/${sec(c, skill).attemptId}`"
+                        target="_blank"
+                        class="text-xs text-primary hover:underline"
+                      >{{ t('mocks.read') }}</NuxtLink>
+                    </div>
+                    <button
+                      v-else-if="sec(c, skill).status === 'LOCKED' && c.checkedInAt && skill !== 'SPEAKING'"
+                      type="button"
+                      class="self-start inline-flex items-center gap-1 text-xs text-muted hover:text-primary"
+                      @click="candidateOpen(c, skill, true)"
+                    >
+                      <UIcon
+                        name="i-lucide-lock-open"
+                        class="size-3"
+                      />{{ t('mocks.openFor') }}
+                    </button>
+                    <!-- What the exam page noticed: counted quietly, highlighted only when it happened -->
+                    <div
+                      v-if="signalsOf(c, skill)"
+                      class="flex items-center gap-2.5 text-[11px] tabular-nums"
+                      :title="t('mocks.seen', signalsOf(c, skill)!)"
+                    >
+                      <span
+                        class="inline-flex items-center gap-0.5"
+                        :class="signalsOf(c, skill)!.away ? 'text-warning' : 'text-dimmed'"
+                      ><UIcon
+                        name="i-lucide-app-window"
+                        class="size-3"
+                      />{{ signalsOf(c, skill)!.away }}</span>
+                      <span
+                        class="inline-flex items-center gap-0.5"
+                        :class="signalsOf(c, skill)!.pastes ? 'text-warning' : 'text-dimmed'"
+                      ><UIcon
+                        name="i-lucide-clipboard-paste"
+                        class="size-3"
+                      />{{ signalsOf(c, skill)!.pastes }}</span>
+                      <span
+                        class="inline-flex items-center gap-0.5"
+                        :class="signalsOf(c, skill)!.fs ? 'text-warning' : 'text-dimmed'"
+                      ><UIcon
+                        name="i-lucide-minimize"
+                        class="size-3"
+                      />{{ signalsOf(c, skill)!.fs }}</span>
+                    </div>
+                    <span
+                      v-for="f in flagsOf(c, skill)"
+                      :key="f"
+                      class="text-[11px] text-error"
+                    >{{ flagLabel(f) }}</span>
+                  </div>
+                </td>
+
+                <!-- Overall -->
+                <td class="px-3 py-3">
+                  <template v-if="c.overall != null">
+                    <span class="font-semibold text-highlighted tabular-nums">{{ fmtMark(c.overall) }}</span>
+                    <span
+                      v-if="c.cefr"
+                      class="text-xs text-muted ms-1"
+                    >{{ c.cefr }}</span>
+                  </template>
+                  <span
+                    v-else
+                    class="text-dimmed"
+                  >—</span>
+                  <p
+                    v-if="c.releasedAt"
+                    class="text-[11px] text-success mt-1 inline-flex items-center gap-1"
+                  >
+                    <UIcon
+                      name="i-lucide-check"
+                      class="size-3"
+                    />{{ t('mocks.announcedBadge') }}
+                  </p>
+                </td>
+
+                <td class="px-2 py-2.5 text-end">
+                  <UDropdownMenu
+                    :items="[[
+                      ...(c.checkedInAt ? [{ label: t('mocks.newCode'), icon: 'i-lucide-refresh-cw', onSelect: () => checkIn(c) }] : []),
+                      ...(c.releasedAt && c.reportToken ? [
+                        { label: t('mocks.openReport'), icon: 'i-lucide-file-text', to: `/report/${c.reportToken}`, target: '_blank' },
+                        { label: t('mocks.printResult'), icon: 'i-lucide-printer', to: `/report/${c.reportToken}?print=1`, target: '_blank' },
+                        { label: t('mocks.copyLink'), icon: 'i-lucide-link', onSelect: () => copyReport(c) }
+                      ] : []),
+                      ...(c.complete && !c.releasedAt ? [{ label: t('mocks.announceOne'), icon: 'i-lucide-send', onSelect: () => announce([c.id]) }] : []),
+                      { label: t('mocks.remove'), icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: () => remove(c) }
+                    ]]"
+                    :content="{ align: 'end' }"
+                  >
+                    <UButton
+                      icon="i-lucide-ellipsis"
+                      size="xs"
+                      color="neutral"
+                      variant="ghost"
+                      :aria-label="t('mocks.more')"
+                    />
+                  </UDropdownMenu>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
 
     <!-- The code just given, big, to read out or print -->

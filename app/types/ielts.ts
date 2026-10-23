@@ -112,6 +112,8 @@ export interface WritingTask {
   minWords?: number | null
   suggestedMinutes?: number | null
   essays?: number
+  /** How many tests it is placed in (library lists). */
+  inTests?: number
   lastAttempt?: AttemptBrief | null
 }
 
@@ -128,6 +130,8 @@ export interface SpeakingPart {
   audioUrl?: string | null
   /** A model answer to the long turn: the builder and a review only. */
   sampleAnswer?: string | null
+  /** How many tests it is placed in (library lists). */
+  inTests?: number
   prepSeconds?: number | null
   speakSeconds?: number | null
   questions: SpeakingQuestion[]

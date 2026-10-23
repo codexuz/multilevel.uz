@@ -1410,7 +1410,23 @@
     "deleteTitle": "«{title}» o‘chirilsinmi?",
     "deleteText": "Hali hech kim boshlamagan: sessiya nomzodlari bilan birga o‘chiriladi.",
     "deleteRefund": "Hali hech kim boshlamagan: sessiya nomzodlari bilan birga o‘chiriladi; ro‘yxatga olishga sarflangan {n} ta kredit qaytariladi. | Hali hech kim boshlamagan: sessiya nomzodlari bilan birga o‘chiriladi; ro‘yxatga olishga sarflangan {n} ta kredit qaytariladi.",
-    "askUs": "Telegramda so‘rash"
+    "askUs": "Telegramda so‘rash",
+    "holdShort": "Natijalarni ushlab turish",
+    "stat": {
+      "total": "Nomzodlar",
+      "checkedIn": "Ro‘yxatdan o‘tgan",
+      "seated": "O‘tirgan",
+      "sitting": "Hozir yechmoqda",
+      "complete": "Baholangan",
+      "announced": "E’lon qilingan",
+      "paid": "Yig‘ilgan"
+    },
+    "sections": "Bo‘limlar",
+    "candidatesTitle": "Nomzodlar",
+    "candidate": "Nomzod",
+    "seat": "O‘rin",
+    "handedIn": "{total} tadan {done} tasi topshirdi",
+    "openNow": "{n} ta ochiq"
   },
   "report": {
     "title": "{name}: mock natijasi",

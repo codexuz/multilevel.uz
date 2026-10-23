@@ -7,12 +7,9 @@ import { libraryAPI } from '~/services/ielts'
  * published (errors) and where it departs from the official format (warnings); a mock must follow it.
  */
 definePageMeta({ middleware: 'admin' })
-// Back to the list as it was left (its exam, tab, page and filters), when that is where this came from.
-const backToList = ref('/builder')
-onMounted(() => {
-  const cameFrom = String(useRouter().options.history.state.back ?? '')
-  if (cameFrom.startsWith('/builder?')) backToList.value = cameFrom
-})
+// Back to the list as it was left (its exam, tab, page and filters).
+const lastList = useBuilderList()
+const backToList = computed(() => lastList.value ?? '/builder')
 
 const route = useRoute()
 const toast = useToast()
