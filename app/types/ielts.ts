@@ -276,6 +276,8 @@ export interface ReviewEssay {
 
 export interface ReviewSection {
   skill: Skill
+  /** IELTS | MULTILEVEL: how tasks and parts are numbered and marked. */
+  exam?: string | null
   title: string | null
   audioUrl: string | null
   correct: number | null

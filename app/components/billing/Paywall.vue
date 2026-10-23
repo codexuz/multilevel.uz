@@ -3,7 +3,8 @@
  * What a candidate gets by paying, at the moment it is missing: a premium test, the explanations
  * in a review, or an examiner's marking. Leads to the plans.
  */
-const props = withDefaults(defineProps<{ reason: 'premium' | 'credit' | 'explanations', count?: number, compact?: boolean }>(), { compact: false })
+/** `exam`: IELTS is marked as a band, Multilevel out of 75. */
+const props = withDefaults(defineProps<{ reason: 'premium' | 'credit' | 'explanations', count?: number, compact?: boolean, exam?: string | null }>(), { compact: false })
 const route = useRoute()
 const { t } = useI18n()
 
@@ -18,7 +19,7 @@ const copy = computed(() => ({
     icon: 'i-lucide-pen-line',
     art: '/illustrations/writing.svg',
     title: t('paywall.creditTitle'),
-    description: t('paywall.creditText')
+    description: t(props.exam === 'IELTS' ? 'paywall.creditTextIelts' : 'paywall.creditText')
   },
   explanations: {
     icon: 'i-lucide-lightbulb',

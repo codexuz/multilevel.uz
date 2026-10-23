@@ -6,10 +6,10 @@
 const { t } = useI18n()
 useSeoMeta({ title: () => t('centre.group'), robots: 'noindex' })
 
-interface Student { id: string, name: string, avatarUrl: string | null, joinedAt: string, attempts: number, lastActive: string | null, level: Record<string, number | null> }
-interface AssignmentRow { id: string, skill: string, partNumber: number | null, note: string | null, dueAt: string | null, createdAt: string, test: { slug: string, title: string } | null, to: string | null, done: number, of: number, average: number | null }
+interface Student { id: string, name: string, avatarUrl: string | null, joinedAt: string, attempts: number, lastActive: string | null, level: Record<string, number | null>, bands?: string[] }
+interface AssignmentRow { id: string, skill: string, partNumber: number | null, note: string | null, dueAt: string | null, createdAt: string, test: { slug: string, title: string } | null, to: string | null, exam: string, done: number, of: number, average: number | null }
 interface GroupView { id: string, name: string, joinCode: string, archived: boolean, role: string, centre: { id: string, name: string }, students: Student[], assignments: AssignmentRow[] }
-interface Detail extends AssignmentRow { students: { id: string, name: string, handIn: { attemptId: string, score: number | null, status: string, at: string } | null }[] }
+interface Detail extends AssignmentRow { students: { id: string, name: string, handIn: { attemptId: string, score: number | null, band: number | null, status: string, at: string } | null }[] }
 
 const route = useRoute()
 const toast = useToast()
@@ -26,6 +26,7 @@ const tabs = computed(() => [
   { label: t('centre.assignmentsTab', { n: data.value?.assignments.length ?? 0 }), value: 'assignments', icon: 'i-lucide-list-checks' }
 ])
 const levelColor = (s: number | null) => (s == null ? 'text-dimmed' : s >= 65 ? 'text-success' : s >= 51 ? 'text-primary' : s >= 38 ? 'text-warning' : 'text-error')
+const bandColor = (b: number | null) => (b == null ? 'text-dimmed' : b >= 7 ? 'text-success' : b >= 5.5 ? 'text-primary' : b >= 4 ? 'text-warning' : 'text-error')
 
 async function copy(text: string, title: string) {
   try {
@@ -248,9 +249,9 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
                   v-for="k in SKILLS"
                   :key="k"
                   class="text-center px-2 py-2.5 tabular-nums font-semibold"
-                  :class="levelColor(s.level[k] ?? null)"
+                  :class="s.bands?.includes(k) ? bandColor(s.level[k] ?? null) : levelColor(s.level[k] ?? null)"
                 >
-                  {{ s.level[k] ?? '—' }}
+                  {{ s.bands?.includes(k) ? fmtBand(s.level[k]) : s.level[k] ?? '—' }}
                 </td>
                 <td class="text-right px-3 py-2.5 tabular-nums">
                   {{ s.attempts }}
@@ -272,7 +273,7 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
             </tbody>
           </table>
           <p class="text-xs text-muted px-4 py-2 border-t border-default">
-            {{ t('centre.scoresNote') }}
+            {{ t(data?.students.some(s => s.bands?.length) ? 'centre.scoresNoteBands' : 'centre.scoresNote') }}
           </p>
         </div>
       </template>
@@ -318,7 +319,7 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
                 {{ a.done }}/{{ a.of }}
               </p>
               <p class="text-xs text-muted">
-                {{ a.average != null ? t('centre.avg', { n: a.average }) : t('centre.doneWord') }}
+                {{ a.average != null ? t('centre.avg', { n: a.exam === 'IELTS' ? fmtBand(a.average) : a.average }) : t('centre.doneWord') }}
               </p>
             </div>
           </button>
@@ -407,7 +408,7 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
     <UModal
       :open="!!detail"
       :title="detail ? `${what(detail)} · ${detail.test?.title ?? ''}` : ''"
-      :description="detail ? `${t('centre.doneOf', { done: detail.done, of: detail.of })}${detail.average != null ? `, ${t('centre.average', { n: detail.average })}` : ''}` : ''"
+      :description="detail ? `${t('centre.doneOf', { done: detail.done, of: detail.of })}${detail.average != null ? `, ${detail.exam === 'IELTS' ? t('centre.averageBand', { n: fmtBand(detail.average) }) : t('centre.average', { n: detail.average })}` : ''}` : ''"
       @update:open="v => !v && (detail = null)"
     >
       <template #body>
@@ -431,7 +432,7 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
                 <span class="text-xs text-muted">{{ relativeTime(s.handIn.at) }}</span>
                 <UButton
                   :to="`/results/${s.handIn.attemptId}`"
-                  :label="s.handIn.score != null ? `${s.handIn.score}/75` : t('result.withExaminer')"
+                  :label="s.handIn.band != null ? `${t('result.band')} ${fmtBand(s.handIn.band)}` : s.handIn.score != null ? `${s.handIn.score}/75` : t('result.withExaminer')"
                   size="xs"
                   color="neutral"
                   variant="outline"

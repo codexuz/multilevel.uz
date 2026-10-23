@@ -325,7 +325,8 @@
     "explanationsTitle": "Explanations are part of Premium",
     "explanationsText": "See why each answer is right, with the line in the passage that gives it away.",
     "buyMarking": "Buy a marking",
-    "earn": "Earn free credits"
+    "earn": "Earn free credits",
+    "creditTextIelts": "One marking credit gets this section a band from an examiner, on the four IELTS criteria, with written feedback. Your answers are kept here meanwhile."
   },
   "exam": {
     "saved": "Saved",
@@ -417,7 +418,8 @@
     "writeAgain": "Write again",
     "speakingFinished": "Speaking finished",
     "speakingFinishedText": "Listen to your answers and download them.",
-    "download": "Download"
+    "download": "Download",
+    "practiceNoteIelts": "Get instant AI feedback below, or a marking credit gets it a band and feedback from an examiner. Your work stays here."
   },
   "criterion": {
     "taskAchievement": "Task achievement",
@@ -460,7 +462,9 @@
     "modelAnswer": "Model answer (C1)",
     "modelAnswerIelts": "Model answer (band 8–9)",
     "listen": "Listen",
-    "stopListening": "Stop"
+    "stopListening": "Stop",
+    "introWritingIelts": "An estimated band on the four IELTS criteria (Task Achievement, Coherence and Cohesion, Lexical Resource, Grammatical Range and Accuracy) and the corrections that matter most. About a minute.",
+    "introSpeakingIelts": "An estimated band from what you said, as an IELTS examiner marks it: fluency and coherence, vocabulary, grammar and pronunciation for each part, with your speed and pauses, corrections and better words. About a minute."
   },
   "result": {
     "level": {
@@ -992,6 +996,7 @@
     "lastActive": "Last active",
     "removeStudent": "Take {name} out of the group",
     "scoresNote": "Scores out of 75: the average of each student's last three whole sections.",
+    "scoresNoteBands": "Multilevel scores out of 75, IELTS as a band: the average of each student's last three whole sections.",
     "noAssignments": "No assignments yet",
     "noAssignmentsText": "Set a section of a test, or one part, with a due date. Students get a Telegram message.",
     "removedTest": "Removed test",
@@ -1008,6 +1013,7 @@
     "setIt": "Set it",
     "doneOf": "{done} of {of} done",
     "average": "average {n}/75",
+    "averageBand": "average band {n}",
     "removeAssignment": "Remove assignment",
     "openTest": "Open the test"
   },
@@ -1042,6 +1048,11 @@
     "takeAny": "Take a Multilevel mock test free on Mockmee and get your score out of 75 and your CEFR level the moment you finish.",
     "takeSkill": "Take the {skill} test",
     "takeFree": "Take a free test",
+    "titleIelts": "{name} scored band {score} ({level}) in IELTS {skill}",
+    "descriptionIelts": "Free IELTS English mock tests, checked instantly. Take the same test and see your band score.",
+    "ogIelts": "Can you beat it? Take the same IELTS test free and get your band score straight away.",
+    "takeTestIelts": "Take {title} free and get your band score and CEFR level the moment you finish.",
+    "takeAnyIelts": "Take an IELTS mock test free on Mockmee and get your band score and CEFR level the moment you finish.",
     "what": "What is Mockmee?"
   },
   "site": {

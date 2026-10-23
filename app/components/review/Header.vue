@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /** The review's top bar: back to the result, what is being reviewed, the key switch and full screen. */
 const { t } = useI18n()
-defineProps<{ back: string, title?: string | null, hideToggle?: boolean }>()
+/** `exam`: IELTS | MULTILEVEL, named in the bar (Multilevel when not said). */
+defineProps<{ back: string, title?: string | null, hideToggle?: boolean, exam?: string | null }>()
 const showKey = defineModel<boolean>('showKey', { default: true })
 
 function toggleFullscreen() {
@@ -22,7 +23,7 @@ function toggleFullscreen() {
         :ui="{ label: 'max-sm:hidden' }"
       />
       <UBadge
-        label="Multilevel"
+        :label="examLabel(exam ?? 'MULTILEVEL')"
         color="primary"
         variant="solid"
         class="font-bold shrink-0"
