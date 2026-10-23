@@ -247,7 +247,13 @@
     "introIelts": "IELTS Academic and General Training on the computer-delivered screen: take a full test or practise one part at a time. Listening and Reading are banded the moment you finish.",
     "seoTitleIelts": "IELTS mock tests online",
     "seoDescriptionIelts": "IELTS Academic and General Training practice tests on the computer-delivered screen: Listening, Reading, Writing and Speaking, banded instantly.",
-    "titleIelts": "IELTS {accent}"
+    "titleIelts": "IELTS {accent}",
+    "allTests": "All tests",
+    "freeTests": "Free",
+    "premiumTests": "Premium",
+    "access": "Free or Premium",
+    "allCategories": "All categories",
+    "category": "Category"
   },
   "qtype": {
     "TRUE_FALSE_NOT_GIVEN": "True / False / Not Given",

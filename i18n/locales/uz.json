@@ -247,7 +247,13 @@
     "introIelts": "Kompyuterdagi IELTS ekranida Academic va General Training: to‘liq test topshiring yoki bitta qismni mashq qiling. Tinglash va O‘qish tugatishingiz bilan band bilan baholanadi.",
     "seoTitleIelts": "Onlayn IELTS mock testlari",
     "seoDescriptionIelts": "Kompyuterdagi IELTS ekranida Academic va General Training mashq testlari: Tinglash, O‘qish, Yozish va Gapirish, darhol band bilan.",
-    "titleIelts": "IELTS {accent}"
+    "titleIelts": "IELTS {accent}",
+    "allTests": "Barcha testlar",
+    "freeTests": "Bepul",
+    "premiumTests": "Premium",
+    "access": "Bepul yoki Premium",
+    "allCategories": "Barcha toifalar",
+    "category": "Toifa"
   },
   "qtype": {
     "TRUE_FALSE_NOT_GIVEN": "True / False / Not Given",

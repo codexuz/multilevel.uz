@@ -412,6 +412,17 @@ function catalogFilters(query: Body) {
   ]
 }
 
+/**
+ * The catalogue's order: by the numbers in the title, the first (a book: Cambridge 18) then the last
+ * (its test: Test 3), so Test 2 comes before Test 10 and Tests 1–21 run in order; tests without a
+ * number after them, then the newest first.
+ */
+const BY_NUMBER = [
+  sql`(substring(${tests.title} from '(\\d+)'))::numeric asc nulls last`,
+  sql`(substring(${tests.title} from '(\\d+)\\D*$'))::numeric asc nulls last`,
+  desc(tests.publishedAt)
+]
+
 /** A full test: it has all four skills, each with something in it. */
 const FULL_TEST = sql`(select count(distinct s.skill) from ${sections} s where s.test_id = ${tests.id} and exists (select 1 from ${sectionItems} si where si.section_id = s.id)) = 4`
 const wantsFull = (query: Body) => query.full === '1' || query.full === 'true'
@@ -489,20 +500,29 @@ export async function listTests(query: Body, opts: { publishedOnly?: boolean } =
     ...catalogFilters(query)
   )
   const where = wantsFull(query) ? and(others, FULL_TEST) : others
-  const [rows, [total], [full]] = await Promise.all([
+  const [rows, [total], [full], categories] = await Promise.all([
     db.query.tests.findMany({
       where, limit, offset,
-      orderBy: opts.publishedOnly ? [desc(tests.publishedAt)] : [desc(tests.updatedAt)],
+      orderBy: opts.publishedOnly ? BY_NUMBER : [desc(tests.updatedAt)],
       with: { sections: { orderBy: (t, { asc }) => [asc(t.position)], with: { items: { with: { part: { with: { groups: { with: { items: { columns: { id: true } } } } } } } } } } }
     }),
     db.select({ n: count() }).from(tests).where(where),
     // How many of the tests the other filters allow are full tests, for the catalogue's switch.
-    db.select({ n: count() }).from(tests).where(and(others, FULL_TEST))
+    db.select({ n: count() }).from(tests).where(and(others, FULL_TEST)),
+    // The categories the exam's published tests come in, for the catalogue's filter.
+    opts.publishedOnly
+      ? db.selectDistinct({ c: tests.category }).from(tests)
+          .where(and(eq(tests.status, 'PUBLISHED'), testExamFilter(query.exam), isIeltsModule(query.module) ? eq(tests.module, String(query.module)) : undefined, sql`${tests.category} is not null`))
+      : Promise.resolve([])
   ])
   const counts = !opts.publishedOnly && rows.length
     ? new Map((await db.select({ testId: attempts.testId, n: count() }).from(attempts).where(inArray(attempts.testId, rows.map(r => r.id))).groupBy(attempts.testId)).map(r => [r.testId, r.n]))
     : new Map()
-  return { ...paged(rows.map(row => ({ ...testSummary(row), ...(opts.publishedOnly ? {} : { attempts: counts.get(row.id) ?? 0 }) })), total?.n ?? 0, page, limit), fullTests: full?.n ?? 0 }
+  return {
+    ...paged(rows.map(row => ({ ...testSummary(row), ...(opts.publishedOnly ? {} : { attempts: counts.get(row.id) ?? 0 }) })), total?.n ?? 0, page, limit),
+    fullTests: full?.n ?? 0,
+    ...(opts.publishedOnly ? { categories: CATEGORIES.filter(c => categories.some(r => r.c === c)) } : {})
+  }
 }
 
 /** The whole test as its author edits it: every section, item and key. */

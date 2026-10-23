@@ -247,7 +247,13 @@
     "introIelts": "IELTS Academic и General Training на компьютерном экране: пройдите полный тест или отработайте одну часть. Listening и Reading оцениваются в band сразу после сдачи.",
     "seoTitleIelts": "Пробные тесты IELTS онлайн",
     "seoDescriptionIelts": "Пробные тесты IELTS Academic и General Training на компьютерном экране: Listening, Reading, Writing и Speaking с мгновенным band.",
-    "titleIelts": "Тренировочные {accent} IELTS"
+    "titleIelts": "Тренировочные {accent} IELTS",
+    "allTests": "Все тесты",
+    "freeTests": "Бесплатные",
+    "premiumTests": "Premium",
+    "access": "Бесплатные или Premium",
+    "allCategories": "Все категории",
+    "category": "Категория"
   },
   "qtype": {
     "TRUE_FALSE_NOT_GIVEN": "True / False / Not Given",

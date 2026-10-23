@@ -9,7 +9,8 @@ definePageMeta({ guestLayout: true })
  * reads. One exam: a signed-in user's own (from onboarding), or the one a guest picked. Three
  * segments: full tests, parts to practise on their own, and test packs. Tests and parts are filtered
  * by words, skill, part, question type, and whether a test has all four skills (and, for IELTS,
- * Academic or General Training). The filters live in the address, so a filtered list can be shared
+ * Academic or General Training); full tests also by free or Premium and by category, and run in
+ * the order of their numbers (Test 1 to Test 21). The filters live in the address, so a filtered list can be shared
  * and comes back on reload.
  */
 const route = useRoute()
@@ -32,6 +33,8 @@ const skill = ref(str(route.query.skill, ALL))
 const part = ref(str(route.query.part, ALL))
 const type = ref(str(route.query.type, ALL))
 const full = ref(route.query.full === '1')
+const access = ref(str(route.query.access, ALL))
+const category = ref(str(route.query.category, ALL))
 const page = ref(Number(route.query.page) || 1)
 
 let timer: ReturnType<typeof setTimeout> | undefined
@@ -61,11 +64,15 @@ watch(() => route.query, (rq) => {
   if (part.value !== str(rq.part, ALL)) part.value = str(rq.part, ALL)
   if (type.value !== str(rq.type, ALL)) type.value = str(rq.type, ALL)
   if (full.value !== (rq.full === '1')) full.value = rq.full === '1'
+  if (access.value !== str(rq.access, ALL)) access.value = str(rq.access, ALL)
+  if (category.value !== str(rq.category, ALL)) category.value = str(rq.category, ALL)
   if (ieltsModule.value !== str(rq.module, ALL)) ieltsModule.value = str(rq.module, ALL)
   if (!loggedIn.value && isExam(rq.exam) && rq.exam !== exam.value) setExam(rq.exam)
 })
-watch([view, q, skill, part, type, full, exam, ieltsModule], () => (page.value = 1))
-watch([view, q, skill, part, type, full, page, exam, ieltsModule], () => router.replace({
+watch([view, q, skill, part, type, full, access, category, exam, ieltsModule], () => (page.value = 1))
+// Another exam has other categories.
+watch(exam, () => (category.value = ALL))
+watch([view, q, skill, part, type, full, access, category, page, exam, ieltsModule], () => router.replace({
   query: {
     exam: exam.value,
     ...(exam.value === 'IELTS' && ieltsModule.value !== ALL ? { module: ieltsModule.value } : {}),
@@ -75,6 +82,8 @@ watch([view, q, skill, part, type, full, page, exam, ieltsModule], () => router.
     ...(view.value === 'parts' && part.value !== ALL ? { part: part.value } : {}),
     ...(type.value !== ALL ? { type: type.value } : {}),
     ...(view.value === 'tests' && full.value ? { full: '1' } : {}),
+    ...(view.value === 'tests' && access.value !== ALL ? { access: access.value } : {}),
+    ...(view.value === 'tests' && category.value !== ALL ? { category: category.value } : {}),
     ...(page.value > 1 ? { page: String(page.value) } : {})
   }
 }))
@@ -87,10 +96,12 @@ const query = computed(() => ({
   part: view.value === 'parts' && part.value !== ALL ? part.value : undefined,
   type: type.value !== ALL ? type.value : undefined,
   full: view.value === 'tests' && full.value ? '1' : undefined,
+  access: view.value === 'tests' && access.value !== ALL ? access.value : undefined,
+  category: view.value === 'tests' && category.value !== ALL ? category.value : undefined,
   page: page.value,
   limit: view.value === 'parts' ? 24 : 12
 }))
-const { data, status } = await useFetch<Paged<any> & { fullTests?: number }>(() => (view.value === 'parts' ? '/api/practice/parts' : '/api/tests'), { query })
+const { data, status } = await useFetch<Paged<any> & { fullTests?: number, categories?: string[] }>(() => (view.value === 'parts' ? '/api/practice/parts' : '/api/tests'), { query })
 const { data: packs } = await useFetch<Pack[]>('/api/packs', { query: computed(() => ({ exam: exam.value })), default: () => [] })
 const moduleItems = computed(() => [
   { label: t('exam.allModules'), value: ALL },
@@ -104,12 +115,21 @@ const views = computed(() => [
 ])
 const skillItems = computed(() => [{ label: t('tests.allSkills'), value: ALL }, ...(['LISTENING', 'READING', 'WRITING', 'SPEAKING'] as const).map(s => ({ label: skillLabel(s), value: s, icon: SKILL_META[s].icon }))])
 const partItems = computed(() => [{ label: t('tests.anyPart'), value: ALL }, ...partNumbers.value.map(n => ({ label: skill.value === ALL ? t('part.part', { n }) : partName(skill.value, n, exam.value), value: String(n) }))])
+const accessItems = computed(() => [
+  { label: t('tests.allTests'), value: ALL },
+  { label: t('tests.freeTests'), value: 'FREE', icon: 'i-lucide-gift' },
+  { label: t('tests.premiumTests'), value: 'PREMIUM', icon: 'i-lucide-sparkles' }
+])
+/** The categories this exam's tests come in (kept from the last answer, so the list holds while one is picked). */
+const categories = ref<string[]>([])
+watch(data, d => d?.categories && (categories.value = d.categories), { immediate: true })
+const categoryItems = computed(() => [{ label: t('tests.allCategories'), value: ALL }, ...categories.value.map(c => ({ label: categoryLabel(c), value: c }))])
 /** How many tests (with the other filters) have all four skills: shown on the switch. */
 const fullTests = ref<number | null>(null)
 watch(data, d => d && view.value === 'tests' && d.fullTests != null && (fullTests.value = d.fullTests), { immediate: true })
 const typeItems = computed(() => [{ label: t('tests.allTypes'), value: ALL }, ...QUESTION_TYPES.map(q => ({ label: questionTypeLabel(q.value), value: q.value, icon: q.icon }))])
 const typesApply = computed(() => skill.value !== 'WRITING' && skill.value !== 'SPEAKING')
-const filtered = computed(() => !!q.value || skill.value !== ALL || type.value !== ALL || ieltsModule.value !== ALL || (view.value === 'parts' && part.value !== ALL) || (view.value === 'tests' && full.value))
+const filtered = computed(() => !!q.value || skill.value !== ALL || type.value !== ALL || ieltsModule.value !== ALL || (view.value === 'parts' && part.value !== ALL) || (view.value === 'tests' && (full.value || access.value !== ALL || category.value !== ALL)))
 function clear() {
   ieltsModule.value = ALL
   search.value = ''
@@ -118,6 +138,8 @@ function clear() {
   part.value = ALL
   type.value = ALL
   full.value = false
+  access.value = ALL
+  category.value = ALL
 }
 const countText = computed(() => {
   const n = data.value?.total ?? 0
@@ -243,6 +265,22 @@ useSeoMeta({
             :search-input="{ placeholder: t('tests.findType') }"
             :aria-label="t('tests.type')"
             class="col-span-2 lg:w-64"
+          />
+          <USelect
+            v-if="view === 'tests'"
+            v-model="access"
+            :items="accessItems"
+            :aria-label="t('tests.access')"
+            class="lg:w-44"
+            data-testid="filter-access"
+          />
+          <USelect
+            v-if="view === 'tests' && categories.length > 1"
+            v-model="category"
+            :items="categoryItems"
+            :aria-label="t('tests.category')"
+            class="lg:w-48"
+            data-testid="filter-category"
           />
           <USwitch
             v-if="view === 'tests'"
