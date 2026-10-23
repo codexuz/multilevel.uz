@@ -346,14 +346,14 @@ export async function listSpeakingParts(query: Body) {
     db.query.speakingParts.findMany({ where, limit, offset, orderBy: [desc(speakingParts.updatedAt)], with: { questions: { orderBy: (t, { asc }) => [asc(t.position)] } } }),
     db.select({ n: count() }).from(speakingParts).where(where)
   ])
-  return paged(rows.map(speakingPartView), total?.n ?? 0, page, limit)
+  return paged(rows.map(r => speakingPartView(r, true)), total?.n ?? 0, page, limit)
 }
 
 export async function getSpeakingPart(id: string) {
   const db = useDb()
   const part = await db.query.speakingParts.findFirst({ where: eq(speakingParts.id, id), with: { questions: { orderBy: (t, { asc }) => [asc(t.position)] } } })
   if (!part) throw notFound('Speaking part not found')
-  return speakingPartView(part)
+  return speakingPartView(part, true)
 }
 
 export async function saveSpeakingPart(id: string | null, body: Body, userId: string) {
@@ -362,22 +362,26 @@ export async function saveSpeakingPart(id: string | null, body: Body, userId: st
   const exam = id ? examFrom((await getSpeakingPart(id)).exam) : examFrom(body.exam)
   const numbers = partNumbersOf(exam, 'SPEAKING')
   if (!numbers.includes(partNumber)) throw bad(`Speaking parts are ${numbers.map(x => `${x} (${speakingPartName(exam, x)})`).join(', ')}`)
+  const where = text(body.title) ?? `Speaking ${speakingPartName(exam, partNumber)}`
+  // Questions are text, or text with the examiner's audio and a sample answer (speaking-import.ts).
+  const extras = await storeSpeakingAudio(partExtrasOf(body, where), `speaking-${partNumber}-audio`)
   const values = {
     partNumber, title: text(body.title), cueCard: body.cueCard ?? null, imageRef: body.imageRef ?? null,
-    prepSeconds: body.prepSeconds ?? null, speakSeconds: body.speakSeconds ?? null
+    prepSeconds: body.prepSeconds ?? null, speakSeconds: body.speakSeconds ?? null, ...extras
   }
-  const questions = (Array.isArray(body.questions) ? body.questions : []).map((q: unknown) => String(q).trim()).filter(Boolean)
+  const questions = await Promise.all(speakingQuestionsOf(body.questions, where).map((q, i) => storeSpeakingAudio(q, `speaking-${partNumber}-q${i + 1}-audio`)))
+  const rowsOf = (partId: string) => questions.map((q, i) => ({ partId, ...q, position: i + 1 }))
   const db = useDb()
   const saved = await db.transaction(async (tx) => {
     if (id) {
       await getSpeakingPart(id)
       await tx.update(speakingParts).set(values).where(eq(speakingParts.id, id))
       await tx.delete(speakingQuestions).where(eq(speakingQuestions.partId, id))
-      if (questions.length) await tx.insert(speakingQuestions).values(questions.map((t: string, i: number) => ({ partId: id, text: t, position: i + 1 })))
+      if (questions.length) await tx.insert(speakingQuestions).values(rowsOf(id))
       return id
     }
     const [part] = await tx.insert(speakingParts).values({ ...values, exam, createdById: userId }).returning({ id: speakingParts.id })
-    if (questions.length) await tx.insert(speakingQuestions).values(questions.map((t: string, i: number) => ({ partId: part!.id, text: t, position: i + 1 })))
+    if (questions.length) await tx.insert(speakingQuestions).values(rowsOf(part!.id))
     return part!.id
   })
   return getSpeakingPart(saved)

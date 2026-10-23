@@ -4,9 +4,9 @@ import { asc, eq } from 'drizzle-orm'
 import { speakingParts, speakingQuestions } from '../database/schema'
 
 /**
- * The examiner's voice: each question (or Part 2's card, Part 3's statement) read aloud once by
- * OpenAI's text-to-speech and kept in storage, so every candidate hears the same clip. Without
- * OpenAI or storage the exam falls back to the browser's own voice.
+ * The examiner's voice: each question (or Part 2's card, Part 3's statement) as the audio a test
+ * came with (imported or uploaded), or else read aloud once by OpenAI's text-to-speech and kept in
+ * storage, so every candidate hears the same clip. With neither, the exam uses the browser's voice.
  */
 
 const TTS_MODEL = () => process.env.AI_TTS_MODEL || 'gpt-4o-mini-tts'
@@ -23,16 +23,22 @@ const plain = (html: string | null) => (html ?? '')
   .replace(/\s+/g, ' ').replace(/(\.\s*)+/g, '. ').replace(/\s+([.,?!])/g, '$1').replace(/([?!])\./g, '$1')
   .trim()
 
-/** What the examiner says for a turn, the way the bot says it. */
-export async function spokenText(partId: string, position: number): Promise<string | null> {
+/**
+ * What the examiner says for a turn, the way the bot says it, and the audio the test has for it
+ * (the question's own, or the part's for a long turn): with audio, nothing is generated.
+ */
+export async function examinerTurn(partId: string, position: number): Promise<{ text: string | null, audioUrl: string | null } | null> {
   const db = useDb()
   const [part] = await db.select().from(speakingParts).where(eq(speakingParts.id, partId)).limit(1)
   if (!part) return null
-  const questions = await db.select({ text: speakingQuestions.text }).from(speakingQuestions)
+  const questions = await db.select({ text: speakingQuestions.text, audioRef: speakingQuestions.audioRef }).from(speakingQuestions)
     .where(eq(speakingQuestions.partId, partId)).orderBy(asc(speakingQuestions.position))
-  if (answeredByQuestion(part.partNumber, part.exam) && questions.length) return plain(questions[position]?.text ?? null) || null
-  if (part.partNumber === 4) return `Part 3. ${plain(part.cueCard)} Use the arguments for and against.`.trim()
-  return `Part 2. ${plain(part.cueCard) || questions.map(q => plain(q.text)).join(' ')}`.trim()
+  if (answeredByQuestion(part.partNumber, part.exam) && questions.length) {
+    const q = questions[position]
+    return { text: plain(q?.text ?? null) || null, audioUrl: q?.audioRef ?? null }
+  }
+  if (part.partNumber === 4) return { text: `Part 3. ${plain(part.cueCard)} Use the arguments for and against.`.trim(), audioUrl: part.audioRef }
+  return { text: `Part 2. ${plain(part.cueCard) || questions.map(q => plain(q.text)).join(' ')}`.trim(), audioUrl: part.audioRef }
 }
 
 /** The clip's public address, made the first time it is asked for. */

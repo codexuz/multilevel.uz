@@ -1126,6 +1126,7 @@
     "seeCatalogue": "See the catalogue"
   },
   "speak": {
+    "sampleAnswer": "Sample answer",
     "checkTitle": "Check your microphone",
     "checkText": "Record three seconds and listen back, so you know the examiner will hear you. The exam then runs by itself: listen, prepare, speak at the beep.",
     "testRecord": "Record 3 seconds",

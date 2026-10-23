@@ -35,6 +35,8 @@ export interface AiSpeakingAnswer {
   durationSeconds: number | null
   /** The time the candidate had to speak. */
   allowedSeconds: number
+  /** The test's model answer to this turn: shown instead of one the AI would write (and pay for). */
+  sampleAnswer?: string | null
   transcript?: string
   metrics?: SpeechMetrics
 }
@@ -78,14 +80,17 @@ export async function speakingPartsOf(rows: { part: typeof speakingParts.$inferS
     ? await useDb().select().from(speakingQuestions).where(inArray(speakingQuestions.partId, parts.map(p => p.id))).orderBy(asc(speakingQuestions.position))
     : []
   const questionsOf = (id: string) => qs.filter(q => q.partId === id).map(q => stripHtml(q.text))
+  const samplesOf = (id: string) => qs.filter(q => q.partId === id).map(q => q.sampleAnswer?.trim() || null)
   const steps = speakingSteps(parts.map(p => ({ ...p, questions: questionsOf(p.id) })))
   return parts.sort((a, b) => a.partNumber - b.partNumber).map((p) => {
     const questions = questionsOf(p.id)
     const answers = rows.filter(r => r.part.id === p.id).sort((a, b) => a.position - b.position).map((r) => {
       const step = steps.find(s => s.partId === p.id && s.position === r.position)
+      const byQuestion = answeredByQuestion(p.partNumber, p.exam)
       return {
         position: r.position,
-        question: answeredByQuestion(p.partNumber, p.exam) ? questions[r.position] ?? null : null,
+        question: byQuestion ? questions[r.position] ?? null : null,
+        sampleAnswer: (byQuestion ? samplesOf(p.id)[r.position] : p.sampleAnswer?.trim()) || null,
         audioRef: r.audioRef,
         durationSeconds: r.durationSeconds,
         allowedSeconds: step?.speakSeconds ?? p.speakSeconds ?? 120
@@ -223,6 +228,9 @@ const Summary = z.object({
 /** What a model answer is: the same question answered at the top, as a learner could say it in the time. */
 const MODEL_ANSWER_RULE = (level: string) => `- modelAnswer: for every answer, how a candidate at ${level} would answer the same question (or the card, or the statement), as natural speech: about as long as the time allowed lets a fluent speaker talk (a short question two to four sentences; a long turn the full minute or two), developed with a reason and an example, with the linking and less common words the level shows, and no headings or lists. Build on the candidate's own ideas where they work. Always in English, whatever language the comments are in.`
 
+/** The test may bring its own model answers: then none is written (the output, and its cost, is smaller). */
+const GIVEN_MODEL_RULE = '- When an answer entry says "Model answer given", return an empty modelAnswer for it: the test has its own.'
+
 const SYSTEM = `You are a certified examiner for Uzbekistan's national Multilevel (CEFR-based) English speaking exam. You receive speech-recognition transcripts of a candidate's answers for ONE part of the exam, with measurements of how each answer was spoken. Assess strictly and fairly.
 
 Give a CEFR sub-level for each criterion, exactly one of: ${LEVELS.join(', ')}.
@@ -240,7 +248,8 @@ Rules:
 - upgrades: plain words the candidate used and higher-level alternatives.
 - Address the candidate as "you", in clear, simple language, specific and practical.
 - answers: one short comment for every answer you receive, with its position.
-${MODEL_ANSWER_RULE('C1 to C2')}`
+${MODEL_ANSWER_RULE('C1 to C2')}
+${GIVEN_MODEL_RULE}`
 
 const IELTS_SYSTEM = `You are a certified IELTS Speaking examiner. You receive speech-recognition transcripts of a candidate's answers for ONE part of the Speaking test, with measurements of how each answer was spoken. Assess strictly and fairly against the public IELTS Speaking band descriptors.
 
@@ -259,7 +268,8 @@ Rules:
 - upgrades: plain words the candidate used and higher-level alternatives.
 - Address the candidate as "you", in clear, simple language, specific and practical.
 - answers: one short comment for every answer you receive, with its position.
-${MODEL_ANSWER_RULE('band 8 to 9')}`
+${MODEL_ANSWER_RULE('band 8 to 9')}
+${GIVEN_MODEL_RULE}`
 
 function partMessage(p: AiSpeakingPart) {
   return [
@@ -270,6 +280,7 @@ function partMessage(p: AiSpeakingPart) {
       `<answer_entry position="${a.position}">`,
       a.question ? `Question: ${a.question}` : '',
       `Time allowed: ${a.allowedSeconds} seconds.`,
+      a.sampleAnswer ? 'Model answer given.' : '',
       a.metrics ? `Measurements: ${a.metrics.words} words, ${a.metrics.speakingSeconds} s of speech, ${a.metrics.wpm} words per minute, ${a.metrics.pauses} pauses over 1 s (${a.metrics.longPauses} over 2.5 s), ${a.metrics.fillers} fillers, average word confidence ${a.metrics.avgConfidence}${a.metrics.unclearWords.length ? `, unclear words: ${a.metrics.unclearWords.join(', ')}` : ''}.` : '',
       `<answer>\n${a.transcript?.trim() || '(no speech detected)'}\n</answer>`,
       `</answer_entry>`
@@ -356,7 +367,8 @@ export async function assessSpeaking(input: unknown, userId: string, locale: str
           position: a.position, question: a.question, allowedSeconds: a.allowedSeconds, durationSeconds: a.durationSeconds,
           transcript: a.transcript ?? '', metrics: a.metrics ?? null,
           comment: r?.answers.find(x => x.position === a.position)?.comment ?? '',
-          modelAnswer: r?.answers.find(x => x.position === a.position)?.modelAnswer ?? ''
+          // The test's own sample when it has one: the AI was told not to write it.
+          modelAnswer: a.sampleAnswer || r?.answers.find(x => x.position === a.position)?.modelAnswer || ''
         }))
       }
     }

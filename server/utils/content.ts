@@ -123,7 +123,17 @@ export function partView(part: any, withKeys: boolean) {
 }
 
 export const writingTaskView = (task: any) => ({ ...task, imageUrl: sign(task.imageRef) })
-export const speakingPartView = (part: any) => ({ ...part, imageUrl: sign(part.imageRef) })
+/** A Speaking part with its questions; the sample answers only `withKeys` (the builder, a review). */
+export function speakingPartView(part: any, withKeys = false) {
+  const { sampleAnswer, questions, ...p } = part
+  return {
+    ...p,
+    imageUrl: sign(part.imageRef),
+    audioUrl: sign(part.audioRef),
+    ...(withKeys ? { sampleAnswer: sampleAnswer ?? null } : {}),
+    ...(questions ? { questions: questions.map(({ sampleAnswer: answer, ...q }: any) => ({ ...q, audioUrl: sign(q.audioRef), ...(withKeys ? { sampleAnswer: answer ?? null } : {}) })) } : {})
+  }
+}
 
 export function sectionView(section: any, withKeys: boolean) {
   const { items, ...rest } = section
@@ -137,7 +147,7 @@ export function sectionView(section: any, withKeys: boolean) {
       position: item.position,
       part: item.part ? partView(item.part, withKeys) : null,
       writingTask: item.writingTask ? writingTaskView(item.writingTask) : null,
-      speakingPart: item.speakingPart ? speakingPartView(item.speakingPart) : null
+      speakingPart: item.speakingPart ? speakingPartView(item.speakingPart, withKeys) : null
     }))
   }
 }
@@ -175,7 +185,7 @@ export function paperSection(section: any, withKeys = false) {
     audioUrl: sign(section.audioRef),
     parts: items.filter((i: any) => i.part).map((i: any) => partView(i.part, withKeys)),
     tasks: items.filter((i: any) => i.writingTask).map((i: any) => ({ ...writingTaskView(i.writingTask), minWords: minimumWordsFor(i.writingTask) })),
-    speaking: items.filter((i: any) => i.speakingPart).map((i: any) => speakingPartView(i.speakingPart))
+    speaking: items.filter((i: any) => i.speakingPart).map((i: any) => speakingPartView(i.speakingPart, withKeys))
   }
 }
 

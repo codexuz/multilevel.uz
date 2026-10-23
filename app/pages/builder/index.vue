@@ -142,6 +142,16 @@ async function importFile(e: Event) {
   }
 }
 
+// ─── Speaking parts with their audio and sample answers, in and out as a file ───
+const speakingImport = ref(false)
+const speakingExport = computed(() => `/api/admin/speaking-parts/export?exam=${exam.value}`)
+/** How much of a part's examiner audio and sample answers the test brings itself. */
+function speakingExtras(s: SpeakingPart) {
+  const longTurn = !answeredByQuestion(s.partNumber, s.exam)
+  const turns = longTurn ? [s] : s.questions ?? []
+  return { audio: turns.filter(t => t.audioRef).length, samples: turns.filter(t => t.sampleAnswer).length, of: turns.length }
+}
+
 const open = (row: any) => navigateTo(
   tab.value === 'tests'
     ? `/builder/tests/${row.id}`
@@ -177,6 +187,26 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
           variant="outline"
           class="max-sm:hidden"
           @click="importInput?.click()"
+        />
+      </template>
+      <template v-if="tab === 'speaking'">
+        <UButton
+          label="Export"
+          icon="i-lucide-file-up"
+          color="neutral"
+          variant="ghost"
+          class="max-sm:hidden"
+          :href="speakingExport"
+          download
+        />
+        <UButton
+          label="Import"
+          icon="i-lucide-file-down"
+          color="neutral"
+          variant="outline"
+          class="max-sm:hidden"
+          data-testid="speaking-import"
+          @click="speakingImport = true"
         />
       </template>
       <UButton
@@ -419,8 +449,22 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
               <p class="font-medium text-highlighted truncate">
                 {{ s.title || strip(s.cueCard).slice(0, 90) || 'Untitled' }}
               </p>
-              <p class="text-xs text-muted">
-                {{ s.questions?.length ?? 0 }} questions
+              <p class="text-xs text-muted flex flex-wrap gap-x-3">
+                <span>{{ s.questions?.length ?? 0 }} questions</span>
+                <span
+                  v-if="speakingExtras(s).audio"
+                  :class="speakingExtras(s).audio === speakingExtras(s).of ? 'text-success' : ''"
+                ><UIcon
+                  name="i-lucide-volume-2"
+                  class="size-3 align-[-1px]"
+                /> audio {{ speakingExtras(s).audio }}/{{ speakingExtras(s).of }}</span>
+                <span
+                  v-if="speakingExtras(s).samples"
+                  :class="speakingExtras(s).samples === speakingExtras(s).of ? 'text-success' : ''"
+                ><UIcon
+                  name="i-lucide-message-square-quote"
+                  class="size-3 align-[-1px]"
+                /> samples {{ speakingExtras(s).samples }}/{{ speakingExtras(s).of }}</span>
               </p>
             </div>
           </li>
@@ -450,5 +494,10 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
         :items-per-page="20"
       />
     </div>
+    <BuilderSpeakingImport
+      v-model:open="speakingImport"
+      :exam="exam"
+      @imported="refresh"
+    />
   </AppPage>
 </template>

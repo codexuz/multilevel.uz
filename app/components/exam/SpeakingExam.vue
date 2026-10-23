@@ -147,8 +147,23 @@ function browserVoice(text: string) {
     setTimeout(resolve, Math.max(4000, text.length * 90))
   })
 }
-/** The examiner's clip for the turn; the browser's voice when there is none. */
+/** The test's own audio for the turn: the question's, or the part's for a long turn. */
+function ownAudio(s: SpeakingStep) {
+  const p = partOf(s.partId)
+  if (!p) return null
+  return (answeredByQuestion(p.partNumber, p.exam) ? [...p.questions].sort((a, b) => a.position - b.position)[s.position]?.audioUrl : p.audioUrl) ?? null
+}
+/** The examiner's clip for the turn (the test's own, else the generated one); the browser's voice when there is none. */
 async function readOut(s: SpeakingStep) {
+  const own = ownAudio(s)
+  if (own) {
+    try {
+      await playClip(own)
+      return
+    } catch {
+      if (cancelled) return
+    }
+  }
   if (voiceWorks !== false) {
     try {
       await playClip(voiceUrl(s))
@@ -167,7 +182,7 @@ function hush() {
 }
 /** Asks for the next clip early, so it is ready when its turn comes. */
 function warm(s?: SpeakingStep) {
-  if (s && readAloud.value && voiceWorks !== false) new Audio(voiceUrl(s)).preload = 'auto'
+  if (s && readAloud.value && (ownAudio(s) || voiceWorks !== false)) new Audio(ownAudio(s) ?? voiceUrl(s)).preload = 'auto'
 }
 
 function beep() {
