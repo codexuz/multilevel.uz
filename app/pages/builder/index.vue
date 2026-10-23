@@ -27,10 +27,12 @@ const TABS = [
 const tabOf = (v: unknown) => (TABS.some(t => t.value === v) ? String(v) : 'tests')
 const tab = ref(tabOf(route.query.tab))
 watch(tab, v => router.replace({ query: { ...route.query, tab: v, page: undefined } }))
+// The page is kept in the address too, so coming back from a test opens the same page.
+const page = ref(Math.max(1, Number(route.query.page) || 1))
+watch(page, p => router.replace({ query: { ...route.query, page: p > 1 ? String(p) : undefined } }))
 watch(() => route.query.tab, (v) => {
   if (route.path === '/builder') tab.value = tabOf(v)
 })
-const page = ref(1)
 const search = ref('')
 const q = ref('')
 let searchTimer: ReturnType<typeof setTimeout> | undefined
@@ -129,6 +131,8 @@ async function importFile(e: Event) {
       const res: any = await libraryAPI.importTest(JSON.parse(await file.text()))
       count++
       last = res.id
+      // The list shows one exam: switch to the one the test is for, so it is there when you come back.
+      setExam(examOfModule(res.module))
       toast.add({ title: `${file.name} imported`, description: 'It is a draft until you publish it.', color: 'success' })
     } catch (err) {
       toast.add({ title: `${file.name} not imported`, description: errorMessage(err), color: 'error' })
