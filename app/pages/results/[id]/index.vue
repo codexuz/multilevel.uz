@@ -89,6 +89,11 @@ onBeforeUnmount(() => off?.())
           {{ data.feedback }}
         </p>
       </UCard>
+      <AiObjectiveAnalysis
+        v-if="(data.skill === 'READING' || data.skill === 'LISTENING') && !someoneElse"
+        :skill="data.skill"
+        :attempt-id="id"
+      />
       <AiWritingFeedback
         v-if="data.skill === 'WRITING' || data.skill === 'SPEAKING'"
         :skill="data.skill"

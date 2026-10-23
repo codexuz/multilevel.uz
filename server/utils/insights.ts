@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
 import { aiReviews, attempts } from '../database/schema'
 import { accessOf } from './billing'
 import { unlockedTestIds } from './rewards'
@@ -33,6 +33,9 @@ export interface Focus {
   total?: number
   average?: number
   taskNumber?: number | null
+  /** A task type's: why marks go, from the user's AI analyses (in the language they were written in), and over how many questions. */
+  why?: string | null
+  whyQuestions?: number
 }
 
 const WRITING_CRITERIA = { taskAchievement: 'Task achievement', organisation: 'Organisation', vocabulary: 'Vocabulary', grammar: 'Grammar' } as Record<string, string>
@@ -47,7 +50,7 @@ const TYPE_LABEL: Record<string, string> = {
   MATCHING_HEADINGS: 'Matching headings', MATCHING_INFORMATION: 'Matching information', MATCHING_FEATURES: 'Matching features',
   MATCHING_SENTENCE_ENDINGS: 'Matching sentence endings', PLAN_MAP_LABELLING: 'Plan / map labelling'
 }
-const typeLabel = (t: string) => TYPE_LABEL[t] ?? t.charAt(0) + t.slice(1).toLowerCase().replace(/_/g, ' ')
+export const questionTypeLabel = (t: string) => TYPE_LABEL[t] ?? t.charAt(0) + t.slice(1).toLowerCase().replace(/_/g, ' ')
 const pct = (right: number, total: number) => (total ? Math.round((right / total) * 100) : 0)
 
 type Rows<T> = T[]
@@ -117,6 +120,27 @@ async function criteriaStats(userId: string, skill: 'WRITING' | 'SPEAKING', exam
   }
 }
 
+/**
+ * Why marks go on each Listening and Reading task type, from the user's recent AI analyses
+ * (ai-objective.ts): the pattern seen over the most questions, and over how many.
+ */
+async function errorPatterns(userId: string) {
+  const rows = await useDb().select({ skill: aiReviews.skill, result: aiReviews.result }).from(aiReviews)
+    .where(and(eq(aiReviews.userId, userId), inArray(aiReviews.skill, ['LISTENING', 'READING']), eq(aiReviews.status, 'DONE')))
+    .orderBy(desc(aiReviews.createdAt)).limit(10)
+  const by = new Map<string, { title: string, questions: number }>()
+  for (const r of rows) {
+    for (const p of ((r.result as { patterns?: { type: string, title: string, questions?: number[] }[] } | null)?.patterns ?? [])) {
+      const key = `${r.skill}:${p.type}`
+      const n = p.questions?.length || 1
+      const seen = by.get(key)
+      // The newest wording of the pattern, with the questions it has cost over all the analyses.
+      by.set(key, { title: seen?.title ?? p.title, questions: (seen?.questions ?? 0) + n })
+    }
+  }
+  return by
+}
+
 /** The user's scores (IELTS: bands) for whole sections over time, oldest first (the last 10). */
 async function scoreTrend(userId: string, exam: Exam) {
   const value = exam === 'IELTS' ? attempts.band : attempts.score
@@ -166,9 +190,9 @@ async function practiseFor(pick: Pick, skill: string, match: { type: string } | 
 
 /** Insights for one exam: an IELTS candidate's on bands, a Multilevel one's on scores out of 75. */
 export async function insightsOf(user: { id: string, role: string }, exam: Exam = 'MULTILEVEL') {
-  const [objective, writing, speaking, trend, access, unlocked] = await Promise.all([
+  const [objective, writing, speaking, trend, access, unlocked, patterns] = await Promise.all([
     objectiveStats(user.id, exam), criteriaStats(user.id, 'WRITING', exam), criteriaStats(user.id, 'SPEAKING', exam), scoreTrend(user.id, exam),
-    accessOf(user), unlockedTestIds(user.id)
+    accessOf(user), unlockedTestIds(user.id), errorPatterns(user.id)
   ])
   const pick: Pick = { userId: user.id, premium: access.premium, unlocked: new Set(unlocked), exam }
   const outOf = exam === 'IELTS' ? 9 : 5
@@ -181,7 +205,7 @@ export async function insightsOf(user: { id: string, role: string }, exam: Exam 
       skill,
       answers: total,
       share: pct(right, total),
-      types: types.map(r => ({ type: r.type, label: typeLabel(r.type), total: r.total, share: pct(r.right, r.total) }))
+      types: types.map(r => ({ type: r.type, label: questionTypeLabel(r.type), total: r.total, share: pct(r.right, r.total) }))
         .sort((a, b) => a.share - b.share || b.total - a.total),
       parts: objective.byPart.filter(r => r.skill === skill).map(r => ({ part: r.part, total: r.total, share: pct(r.right, r.total) }))
         .sort((a, b) => a.part - b.part)
@@ -194,7 +218,11 @@ export async function insightsOf(user: { id: string, role: string }, exam: Exam 
   const spots: Spot[] = []
   for (const s of skills) {
     for (const t of s.types.filter(t => t.total >= MIN_ANSWERS && t.share / 100 < WEAK_SHARE).slice(0, 2)) {
-      spots.push({ skill: s.skill, kind: 'TYPE', key: t.type, label: t.label, detail: `${t.share}% right over ${t.total} questions`, rank: t.share / 100, share: t.share, total: t.total })
+      const why = patterns.get(`${s.skill}:${t.type}`)
+      spots.push({
+        skill: s.skill, kind: 'TYPE', key: t.type, label: t.label, detail: `${t.share}% right over ${t.total} questions`, rank: t.share / 100, share: t.share, total: t.total,
+        why: why?.title ?? null, whyQuestions: why?.questions
+      })
     }
   }
   for (const [skill, stats] of [['WRITING', writing], ['SPEAKING', speaking]] as const) {

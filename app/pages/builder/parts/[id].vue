@@ -15,7 +15,7 @@ const { confirm } = useDialogs()
 const id = computed(() => String(route.params.id))
 const back = computed(() => (route.query.test ? `/builder/tests/${route.query.test}` : `/builder?tab=${part.value?.skill === 'LISTENING' ? 'listening' : 'reading'}`))
 
-const { data: part, status, error } = useAsyncData<Part>(() => `part:${id.value}`, () => libraryAPI.part(id.value), { watch: [id] })
+const { data: part, status, error, refresh } = useAsyncData<Part>(() => `part:${id.value}`, () => libraryAPI.part(id.value), { watch: [id] })
 useSeoMeta({ title: () => `${part.value?.title || 'Part'} — Builder`, robots: 'noindex' })
 
 const form = reactive({
@@ -99,6 +99,25 @@ async function remove() {
   }
 }
 
+// ─── Explanations written by AI once and kept with each question (ai-explain.ts) ───
+const { data: aiStatus } = useFetch<{ enabled: boolean }>('/api/ai/status', { key: 'ai-status' })
+const allItems = computed(() => groups.value.flatMap(g => g.items))
+const explained = computed(() => allItems.value.filter(i => i.explanation?.trim()).length)
+const explaining = ref(false)
+async function explain(overwrite = false) {
+  if (overwrite && !await confirm({ title: 'Rewrite every explanation?', description: 'Explanations written or edited by hand are replaced too.', confirmLabel: 'Rewrite' })) return
+  explaining.value = true
+  try {
+    const res = await $fetch<{ filled: number, total: number, explained: number, evidence: number }>(`/api/admin/parts/${id.value}/explain`, { method: 'POST', body: { overwrite } })
+    toast.add({ title: res.filled ? `${res.filled} explained` : 'Nothing to explain', description: `${res.explained} of ${res.total} questions have an explanation, ${res.evidence} with the quote marked in the ${listening.value ? 'transcript' : 'passage'}. Check them in each group.`, color: 'success' })
+    await refresh()
+  } catch (e) {
+    toast.add({ title: 'Not explained', description: errorMessage(e), color: 'error' })
+  } finally {
+    explaining.value = false
+  }
+}
+
 const preview = ref(false)
 const previewAnswers = ref<Record<number, string>>({})
 const renderGroups = computed(() => groups.value.map(toRenderQuestion))
@@ -113,6 +132,29 @@ const saveLabel = computed(() => ({ idle: '', dirty: 'Unsaved changes', saving: 
   >
     <template #actions>
       <span class="text-xs text-muted max-sm:hidden">{{ saveLabel }}</span>
+      <UFieldGroup v-if="aiStatus?.enabled && allItems.length">
+        <UButton
+          :label="`Explain with AI · ${explained}/${allItems.length}`"
+          icon="i-lucide-sparkles"
+          color="neutral"
+          variant="outline"
+          size="sm"
+          :loading="explaining"
+          :disabled="explained === allItems.length"
+          data-testid="explain-part"
+          @click="explain(false)"
+        />
+        <UDropdownMenu :items="[[{ label: 'Rewrite all explanations', icon: 'i-lucide-refresh-cw', onSelect: () => explain(true) }]]">
+          <UButton
+            icon="i-lucide-chevron-down"
+            color="neutral"
+            variant="outline"
+            size="sm"
+            :disabled="explaining"
+            aria-label="More"
+          />
+        </UDropdownMenu>
+      </UFieldGroup>
       <UButton
         :label="preview ? 'Edit' : 'Preview'"
         :icon="preview ? 'i-lucide-pencil' : 'i-lucide-eye'"

@@ -10,7 +10,7 @@ const { t } = useI18n()
 const { exam } = useExam()
 const { spotLabel, spotDetail } = useSpotText(exam)
 interface Practise { slug: string, title: string, skill: string, part: number, done: boolean, locked: boolean }
-interface Focus extends SpotNumbers { skill: string, kind: 'TYPE' | 'CRITERION', key: string, label: string, detail: string, practise: Practise | null }
+interface Focus extends SpotNumbers { skill: string, kind: 'TYPE' | 'CRITERION', key: string, label: string, detail: string, practise: Practise | null, why?: string | null, whyQuestions?: number }
 interface Objective { skill: string, answers: number, share: number, types: { type: string, label: string, total: number, share: number }[], parts: { part: number, total: number, share: number }[] }
 interface Criteria { reviews: number, criteria: { key: string, label: string, average: number | null }[], tasks: { number: number, label: string, average: number, reviews: number }[], priorities: string[] }
 interface Insights { exam?: string, skills: Objective[], writing: Criteria, speaking: Criteria, trend: Record<string, { score: number, at: string }[]>, focus: Focus[] }
@@ -97,6 +97,17 @@ function change(points: { score: number }[]) {
               </p>
               <p class="text-xs text-muted">
                 {{ spotDetail(f.kind, f.skill, f) }}
+              </p>
+              <p
+                v-if="f.why"
+                class="text-xs text-toned mt-0.5 flex items-start gap-1"
+                data-testid="spot-why"
+              >
+                <UIcon
+                  name="i-lucide-scan-search"
+                  class="size-3.5 text-primary shrink-0 mt-px"
+                />
+                <span>{{ f.whyQuestions ? t('insights.whyCount', { why: f.why, n: f.whyQuestions }, f.whyQuestions) : f.why }}</span>
               </p>
             </div>
           </div>

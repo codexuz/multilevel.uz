@@ -63,6 +63,15 @@ const split = computed(() => (skill.value === 'READING' && !!part.value?.passage
 const focused = ref<number | null>(null)
 provide(QUESTION_FOCUS, { current: focused, focus: (n) => { focused.value = n } })
 
+// Opened at a question (?q=, from the AI analysis): its part, and the question in view.
+onMounted(() => {
+  const q = Number(route.query.q)
+  if (!q) return
+  const at = parts.value.findIndex(p => partItems(p).some(i => i.number === q))
+  if (at < 0) return
+  current.value = at
+  setTimeout(() => jump(q), 300)
+})
 /** A question picked in the part bar: bring it, and its line in the passage, into view. */
 function jump(n: number) {
   focused.value = n
@@ -132,6 +141,11 @@ const band = computed(() => props.view.band ?? section.value?.band ?? null)
 
       <!-- Listening and Reading -->
       <template v-if="skill !== 'WRITING' && part">
+        <ReviewExplainBar
+          :attempt-id="view.saved ? view.id : null"
+          :part="part"
+          :locked="section.locked"
+        />
         <IxPartHeader
           :label="t('part.part', { n: part.partNumber })"
           :instruction="rubric"
