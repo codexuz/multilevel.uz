@@ -42,18 +42,20 @@ session.running.value = false
 watchEffect(() => (chrome.partLabel.value = session.part.value?.partLabel ?? ''))
 
 const showCover = ref(!props.noReplay)
-const audioPlaying = ref(false)
 const timerSeconds = ref(props.noReplay ? Math.max(0, props.resumeSeconds ?? props.reviewMinutes * 60) : props.reviewMinutes * 60)
 if (props.noReplay) {
   session.started.value = true
   session.running.value = true
 }
-let audio: HTMLAudioElement | null = null
-
-onBeforeUnmount(() => {
-  audio?.pause()
-  audio = null
+// The full recording, or each part's in turn with the paper following it; then review time.
+const playback = useListeningPlayback({
+  fullUrl: () => props.audioUrl,
+  partUrls: () => props.partAudioUrls,
+  partCount: () => props.parts.length,
+  onPart: i => session.setPart(i),
+  done: startReview
 })
+const audioPlaying = playback.playing
 
 // Every answer, and every move between parts, goes to the page to be kept.
 watch([session.answers, session.currentPart], () => {
@@ -61,25 +63,13 @@ watch([session.answers, session.currentPart], () => {
 })
 watch(session.currentPart, () => nextTick(() => document.querySelector('.ix-single')?.scrollTo({ top: 0 })))
 
-function currentAudioUrl() {
-  return props.audioUrl || props.partAudioUrls?.[session.currentPart.value] || null
-}
-
 function startReview() {
-  audioPlaying.value = false
   timerSeconds.value = props.reviewMinutes * 60
   session.running.value = true
 }
 
 function playAudio() {
-  const url = currentAudioUrl()
-  if (!url) return startReview()
-  audio?.pause()
-  audio = new Audio(url)
-  audioPlaying.value = true
-  audio.addEventListener('ended', startReview)
-  audio.play().catch(console.error)
-  emit('audioStarted')
+  if (playback.start()) emit('audioStarted')
 }
 
 function begin() {
@@ -91,7 +81,7 @@ function begin() {
 
 function submit() {
   if (session.submitted.value) return
-  audio?.pause()
+  playback.stop()
   session.finish()
   emit('submit', session.answers.value)
 }
@@ -135,11 +125,23 @@ const summary = computed(() => props.parts.map((p) => {
       @time-up="submit"
     />
 
-    <IxPartHeader v-if="!chrome.submissionOpen.value" :label="session.part.value.partLabel" :instruction="session.part.value.instruction" />
+    <IxPartHeader
+      v-if="!chrome.submissionOpen.value"
+      :label="session.part.value.partLabel"
+      :instruction="session.part.value.instruction"
+    />
 
     <div class="ix-body">
-      <IxSubmissionPage v-if="chrome.submissionOpen.value" :parts="summary" :last="last" @submit="submit" />
-      <div v-else class="ix-single">
+      <IxSubmissionPage
+        v-if="chrome.submissionOpen.value"
+        :parts="summary"
+        :last="last"
+        @submit="submit"
+      />
+      <div
+        v-else
+        class="ix-single"
+      >
         <IxHighlightablePanel>
           <IxQuestionPanel
             :questions="session.part.value.questions"
@@ -152,7 +154,11 @@ const summary = computed(() => props.parts.map((p) => {
           />
         </IxHighlightablePanel>
       </div>
-      <IxStartCover v-if="showCover" listening @go="begin" />
+      <IxStartCover
+        v-if="showCover"
+        listening
+        @go="begin"
+      />
     </div>
 
     <IxPartNavigator
