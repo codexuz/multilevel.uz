@@ -326,8 +326,7 @@ async function endPremium(p: AdminUser) {
           data-testid="bulk-bar"
         >
           <UCheckbox
-            :model-value="allPicked"
-            :indeterminate="selected.length > 0 && !allPicked"
+            :model-value="allPicked ? true : selected.length ? 'indeterminate' : false"
             :label="selected.length ? `${selected.length} selected` : 'Select all on this page'"
             @update:model-value="v => pickAll(!!v)"
           />
