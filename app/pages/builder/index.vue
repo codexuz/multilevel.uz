@@ -74,11 +74,11 @@ const exam = computed<Exam>(() => (isExam(builderExam.value) ? builderExam.value
 const setExam = (next: Exam) => (builderExam.value = next)
 // Another list (or filter) starts on its first page.
 watch([tab, q, testStatus, completeness, used, exam], () => (page.value = 1))
-// ─── Many tests at once: pick them, then one action for them all ───
+// ─── Many at once: pick tests (or library items) on this page, then one action for them all ───
 const picked = ref<string[]>([])
 watch([tab, q, testStatus, completeness, used, exam, page], () => (picked.value = []))
-const pageTests = computed(() => (tab.value === 'tests' ? ((data.value?.items ?? []) as { id: string }[]).map(x => x.id) : []))
-const allPicked = computed(() => pageTests.value.length > 0 && pageTests.value.every(id => picked.value.includes(id)))
+const pageIds = computed(() => ((data.value?.items ?? []) as { id: string }[]).map(x => x.id))
+const allPicked = computed(() => pageIds.value.length > 0 && pageIds.value.every(id => picked.value.includes(id)))
 const togglePick = (id: string, on: boolean) => (picked.value = on ? [...new Set([...picked.value, id])] : picked.value.filter(x => x !== id))
 const bulkBusy = ref(false)
 const BULK_DONE: Record<string, string> = { PUBLISH: 'published', DRAFT: 'moved to draft', ARCHIVE: 'archived', DELETE: 'deleted', FREE: 'made free', PREMIUM: 'made Premium' }
@@ -102,6 +102,41 @@ async function bulk(action: 'PUBLISH' | 'DRAFT' | 'ARCHIVE' | 'DELETE' | 'FREE' 
     bulkBusy.value = false
   }
 }
+
+// Library items: Listening and Reading parts, Writing tasks, Speaking parts (/api/admin/library/bulk).
+const KIND: Record<string, 'PART' | 'WRITING' | 'SPEAKING'> = { listening: 'PART', reading: 'PART', writing: 'WRITING', speaking: 'SPEAKING' }
+const ITEM_WORD: Record<string, [string, string]> = { listening: ['part', 'parts'], reading: ['passage', 'passages'], writing: ['task', 'tasks'], speaking: ['part', 'parts'] }
+const itemWord = (n: number) => ITEM_WORD[tab.value]![n === 1 ? 0 : 1]
+const ITEM_DONE: Record<string, string> = { OFFER: 'offered for practice', WITHDRAW: 'no longer offered', EXPLAIN: 'explained', DELETE: 'deleted' }
+const { data: aiStatus } = useFetch<{ enabled: boolean }>('/api/ai/status', { key: 'ai-status' })
+async function bulkItems(action: 'OFFER' | 'WITHDRAW' | 'EXPLAIN' | 'DELETE') {
+  const n = picked.value.length
+  if (!n) return
+  if (action === 'DELETE' && !await confirm({
+    title: `Delete ${n} ${itemWord(n)}?`,
+    description: KIND[tab.value] === 'PART'
+      ? 'One that is in a test or has answers is made inactive instead, so no test loses it. This cannot be undone.'
+      : 'One that is in a test, or has been answered, is left as it is. This cannot be undone.',
+    confirmLabel: 'Delete', color: 'error'
+  })) return
+  bulkBusy.value = true
+  try {
+    const res = await $fetch<{ done: number, archived: string[], failed: { title: string, message: string }[] }>('/api/admin/library/bulk', { method: 'POST', body: { kind: KIND[tab.value], ids: picked.value, action } })
+    const notes = [
+      ...(res.archived.length ? [`${res.archived.length} kept and made inactive (in a test or answered)`] : []),
+      ...res.failed.slice(0, 4).map(f => `${f.title}: ${f.message}`),
+      ...(res.failed.length > 4 ? [`and ${res.failed.length - 4} more`] : [])
+    ]
+    toast.add({ title: `${res.done} ${itemWord(res.done)} ${ITEM_DONE[action]}`, description: notes.join(' · ') || undefined, color: res.failed.length ? 'warning' : 'success' })
+    picked.value = []
+    await refresh()
+  } catch (e) {
+    toast.add({ title: 'Not done', description: errorMessage(e), color: 'error' })
+  } finally {
+    bulkBusy.value = false
+  }
+}
+const speakingExportPicked = computed(() => `/api/admin/speaking-parts/export?ids=${picked.value.join(',')}`)
 
 const { data, status, refresh } = useAsyncData(
   'builder:list',
@@ -303,9 +338,9 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
     </template>
 
     <UCard :ui="{ body: 'p-0 sm:p-0', header: 'px-4 py-2.5 sm:px-4' }">
-      <!-- Tests: pick some, then one action for them all -->
+      <!-- Pick some on this page, then one action for them all -->
       <template
-        v-if="tab === 'tests' && pageTests.length"
+        v-if="pageIds.length"
         #header
       >
         <div
@@ -313,12 +348,11 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
           data-testid="bulk-bar"
         >
           <UCheckbox
-            :model-value="allPicked"
-            :indeterminate="picked.length > 0 && !allPicked"
+            :model-value="allPicked ? true : picked.length ? 'indeterminate' : false"
             :label="picked.length ? `${picked.length} selected` : 'Select all on this page'"
-            @update:model-value="v => (picked = v ? [...pageTests] : [])"
+            @update:model-value="v => (picked = v ? [...pageIds] : [])"
           />
-          <template v-if="picked.length">
+          <template v-if="picked.length && tab === 'tests'">
             <UButton
               label="Publish"
               icon="i-lucide-send"
@@ -368,6 +402,67 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
               variant="soft"
               :loading="bulkBusy"
               @click="bulk('DELETE')"
+            />
+            <UButton
+              label="Clear"
+              size="sm"
+              color="neutral"
+              variant="ghost"
+              @click="picked = []"
+            />
+          </template>
+          <template v-else-if="picked.length">
+            <template v-if="tab === 'listening' || tab === 'reading'">
+              <UButton
+                label="Offer for practice"
+                icon="i-lucide-eye"
+                size="sm"
+                color="neutral"
+                variant="outline"
+                :loading="bulkBusy"
+                @click="bulkItems('OFFER')"
+              />
+              <UButton
+                label="Stop offering"
+                icon="i-lucide-eye-off"
+                size="sm"
+                color="neutral"
+                variant="outline"
+                :loading="bulkBusy"
+                @click="bulkItems('WITHDRAW')"
+              />
+              <UButton
+                v-if="aiStatus?.enabled"
+                :label="picked.length > 20 ? 'Explain with AI (20 at a time)' : 'Explain with AI'"
+                icon="i-lucide-sparkles"
+                size="sm"
+                color="neutral"
+                variant="outline"
+                :loading="bulkBusy"
+                :disabled="picked.length > 20"
+                data-testid="bulk-explain"
+                @click="bulkItems('EXPLAIN')"
+              />
+            </template>
+            <UButton
+              v-if="tab === 'speaking'"
+              label="Export"
+              icon="i-lucide-file-up"
+              size="sm"
+              color="neutral"
+              variant="outline"
+              :href="speakingExportPicked"
+              download
+            />
+            <UButton
+              label="Delete"
+              icon="i-lucide-trash-2"
+              size="sm"
+              color="error"
+              variant="soft"
+              :loading="bulkBusy"
+              data-testid="bulk-delete-items"
+              @click="bulkItems('DELETE')"
             />
             <UButton
               label="Clear"
@@ -441,8 +536,16 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
             v-for="p in (data?.items ?? []) as Part[]"
             :key="p.id"
             class="px-4 py-3 flex items-center gap-3 hover:bg-elevated/50 cursor-pointer"
+            :class="picked.includes(p.id) ? 'bg-primary/5' : ''"
+            data-testid="item-row"
             @click="open(p)"
           >
+            <UCheckbox
+              :model-value="picked.includes(p.id)"
+              :aria-label="`Select ${p.title || 'item'}`"
+              @click.stop
+              @update:model-value="val => togglePick(p.id, !!val)"
+            />
             <UBadge
               :label="`Part ${p.partNumber}`"
               color="neutral"
@@ -457,16 +560,9 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
                 <span v-if="p.types?.length"> · {{ p.types.map(questionTypeLabel).join(', ') }}</span>
               </p>
             </div>
-            <span
-              v-if="p.tests?.length"
-              class="text-xs text-muted max-sm:hidden"
-            >in {{ p.tests.length }} test{{ p.tests.length === 1 ? '' : 's' }}</span>
-            <UBadge
-              v-else
-              label="Not in a test"
-              color="warning"
-              variant="subtle"
-              size="sm"
+            <BuilderTestBadges
+              :tests="p.tests"
+              class="max-sm:hidden"
             />
             <UBadge
               v-if="p.isActive === false"
@@ -482,8 +578,16 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
             v-for="w in (data?.items ?? []) as WritingTask[]"
             :key="w.id"
             class="px-4 py-3 flex items-center gap-3 hover:bg-elevated/50 cursor-pointer"
+            :class="picked.includes(w.id) ? 'bg-primary/5' : ''"
+            data-testid="item-row"
             @click="open(w)"
           >
+            <UCheckbox
+              :model-value="picked.includes(w.id)"
+              :aria-label="`Select ${w.title || 'item'}`"
+              @click.stop
+              @update:model-value="val => togglePick(w.id, !!val)"
+            />
             <UBadge
               :label="writingTaskLabel(w.taskNumber, w.exam)"
               color="neutral"
@@ -497,16 +601,9 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
                 At least {{ w.minWords ?? writingDefaults(w.taskNumber, w.exam).minWords }} words<span v-if="w.essays"> · {{ w.essays }} essays</span>
               </p>
             </div>
-            <span
-              v-if="w.inTests"
-              class="text-xs text-muted max-sm:hidden"
-            >in {{ w.inTests }} test{{ w.inTests === 1 ? '' : 's' }}</span>
-            <UBadge
-              v-else
-              label="Not in a test"
-              color="warning"
-              variant="subtle"
-              size="sm"
+            <BuilderTestBadges
+              :tests="w.tests"
+              class="max-sm:hidden"
             />
           </li>
         </template>
@@ -516,8 +613,16 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
             v-for="s in (data?.items ?? []) as SpeakingPart[]"
             :key="s.id"
             class="px-4 py-3 flex items-center gap-3 hover:bg-elevated/50 cursor-pointer"
+            :class="picked.includes(s.id) ? 'bg-primary/5' : ''"
+            data-testid="item-row"
             @click="open(s)"
           >
+            <UCheckbox
+              :model-value="picked.includes(s.id)"
+              :aria-label="`Select ${s.title || 'item'}`"
+              @click.stop
+              @update:model-value="val => togglePick(s.id, !!val)"
+            />
             <UBadge
               :label="speakingPartLabel(s.partNumber, s.exam)"
               color="neutral"
@@ -545,16 +650,9 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
                 /> samples {{ speakingExtras(s).samples }}/{{ speakingExtras(s).of }}</span>
               </p>
             </div>
-            <span
-              v-if="s.inTests"
-              class="text-xs text-muted max-sm:hidden"
-            >in {{ s.inTests }} test{{ s.inTests === 1 ? '' : 's' }}</span>
-            <UBadge
-              v-else
-              label="Not in a test"
-              color="warning"
-              variant="subtle"
-              size="sm"
+            <BuilderTestBadges
+              :tests="s.tests"
+              class="max-sm:hidden"
             />
           </li>
         </template>

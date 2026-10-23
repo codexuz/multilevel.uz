@@ -114,6 +114,8 @@ export interface WritingTask {
   essays?: number
   /** How many tests it is placed in (library lists). */
   inTests?: number
+  /** The tests it is placed in (library lists). */
+  tests?: { id: string, title: string, status: TestStatus }[]
   lastAttempt?: AttemptBrief | null
 }
 
@@ -132,6 +134,8 @@ export interface SpeakingPart {
   sampleAnswer?: string | null
   /** How many tests it is placed in (library lists). */
   inTests?: number
+  /** The tests it is placed in (library lists). */
+  tests?: { id: string, title: string, status: TestStatus }[]
   prepSeconds?: number | null
   speakSeconds?: number | null
   questions: SpeakingQuestion[]
