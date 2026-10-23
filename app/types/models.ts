@@ -37,6 +37,8 @@ export interface Me {
   unlockCost: number
   /** Premium tests opened with credits. */
   unlockedTests: string[]
+  mockOnly?: boolean
+  runsMocks?: boolean
   /** Single parts (section items) bought in packs. */
   unlockedParts?: string[]
   /** Learning centres I belong to, and my role in each. */

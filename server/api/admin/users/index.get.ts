@@ -8,7 +8,8 @@ export default defineEventHandler(async (event) => {
   const p = getPagination(event)
   const q = String(getQuery(event).q ?? '').trim()
   const byId = /^[0-9a-f-]{36}$/i.test(q) ? [eq(users.id, q)] : []
-  const where = q ? or(...byId, ilike(users.email, `%${q}%`), ilike(users.name, `%${q}%`), ilike(users.telegramUsername, `%${q.replace(/^@/, '')}%`)) : undefined
+  // Walk-ins' accounts for mock sessions are not users of the site: left out.
+  const where = and(eq(users.mockOnly, false), q ? or(...byId, ilike(users.email, `%${q}%`), ilike(users.name, `%${q}%`), ilike(users.telegramUsername, `%${q.replace(/^@/, '')}%`)) : undefined)
 
   const [totalRow] = await db.select({ total: count() }).from(users).where(where)
   const rows = await db.select().from(users).where(where)

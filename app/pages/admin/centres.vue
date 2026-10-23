@@ -45,6 +45,8 @@ const { confirm } = useDialogs()
 const inAYear = () => new Date(Date.now() + 365 * 864e5).toISOString().slice(0, 10)
 const form = ref<{ id?: string, name: string, owner: string, seats: number, licensedUntil: string, listed?: boolean, city?: string, requestId?: string, applicant?: string } | null>(null)
 const saving = ref(false)
+// Mock credits sold to a centre (mock sessions).
+const mockFor = ref<{ centreId: string, name: string } | null>(null)
 
 function startCreate() {
   form.value = { name: '', owner: '', seats: 30, licensedUntil: inAYear() }
@@ -229,6 +231,14 @@ const state = (c: Centre) => (!c.active
         </div>
         <div class="flex items-center gap-2">
           <UButton
+            label="Mock credits"
+            icon="i-lucide-monitor-check"
+            size="sm"
+            color="neutral"
+            variant="ghost"
+            @click="mockFor = { centreId: c.id, name: c.name }"
+          />
+          <UButton
             label="Edit"
             icon="i-lucide-pencil"
             size="sm"
@@ -245,6 +255,10 @@ const state = (c: Centre) => (!c.active
       </UCard>
     </div>
 
+    <AdminMockCredits
+      :target="mockFor"
+      @close="mockFor = null"
+    />
     <UModal
       :open="!!form"
       :title="form?.id ? 'Edit centre' : 'New learning centre'"

@@ -102,6 +102,8 @@ const planItems = computed(() => [
   ...packData.value.map(p => ({ label: `Pack: ${p.title} — ${fmtUzs(p.priceUzs)}${p.active ? '' : ' (off sale)'}`, value: `pack:${p.slug}` }))
 ])
 const granting = ref<AdminUser | null>(null)
+// Mock credits sold to a Premium teacher (their own mock sessions).
+const mockFor = ref<{ userId: string, name: string } | null>(null)
 const grant = reactive({ plan: '', amount: null as number | null, note: '' })
 const grantSaving = ref(false)
 function openGrant(p: AdminUser) {
@@ -261,6 +263,7 @@ async function endPremium(p: AdminUser) {
               :items="[[
                 { label: 'Attempts', icon: 'i-lucide-clipboard-check', to: `/admin/attempts?user=${p.id}` },
                 { label: 'Credits & AI reviews', icon: 'i-lucide-gift', onSelect: () => openGift(p) },
+                { label: 'Mock credits (teacher)', icon: 'i-lucide-monitor-check', onSelect: () => (mockFor = { userId: p.id, name: p.name || p.email || 'User' }) },
                 ...(p.premiumUntil ? [{ label: 'End Premium', icon: 'i-lucide-circle-stop', onSelect: () => endPremium(p) }] : []),
                 ...(p.id !== me?.id ? [
                   { label: p.banned ? 'Unban' : 'Ban', icon: p.banned ? 'i-lucide-circle-check' : 'i-lucide-ban', onSelect: () => toggleBan(p) },
@@ -412,5 +415,9 @@ async function endPremium(p: AdminUser) {
         </form>
       </template>
     </UModal>
+    <AdminMockCredits
+      :target="mockFor"
+      @close="mockFor = null"
+    />
   </AppPage>
 </template>

@@ -31,6 +31,11 @@ async function promoteIfListed(row: UserRow): Promise<UserRow> {
 
 /** Starts a session for `row` on this device and sets the auth cookies. Returns the user as signed in. */
 export async function signIn(event: H3Event, row: UserRow): Promise<UserRow> {
+  return (await startSession(event, row)).user
+}
+
+/** As signIn, with the device session's id too (a mock seat ends that one session when it is given up). */
+export async function startSession(event: H3Event, row: UserRow): Promise<{ user: UserRow, sessionId: string }> {
   row = await promoteIfListed(row)
   const ua = getRequestHeader(event, 'user-agent')
   const [session] = await useDb().insert(sessions).values({
@@ -44,7 +49,7 @@ export async function signIn(event: H3Event, row: UserRow): Promise<UserRow> {
   const access = await signAccessToken(row.id, row.role, randomUUID())
   const refresh = await signRefreshToken(row.id, session!.id)
   setAuthCookies(event, access, refresh)
-  return row
+  return { user: row, sessionId: session!.id }
 }
 
 /** Where to go after signing in: the page it started from (only a path on this site), via onboarding the first time. */

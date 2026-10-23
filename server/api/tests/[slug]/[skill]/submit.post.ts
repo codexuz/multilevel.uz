@@ -11,7 +11,7 @@ interface SubmitBody {
   essays?: { taskId: string, text: string }[]
   recordings?: { partId: string, position?: number, audioRef: string, durationSeconds?: number }[]
   startedAt?: string
-  /** What the exam page saw while it was sat (see integrity.ts). */
+  /** At a mock seat: what the exam page saw while it was sat (see integrity.ts). */
   integrity?: unknown
 }
 
@@ -30,7 +30,9 @@ export default defineEventHandler(async (event) => {
   // Only a signed-in candidate sits a test (guests may look at tests, not take them).
   const user = await requireUser(event)
   const access = await accessOf(user)
-  if (!(await canOpenTest(user, test, access.premium, partNumber ? section.items[0]?.id : null))) paymentRequired('PREMIUM_REQUIRED', 'This test is part of Premium')
+  // At a mock session's seat: the section the invigilator opened, paid for by the session.
+  const seat = await seatGate(user.id, test.id, skill, partNumber)
+  if (!seat && !(await canOpenTest(user, test, access.premium, partNumber ? section.items[0]?.id : null))) paymentRequired('PREMIUM_REQUIRED', 'This test is part of Premium')
 
   // Only this section's questions and tasks count; anything else in the body is ignored.
   const ids = itemIdsOf(section)
@@ -58,26 +60,18 @@ export default defineEventHandler(async (event) => {
   const objective = skill === 'LISTENING' || skill === 'READING'
   const marked = markSection(section, given, test.module)
   const startedAt = body.startedAt && !Number.isNaN(Date.parse(body.startedAt)) ? new Date(body.startedAt) : null
-  // Anything that looks wrong is flagged for an admin to look at; nothing is blocked here.
-  const signals = cleanSignals(body.integrity)
-  const checked = await flagsFor({
-    userId: user.id, sectionId: section.id, skill, whole: !partNumber,
-    window: { startedAt, submittedAt: new Date() },
-    marked: objective ? { correct: marked.correct, total: marked.total } : null,
-    signals
-  }).catch((e) => {
-    console.error('[integrity] check failed:', e)
-    return { flags: [], seconds: null }
-  })
+  // At a seat, what the exam page saw is kept for the invigilator; practice and live mocks keep nothing.
+  const seconds = startedAt ? Math.round((Date.now() - startedAt.getTime()) / 1000) : null
+  const integrity = seat ? integrityValues(skill, cleanSignals(body.integrity), { seconds, marked: objective ? { correct: marked.correct, total: marked.total } : null }) : {}
 
   let liveMockId: string | null = null
   if (skill === 'SPEAKING' && !recordings.length) throw createError({ statusCode: 400, message: 'Record at least one answer before handing in' })
   // An examiner's time is what a marking credit pays for; staff hand in freely.
-  const needsCredit = !objective && !isStaffRole(user.role)
+  const needsCredit = !seat && !objective && !isStaffRole(user.role)
   if (needsCredit && access.credits < 1) paymentRequired('CREDIT_REQUIRED', 'Marking by an examiner needs a marking credit')
   const db = useDb()
   // A whole section sat during a live mock of this test counts there, the first one of each skill.
-  const mock = partNumber ? null : await openMockOfTest(test.id)
+  const mock = partNumber || seat ? null : await openMockOfTest(test.id)
   const attemptId = await db.transaction(async (tx) => {
     if (needsCredit && !(await holdCredits(tx, user.id))) paymentRequired('CREDIT_REQUIRED', 'Marking by an examiner needs a marking credit')
     if (mock) {
@@ -91,7 +85,8 @@ export default defineEventHandler(async (event) => {
       status: objective ? 'GRADED' : 'SUBMITTED', startedAt, gradedAt: objective ? new Date() : null,
       correct: objective ? marked.correct : null, total: objective ? marked.total : null, exam: marked.exam,
       score: objective ? marked.score : null, band: objective ? marked.band : null, cefrLevel: objective ? marked.cefrLevel : null, liveMockId,
-      ...integrityValues(signals, checked)
+      mockCandidateId: seat?.id ?? null,
+      ...integrity
     }).returning({ id: attempts.id })
     const rows = [...ids].filter(id => given.has(id)).map(itemId => ({ attemptId: attempt!.id, itemId, response: given.get(itemId)!, isCorrect: marked.marks.get(itemId) ?? false }))
     if (rows.length) await tx.insert(answers).values(rows)
@@ -102,7 +97,7 @@ export default defineEventHandler(async (event) => {
     return attempt!.id
   })
   // A friend's invite pays off once they finish a test.
-  await rewardInviter(user.id).catch(e => console.error('[rewards] inviter reward failed:', e))
+  if (!seat) await rewardInviter(user.id).catch(e => console.error('[rewards] inviter reward failed:', e))
   // Writing for an examiner: an AI estimate for the candidate now, and a draft for the examiner.
   if (skill === 'WRITING') await reviewHandedInWriting({ id: attemptId, userId: user.id, testId: test.id }, getCookie(event, 'lang')).catch(e => console.error('[ai-writing] auto review failed:', e))
   if (skill === 'SPEAKING') await reviewHandedInSpeaking({ id: attemptId, userId: user.id, testId: test.id }, getCookie(event, 'lang')).catch(e => console.error('[ai-speaking] auto review failed:', e))

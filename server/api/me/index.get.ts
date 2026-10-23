@@ -35,6 +35,10 @@ export default defineEventHandler(async (event) => {
     unlockedTests,
     unlockedParts,
     /** Learning centres I belong to, and my role in each (OWNER, TEACHER or STUDENT). */
-    centres
+    centres,
+    /** A walk-in's account for a mock session: it sits at its seat and nowhere else. */
+    mockOnly: u.mockOnly,
+    /** May run mock sessions: Premium (a teacher), or staff of a centre whose licence runs. */
+    runsMocks: !u.mockOnly && access.premium
   }
 })
