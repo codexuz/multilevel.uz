@@ -101,7 +101,7 @@ async function remove() {
 }
 
 // ─── Explanations written by AI once and kept with each question (ai-explain.ts) ───
-const { data: aiStatus } = useFetch<{ enabled: boolean }>('/api/ai/status', { key: 'ai-status' })
+const { data: aiStatus } = useFetch<{ enabled: boolean, transcribe?: boolean }>('/api/ai/status', { key: 'ai-status' })
 const allItems = computed(() => groups.value.flatMap(g => g.items))
 const explained = computed(() => allItems.value.filter(i => i.explanation?.trim()).length)
 const explaining = ref(false)
@@ -109,13 +109,41 @@ async function explain(overwrite = false) {
   if (overwrite && !await confirm({ title: 'Rewrite every explanation?', description: 'Explanations written or edited by hand are replaced too.', confirmLabel: 'Rewrite' })) return
   explaining.value = true
   try {
+    await autosave.flush()
     const res = await $fetch<{ filled: number, total: number, explained: number, evidence: number }>(`/api/admin/parts/${id.value}/explain`, { method: 'POST', body: { overwrite } })
     toast.add({ title: res.filled ? `${res.filled} explained` : 'Nothing to explain', description: `${res.explained} of ${res.total} questions have an explanation, ${res.evidence} with the quote marked in the ${listening.value ? 'transcript' : 'passage'}. Check them in each group.`, color: 'success' })
     await refresh()
+    if (part.value) {
+      form.transcriptRef = part.value.transcriptRef ?? null
+      nextTick(() => autosave.markClean())
+    }
   } catch (e) {
     toast.add({ title: 'Not explained', description: errorMessage(e), color: 'error' })
   } finally {
     explaining.value = false
+  }
+}
+
+// ─── Transcribing Listening recordings into WebVTT with AssemblyAI (ai-transcribe.ts) ───
+const transcribing = ref(false)
+async function transcribe(overwrite = false) {
+  if (overwrite && form.transcriptRef && !await confirm({ title: 'Rewrite this transcript?', description: 'The current transcript will be replaced with a new WebVTT generated from the recording.', confirmLabel: 'Transcribe' })) return
+  transcribing.value = true
+  try {
+    await autosave.flush()
+    const res = await $fetch<{ transcriptRef: string, transcriptUrl: string | null, created: boolean, cues: number, durationSeconds: number | null }>(`/api/admin/parts/${id.value}/transcribe`, { method: 'POST', body: { overwrite } })
+    form.transcriptRef = res.transcriptRef
+    if (part.value) Object.assign(part.value, { transcriptRef: res.transcriptRef, transcriptUrl: res.transcriptUrl })
+    nextTick(() => autosave.markClean())
+    toast.add({
+      title: res.created ? 'Transcript saved' : 'Already transcribed',
+      description: res.cues ? `${res.cues} timed cues saved as WebVTT in S3 storage.` : 'WebVTT transcript saved in S3 storage.',
+      color: 'success'
+    })
+  } catch (e) {
+    toast.add({ title: 'Not transcribed', description: errorMessage(e), color: 'error' })
+  } finally {
+    transcribing.value = false
   }
 }
 
@@ -133,6 +161,29 @@ const saveLabel = computed(() => ({ idle: '', dirty: 'Unsaved changes', saving: 
   >
     <template #actions>
       <span class="text-xs text-muted max-sm:hidden">{{ saveLabel }}</span>
+      <UFieldGroup v-if="listening && aiStatus?.transcribe && form.audioRef">
+        <UButton
+          :label="form.transcriptRef ? 'Transcribe with AI · 1/1' : 'Transcribe with AI · 0/1'"
+          icon="i-lucide-captions"
+          color="neutral"
+          variant="outline"
+          size="sm"
+          :loading="transcribing"
+          :disabled="!!form.transcriptRef"
+          data-testid="transcribe-part"
+          @click="transcribe(false)"
+        />
+        <UDropdownMenu :items="[[{ label: 'Rewrite transcript', icon: 'i-lucide-refresh-cw', onSelect: () => transcribe(true) }]]">
+          <UButton
+            icon="i-lucide-chevron-down"
+            color="neutral"
+            variant="outline"
+            size="sm"
+            :disabled="transcribing"
+            aria-label="More"
+          />
+        </UDropdownMenu>
+      </UFieldGroup>
       <UFieldGroup v-if="aiStatus?.enabled && allItems.length">
         <UButton
           :label="`Explain with AI · ${explained}/${allItems.length}`"
@@ -219,9 +270,21 @@ const saveLabel = computed(() => ({ idle: '', dirty: 'Unsaved changes', saving: 
       <div class="grid gap-4 min-w-0">
         <UCard v-if="listening">
           <template #header>
-            <p class="font-semibold text-highlighted">
-              Recording
-            </p>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <p class="font-semibold text-highlighted">
+                Recording
+              </p>
+              <UButton
+                v-if="aiStatus?.transcribe && form.audioRef"
+                :label="form.transcriptRef ? 'Rewrite transcript with AI' : 'Transcribe with AI'"
+                icon="i-lucide-captions"
+                color="neutral"
+                variant="outline"
+                size="xs"
+                :loading="transcribing"
+                @click="transcribe(!!form.transcriptRef)"
+              />
+            </div>
           </template>
           <div class="grid gap-4">
             <UFormField

@@ -107,9 +107,9 @@ async function bulk(action: 'PUBLISH' | 'DRAFT' | 'ARCHIVE' | 'DELETE' | 'FREE' 
 const KIND: Record<string, 'PART' | 'WRITING' | 'SPEAKING'> = { listening: 'PART', reading: 'PART', writing: 'WRITING', speaking: 'SPEAKING' }
 const ITEM_WORD: Record<string, [string, string]> = { listening: ['part', 'parts'], reading: ['passage', 'passages'], writing: ['task', 'tasks'], speaking: ['part', 'parts'] }
 const itemWord = (n: number) => ITEM_WORD[tab.value]![n === 1 ? 0 : 1]
-const ITEM_DONE: Record<string, string> = { OFFER: 'offered for practice', WITHDRAW: 'no longer offered', EXPLAIN: 'explained', DELETE: 'deleted' }
-const { data: aiStatus } = useFetch<{ enabled: boolean }>('/api/ai/status', { key: 'ai-status' })
-async function bulkItems(action: 'OFFER' | 'WITHDRAW' | 'EXPLAIN' | 'DELETE') {
+const ITEM_DONE: Record<string, string> = { OFFER: 'offered for practice', WITHDRAW: 'no longer offered', TRANSCRIBE: 'transcribed', EXPLAIN: 'explained', DELETE: 'deleted' }
+const { data: aiStatus } = useFetch<{ enabled: boolean, transcribe?: boolean }>('/api/ai/status', { key: 'ai-status' })
+async function bulkItems(action: 'OFFER' | 'WITHDRAW' | 'TRANSCRIBE' | 'EXPLAIN' | 'DELETE') {
   const n = picked.value.length
   if (!n) return
   if (action === 'DELETE' && !await confirm({
@@ -432,6 +432,18 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
                 @click="bulkItems('WITHDRAW')"
               />
               <UButton
+                v-if="tab === 'listening' && aiStatus?.transcribe"
+                :label="picked.length > 20 ? 'Transcribe with AI (20 at a time)' : 'Transcribe with AI'"
+                icon="i-lucide-captions"
+                size="sm"
+                color="neutral"
+                variant="outline"
+                :loading="bulkBusy"
+                :disabled="picked.length > 20"
+                data-testid="bulk-transcribe"
+                @click="bulkItems('TRANSCRIBE')"
+              />
+              <UButton
                 v-if="aiStatus?.enabled"
                 :label="picked.length > 20 ? 'Explain with AI (20 at a time)' : 'Explain with AI'"
                 icon="i-lucide-sparkles"
@@ -558,6 +570,10 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
               <p class="text-xs text-muted truncate">
                 {{ p.questionCount ?? 0 }} questions<span v-if="p.from"> ({{ p.from }}–{{ p.to }})</span>
                 <span v-if="p.types?.length"> · {{ p.types.map(questionTypeLabel).join(', ') }}</span>
+                <span
+                  v-if="tab === 'listening' && p.transcriptRef"
+                  class="text-success"
+                > · transcript</span>
               </p>
             </div>
             <BuilderTestBadges

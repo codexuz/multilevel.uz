@@ -2,20 +2,21 @@ import { eq, inArray } from 'drizzle-orm'
 import { parts, speakingParts, writingTasks } from '../../../database/schema'
 
 const KINDS = {
-  PART: { table: parts, actions: ['OFFER', 'WITHDRAW', 'EXPLAIN', 'DELETE'] },
+  PART: { table: parts, actions: ['OFFER', 'WITHDRAW', 'TRANSCRIBE', 'EXPLAIN', 'DELETE'] },
   WRITING: { table: writingTasks, actions: ['DELETE'] },
   SPEAKING: { table: speakingParts, actions: ['DELETE'] }
 } as const
 type Kind = keyof typeof KINDS
 
-/** Explaining asks the AI once per part: a few at a time. */
+/** Explaining or transcribing asks the AI once per part: a few at a time. */
 const MAX_EXPLAIN = 20
 
 /**
  * One action on many library items, each done on its own (those that cannot be are named with why):
- * - Listening and Reading parts: offer for practice or stop (OFFER, WITHDRAW), write the AI
- *   explanations their questions lack (EXPLAIN), or DELETE: a part in a test or with answers is
- *   made inactive instead, so no test loses it and results stay true.
+ * - Listening and Reading parts: offer for practice or stop (OFFER, WITHDRAW), transcribe the
+ *   recording into WebVTT with AssemblyAI (TRANSCRIBE), write the AI explanations their questions
+ *   lack (EXPLAIN), or DELETE: a part in a test or with answers is made inactive instead, so no
+ *   test loses it and results stay true.
  * - Writing tasks and Speaking parts: DELETE, unless in a test or answered (essays, recordings).
  */
 export default defineEventHandler(async (event) => {
@@ -27,7 +28,8 @@ export default defineEventHandler(async (event) => {
   const action = String(body.action)
   if (!(actions as readonly string[]).includes(action)) throw createError({ statusCode: 400, message: 'Pick what to do' })
   if (action === 'EXPLAIN' && !aiEnabled()) throw createError({ statusCode: 404, message: 'AI is not set up' })
-  const ids = [...new Set((Array.isArray(body.ids) ? body.ids : []).map(String))].filter(id => /^[0-9a-f-]{36}$/i.test(id)).slice(0, action === 'EXPLAIN' ? MAX_EXPLAIN : 200)
+  if (action === 'TRANSCRIBE' && !transcribeEnabled()) throw createError({ statusCode: 404, message: 'AssemblyAI is not set up' })
+  const ids = [...new Set((Array.isArray(body.ids) ? body.ids : []).map(String))].filter(id => /^[0-9a-f-]{36}$/i.test(id)).slice(0, action === 'EXPLAIN' || action === 'TRANSCRIBE' ? MAX_EXPLAIN : 200)
   if (!ids.length) throw createError({ statusCode: 400, message: 'Pick the items' })
 
   const db = useDb()
@@ -40,6 +42,8 @@ export default defineEventHandler(async (event) => {
     try {
       if (action === 'OFFER' || action === 'WITHDRAW') {
         await db.update(parts).set({ isActive: action === 'OFFER', updatedAt: new Date() }).where(eq(parts.id, row.id))
+      } else if (action === 'TRANSCRIBE') {
+        await transcribePart(row.id)
       } else if (action === 'EXPLAIN') {
         await explainPart(row.id, { userId: admin.id })
       } else if (kind === 'PART') {

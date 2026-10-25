@@ -47,6 +47,7 @@
     "@prisma/nuxt": "0.3.0",
     "@tiptap/extension-text-align": "^3.32.0",
     "@tiptap/vue-3": "^3.32.0",
+    "assemblyai": "^4.41.7",
     "docx": "^9.13.0",
     "drizzle-orm": "^0.45.2",
     "firebase": "^12.15.0",

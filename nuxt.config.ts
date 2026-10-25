@@ -37,6 +37,8 @@ export default defineNuxtConfig({
     s3Bucket: process.env.S3_BUCKET,
     s3AccessKeyId: process.env.S3_ACCESS_KEY_ID,
     s3SecretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
+    // AssemblyAI (Listening part audio -> WebVTT transcription)
+    assemblyaiApiKey: process.env.ASSEMBLYAI_API_KEY,
     // Click.uz merchant (SHOP API). Without these, plans are sold privately on Telegram.
     clickServiceId: process.env.CLICK_SERVICE_ID,
     clickMerchantId: process.env.CLICK_MERCHANT_ID,

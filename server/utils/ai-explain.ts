@@ -4,6 +4,7 @@ import * as z from 'zod/v4'
 import { zodTextFormat } from 'openai/helpers/zod'
 import { eq } from 'drizzle-orm'
 import { parts, questionItems } from '../database/schema'
+import { transcribeEnabled, transcribePart } from './ai-transcribe'
 import { AI_MODEL, openaiClient } from './ai-writing'
 import { s3Bucket, s3KeyFromUrl, useS3Client } from './s3'
 
@@ -73,6 +74,10 @@ async function loadPart(partId: string) {
 type LoadedPart = Awaited<ReturnType<typeof loadPart>>
 
 async function sourceOf(part: LoadedPart) {
+  if (part.skill === 'LISTENING' && !part.transcriptRef && part.audioRef && transcribeEnabled()) {
+    const { transcriptRef } = await transcribePart(part.id)
+    part.transcriptRef = transcriptRef
+  }
   const text = part.skill === 'LISTENING'
     ? (part.transcriptRef ? await readTranscript(part.transcriptRef) : '')
     : plain(part.passage)
