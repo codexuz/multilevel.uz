@@ -7,10 +7,10 @@ const emit = defineEmits<QuestionEmits>()
 const labels = computed(() => {
   const q = props.question
   if (q.options?.length) return [...q.options].sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0)).map(o => o.optionKey)
-  if (q.headingOptions) return Object.keys(q.headingOptions).sort()
+  if (q.headingOptions) return sortKeys(Object.keys(q.headingOptions))
   return ['A', 'B', 'C', 'D', 'E', 'F']
 })
-const rows = computed(() => (props.question.questions ?? []).map(s => ({ n: s.questionNumber ?? 0, text: s.questionText ?? '', correct: s.correctAnswer ?? '' })))
+const rows = computed(() => (props.question.questions ?? []).map(s => ({ n: s.questionNumber ?? 0, text: withoutGapMarks(s.questionText ?? ''), correct: s.correctAnswer ?? '' })))
 </script>
 
 <template>

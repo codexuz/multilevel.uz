@@ -11,11 +11,6 @@ const emit = defineEmits<QuestionEmits>()
 const subs = computed(() => props.question.questions ?? [])
 const correctMap = computed(() => Object.fromEntries(subs.value.map(s => [s.questionNumber ?? 0, s.correctAnswer ?? ''])))
 
-function split(text: string) {
-  const m = new RegExp(BLANK_PATTERN.source, 'i').exec(text)
-  return m ? { before: text.slice(0, m.index), after: text.slice(m.index + m[0].length) } : null
-}
-
 // Every gap of a cell is a question, numbered across the table; "<br>" starts a new line in a cell.
 const grid = computed(() => {
   const data = props.question.tableData
@@ -82,7 +77,7 @@ const grid = computed(() => {
         class="leading-loose"
       >
         <span class="font-bold text-error me-1">{{ sub.questionNumber }}.</span>
-        {{ split(sub.questionText ?? '')?.before ?? sub.questionText }}
+        {{ splitAtGap(sub.questionText ?? '')?.before ?? sub.questionText }}
         <ExamQuestionsBlank
           :n="sub.questionNumber ?? 0"
           :model-value="answers[sub.questionNumber ?? 0]"
@@ -91,7 +86,7 @@ const grid = computed(() => {
           :show-results="showResults"
           @answer="(n, v) => emit('answer', n, v)"
         />
-        {{ split(sub.questionText ?? '')?.after }}
+        {{ splitAtGap(sub.questionText ?? '')?.after }}
       </div>
     </div>
   </div>

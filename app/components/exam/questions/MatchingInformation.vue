@@ -9,7 +9,7 @@ const emit = defineEmits<QuestionEmits>()
 const labels = computed(() => {
   const q = props.question
   if (q.options?.length) return [...q.options].sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0)).map(o => o.optionKey)
-  if (q.headingOptions) return Object.keys(q.headingOptions).sort()
+  if (q.headingOptions) return sortKeys(Object.keys(q.headingOptions))
   return ['A', 'B', 'C', 'D', 'E', 'F']
 })
 
@@ -41,7 +41,7 @@ function cellColor(sub: IELTSSubQuestion, label: string) {
           <span
             :id="`question-${row.original.questionNumber}`"
             class="font-bold text-primary me-2"
-          >{{ row.original.questionNumber }}.</span>{{ row.original.questionText }}
+          >{{ row.original.questionNumber }}.</span>{{ withoutGapMarks(row.original.questionText ?? '') }}
         </template>
         <template
           v-for="l in labels"

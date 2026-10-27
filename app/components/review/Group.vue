@@ -85,8 +85,11 @@ function judgementOrKey(value?: string | null) {
 }
 const tfChoices = computed(() => (type.value === 'YES_NO_NOT_GIVEN' ? ['YES', 'NO', 'NOT GIVEN'] : ['TRUE', 'FALSE', 'NOT GIVEN']))
 
-/** A single multiple-choice group asks one question: its prompt is the item's, or the group's text. */
-const promptOf = (item: QuestionItem) => item.prompt || (items.value.length === 1 ? props.group.context : null)
+/**
+ * A single multiple-choice group asks one question: its prompt is the item's, or the group's text.
+ * A "{n}" gap mark in a matching prompt (a sentence beginning) is drawn as a gap.
+ */
+const promptOf = (item: QuestionItem) => (item.prompt?.replace(/\{\d{1,2}\}/g, '___')) || (items.value.length === 1 ? props.group.context : null)
 
 const showEvidence = (item: QuestionItem) => props.showKey && !!item.evidence && !props.evidenceShown?.has(item.number)
 const explanationOf = (item: QuestionItem) => item.explanation || (items.value.length === 1 ? props.group.explanation : null)
