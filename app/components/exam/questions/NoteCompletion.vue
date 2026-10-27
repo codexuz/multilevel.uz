@@ -30,6 +30,12 @@ const lines = computed(() => {
 <template>
   <div>
     <ExamQuestionsHeading :question="question" />
+    <p
+      v-if="question.context"
+      class="mb-3 italic text-muted"
+    >
+      {{ question.context }}
+    </p>
     <div class="rich-content flex flex-col gap-1">
       <div
         v-for="(line, li) in lines"

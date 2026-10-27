@@ -18,6 +18,9 @@ const gapSentences = computed(() => {
   return out
 })
 
+// Each label's sentence split at its gap ("___" or "{n}"); one without a gap has its box under it.
+const labels = computed(() => (props.question.questions ?? []).map((sub, idx) => ({ sub, text: gapSentences.value[idx] ?? sub.questionText ?? '', gaps: promptGaps(gapSentences.value[idx] ?? sub.questionText ?? '', sub.questionNumber ?? 0) })))
+
 const remainingText = computed(() => html.value.replace(/<img[^>]*>/gi, '').replace(/<p>\s*<\/p>/gi, '').trim())
 const options = computed(() => [...(props.question.options ?? [])].sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0)))
 
@@ -123,22 +126,21 @@ function onPointerUp() {
 
         <template v-else>
           <div
-            v-for="(sub, idx) in question.questions ?? []"
+            v-for="{ sub, text, gaps } in labels"
             :key="sub.questionNumber"
             class="flex items-start gap-3"
           >
             <ExamQuestionsNum :n="sub.questionNumber ?? 0" />
             <div class="flex-1 leading-loose">
-              <template v-if="(gapSentences[idx] ?? sub.questionText ?? '').split(/_{2,}/).length > 1">
+              <template v-if="gaps.nums.length">
                 <template
-                  v-for="(part, i) in (gapSentences[idx] ?? sub.questionText ?? '').split(/_{2,}/)"
+                  v-for="(part, i) in gaps.parts"
                   :key="i"
                 >
-                  {{ part }}
                   <ExamQuestionsBlank
-                    v-if="i < (gapSentences[idx] ?? sub.questionText ?? '').split(/_{2,}/).length - 1"
-                    :n="sub.questionNumber ?? 0"
-                    :model-value="answers[sub.questionNumber ?? 0]"
+                    v-if="i > 0"
+                    :n="gaps.nums[i - 1]!"
+                    :model-value="answers[gaps.nums[i - 1]!]"
                     :correct="sub.correctAnswer"
                     :disabled="disabled"
                     :show-results="showResults"
@@ -146,13 +148,14 @@ function onPointerUp() {
                     width="w-40"
                     @answer="(n, v) => emit('answer', n, v)"
                   />
+                  <span v-html="part" />
                 </template>
               </template>
               <template v-else>
                 <div
-                  v-if="gapSentences[idx] ?? sub.questionText"
+                  v-if="text"
                   class="rich-content mb-2"
-                  v-html="gapSentences[idx] ?? sub.questionText"
+                  v-html="text"
                 />
                 <ExamQuestionsBlank
                   :n="sub.questionNumber ?? 0"

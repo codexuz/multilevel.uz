@@ -11,12 +11,9 @@ const ownNums = computed(() => new Set(subs.value.map(s => s.questionNumber ?? 0
 const placed = computed(() => new Set(subs.value.map(s => props.answers[s.questionNumber ?? 0]).filter(Boolean)))
 const textFor = (key: string) => bank.value.find(o => o.optionKey === key)?.optionText ?? key
 
-const rawHtml = computed(() => props.question.questionText ?? '')
-const inline = computed(() => /_{2,}|\.{3,}/.test(rawHtml.value))
-const segments = computed(() => rawHtml.value
-  .replace(/<\/p>\s*<p>/gi, '<br/><br/>')
-  .replace(/<\/?p>/gi, '')
-  .split(/_{2,}/))
+// The summary's text with its gaps ("___" or "{n}") where they stand, else each question's sentence.
+const lines = computed(() => gapPieces(props.question.questionText ?? '', subs.value)
+  .map(line => line.map(p => (p.html !== undefined ? { html: p.html } : { sub: subs.value.find(s => s.questionNumber === p.n) }))))
 
 const picked = ref<string | null>(null)
 const dragging = ref<string | null>(null)
@@ -57,68 +54,43 @@ function gapColor(sub: IELTSSubQuestion) {
   <div>
     <ExamQuestionsHeading :question="question" />
 
-    <div
-      v-if="inline"
-      class="rich-content leading-[2.4] mb-6"
-    >
-      <template
-        v-for="(frag, i) in segments"
-        :key="i"
-      >
-        <span v-html="frag" />
-        <template v-if="i < segments.length - 1 && subs[i]">
-          <UButton
-            :id="`question-${subs[i]!.questionNumber}`"
-            :label="answers[subs[i]!.questionNumber ?? 0] ? textFor(answers[subs[i]!.questionNumber ?? 0]!) : String(subs[i]!.questionNumber)"
-            :color="gapColor(subs[i]!)"
-            :variant="answers[subs[i]!.questionNumber ?? 0] ? 'soft' : 'outline'"
-            size="sm"
-            class="min-w-36 justify-center border-dashed mx-1 align-middle"
-            @click="clickGap(subs[i]!.questionNumber ?? 0)"
-            @dragover.prevent="overGap = subs[i]!.questionNumber ?? 0"
-            @dragleave="overGap = null"
-            @drop.prevent="onDrop(subs[i]!.questionNumber ?? 0, $event)"
-          />
-          <UBadge
-            v-if="showResults && answers[subs[i]!.questionNumber ?? 0] && answers[subs[i]!.questionNumber ?? 0] !== subs[i]!.correctAnswer"
-            :label="`${subs[i]!.correctAnswer}. ${textFor(subs[i]!.correctAnswer ?? '')}`"
-            color="success"
-            variant="subtle"
-            size="sm"
-          />
-        </template>
-      </template>
-    </div>
-
-    <div
-      v-else
-      class="space-y-3 mb-6"
-    >
+    <div class="space-y-3 mb-6">
       <div
-        v-for="sub in subs"
-        :key="sub.questionNumber"
-        class="flex flex-wrap items-center gap-2 leading-loose"
+        v-for="(line, li) in lines"
+        :key="li"
+        class="rich-content leading-[2.4]"
       >
-        <span>{{ sub.questionText }}</span>
-        <UButton
-          :id="`question-${sub.questionNumber}`"
-          :label="answers[sub.questionNumber ?? 0] ? textFor(answers[sub.questionNumber ?? 0]!) : String(sub.questionNumber)"
-          :color="gapColor(sub)"
-          :variant="answers[sub.questionNumber ?? 0] ? 'soft' : 'outline'"
-          size="sm"
-          class="min-w-36 justify-center border-dashed"
-          @click="clickGap(sub.questionNumber ?? 0)"
-          @dragover.prevent="overGap = sub.questionNumber ?? 0"
-          @dragleave="overGap = null"
-          @drop.prevent="onDrop(sub.questionNumber ?? 0, $event)"
-        />
-        <UBadge
-          v-if="showResults && answers[sub.questionNumber ?? 0] && answers[sub.questionNumber ?? 0] !== sub.correctAnswer"
-          :label="`Correct: ${sub.correctAnswer}. ${textFor(sub.correctAnswer ?? '')}`"
-          color="success"
-          variant="subtle"
-          size="sm"
-        />
+        <template
+          v-for="(piece, pi) in line"
+          :key="pi"
+        >
+          <span
+            v-if="'html' in piece"
+            v-html="piece.html"
+          />
+          <template v-else-if="piece.sub">
+            <UButton
+              :id="`question-${piece.sub.questionNumber}`"
+              :label="answers[piece.sub.questionNumber ?? 0] ? textFor(answers[piece.sub.questionNumber ?? 0]!) : String(piece.sub.questionNumber)"
+              :color="gapColor(piece.sub)"
+              :variant="answers[piece.sub.questionNumber ?? 0] ? 'soft' : 'outline'"
+              size="sm"
+              class="min-w-36 justify-center border-dashed mx-1 align-middle"
+              @click="clickGap(piece.sub.questionNumber ?? 0)"
+              @dragover.prevent="overGap = piece.sub.questionNumber ?? 0"
+              @dragleave="overGap = null"
+              @drop.prevent="onDrop(piece.sub.questionNumber ?? 0, $event)"
+            />
+            <UBadge
+              v-if="showResults && answers[piece.sub.questionNumber ?? 0] && answers[piece.sub.questionNumber ?? 0] !== piece.sub.correctAnswer"
+              :label="`${piece.sub.correctAnswer}. ${textFor(piece.sub.correctAnswer ?? '')}`"
+              color="success"
+              variant="subtle"
+              size="sm"
+            />
+          </template>
+          <span v-else>______</span>
+        </template>
       </div>
     </div>
 

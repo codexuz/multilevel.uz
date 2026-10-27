@@ -26,7 +26,7 @@ export function formatTime(seconds: number) {
 
 // A gap is "___", "{blank}" (numbered in order) or "{7}" (question 7, wherever it stands). Dots are
 // not a gap: "he said nothing...." keeps its dots as written.
-export const BLANK_PATTERN = /_{3,}\u00A0?|\{blank\}|\{answer\}|\[blank\]|\(\.\.\.\)|\{\d{1,2}\}/gi
+export const BLANK_PATTERN = /_{2,}\u00A0?|\{blank\}|\{answer\}|\[blank\]|\(\.\.\.\)|\{\d{1,2}\}/gi
 
 /** A line of a gapped text: its pieces of text, with a gap (numbered in `nums`) between each two. */
 export interface GapLine { parts: string[], nums: number[] }
@@ -75,6 +75,31 @@ function balanceTags(parts: string[]) {
 export function splitGaps(line: string, numberOf: (gap: string) => number): GapLine {
   const re = new RegExp(BLANK_PATTERN.source, 'gi')
   return { parts: balanceTags(line.split(re)), nums: [...line.matchAll(re)].map(m => numberOf(m[0])) }
+}
+
+/** A question's own sentence split at its gaps: a plain gap is the question's own, "{n}" is question n. */
+export function promptGaps(text: string, n: number): GapLine {
+  return splitGaps(text, gap => Number(/^\{(\d{1,2})\}$/.exec(gap)?.[1] ?? n))
+}
+
+/** A piece of a gapped text: some HTML, or the gap for question `n` (0 for a gap without a question). */
+export type GapPiece = { html: string, n?: undefined } | { n: number, html?: undefined }
+
+const toPieces = (line: GapLine): GapPiece[] => line.parts.flatMap((html, i) => (i ? [{ n: line.nums[i - 1]! }, { html }] : [{ html }]))
+
+/**
+ * A summary to fill as lines of text and gaps: the group's text as one line with its gaps where it has
+ * any; else each question's sentence on a line of its own, its gap where the sentence has one or at
+ * its end.
+ */
+export function gapPieces(html: string, subs: { questionNumber?: number, questionText?: string }[]): GapPiece[][] {
+  const text = html.replace(/<\/p>\s*<p>/gi, '<br/><br/>').replace(/<\/?p>/gi, '')
+  const whole = splitGaps(text, gapNumberer(text, subs.map(s => s.questionNumber ?? 0)))
+  if (whole.nums.length) return [toPieces(whole)]
+  return subs.map((sub) => {
+    const line = promptGaps(sub.questionText ?? '', sub.questionNumber ?? 0)
+    return line.nums.length ? toPieces(line) : [{ html: line.parts[0] ?? '' }, { n: sub.questionNumber ?? 0 }]
+  })
 }
 
 /**

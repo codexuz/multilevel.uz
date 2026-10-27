@@ -11,12 +11,9 @@ const subs = computed(() => props.question.questions ?? [])
 const bank = computed(() => props.question.options ?? [])
 const textFor = (key?: string) => bank.value.find(o => o.optionKey === key)?.optionText ?? key ?? ''
 
-const rawHtml = computed(() => props.question.questionText ?? '')
-const inline = computed(() => /_{2,}|\.{3,}/.test(rawHtml.value))
-const segments = computed(() => rawHtml.value
-  .replace(/<\/p>\s*<p>/gi, '<br/><br/>')
-  .replace(/<\/?p>/gi, '')
-  .split(/_{2,}/))
+// The summary's text with its gaps ("___" or "{n}") where they stand, else each question's sentence.
+const lines = computed(() => gapPieces(props.question.questionText ?? '', subs.value)
+  .map(line => line.map(p => (p.html !== undefined ? { html: p.html } : { sub: subs.value.find(s => s.questionNumber === p.n) }))))
 
 const dnd = useTokenDrop({
   nums: () => subs.value.map(s => s.questionNumber ?? 0),
@@ -45,32 +42,30 @@ function state(sub: IELTSSubQuestion) {
   <div>
     <IxQuestionsHeading :question="question" />
 
-    <div :class="inline ? 'ix-gapline' : ''">
-      <template v-for="(sub, i) in subs" :key="sub.questionNumber">
-        <span v-if="inline" v-html="segments[i]" />
-        <div v-else class="ix-gapline" style="display: inline">
-          {{ sub.questionText }}
-        </div>
-        <span
-          :id="`question-${sub.questionNumber}`"
-          class="ix-drop"
-          :class="[state(sub), { 'is-filled': !!answers[sub.questionNumber ?? 0], 'is-over': dnd.over.value === sub.questionNumber }]"
-          tabindex="0"
-          role="button"
-          :aria-label="`Question ${sub.questionNumber}: ${answers[sub.questionNumber ?? 0] ? textFor(answers[sub.questionNumber ?? 0]) : 'empty'}`"
-          :draggable="!disabled && !!answers[sub.questionNumber ?? 0]"
-          @focus="focus(sub.questionNumber ?? 0)"
-          @click="dnd.clickGap(sub.questionNumber ?? 0)"
-          @keydown.enter.prevent="dnd.clickGap(sub.questionNumber ?? 0)"
-          @dragstart="dnd.dragToken(answers[sub.questionNumber ?? 0]!, $event, sub.questionNumber ?? 0)"
-          @dragover.prevent="dnd.over.value = sub.questionNumber ?? 0"
-          @dragleave="dnd.over.value = null"
-          @drop.prevent="dnd.dropOnGap(sub.questionNumber ?? 0, $event)"
-        >{{ answers[sub.questionNumber ?? 0] ? textFor(answers[sub.questionNumber ?? 0]) : sub.questionNumber }}</span>
-        <span v-if="keyText(sub)" class="ix-key">{{ keyText(sub) }}</span>
-        <br v-if="!inline">
+    <div v-for="(line, li) in lines" :key="li" class="ix-gapline">
+      <template v-for="(piece, pi) in line" :key="pi">
+        <span v-if="'html' in piece" v-html="piece.html" />
+        <template v-else-if="piece.sub">
+          <span
+            :id="`question-${piece.sub.questionNumber}`"
+            class="ix-drop"
+            :class="[state(piece.sub), { 'is-filled': !!answers[piece.sub.questionNumber ?? 0], 'is-over': dnd.over.value === piece.sub.questionNumber }]"
+            tabindex="0"
+            role="button"
+            :aria-label="`Question ${piece.sub.questionNumber}: ${answers[piece.sub.questionNumber ?? 0] ? textFor(answers[piece.sub.questionNumber ?? 0]) : 'empty'}`"
+            :draggable="!disabled && !!answers[piece.sub.questionNumber ?? 0]"
+            @focus="focus(piece.sub.questionNumber ?? 0)"
+            @click="dnd.clickGap(piece.sub.questionNumber ?? 0)"
+            @keydown.enter.prevent="dnd.clickGap(piece.sub.questionNumber ?? 0)"
+            @dragstart="dnd.dragToken(answers[piece.sub.questionNumber ?? 0]!, $event, piece.sub.questionNumber ?? 0)"
+            @dragover.prevent="dnd.over.value = piece.sub.questionNumber ?? 0"
+            @dragleave="dnd.over.value = null"
+            @drop.prevent="dnd.dropOnGap(piece.sub.questionNumber ?? 0, $event)"
+          >{{ answers[piece.sub.questionNumber ?? 0] ? textFor(answers[piece.sub.questionNumber ?? 0]) : piece.sub.questionNumber }}</span>
+          <span v-if="keyText(piece.sub)" class="ix-key">{{ keyText(piece.sub) }}</span>
+        </template>
+        <span v-else>______</span>
       </template>
-      <span v-if="inline && segments.length > subs.length" v-html="segments[segments.length - 1]" />
     </div>
 
     <div

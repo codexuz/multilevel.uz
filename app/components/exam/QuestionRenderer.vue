@@ -1,15 +1,22 @@
 <script setup lang="ts">
 import type { QuestionEmits, QuestionProps } from '~/types/question-props'
 
-defineProps<QuestionProps>()
+const props = defineProps<QuestionProps>()
 const emit = defineEmits<QuestionEmits>()
 
 const onAnswer = (n: number, v: string) => emit('answer', n, v)
+
+// A summary (or sentences) written as one text with its gaps in it — "{24}", "___" — and nothing
+// on its questions: shown as that text with the gaps where they stand, as the test does.
+const inlineText = computed(() => {
+  const q = props.question
+  return new RegExp(BLANK_PATTERN.source, 'i').test(q.questionText ?? '') && !(q.questions ?? []).some(s => s.questionText?.trim())
+})
 </script>
 
 <template>
   <ExamQuestionsNoteCompletion
-    v-if="question.type === 'NOTE_COMPLETION'"
+    v-if="question.type === 'NOTE_COMPLETION' || (inlineText && ['SUMMARY_COMPLETION', 'SENTENCE_COMPLETION', 'FLOW_CHART_COMPLETION'].includes(question.type ?? ''))"
     v-bind="$props"
     @answer="onAnswer"
   />

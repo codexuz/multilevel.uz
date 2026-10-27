@@ -22,7 +22,8 @@ const remainingText = computed(() => html.value.replace(/<img[^>]*>/gi, '').repl
 const options = computed(() => [...(props.question.options ?? [])].sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0)))
 
 const rows = computed(() => (props.question.questions ?? []).map(s => ({ n: s.questionNumber ?? 0, text: s.questionText ?? '', correct: s.correctAnswer ?? '' })))
-const sentence = (idx: number, sub: { questionText?: string }) => gapSentences.value[idx] ?? sub.questionText ?? ''
+// Each label's sentence split at its gap ("___" or "{n}"); one without a gap has its box after it.
+const labels = computed(() => (props.question.questions ?? []).map((sub, idx) => ({ sub, text: gapSentences.value[idx] ?? sub.questionText ?? '', gaps: promptGaps(gapSentences.value[idx] ?? sub.questionText ?? '', sub.questionNumber ?? 0) })))
 </script>
 
 <template>
@@ -45,24 +46,24 @@ const sentence = (idx: number, sub: { questionText?: string }) => gapSentences.v
     </template>
 
     <div v-else>
-      <div v-for="(sub, idx) in question.questions ?? []" :key="sub.questionNumber" class="ix-item ix-gapline">
-        <template v-if="sentence(idx, sub).split(/_{2,}/).length > 1">
-          <template v-for="(part, i) in sentence(idx, sub).split(/_{2,}/)" :key="i">
-            {{ part }}<IxQuestionsBlank
-              v-if="i < sentence(idx, sub).split(/_{2,}/).length - 1"
-              :n="sub.questionNumber ?? 0"
-              :model-value="answers[sub.questionNumber ?? 0]"
+      <div v-for="{ sub, text, gaps } in labels" :key="sub.questionNumber" class="ix-item ix-gapline">
+        <template v-if="gaps.nums.length">
+          <template v-for="(part, i) in gaps.parts" :key="i">
+            <IxQuestionsBlank
+              v-if="i > 0"
+              :n="gaps.nums[i - 1]!"
+              :model-value="answers[gaps.nums[i - 1]!]"
               :correct="sub.correctAnswer"
               :disabled="disabled"
               :show-results="showResults"
               @answer="(n, v) => emit('answer', n, v)"
-            />
+            /><span v-html="part" />
           </template>
         </template>
         <div v-else class="ix-prompt">
           <IxQuestionsNum :n="sub.questionNumber ?? 0" />
           <span>
-            <span v-if="sentence(idx, sub)" v-html="sentence(idx, sub)" />
+            <span v-if="text" v-html="text" />
             <IxQuestionsBlank
               :n="sub.questionNumber ?? 0"
               :model-value="answers[sub.questionNumber ?? 0]"
