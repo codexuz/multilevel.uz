@@ -36,6 +36,9 @@ const lines = computed(() => {
 <template>
   <div>
     <IxQuestionsHeading :question="question" />
+    <h4 v-if="question.context" class="ix-qtitle">
+      {{ question.context }}
+    </h4>
     <div class="ix-notes-text">
       <div v-for="(line, li) in lines" :key="li" class="ix-gapline" :class="{ 'is-bullet': line.bullet }">
         <template v-for="(part, pi) in line.parts" :key="pi">

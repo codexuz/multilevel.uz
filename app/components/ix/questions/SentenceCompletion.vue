@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import type { QuestionEmits, QuestionProps } from '~/types/question-props'
 
-defineProps<QuestionProps & { showContext?: boolean }>()
+const props = defineProps<QuestionProps & { showContext?: boolean }>()
 const emit = defineEmits<QuestionEmits>()
 
-function split(text: string) {
-  const re = new RegExp(BLANK_PATTERN.source, 'i')
-  const m = re.exec(text)
-  if (!m) return { before: `${text} `, after: '' }
-  return { before: text.slice(0, m.index), after: text.slice(m.index + m[0].length) }
-}
+// A sentence's gap is its question's ("___" or "{n}"); a sentence without one has its gap at the end.
+const lines = computed(() => (props.question.questions ?? []).map((sub) => {
+  const n = sub.questionNumber ?? 0
+  const gaps = promptGaps(sub.questionText ?? '', n)
+  return { sub, ...(gaps.nums.length ? gaps : { parts: [`${sub.questionText ?? ''} `, ''], nums: [n] }) }
+}))
 </script>
 
 <template>
@@ -19,17 +19,19 @@ function split(text: string) {
       {{ question.context }}
     </h4>
     <div>
-      <div v-for="sub in question.questions ?? []" :key="sub.questionNumber" class="ix-gapline ix-item">
-        <span>{{ split(sub.questionText ?? '').before }}</span>
-        <IxQuestionsBlank
-          :n="sub.questionNumber ?? 0"
-          :model-value="answers[sub.questionNumber ?? 0]"
-          :correct="sub.correctAnswer"
-          :disabled="disabled"
-          :show-results="showResults"
-          @answer="(n, v) => emit('answer', n, v)"
-        />
-        <span>{{ split(sub.questionText ?? '').after }}</span>
+      <div v-for="line in lines" :key="line.sub.questionNumber" class="ix-gapline ix-item">
+        <template v-for="(part, pi) in line.parts" :key="pi">
+          <IxQuestionsBlank
+            v-if="pi > 0"
+            :n="line.nums[pi - 1]!"
+            :model-value="answers[line.nums[pi - 1]!]"
+            :correct="line.sub.correctAnswer"
+            :disabled="disabled"
+            :show-results="showResults"
+            @answer="(n, v) => emit('answer', n, v)"
+          />
+          <span v-html="part" />
+        </template>
       </div>
     </div>
   </div>
