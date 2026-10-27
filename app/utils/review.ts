@@ -1,4 +1,5 @@
 import type { Part, QuestionGroup, QuestionItem } from '~/types/ielts'
+import { BLANK_PATTERN } from './exam'
 
 /**
  * Drawing a marked Listening or Reading part: the API's review sends each group with its items,
@@ -11,7 +12,7 @@ export const TFNG_TYPES = ['TRUE_FALSE_NOT_GIVEN', 'YES_NO_NOT_GIVEN']
 export const GAP_TYPES = ['NOTE_COMPLETION', 'SUMMARY_COMPLETION', 'SUMMARY_COMPLETION_DRAG_DROP', 'SENTENCE_COMPLETION', 'SHORT_ANSWER', 'TABLE_COMPLETION', 'FLOW_CHART_COMPLETION', 'DIAGRAM_LABELLING']
 
 // A gap is "___" (numbered in order) or "{7}" (question 7, wherever it stands) — as the exam draws it.
-const GAP_RE = /_{3,}|\.{3,}|\{blank\}|\{answer\}|\[blank\]|\(\.\.\.\)|\{\d{1,2}\}/gi
+const GAP_RE = new RegExp(BLANK_PATTERN.source, 'gi')
 
 export const sortedGroups = (part: Part) => [...(part.groups ?? [])].sort((a, b) => a.position - b.position)
 export const sortedItems = (group: QuestionGroup) => [...(group.items ?? [])].sort((a, b) => a.number - b.number)
@@ -86,14 +87,17 @@ export function fillGaps(html: string, items: QuestionItem[], showKey: boolean, 
   return { html: out, placed }
 }
 
-/** A table-completion table with the gaps filled, cell by cell, numbered across the table. */
+/**
+ * A table-completion table with the gaps filled, cell by cell, numbered across the table. A "<br>"
+ * in a cell starts a new line there, as the exam draws it.
+ */
 export function fillTable(table: { headers: string[], rows: string[][] }, items: QuestionItem[], showKey: boolean) {
   const byNumber = new Map(items.map(i => [i.number, i]))
   const all = table.rows.flat().join(' ')
   const explicit = new Set([...all.matchAll(/\{(\d{1,2})\}/g)].map(m => Number(m[1])))
   const free = items.filter(i => !explicit.has(i.number))
   let next = 0
-  return table.rows.map(row => row.map(cell => escapeHtml(cell).replace(GAP_RE, (gap) => {
+  return table.rows.map(row => row.map(cell => escapeHtml(cell).replace(/&lt;br\s*\/?&gt;|\n/gi, '<br>').replace(GAP_RE, (gap) => {
     const numbered = /^\{(\d{1,2})\}$/.exec(gap)
     return gapChip(numbered ? byNumber.get(Number(numbered[1])) : free[next++], showKey)
   })))

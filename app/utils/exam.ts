@@ -24,7 +24,71 @@ export function formatTime(seconds: number) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
-export const BLANK_PATTERN = /_{3,}|\.{3,}|\{blank\}|\{answer\}|\[blank\]|\(\.\.\.\)|\{\d{1,2}\}/gi
+// A gap is "___", "...", "……", "{blank}" (numbered in order) or "{7}" (question 7, wherever it stands).
+export const BLANK_PATTERN = /_{3,}\u00A0?|\.{3,}|\u2026{2,}|\{blank\}|\{answer\}|\[blank\]|\(\.\.\.\)|\{\d{1,2}\}/gi
+
+/** A line of a gapped text: its pieces of text, with a gap (numbered in `nums`) between each two. */
+export interface GapLine { parts: string[], nums: number[] }
+
+/**
+ * Hands out the number of each gap of a text, met in reading order: a "{7}" gap is question 7; the
+ * plain gaps take the remaining numbers in order. A gap left without a question gets 0.
+ */
+export function gapNumberer(text: string, nums: number[]) {
+  const explicit = new Set([...text.matchAll(/\{(\d{1,2})\}/g)].map(m => Number(m[1])))
+  const free = nums.filter(n => !explicit.has(n))
+  let idx = 0
+  return (gap: string) => {
+    const numbered = /^\{(\d{1,2})\}$/.exec(gap)
+    return numbered ? Number(numbered[1]) : (free[idx++] ?? 0)
+  }
+}
+
+const INLINE_TAG = /<(\/?)(strong|b|em|i|u)\b[^>]*>/gi
+
+/**
+ * Pieces of HTML cut apart at the gaps, each made whole: a "<strong>" open across a gap is closed
+ * before it and opened again after it, so the bold carries on past the input.
+ */
+function balanceTags(parts: string[]) {
+  let open: { name: string, tag: string }[] = []
+  return parts.map((part) => {
+    const before = open.map(t => t.tag).join('')
+    const stack = [...open]
+    for (const m of part.matchAll(INLINE_TAG)) {
+      const name = m[2]!.toLowerCase()
+      if (!m[1]) stack.push({ name, tag: m[0] })
+      else for (let i = stack.length - 1; i >= 0; i--) {
+        if (stack[i]!.name === name) {
+          stack.splice(i, 1)
+          break
+        }
+      }
+    }
+    open = stack
+    return before + part + [...stack].reverse().map(t => `</${t.name}>`).join('')
+  })
+}
+
+/** A line of HTML split at its gaps, each numbered by `numberOf`. */
+export function splitGaps(line: string, numberOf: (gap: string) => number): GapLine {
+  const re = new RegExp(BLANK_PATTERN.source, 'gi')
+  return { parts: balanceTags(line.split(re)), nums: [...line.matchAll(re)].map(m => numberOf(m[0])) }
+}
+
+/**
+ * A table-completion table with each cell cut into lines ("<br>" or a new line breaks one) and the
+ * lines split at their gaps, numbered across the table row by row. Only bold, italics and underline
+ * are kept of a cell's markup.
+ */
+export function gapTable(rows: string[][], nums: number[]) {
+  const numberOf = gapNumberer(rows.flat().join(' '), nums)
+  return rows.map(row => row.map(cell => (cell ?? '')
+    .split(/<br\s*\/?>|\n/i)
+    .map(line => line.replace(/<\/?(?!(?:strong|b|em|i|u)>)[a-z][^>]*>/gi, '').replace(/&nbsp;/gi, ' ').trim())
+    .filter(Boolean)
+    .map(line => splitGaps(line, numberOf))))
+}
 
 export function partLabel(part?: string) {
   if (!part) return ''

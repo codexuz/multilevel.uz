@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 import type { QuestionEmits, QuestionProps } from '~/types/question-props'
+import type { GapLine } from '~/utils/exam'
 
-interface Cell { text: string, parts: { before: string, after: string } | null, n: number }
+type Cell = GapLine[]
 
 const props = defineProps<QuestionProps>()
 const emit = defineEmits<QuestionEmits>()
@@ -15,19 +16,12 @@ function split(text: string) {
   return m ? { before: text.slice(0, m.index), after: text.slice(m.index + m[0].length) } : null
 }
 
+// Every gap of a cell is a question, numbered across the table; "<br>" starts a new line in a cell.
 const grid = computed(() => {
   const data = props.question.tableData
   if (!data) return null
   const nums = subs.value.map(s => s.questionNumber ?? 0).sort((a, b) => a - b)
-  let counter = 0
-  const rows = data.rows.map((row) => {
-    const obj: Record<string, Cell> = {}
-    row.forEach((cell, ci) => {
-      const parts = split(cell)
-      obj[`c${ci}`] = parts && counter < nums.length ? { text: cell, parts, n: nums[counter++]! } : { text: cell, parts: null, n: 0 }
-    })
-    return obj
-  })
+  const rows = gapTable(data.rows, nums).map(row => Object.fromEntries(row.map((cell, ci) => [`c${ci}`, cell])) as Record<string, Cell>)
   const columns: TableColumn<Record<string, Cell>>[] = data.headers.map((h, i) => ({ id: `c${i}`, header: h, meta: { class: { td: 'whitespace-normal leading-loose' } } }))
   return { rows, columns, keys: data.headers.map((_, i) => `c${i}`) }
 })
@@ -51,21 +45,29 @@ const grid = computed(() => {
           :key="key"
           #[`${key}-cell`]="{ row }"
         >
-          <template v-if="row.original[key]?.parts">
-            {{ row.original[key]!.parts!.before }}
-            <ExamQuestionsBlank
-              :n="row.original[key]!.n"
-              :model-value="answers[row.original[key]!.n]"
-              :correct="correctMap[row.original[key]!.n]"
-              :disabled="disabled"
-              :show-results="showResults"
-              @answer="(n, v) => emit('answer', n, v)"
-            />
-            {{ row.original[key]!.parts!.after }}
-          </template>
-          <template v-else>
-            {{ row.original[key]?.text }}
-          </template>
+          <div
+            v-for="(line, li) in row.original[key] ?? []"
+            :key="li"
+          >
+            <template
+              v-for="(part, pi) in line.parts"
+              :key="pi"
+            >
+              <template v-if="pi > 0">
+                <ExamQuestionsBlank
+                  v-if="line.nums[pi - 1]"
+                  :n="line.nums[pi - 1]!"
+                  :model-value="answers[line.nums[pi - 1]!]"
+                  :correct="correctMap[line.nums[pi - 1]!]"
+                  :disabled="disabled"
+                  :show-results="showResults"
+                  @answer="(n, v) => emit('answer', n, v)"
+                />
+                <span v-else>______</span>
+              </template>
+              <span v-html="part" />
+            </template>
+          </div>
         </template>
       </UTable>
     </UCard>
