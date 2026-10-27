@@ -24,9 +24,9 @@ export function formatTime(seconds: number) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
-// A gap is "___" (numbered in order) or "{7}" (question 7, wherever it stands) — nothing else, so
-// dots and other brackets in the text stay as written.
-export const BLANK_PATTERN = /_{3,}\u00A0?|\{\d{1,2}\}/gi
+// A gap is "___", "{blank}" (numbered in order) or "{7}" (question 7, wherever it stands). Dots are
+// not a gap: "he said nothing...." keeps its dots as written.
+export const BLANK_PATTERN = /_{3,}\u00A0?|\{blank\}|\{answer\}|\[blank\]|\(\.\.\.\)|\{\d{1,2}\}/gi
 
 /** A line of a gapped text: its pieces of text, with a gap (numbered in `nums`) between each two. */
 export interface GapLine { parts: string[], nums: number[] }
