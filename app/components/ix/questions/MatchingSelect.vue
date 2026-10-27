@@ -9,18 +9,6 @@ const props = defineProps<QuestionProps & { mode: 'headings' | 'features' | 'end
 const emit = defineEmits<QuestionEmits>()
 const { focus } = useQuestionFocus()
 
-function romanToInt(roman: string) {
-  const map: Record<string, number> = { i: 1, v: 5, x: 10, l: 50, c: 100 }
-  const s = roman.toLowerCase()
-  let total = 0
-  for (let i = 0; i < s.length; i++) {
-    const curr = map[s[i]!] ?? 0
-    const next = map[s[i + 1]!] ?? 0
-    total += curr < next ? -curr : curr
-  }
-  return total
-}
-
 const entries = computed<[string, string][]>(() => {
   const q = props.question
   if (props.mode === 'headings' && q.headingOptions) {
@@ -34,6 +22,8 @@ const textFor = (key?: string) => {
   return props.mode === 'features' ? `${found[0]}  ${found[1] ?? ''}`.trim() : (found[1] || found[0])
 }
 const subs = computed(() => props.question.questions ?? [])
+/** Each sentence beginning cut at its gap, when it has one. */
+const cuts = computed(() => new Map(subs.value.map(s => [s.questionNumber ?? 0, splitAtGap(s.questionText ?? '')])))
 
 const dnd = useTokenDrop({
   nums: () => subs.value.map(s => s.questionNumber ?? 0),
@@ -68,6 +58,23 @@ function state(n: number, correct?: string) {
   if (props.showResults && (v || correct)) return v === correct ? 'is-correct' : 'is-wrong'
   return ''
 }
+
+/** A question's gap: what is in it, and moving a choice into it or out of it. */
+const gapBind = (n: number, correct?: string) => ({
+  n,
+  text: props.answers[n] ? textFor(props.answers[n]) : '',
+  state: state(n, correct),
+  over: dnd.over.value === n,
+  disabled: props.disabled
+})
+const gapOn = (n: number) => ({
+  focus: () => focus(n),
+  pick: () => dnd.clickGap(n),
+  take: (e: DragEvent) => dnd.dragToken(props.answers[n]!, e, n),
+  enter: () => { dnd.over.value = n },
+  leave: () => { dnd.over.value = null },
+  drop: (e: DragEvent) => dnd.dropOnGap(n, e)
+})
 </script>
 
 <template>
@@ -102,41 +109,25 @@ function state(n: number, correct?: string) {
       <template v-for="sub in subs" :key="sub.questionNumber">
         <!-- A heading gap that has its place in the passage goes there, above its paragraph. -->
         <Teleport v-if="slotted.has(sub.questionNumber ?? 0)" :to="`#heading-slot-${sub.questionNumber}`">
-          <IxQuestionsDropGap
-            :n="sub.questionNumber ?? 0"
-            :text="answers[sub.questionNumber ?? 0] ? textFor(answers[sub.questionNumber ?? 0]) : ''"
-            :state="state(sub.questionNumber ?? 0, sub.correctAnswer)"
-            :over="dnd.over.value === sub.questionNumber"
-            :disabled="disabled"
-            block
-            @focus="focus(sub.questionNumber ?? 0)"
-            @pick="dnd.clickGap(sub.questionNumber ?? 0)"
-            @take="dnd.dragToken(answers[sub.questionNumber ?? 0]!, $event, sub.questionNumber ?? 0)"
-            @enter="dnd.over.value = sub.questionNumber ?? 0"
-            @leave="dnd.over.value = null"
-            @drop="dnd.dropOnGap(sub.questionNumber ?? 0, $event)"
-          />
+          <IxQuestionsDropGap v-bind="gapBind(sub.questionNumber ?? 0, sub.correctAnswer)" block v-on="gapOn(sub.questionNumber ?? 0)" />
           <span v-if="keyText(sub.questionNumber ?? 0, sub.correctAnswer)" class="ix-key is-block">{{ keyText(sub.questionNumber ?? 0, sub.correctAnswer) }}</span>
         </Teleport>
+        <!-- A sentence beginning with its gap in it ("___" or "{n}") takes the ending there. -->
+        <div v-else-if="cuts.get(sub.questionNumber ?? 0)" class="ix-item">
+          <div class="ix-prompt ix-gapline">
+            <IxQuestionsNum :n="sub.questionNumber ?? 0" />
+            <span>
+              {{ cuts.get(sub.questionNumber ?? 0)!.before }}<IxQuestionsDropGap v-bind="gapBind(sub.questionNumber ?? 0, sub.correctAnswer)" v-on="gapOn(sub.questionNumber ?? 0)" />{{ cuts.get(sub.questionNumber ?? 0)!.after }}
+              <span v-if="keyText(sub.questionNumber ?? 0, sub.correctAnswer)" class="ix-key">{{ keyText(sub.questionNumber ?? 0, sub.correctAnswer) }}</span>
+            </span>
+          </div>
+        </div>
         <div v-else class="ix-item">
           <div class="ix-prompt" style="margin-bottom: 6px">
             <IxQuestionsNum :n="sub.questionNumber ?? 0" />
             <span>{{ sub.questionText }}</span>
           </div>
-          <IxQuestionsDropGap
-            :n="sub.questionNumber ?? 0"
-            :text="answers[sub.questionNumber ?? 0] ? textFor(answers[sub.questionNumber ?? 0]) : ''"
-            :state="state(sub.questionNumber ?? 0, sub.correctAnswer)"
-            :over="dnd.over.value === sub.questionNumber"
-            :disabled="disabled"
-            block
-            @focus="focus(sub.questionNumber ?? 0)"
-            @pick="dnd.clickGap(sub.questionNumber ?? 0)"
-            @take="dnd.dragToken(answers[sub.questionNumber ?? 0]!, $event, sub.questionNumber ?? 0)"
-            @enter="dnd.over.value = sub.questionNumber ?? 0"
-            @leave="dnd.over.value = null"
-            @drop="dnd.dropOnGap(sub.questionNumber ?? 0, $event)"
-          />
+          <IxQuestionsDropGap v-bind="gapBind(sub.questionNumber ?? 0, sub.correctAnswer)" block v-on="gapOn(sub.questionNumber ?? 0)" />
           <span v-if="keyText(sub.questionNumber ?? 0, sub.correctAnswer)" class="ix-key">{{ keyText(sub.questionNumber ?? 0, sub.correctAnswer) }}</span>
         </div>
       </template>

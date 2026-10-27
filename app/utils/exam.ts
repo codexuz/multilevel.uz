@@ -116,6 +116,34 @@ export function gapTable(rows: string[][], nums: number[]) {
     .map(line => splitGaps(line, numberOf))))
 }
 
+/** The value of a roman numeral, "iv" → 4. */
+export function romanToInt(roman: string) {
+  const map: Record<string, number> = { i: 1, v: 5, x: 10, l: 50, c: 100 }
+  const s = roman.toLowerCase()
+  let total = 0
+  for (let i = 0; i < s.length; i++) {
+    const curr = map[s[i]!] ?? 0
+    const next = map[s[i + 1]!] ?? 0
+    total += curr < next ? -curr : curr
+  }
+  return total
+}
+
+/** Choice keys in their order: roman numerals by value (i, ii … ix, x), anything else as read. */
+export function sortKeys(keys: string[]) {
+  const roman = keys.length > 0 && keys.every(k => /^[ivxlc]+$/i.test(k))
+  return [...keys].sort((a, b) => (roman ? romanToInt(a) - romanToInt(b) : a.localeCompare(b, undefined, { numeric: true })))
+}
+
+/** A question's sentence cut at its first gap ("___" or "{n}"), or null when it has none. */
+export function splitAtGap(text: string) {
+  const m = new RegExp(BLANK_PATTERN.source, 'i').exec(text)
+  return m ? { before: text.slice(0, m.index), after: text.slice(m.index + m[0].length) } : null
+}
+
+/** A statement to match with any "{n}" gap mark taken out: its answer is a letter, not words in it. */
+export const withoutGapMarks = (text: string) => text.replace(/\s*\{\d{1,2}\}\s*/g, ' ').trim()
+
 export function partLabel(part?: string) {
   if (!part) return ''
   return part.replace('PART_', 'Part ').replace('TASK_', 'Task ')
