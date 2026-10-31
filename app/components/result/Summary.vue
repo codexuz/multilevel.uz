@@ -8,9 +8,30 @@ const { t } = useI18n()
  * what the CEFR level means, how each part went, and what to do next. For a guest, how to keep it.
  */
 const props = defineProps<{ view: ResultView & { correct?: number | null, total?: number | null, durationSeconds?: number | null, submittedAt?: string | null }, reviewTo: string }>()
-const { loggedIn, me } = useMe()
+const emit = defineEmits<{ sent: [] }>()
+const { loggedIn, me, isStaff, credits, refresh: refreshMe } = useMe()
 // A centre's student: their own teachers mark Writing and Speaking.
 const byTeacher = computed(() => !!me.value?.teacherMarks)
+
+// Writing or Speaking saved without a marking credit: sent for marking from here once there is one.
+const awaitingCredit = computed(() => props.view.status === 'AWAITING_CREDIT')
+const canSend = computed(() => isStaff.value || byTeacher.value || credits.value > 0)
+const sending = ref(false)
+const toast = useToast()
+async function sendForMarking() {
+  if (!props.view.id) return
+  sending.value = true
+  try {
+    await $fetch(`/api/attempts/${props.view.id}/mark`, { method: 'POST' })
+    await refreshMe()
+    emit('sent')
+  } catch (e) {
+    toast.add({ title: t('result.notSentError'), description: errorMessage(e), color: 'error' })
+    await refreshMe()
+  } finally {
+    sending.value = false
+  }
+}
 
 const skill = computed(() => props.view.skill as keyof typeof SKILL_META)
 const objective = computed(() => skill.value === 'LISTENING' || skill.value === 'READING')
@@ -123,6 +144,41 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
             {{ minutesText(view.durationSeconds) }}
           </p>
         </div>
+      </div>
+    </UCard>
+
+    <!-- Writing or Speaking saved, waiting for a marking credit -->
+    <UCard v-else-if="awaitingCredit">
+      <div class="flex items-center gap-4">
+        <img
+          src="/illustrations/memo.svg"
+          alt=""
+          class="size-14 shrink-0"
+        >
+        <div>
+          <p class="font-semibold text-highlighted">
+            {{ t('result.notSent') }}
+          </p>
+          <p class="text-sm text-muted text-pretty">
+            {{ t('result.notSentText', { skill: skillLabel(view.skill) }) }}
+          </p>
+        </div>
+      </div>
+      <div class="mt-4">
+        <UButton
+          v-if="canSend"
+          :label="t('result.sendForMarking')"
+          icon="i-lucide-send"
+          :loading="sending"
+          data-testid="send-for-marking"
+          @click="sendForMarking"
+        />
+        <BillingPaywall
+          v-else
+          reason="credit"
+          :exam="view.exam"
+          compact
+        />
       </div>
     </UCard>
 

@@ -17,6 +17,8 @@ export default defineEventHandler(async (event) => {
   const db = useDb()
   const [attempt] = await db.select().from(attempts).where(eq(attempts.id, id)).limit(1)
   if (!attempt || (attempt.skill !== 'WRITING' && attempt.skill !== 'SPEAKING')) throw createError({ statusCode: 404, message: 'Attempt not found' })
+  // Saved without a marking credit: its owner has not sent it for marking yet.
+  if (attempt.status === 'AWAITING_CREDIT') throw createError({ statusCode: 409, message: 'Not sent for marking yet' })
 
   const ielts = attempt.exam === 'IELTS'
   const band = ielts ? Number(body?.band) : null

@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
   const where: SQL[] = []
   const skill = String(query.skill ?? '').toUpperCase()
   if (isSkill(skill)) where.push(eq(attempts.skill, skill))
-  if (query.status === 'SUBMITTED' || query.status === 'GRADED') where.push(eq(attempts.status, query.status))
+  if (query.status === 'SUBMITTED' || query.status === 'AWAITING_CREDIT' || query.status === 'GRADED') where.push(eq(attempts.status, query.status))
   const userId = String(query.user ?? '')
   if (/^[0-9a-f-]{36}$/i.test(userId)) where.push(eq(attempts.userId, userId))
   const q = String(query.q ?? '').trim()

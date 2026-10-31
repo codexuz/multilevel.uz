@@ -27,7 +27,7 @@ export type TestMode = 'PRACTICE' | 'MOCK'
 export type TestStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
 export type IeltsModule = 'ACADEMIC' | 'GENERAL_TRAINING' | 'MULTILEVEL'
 export type AttemptScope = 'TEST' | 'SECTION' | 'PART' | 'TASK'
-export type AttemptStatus = 'IN_PROGRESS' | 'SUBMITTED' | 'GRADED' | 'ABANDONED'
+export type AttemptStatus = 'IN_PROGRESS' | 'SUBMITTED' | 'AWAITING_CREDIT' | 'GRADED' | 'ABANDONED'
 
 export interface Paged<T> { items: T[], total: number, page: number, limit: number, pages: number }
 

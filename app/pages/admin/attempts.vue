@@ -53,7 +53,7 @@ const { data, status: loadState } = await useFetch<{ items: AdminAttempt[], tota
 })
 
 const skillItems = [{ label: 'Every skill', value: 'ALL' }, ...(['LISTENING', 'READING', 'WRITING', 'SPEAKING'] as const).map(s => ({ label: skillLabel(s), value: s }))]
-const statusItems = [{ label: 'Any status', value: 'ALL' }, { label: 'Marked', value: 'GRADED' }, { label: 'With the examiner', value: 'SUBMITTED' }]
+const statusItems = [{ label: 'Any status', value: 'ALL' }, { label: 'Marked', value: 'GRADED' }, { label: 'With the examiner', value: 'SUBMITTED' }, { label: 'Not sent for marking', value: 'AWAITING_CREDIT' }]
 const clearUser = () => router.replace({ query: {} })
 </script>
 
