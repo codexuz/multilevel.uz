@@ -20,7 +20,7 @@ definePageMeta({ layout: 'exam' })
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
-const { me, loggedIn, isStaff, credits, refresh: refreshMe } = useMe()
+const { loggedIn, refresh: refreshMe } = useMe()
 const slug = String(route.params.slug)
 const skill = String(route.params.skill).toUpperCase() as 'LISTENING' | 'READING' | 'WRITING' | 'SPEAKING'
 // ?part=N: one part practised on its own.
@@ -149,11 +149,11 @@ function finishObjective(next: AnswerMap) {
 }
 
 // ─── Writing and Speaking, where a guest practises: nothing is marked or sent ───
-// A signed-in candidate without a marking credit lands here too, with the offer of one.
 const practice = ref<'WRITING' | 'SPEAKING' | null>(null)
-// A centre's students hand in free: their teachers mark them. At a mock session's seat everything is
-// handed in to the session (its invigilator marks it), credits or none: never the practice screen.
-const canBeMarked = computed(() => atSeat.value || (loggedIn.value && (isStaff.value || !!me.value?.teacherMarks || credits.value > 0)))
+// Signed in, Writing and Speaking are always handed in and saved, a live mock's too: with a marking
+// credit (or a centre's teachers, or a mock session's seat) straight to marking, without one kept
+// until one is spent on it from the result. Only a guest's stays on the practice screen.
+const canBeMarked = computed(() => atSeat.value || loggedIn.value)
 const recordings = ref<SpeakingRecording[]>([])
 
 function finishWriting(next: Record<string, string>) {

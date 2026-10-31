@@ -6,6 +6,7 @@ export const fmtBand = (band?: number | null) => (band == null || Number.isNaN(N
 export const ATTEMPT_STATUS: Record<AttemptStatus, { label: string, color: 'info' | 'warning' | 'success' | 'neutral' }> = {
   IN_PROGRESS: { label: 'In progress', color: 'info' },
   SUBMITTED: { label: 'Awaiting marking', color: 'warning' },
+  AWAITING_CREDIT: { label: 'Not sent for marking', color: 'neutral' },
   GRADED: { label: 'Marked', color: 'success' },
   ABANDONED: { label: 'Abandoned', color: 'neutral' }
 }

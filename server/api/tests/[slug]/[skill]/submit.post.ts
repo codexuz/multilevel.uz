@@ -3,8 +3,9 @@ import { answers, attempts, essays, speakingResponses, users } from '../../../..
 
 /**
  * Handing in one section, signed in. Listening and Reading are marked at once; Writing and
- * Speaking go to an examiner, for one marking credit. The attempt is saved and its result
- * returned. Explanations in the review come with Premium.
+ * Speaking go to an examiner, for one marking credit. Without a credit they are saved all the same
+ * (AWAITING_CREDIT) and sent for marking once one is spent on them (attempts/[id]/mark). The attempt
+ * is saved and its result returned. Explanations in the review come with Premium.
  */
 interface SubmitBody {
   answers?: { itemId: string, answer: string }[]
@@ -70,12 +71,12 @@ export default defineEventHandler(async (event) => {
   // of a centre whose licence runs: their own teachers mark them (markers.ts).
   const byTeacher = !seat && !objective && await studiesAtCentre(user.id)
   const needsCredit = !seat && !objective && !byTeacher && !isStaffRole(user.role)
-  if (needsCredit && access.credits < 1) paymentRequired('CREDIT_REQUIRED', 'Marking by an examiner needs a marking credit')
   const db = useDb()
   // A whole section sat during a live mock of this test counts there, the first one of each skill.
   const mock = partNumber || seat ? null : await openMockOfTest(test.id)
+  let paid = true
   const attemptId = await db.transaction(async (tx) => {
-    if (needsCredit && !(await holdCredits(tx, user.id))) paymentRequired('CREDIT_REQUIRED', 'Marking by an examiner needs a marking credit')
+    paid = !needsCredit || await holdCredits(tx, user.id)
     if (mock) {
       await tx.execute(sql`select 1 from ${users} where ${users.id} = ${user.id} for update`)
       const [before] = await tx.select({ id: attempts.id }).from(attempts)
@@ -84,7 +85,7 @@ export default defineEventHandler(async (event) => {
     }
     const [attempt] = await tx.insert(attempts).values({
       userId: user.id, testId: test.id, sectionId: section.id, skill, partNumber, mode: test.mode,
-      status: objective ? 'GRADED' : 'SUBMITTED', startedAt, gradedAt: objective ? new Date() : null,
+      status: objective ? 'GRADED' : paid ? 'SUBMITTED' : 'AWAITING_CREDIT', startedAt, gradedAt: objective ? new Date() : null,
       correct: objective ? marked.correct : null, total: objective ? marked.total : null, exam: marked.exam,
       score: objective ? marked.score : null, band: objective ? marked.band : null, cefrLevel: objective ? marked.cefrLevel : null, liveMockId,
       mockCandidateId: seat?.id ?? null,
@@ -95,15 +96,15 @@ export default defineEventHandler(async (event) => {
     const essayRows = [...essayMap.entries()].map(([taskId, e]) => ({ attemptId: attempt!.id, taskId, text: e.text, wordCount: e.wordCount }))
     if (essayRows.length) await tx.insert(essays).values(essayRows)
     if (recordings.length) await tx.insert(speakingResponses).values(recordings.map(r => ({ attemptId: attempt!.id, ...r })))
-    if (needsCredit) await spendCredit(tx, user.id, attempt!.id)
+    if (needsCredit && paid) await spendCredit(tx, user.id, attempt!.id)
     return attempt!.id
   })
   // A friend's invite pays off once they finish a test.
   if (!seat) await rewardInviter(user.id).catch(e => console.error('[rewards] inviter reward failed:', e))
   // Writing for an examiner: an AI estimate for the candidate now, and a draft for the examiner.
   if (byTeacher) await tellTeachersToMark({ id: attemptId, userId: user.id, skill }).catch(e => console.error('[marking] teachers not told:', e))
-  if (skill === 'WRITING') await reviewHandedInWriting({ id: attemptId, userId: user.id, testId: test.id }, getCookie(event, 'lang')).catch(e => console.error('[ai-writing] auto review failed:', e))
-  if (skill === 'SPEAKING') await reviewHandedInSpeaking({ id: attemptId, userId: user.id, testId: test.id }, getCookie(event, 'lang')).catch(e => console.error('[ai-speaking] auto review failed:', e))
+  if (paid && skill === 'WRITING') await reviewHandedInWriting({ id: attemptId, userId: user.id, testId: test.id }, getCookie(event, 'lang')).catch(e => console.error('[ai-writing] auto review failed:', e))
+  if (paid && skill === 'SPEAKING') await reviewHandedInSpeaking({ id: attemptId, userId: user.id, testId: test.id }, getCookie(event, 'lang')).catch(e => console.error('[ai-speaking] auto review failed:', e))
 
   return {
     id: attemptId,
@@ -111,7 +112,7 @@ export default defineEventHandler(async (event) => {
     liveMockId,
     skill,
     partNumber,
-    status: objective ? 'GRADED' : attemptId ? 'SUBMITTED' : 'PRACTICE',
+    status: objective ? 'GRADED' : paid ? 'SUBMITTED' : 'AWAITING_CREDIT',
     test: { id: test.id, slug: test.slug, title: test.title },
     submittedAt: new Date(),
     correct: objective ? marked.correct : null,

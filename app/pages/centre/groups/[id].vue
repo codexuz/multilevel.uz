@@ -432,7 +432,7 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
                 <span class="text-xs text-muted">{{ relativeTime(s.handIn.at) }}</span>
                 <UButton
                   :to="`/results/${s.handIn.attemptId}`"
-                  :label="s.handIn.band != null ? `${t('result.band')} ${fmtBand(s.handIn.band)}` : s.handIn.score != null ? `${s.handIn.score}/75` : t('result.withExaminer')"
+                  :label="s.handIn.band != null ? `${t('result.band')} ${fmtBand(s.handIn.band)}` : s.handIn.score != null ? `${s.handIn.score}/75` : s.handIn.status === 'AWAITING_CREDIT' ? t('result.notSentBadge') : t('result.withExaminer')"
                   size="xs"
                   color="neutral"
                   variant="outline"

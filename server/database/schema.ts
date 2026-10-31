@@ -266,7 +266,7 @@ export const attempts = pgTable('attempts', {
   /** Set when one part was practised on its own (Listening/Reading part, Writing task, Speaking part). */
   partNumber: integer('part_number'),
   mode: text('mode').notNull().default('PRACTICE'),
-  status: text('status').notNull().default('SUBMITTED'), // SUBMITTED (awaiting an examiner) | GRADED
+  status: text('status').notNull().default('SUBMITTED'), // SUBMITTED (awaiting an examiner) | AWAITING_CREDIT (saved, sent for marking once a credit is spent) | GRADED
   startedAt: timestamp('started_at', { withTimezone: true }),
   submittedAt: timestamp('submitted_at', { withTimezone: true }).notNull().defaultNow(),
   gradedAt: timestamp('graded_at', { withTimezone: true }),

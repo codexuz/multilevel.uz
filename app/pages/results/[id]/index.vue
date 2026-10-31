@@ -61,6 +61,7 @@ onBeforeUnmount(() => off?.())
       v-if="data && !error"
       :view="data"
       :review-to="`/results/${id}/review`"
+      @sent="refresh"
     >
       <UAlert
         v-if="data.liveMockId"
