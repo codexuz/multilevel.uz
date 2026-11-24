@@ -103,7 +103,7 @@ async function cancelLesson(lesson: LiveLesson) {
         v-else
         icon="i-lucide-video"
         title="No online classes scheduled"
-        description="Connect Google Calendar above and schedule a Google Meet session for one of your groups."
+        description="Schedule a Google Meet session for one of your groups."
         :actions="activeGroups.length ? [{ label: 'Schedule Class', icon: 'i-lucide-plus', onClick: () => { scheduling = true } }] : [{ label: 'Create a Group First', to: '/classes' }]"
       />
     </div>

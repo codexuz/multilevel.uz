@@ -1,13 +1,14 @@
 <script setup lang="ts">
 /**
- * The teacher's Google Calendar connection, which makes the Meet links of their online classes:
- * connected (as which account, with Disconnect), or the way to connect (back to `next`).
+ * Shared platform Google Calendar status (connected once by an Admin in Admin Settings).
+ * - Admins see Connect / Disconnect controls.
+ * - Teachers see read-only readiness status (never asked to authorize their own Google account).
  */
 const props = defineProps<{ next: string }>()
 const emit = defineEmits<{ change: [connected: boolean] }>()
 const { t } = useI18n()
 const toast = useToast()
-const { data, refresh } = await useFetch<{ available: boolean, connected: boolean, email: string | null }>('/api/google', { key: 'google-connection' })
+const { data, refresh } = await useFetch<{ available: boolean, connected: boolean, email: string | null, canManage: boolean }>('/api/google', { key: 'google-connection' })
 watch(() => data.value?.connected, c => emit('change', !!c), { immediate: true })
 
 const connectTo = computed(() => `/auth/google-calendar?next=${encodeURIComponent(props.next)}`)
@@ -37,30 +38,50 @@ async function disconnect() {
       class="size-6 shrink-0"
     />
     <div class="min-w-0 flex-1">
-      <p class="text-sm font-medium text-highlighted">
-        {{ data.connected ? t('online.connectedAs', { email: data.email ?? 'Google' }) : t('online.connectTitle') }}
-      </p>
-      <p class="text-xs text-muted">
-        {{ data.connected ? t('online.connectedText') : t('online.connectText') }}
-      </p>
+      <template v-if="data.canManage">
+        <p class="text-sm font-medium text-highlighted">
+          {{ data.connected ? t('online.connectedAs', { email: data.email ?? 'Admin Google' }) : t('online.connectTitle') }}
+        </p>
+        <p class="text-xs text-muted">
+          {{ data.connected ? 'All teachers can schedule Google Meet classes using this connected admin account.' : 'Connect one approved admin Google account so all teachers can generate Meet links.' }}
+        </p>
+      </template>
+      <template v-else>
+        <p class="text-sm font-medium text-highlighted">
+          {{ data.connected ? 'Google Meet is ready' : 'Google Meet is not connected yet' }}
+        </p>
+        <p class="text-xs text-muted">
+          {{ data.connected ? 'Meet links are created automatically via the platform Google account.' : 'Ask an admin to connect Google Calendar in Admin Panel → Settings.' }}
+        </p>
+      </template>
     </div>
-    <UButton
-      v-if="!data.connected"
-      :href="connectTo"
-      external
-      :label="t('online.connect')"
-      icon="i-simple-icons-google"
-      size="sm"
-      data-testid="google-connect-button"
-    />
-    <UButton
+
+    <template v-if="data.canManage">
+      <UButton
+        v-if="!data.connected"
+        :href="connectTo"
+        external
+        :label="t('online.connect')"
+        icon="i-simple-icons-google"
+        size="sm"
+        data-testid="google-connect-button"
+      />
+      <UButton
+        v-else
+        :label="t('online.disconnect')"
+        color="neutral"
+        variant="ghost"
+        size="sm"
+        :loading="busy"
+        @click="disconnect"
+      />
+    </template>
+    <UBadge
       v-else
-      :label="t('online.disconnect')"
-      color="neutral"
-      variant="ghost"
+      :label="data.connected ? 'Ready' : 'Admin setup required'"
+      :color="data.connected ? 'success' : 'warning'"
+      variant="subtle"
       size="sm"
-      :loading="busy"
-      @click="disconnect"
     />
   </div>
   <UAlert
