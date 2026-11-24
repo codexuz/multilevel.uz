@@ -1,6 +1,6 @@
-// Disconnects my Google Calendar: no more Meet links are made (the ones made stay).
+// Admin-only: disconnects the shared platform Google Calendar connection.
 export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
-  await disconnect(user.id)
+  await requireAdmin(event)
+  await disconnectPlatform()
   return { connected: false }
 })

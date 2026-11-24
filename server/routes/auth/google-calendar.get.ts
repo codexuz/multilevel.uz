@@ -1,23 +1,23 @@
 import { randomBytes } from 'node:crypto'
 
 /**
- * Connect Google Calendar (a signed-in teacher): Google asks them to let Mockmee add events to their
- * calendar, with lasting (offline) access, so each online class gets a Meet link
- * (google-calendar.ts). A state kept in a cookie makes sure the answer is to their own request.
- * ?next= is where they come back to.
+ * Admin-only Google Calendar OAuth connection: a single admin connects their Google account
+ * (/auth/google-calendar) so all teachers' online classes generate Meet links through that
+ * shared account without needing every teacher approved on Google's OAuth consent screen.
  */
 const STATE_COOKIE = 'ml_gcal_state'
 const NEXT_COOKIE = 'ml_gcal_next'
-const safeNext = (v: unknown) => (typeof v === 'string' && v.startsWith('/') && !v.startsWith('//') ? v : '/classes')
+const safeNext = (v: unknown) => (typeof v === 'string' && v.startsWith('/') && !v.startsWith('//') ? v : '/admin/settings')
 const back = (next: string, result: string) => `${next}${next.includes('?') ? '&' : '?'}google=${result}`
 
 export default defineEventHandler(async (event) => {
   const user = await optionalUser(event)
-  if (!user) return sendRedirect(event, `/login?next=${encodeURIComponent('/classes')}`)
+  if (!user) return sendRedirect(event, `/login?next=${encodeURIComponent('/admin/settings')}`)
+  if (user.role !== 'admin') throw createError({ statusCode: 403, message: 'Only admins can connect the platform Google Calendar account.' })
+
   const query = getQuery(event)
   const cookieOpts = { httpOnly: true, sameSite: 'lax' as const, secure: !import.meta.dev, path: '/auth/google-calendar', maxAge: 600 }
 
-  // Starting: a fresh state, and where to come back to.
   if (!query.code && !query.error && !query.state) {
     const state = randomBytes(16).toString('hex')
     setCookie(event, STATE_COOKIE, state, cookieOpts)
@@ -27,7 +27,6 @@ export default defineEventHandler(async (event) => {
 
   const next = safeNext(getCookie(event, NEXT_COOKIE))
   if (query.error) return sendRedirect(event, back(next, 'cancelled'))
-  // Google's answer must carry the state this browser was given.
   if (query.code && (!query.state || query.state !== getCookie(event, STATE_COOKIE))) return sendRedirect(event, back(next, 'failed'))
 
   const site = String(useRuntimeConfig().public.siteUrl || getRequestURL(event).origin).replace(/\/$/, '')

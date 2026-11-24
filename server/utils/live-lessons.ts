@@ -72,10 +72,11 @@ function values(body: LiveInput, partial: boolean) {
   return out
 }
 
-/** A new online class with its Meet link, and its students told. */
+/** A new online class with its Meet link (created via the shared admin Google account), and its students told. */
 export async function createLiveLesson(teacherId: string, where: { groupId?: string, courseId?: string }, body: LiveInput) {
   const v = values(body, false) as Required<Pick<ReturnType<typeof values>, 'title' | 'startsAt' | 'durationMinutes'>> & { description?: string | null }
-  const meet = await createMeetEvent(teacherId, v)
+  const [teacher] = await useDb().select({ email: users.email }).from(users).where(eq(users.id, teacherId)).limit(1)
+  const meet = await createMeetEvent(teacherId, { ...v, attendeeEmail: teacher?.email ?? null })
   const [row] = await useDb().insert(liveLessons).values({
     teacherId, groupId: where.groupId ?? null, courseId: where.courseId ?? null,
     title: v.title, description: v.description ?? null, startsAt: v.startsAt, durationMinutes: v.durationMinutes,
