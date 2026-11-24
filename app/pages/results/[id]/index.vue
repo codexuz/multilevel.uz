@@ -72,6 +72,10 @@ onBeforeUnmount(() => off?.())
         :description="data.skill === 'LISTENING' || data.skill === 'READING' ? t('results.liveRanked') : t('results.liveNotRanked')"
         :actions="[{ label: t('live.leaderboard'), to: `/live?mock=${data.liveMockId}`, color: 'primary', variant: 'solid' }]"
       />
+      <WordsFromAttempt
+        v-if="!someoneElse && data.skill === 'READING'"
+        :attempt-id="id"
+      />
       <UCard v-if="data.status === 'GRADED' && data.feedback">
         <template #header>
           <div class="flex items-center gap-2">

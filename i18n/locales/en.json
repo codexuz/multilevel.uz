@@ -1477,5 +1477,21 @@
     "seeWhy": "See each answer explained",
     "practise": "Practise {type}",
     "guide": "An AI analysis to guide your practice; your mark is the one above."
+  },
+  "words": {
+    "save": "Save word",
+    "saveShort": "Save",
+    "wordShort": "Word",
+    "saving": "Saving “{word}”…",
+    "savedQuiet": "“{word}” saved to My Words. You will see it after the test.",
+    "addedToMyWords": "Saved to My Words",
+    "savedTitle": "Saved word",
+    "notSaved": "The word could not be saved",
+    "notRemoved": "The word could not be removed",
+    "remove": "Remove",
+    "listen": "Listen",
+    "noMeaning": "Its meaning is not ready yet.",
+    "fromTest": "No words saved in this test | 1 word you saved in this test | {n} words you saved in this test",
+    "fromTestText": "What they mean, and the sentences you found them in. They stay in My Words for practice."
   }
 }

@@ -10,6 +10,8 @@ const { t } = useI18n()
  * recordings. A guest's result and a saved one are shown alike.
  */
 const props = defineProps<{ view: ResultView, back: string }>()
+// Words picked out of the passage go to My Words, with their meaning shown at once.
+provideWordSaver({ mode: 'card' })
 
 export interface ResultView {
   id?: string | null
@@ -193,16 +195,18 @@ const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') 
             ref="passageEl"
             class="h-full overflow-y-auto px-4 md:px-6 py-4"
           >
-            <p
-              v-if="part.title"
-              class="text-lg font-bold mb-4 text-highlighted"
-            >
-              {{ part.title }}
-            </p>
-            <div
-              class="rich-content reading-passage leading-7"
-              v-html="highlighted?.html"
-            />
+            <WordsPicker :part-id="part.id">
+              <p
+                v-if="part.title"
+                class="text-lg font-bold mb-4 text-highlighted"
+              >
+                {{ part.title }}
+              </p>
+              <div
+                class="rich-content reading-passage leading-7"
+                v-html="highlighted?.html"
+              />
+            </WordsPicker>
           </div>
         </template>
         <template #second>

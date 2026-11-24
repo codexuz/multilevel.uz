@@ -2,10 +2,26 @@
 /**
  * Text a candidate can mark up as in the computer-delivered IELTS: select words and a small toolbar
  * offers Note and Highlight; click a highlight and it offers Delete Highlight (and a note for it).
- * Notes go to the Notes panel of the test, under the part they were made in.
+ * Notes go to the Notes panel of the test, under the part they were made in. With `saveWords`, and a
+ * signed-in student, it also offers Save word (My Words: useWordSaver).
  */
-const { container, highlights, popup, addHighlight, updateComment, removeHighlight, closePopup, onMouseUp } = useHighlighter()
+const props = defineProps<{
+  /** Offer Save word for a word or short phrase selected here. */
+  saveWords?: boolean
+  /** The part the text belongs to, kept with a saved word. */
+  partId?: string
+}>()
+const { container, highlights, popup, addHighlight, updateComment, removeHighlight, closePopup, onMouseUp, selection } = useHighlighter()
 const chrome = useIxChrome()
+const pick = useWordPick()
+const { t } = useI18n()
+const canSaveWord = computed(() => props.saveWords && popup.value.visible && !popup.value.highlightId && pick.canSave(selection()))
+
+function saveWord() {
+  const range = selection()
+  closePopup()
+  pick.saveRange(range, props.partId)
+}
 
 function highlight() {
   addHighlight('')
@@ -55,11 +71,19 @@ function onContextMenu(e: MouseEvent) {
 </script>
 
 <template>
-  <div ref="container" class="relative min-h-full" @mouseup="onMouseUp" @contextmenu="onContextMenu">
+  <div
+    ref="container"
+    class="relative min-h-full"
+    @mouseup="onMouseUp"
+    @contextmenu="onContextMenu"
+  >
     <slot />
 
     <template v-if="popup.visible">
-      <div class="fixed inset-0 z-40" @mousedown="closePopup" />
+      <div
+        class="fixed inset-0 z-40"
+        @mousedown="closePopup"
+      />
       <div
         class="ix-adder"
         role="toolbar"
@@ -71,22 +95,55 @@ function onContextMenu(e: MouseEvent) {
         @click.stop
       >
         <template v-if="popup.highlightId">
-          <button type="button" @click="note(popup.highlightId)">
+          <button
+            type="button"
+            @click="note(popup.highlightId)"
+          >
             <UIcon name="i-lucide-message-square-quote" />Note
           </button>
-          <button type="button" data-testid="delete-highlight" @click="forget(popup.highlightId!)">
+          <button
+            type="button"
+            data-testid="delete-highlight"
+            @click="forget(popup.highlightId!)"
+          >
             <UIcon name="i-lucide-trash-2" />Delete<br>Highlight
           </button>
         </template>
         <template v-else>
-          <button type="button" data-testid="add-note" @click="note(null)">
+          <button
+            type="button"
+            data-testid="add-note"
+            @click="note(null)"
+          >
             <UIcon name="i-lucide-message-square-quote" />Note
           </button>
-          <button type="button" data-testid="add-highlight" @click="highlight">
+          <button
+            type="button"
+            data-testid="add-highlight"
+            @click="highlight"
+          >
             <UIcon name="i-lucide-highlighter" />Highlight
+          </button>
+          <button
+            v-if="canSaveWord"
+            type="button"
+            data-testid="save-word"
+            @click="saveWord"
+          >
+            <UIcon name="i-lucide-book-plus" />{{ t('words.saveShort') }}<br>{{ t('words.wordShort') }}
           </button>
         </template>
       </div>
     </template>
+
+    <WordsPopover
+      v-if="pick.card.value"
+      :anchor="pick.card.value.anchor"
+      :word="pick.card.value.word"
+      :loading="pick.card.value.loading"
+      :text="pick.card.value.text"
+      @close="pick.close"
+      @removed="pick.close"
+    />
   </div>
 </template>

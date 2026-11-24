@@ -91,15 +91,33 @@ const summary = computed(() => props.parts.map((p) => {
     />
 
     <div class="ix-body">
-      <IxSubmissionPage v-if="chrome.submissionOpen.value" :parts="summary" :last="last" @submit="submit" />
-      <IxSplitPane v-else :labels="['Passage', 'Questions']">
+      <IxSubmissionPage
+        v-if="chrome.submissionOpen.value"
+        :parts="summary"
+        :last="last"
+        @submit="submit"
+      />
+      <IxSplitPane
+        v-else
+        :labels="['Passage', 'Questions']"
+      >
         <template #left>
-          <IxHighlightablePanel>
+          <IxHighlightablePanel
+            save-words
+            :part-id="session.part.value.id"
+          >
             <div>
-              <h2 v-if="session.part.value.title" class="ix-passage-title">
+              <h2
+                v-if="session.part.value.title"
+                class="ix-passage-title"
+              >
                 {{ session.part.value.title }}
               </h2>
-              <div v-if="session.part.value.content" class="ix-passage" v-html="passage" />
+              <div
+                v-if="session.part.value.content"
+                class="ix-passage"
+                v-html="passage"
+              />
               <p v-else>
                 No passage content available.
               </p>
@@ -107,7 +125,10 @@ const summary = computed(() => props.parts.map((p) => {
           </IxHighlightablePanel>
         </template>
         <template #right>
-          <IxHighlightablePanel>
+          <IxHighlightablePanel
+            save-words
+            :part-id="session.part.value.id"
+          >
             <IxQuestionPanel
               :questions="session.part.value.questions"
               :answers="session.answers.value"

@@ -159,5 +159,8 @@ export function useHighlighter() {
     popup.value = { visible: true, ...position(range.getBoundingClientRect()), highlightId: null }
   }
 
-  return { container, highlights, popup, addHighlight, updateComment, removeHighlight, closePopup, onMouseUp }
+  /** The words selected when the toolbar opened (a copy), or null when it opened on a highlight. */
+  const selection = () => savedRange?.cloneRange() ?? null
+
+  return { container, highlights, popup, addHighlight, updateComment, removeHighlight, closePopup, onMouseUp, selection }
 }

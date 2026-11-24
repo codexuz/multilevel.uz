@@ -1477,5 +1477,21 @@
     "seeWhy": "Har bir javob izohini ko‘rish",
     "practise": "{type} bo‘yicha mashq",
     "guide": "Mashqingizga yo‘l ko‘rsatuvchi AI tahlil; sizning bahoingiz yuqoridagisi."
+  },
+  "words": {
+    "save": "So‘zni saqlash",
+    "saveShort": "Saqlash",
+    "wordShort": "So‘z",
+    "saving": "“{word}” saqlanmoqda…",
+    "savedQuiet": "“{word}” Mening so‘zlarimga saqlandi. Uni testdan keyin ko‘rasiz.",
+    "addedToMyWords": "Mening so‘zlarimga saqlandi",
+    "savedTitle": "Saqlangan so‘z",
+    "notSaved": "So‘zni saqlab bo‘lmadi",
+    "notRemoved": "So‘zni o‘chirib bo‘lmadi",
+    "remove": "O‘chirish",
+    "listen": "Tinglash",
+    "noMeaning": "Ma’nosi hali tayyor emas.",
+    "fromTest": "Bu testda so‘z saqlanmadi | Bu testda saqlagan 1 ta so‘zingiz | Bu testda saqlagan {n} ta so‘zingiz",
+    "fromTestText": "Ularning ma’nosi va siz topgan gaplar. Ular mashq uchun Mening so‘zlarimda qoladi."
   }
 }
