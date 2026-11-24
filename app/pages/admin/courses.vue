@@ -42,6 +42,24 @@ const creating = ref(false)
 const saving = ref(false)
 const form = reactive({ title: '', visibility: 'PUBLIC' as 'PRIVATE' | 'PUBLIC', dripMode: 'ALWAYS_OPEN' as DripMode })
 
+// ---- the IELTS Max 24-day course, imported as a private draft for an admin or a teacher ----
+const importing = ref(false)
+const importOpen = ref(false)
+const importEmail = ref('')
+async function importIeltsMax() {
+  importing.value = true
+  try {
+    const res = await $fetch<{ id: string, lessons: number, quizzes: number }>('/api/admin/courses/import', { method: 'POST', body: { teacherEmail: importEmail.value.trim() || undefined } })
+    importOpen.value = false
+    toast.add({ title: t('acourses.imported'), description: t('acourses.importedText', { lessons: res.lessons, quizzes: res.quizzes }), color: 'success' })
+    await router.push(`/courses/manage/${res.id}?tab=info`)
+  } catch (e) {
+    toast.add({ title: t('acourses.notImported'), description: errorMessage(e), color: 'error' })
+  } finally {
+    importing.value = false
+  }
+}
+
 async function createCourse() {
   if (!form.title.trim()) return
   saving.value = true
@@ -75,6 +93,14 @@ async function removeCourse(c: AdminCourseRow) {
   >
     <template #actions>
       <UButton
+        :label="t('acourses.import')"
+        icon="i-lucide-download"
+        color="neutral"
+        variant="outline"
+        data-testid="import-ielts-max"
+        @click="importOpen = true"
+      />
+      <UButton
         :label="t('courses.new')"
         icon="i-lucide-plus"
         @click="creating = true; form.title = ''"
@@ -89,7 +115,7 @@ async function removeCourse(c: AdminCourseRow) {
           :placeholder="t('acourses.search')"
           class="w-full sm:w-80"
         />
-        <span class="text-xs text-muted">{{ filtered.length }} course(s)</span>
+        <span class="text-xs text-muted">{{ t('acourses.count', { n: filtered.length }, filtered.length) }}</span>
       </div>
 
       <UCard :ui="{ body: 'p-0' }">
@@ -172,7 +198,7 @@ async function removeCourse(c: AdminCourseRow) {
                   </div>
                 </td>
                 <td class="px-4 py-3 text-xs text-muted tabular-nums">
-                  {{ c.modules }} units · {{ c.lessons }} lessons · {{ c.exercises }} exercises · {{ c.learners }} learners
+                  {{ [t('builder.topicCount', { n: c.modules }, c.modules), t('courses.lessons', { n: c.lessons }, c.lessons), t('builder.quizCount', { n: c.exercises }, c.exercises), t('courses.learners', { n: c.learners }, c.learners)].join(' · ') }}
                 </td>
                 <td class="px-4 py-3">
                   <UBadge
@@ -276,6 +302,47 @@ async function removeCourse(c: AdminCourseRow) {
               :label="t('builder.createCourse')"
               :loading="saving"
               :disabled="!form.title.trim()"
+            />
+          </div>
+        </form>
+      </template>
+    </UModal>
+    <UModal
+      v-model:open="importOpen"
+      :title="t('acourses.importTitle')"
+      :description="t('acourses.importText')"
+    >
+      <template #body>
+        <form
+          class="grid gap-4"
+          @submit.prevent="importIeltsMax"
+        >
+          <UFormField
+            :label="t('acourses.owner')"
+            :help="t('acourses.ownerHelp')"
+          >
+            <UInput
+              v-model="importEmail"
+              type="email"
+              placeholder="teacher@example.com"
+              class="w-full"
+            />
+          </UFormField>
+          <p class="text-xs text-muted">
+            {{ t('acourses.rights') }}
+          </p>
+          <div class="flex justify-end gap-2">
+            <UButton
+              :label="t('common.cancel')"
+              color="neutral"
+              variant="ghost"
+              @click="importOpen = false"
+            />
+            <UButton
+              type="submit"
+              :label="t('acourses.importRun')"
+              icon="i-lucide-download"
+              :loading="importing"
             />
           </div>
         </form>

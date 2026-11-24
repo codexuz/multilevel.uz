@@ -2162,7 +2162,18 @@
     "teacher": "Teacher",
     "structure": "Contents",
     "actions": "Actions",
-    "none": "No courses yet. Make the first one."
+    "none": "No courses yet. Make the first one.",
+    "import": "Import IELTS Max",
+    "importTitle": "Import the IELTS Max course",
+    "importText": "24 days of grammar, podcasts, articles, videos, speaking, writing and films (about 166 lessons and 54 quizzes) from the IELTS Max course data, as a private draft.",
+    "owner": "Teacher who owns it (optional)",
+    "ownerHelp": "Their email; empty: your account. A private course is for its teacher's classes.",
+    "rights": "The articles, videos and audio come from other publishers: check you may use them before publishing the course to everyone.",
+    "importRun": "Import",
+    "imported": "IELTS Max imported",
+    "importedText": "{lessons} lessons and {quizzes} quizzes, as a private draft.",
+    "notImported": "Not imported",
+    "count": "{n} course | {n} courses"
   },
   "asettings": {
     "gConnected": "Google Calendar connected for every online class",

@@ -40,6 +40,9 @@ const filter = new FilterXSS({
     li: [],
     blockquote: [],
     hr: [],
+    // A part to open on demand (an answer, a transcript).
+    details: [],
+    summary: [],
     a: ['href', 'target', 'rel']
   },
   // Drop unknown tags entirely, and discard the contents of dangerous ones so a
