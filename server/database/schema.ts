@@ -643,6 +643,110 @@ export const mockCreditTransactions = pgTable('mock_credit_transactions', {
   createdAt: created()
 }, t => [index('mock_credit_user_idx').on(t.userId)])
 
+// ---------- Google: a teacher's Calendar, for Meet links ----------
+/**
+ * A teacher's Google account connected for Calendar (google-calendar.ts): Mockmee makes a Calendar
+ * event with a Google Meet link for each online class. The tokens are kept encrypted.
+ */
+export const googleConnections = pgTable('google_connections', {
+  userId: uuid('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  googleEmail: text('google_email'),
+  /** Encrypted (AES-GCM): lets Mockmee act for them until they take the access back. */
+  refreshToken: text('refresh_token').notNull(),
+  /** Encrypted; short-lived, renewed from the refresh token. */
+  accessToken: text('access_token'),
+  expiresAt: timestamp('expires_at', { withTimezone: true }),
+  scope: text('scope'),
+  createdAt: created(),
+  updatedAt: updated()
+})
+
+// ---------- online classes (Google Meet) ----------
+/**
+ * An online class at a set time, held on Google Meet: for one of the teacher's classes, or as a
+ * lesson of one of their courses. Its Meet link is made with the teacher's Google Calendar.
+ */
+export const liveLessons = pgTable('live_lessons', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  teacherId: uuid('teacher_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  groupId: uuid('group_id').references(() => classGroups.id, { onDelete: 'cascade' }),
+  courseId: uuid('course_id').references((): AnyPgColumn => courses.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  description: text('description'),
+  startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+  durationMinutes: integer('duration_minutes').notNull().default(60),
+  meetUrl: text('meet_url'),
+  calendarEventId: text('calendar_event_id'),
+  calendarLink: text('calendar_link'),
+  /** SCHEDULED | CANCELLED */
+  status: text('status').notNull().default('SCHEDULED'),
+  /** When its students were reminded it starts soon. */
+  remindedAt: timestamp('reminded_at', { withTimezone: true }),
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [
+  index('live_lessons_teacher_idx').on(t.teacherId, t.startsAt),
+  index('live_lessons_group_idx').on(t.groupId, t.startsAt),
+  index('live_lessons_course_idx').on(t.courseId, t.startsAt)
+])
+
+// ---------- courses ----------
+/**
+ * A teacher's course: lessons in order. PRIVATE: only the students of the teacher's classes see it.
+ * PUBLIC: in the catalogue (/courses) once published, and any signed-in user may enroll. Free.
+ */
+export const courses = pgTable('courses', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  teacherId: uuid('teacher_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  slug: text('slug').notNull().unique(),
+  /** A line or two for the catalogue. */
+  summary: text('summary'),
+  /** IELTS | MULTILEVEL, or null for general English. */
+  exam: text('exam'),
+  /** A1..C1, the level it is for (optional). */
+  level: text('level'),
+  /** PRIVATE | PUBLIC */
+  visibility: text('visibility').notNull().default('PRIVATE'),
+  published: boolean('published').notNull().default(false),
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [index('courses_teacher_idx').on(t.teacherId), index('courses_public_idx').on(t.visibility, t.published)])
+
+/** A lesson of a course: any of a text, a video, a test to do, files to download, and an online class. */
+export const courseLessons = pgTable('course_lessons', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  courseId: uuid('course_id').notNull().references(() => courses.id, { onDelete: 'cascade' }),
+  position: integer('position').notNull().default(1),
+  title: text('title').notNull(),
+  /** Sanitized rich text. */
+  body: text('body'),
+  videoUrl: text('video_url'),
+  /** The practice: a section of a test (or one part), done when a student hands it in. */
+  taskTestId: uuid('task_test_id').references(() => tests.id, { onDelete: 'set null' }),
+  taskSkill: text('task_skill'),
+  taskPartNumber: integer('task_part_number'),
+  /** PDFs to download: [{ name, url, size }]. */
+  files: jsonb('files').notNull().default([]),
+  liveLessonId: uuid('live_lesson_id').references(() => liveLessons.id, { onDelete: 'set null' }),
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [index('course_lessons_course_idx').on(t.courseId, t.position)])
+
+/** Who took a public course (a private one's students are the teacher's class students). */
+export const courseEnrollments = pgTable('course_enrollments', {
+  courseId: uuid('course_id').notNull().references(() => courses.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  enrolledAt: created()
+}, t => [primaryKey({ columns: [t.courseId, t.userId] }), index('course_enrollments_user_idx').on(t.userId)])
+
+/** A lesson a student marked done. */
+export const lessonProgress = pgTable('lesson_progress', {
+  lessonId: uuid('lesson_id').notNull().references(() => courseLessons.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  completedAt: created()
+}, t => [primaryKey({ columns: [t.lessonId, t.userId] }), index('lesson_progress_user_idx').on(t.userId)])
+
 // ---------- answer explanations: 10 results a day ----------
 /**
  * The marked Listening and Reading results whose explanations a user has opened: up to 10 new ones a

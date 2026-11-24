@@ -22,11 +22,20 @@ const { data, refresh, error } = await useFetch<GroupView>(() => `/api/groups/${
 useSeoMeta({ title: () => data.value?.name ?? t('classes.class') })
 
 const SKILLS = ['LISTENING', 'READING', 'WRITING', 'SPEAKING']
-const tab = ref<'students' | 'assignments'>('students')
+// ?tab=online (back from connecting Google) opens the online classes.
+const tab = ref<'students' | 'assignments' | 'online'>(route.query.tab === 'online' || route.query.google ? 'online' : 'students')
 const tabs = computed(() => [
   { label: t('centre.studentsTab', { n: data.value?.students.length ?? 0 }), value: 'students', icon: 'i-lucide-users' },
-  { label: t('centre.assignmentsTab', { n: data.value?.assignments.length ?? 0 }), value: 'assignments', icon: 'i-lucide-list-checks' }
+  { label: t('centre.assignmentsTab', { n: data.value?.assignments.length ?? 0 }), value: 'assignments', icon: 'i-lucide-list-checks' },
+  { label: t('online.tab'), value: 'online', icon: 'i-lucide-video' }
 ])
+// Back from connecting Google: say how it went.
+onMounted(() => {
+  const g = route.query.google
+  if (g === 'connected') toast.add({ title: t('online.connectedToast'), color: 'success' })
+  else if (g === 'scope') toast.add({ title: t('online.scopeToast'), color: 'warning' })
+  else if (g === 'failed') toast.add({ title: t('online.failedToast'), color: 'error' })
+})
 const levelColor = (s: number | null) => (s == null ? 'text-dimmed' : s >= 65 ? 'text-success' : s >= 51 ? 'text-primary' : s >= 38 ? 'text-warning' : 'text-error')
 const bandColor = (b: number | null) => (b == null ? 'text-dimmed' : b >= 7 ? 'text-success' : b >= 5.5 ? 'text-primary' : b >= 4 ? 'text-warning' : 'text-error')
 
@@ -216,6 +225,13 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
         :items="tabs"
         :content="false"
         class="w-full sm:w-auto"
+      />
+
+      <!-- Online classes (Google Meet) -->
+      <OnlinePanel
+        v-if="tab === 'online'"
+        :group-id="data.id"
+        :next="`/classes/${data.id}?tab=online`"
       />
 
       <!-- Students -->

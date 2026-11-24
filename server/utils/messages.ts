@@ -202,6 +202,28 @@ export const MSG = {
     return ({ en: `${s} of ${escapeHtml(test)}`, uz: `${escapeHtml(test)}: ${s}`, ru: `${escapeHtml(test)}: ${s}` })[l]
   },
   start: { en: 'Start', uz: 'Boshlash', ru: 'Начать' },
+  /** An online class (Google Meet) was set for a class or a course the student is in. */
+  lessonScheduled: (l: Locale, title: string, where: string, at: Date) => ({
+    en: `📹 <b>Online class: ${escapeHtml(title)}</b>\n${escapeHtml(where)} · ${dayText(l, at, true)} (Tashkent time), on Google Meet.`,
+    uz: `📹 <b>Onlayn dars: ${escapeHtml(title)}</b>\n${escapeHtml(where)} · ${dayText(l, at, true)} (Toshkent vaqti), Google Meet’da.`,
+    ru: `📹 <b>Онлайн-урок: ${escapeHtml(title)}</b>\n${escapeHtml(where)} · ${dayText(l, at, true)} (по Ташкенту), в Google Meet.`
+  })[l],
+  lessonMoved: (l: Locale, title: string, at: Date) => ({
+    en: `🕒 <b>${escapeHtml(title)}</b> has moved: now ${dayText(l, at, true)} (Tashkent time).`,
+    uz: `🕒 <b>${escapeHtml(title)}</b> ko‘chirildi: endi ${dayText(l, at, true)} (Toshkent vaqti).`,
+    ru: `🕒 <b>${escapeHtml(title)}</b> перенесён: теперь ${dayText(l, at, true)} (по Ташкенту).`
+  })[l],
+  lessonCancelled: (l: Locale, title: string, at: Date) => ({
+    en: `❌ <b>${escapeHtml(title)}</b> on ${dayText(l, at, true)} is cancelled.`,
+    uz: `❌ ${dayText(l, at, true)}dagi <b>${escapeHtml(title)}</b> bekor qilindi.`,
+    ru: `❌ <b>${escapeHtml(title)}</b> (${dayText(l, at, true)}) отменён.`
+  })[l],
+  lessonSoon: (l: Locale, title: string, minutes: number) => ({
+    en: `⏰ <b>${escapeHtml(title)}</b> starts in ${minutes} minutes on Google Meet.`,
+    uz: `⏰ <b>${escapeHtml(title)}</b> ${minutes} daqiqadan keyin Google Meet’da boshlanadi.`,
+    ru: `⏰ <b>${escapeHtml(title)}</b> начнётся через ${minutes} мин. в Google Meet.`
+  })[l],
+  lessonJoin: { en: 'Open the class', uz: 'Darsni ochish', ru: 'Открыть урок' },
 
   centreRequest: (l: Locale, name: string, city: string | null, students: number | null) => ({
     en: `🏫 <b>A learning centre wants to join</b>\n${escapeHtml(name)}${city ? `, ${escapeHtml(city)}` : ''}${students ? ` · about ${students} students` : ''}`,

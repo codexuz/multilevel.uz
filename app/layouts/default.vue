@@ -13,7 +13,8 @@ const route = useRoute()
 const mainNav = computed<NavigationMenuItem[]>(() => [
   { label: t('nav.tests'), icon: 'i-lucide-clipboard-list', to: '/tests' },
   { label: t('nav.live'), icon: 'i-lucide-trophy', to: '/live', badge: live.value ? { label: t('nav.liveBadge'), color: 'error' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined },
-  ...(loggedIn.value ? [{ label: t('nav.results'), icon: 'i-lucide-chart-column', to: '/results' }, { label: t('nav.words'), icon: 'i-lucide-book-open-text', to: '/words' }] : []),
+  ...(loggedIn.value ? [{ label: t('nav.results'), icon: 'i-lucide-chart-column', to: '/results' }, { label: t('nav.words'), icon: 'i-lucide-book-open-text', to: '/words' }, { label: t('nav.online'), icon: 'i-lucide-video', to: '/online' }] : []),
+  { label: t('nav.courses'), icon: 'i-lucide-graduation-cap', to: '/courses' },
   // A teacher's classes; everyone else is shown what teachers get (free classes).
   me.value?.teaches
     ? { label: t('nav.classes'), icon: 'i-lucide-school', to: '/classes' }
