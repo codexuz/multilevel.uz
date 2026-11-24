@@ -144,8 +144,7 @@ function back() {
   if (stepIndex.value > 0 && step.value !== 'notify') stepIndex.value -= 1
 }
 function finish() {
-  const to = typeof route.query.next === 'string' && route.query.next.startsWith('/') && !route.query.next.startsWith('//') ? route.query.next : '/tests'
-  return navigateTo(to)
+  return navigateTo(landingFor(me.value?.role, typeof route.query.next === 'string' ? route.query.next : null))
 }
 
 // ─── Notifications: the browser's, and the Telegram bot's ───

@@ -3,7 +3,7 @@ import { courseLessons, courses, exerciseQuestions, lessonExercises } from '../.
 
 // Lists all uploaded PDFs, videos, and exercise audio across the teacher's LMS courses.
 export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
+  const user = await requireTeacher(event)
   const db = useDb()
   const myCourses = await db.select({ id: courses.id, title: courses.title, slug: courses.slug }).from(courses).where(eq(courses.teacherId, user.id)).orderBy(desc(courses.updatedAt))
   if (!myCourses.length) return { resources: [] }

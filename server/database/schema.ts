@@ -711,6 +711,13 @@ export const courses = pgTable('courses', {
   /** A line or two for the catalogue. */
   summary: text('summary'),
   coverUrl: text('cover_url'),
+  /** The course's page: a longer description (sanitized rich text) and an intro video (YouTube/Vimeo). */
+  description: text('description'),
+  introVideoUrl: text('intro_video_url'),
+  /** Lists on the course's page: what learners will learn, what they need first, and who it is for. */
+  outcomes: jsonb('outcomes').$type<string[]>().notNull().default([]),
+  requirements: jsonb('requirements').$type<string[]>().notNull().default([]),
+  audience: jsonb('audience').$type<string[]>().notNull().default([]),
   /** IELTS | MULTILEVEL, or null for general English. */
   exam: text('exam'),
   /** A1..C2, the level it is for (optional). */

@@ -6,7 +6,7 @@ const nameOf = (u: { name: string | null, telegramUsername: string | null, email
 
 // Combined exam attempts and LMS exercise results for a teacher's students.
 export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
+  const user = await requireTeacher(event)
   const db = useDb()
   const [groups, myCourses] = await Promise.all([
     db.select({ id: classGroups.id, name: classGroups.name }).from(classGroups).where(eq(classGroups.teacherId, user.id)),

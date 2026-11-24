@@ -62,7 +62,6 @@ async function connectTelegram() {
 }
 
 // ─── On a phone: what the sidebar holds on a larger screen ───
-const staffNav = useStaffNav()
 const colorMode = useColorMode()
 const dark = computed({
   get: () => colorMode.value === 'dark',
@@ -385,35 +384,6 @@ const accountLinks = computed(() => [
                 :aria-label="t('nav.darkMode')"
               />
             </label>
-          </div>
-        </UCard>
-
-        <UCard
-          v-if="staffNav.length"
-          :ui="{ body: 'p-0 sm:p-0' }"
-        >
-          <template #header>
-            <h2 class="font-semibold">
-              {{ t('nav.staff') }}
-            </h2>
-          </template>
-          <div class="divide-y divide-default">
-            <NuxtLink
-              v-for="l in staffNav"
-              :key="String(l.to)"
-              :to="l.to"
-              class="flex items-center gap-3 px-4 py-3.5 active:bg-elevated"
-            >
-              <UIcon
-                :name="String(l.icon)"
-                class="size-5 text-muted shrink-0"
-              />
-              <span class="flex-1 font-medium text-highlighted">{{ l.label }}</span>
-              <UIcon
-                name="i-lucide-chevron-right"
-                class="size-4 text-dimmed"
-              />
-            </NuxtLink>
           </div>
         </UCard>
 

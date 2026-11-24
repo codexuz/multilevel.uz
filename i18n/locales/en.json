@@ -52,7 +52,8 @@
     "teach": "For teachers",
     "earnShort": "Credits",
     "courses": "Courses",
-    "online": "Online classes"
+    "online": "Online classes",
+    "dashboard": "Dashboard"
   },
   "pub": {
     "how": "How it works",
@@ -1524,7 +1525,11 @@
     "ctaText": "It takes a minute to make a class and send its link.",
     "point1": "Students join with a link: no limit on how many",
     "point2": "Set any test or part as homework, with a due date",
-    "point3": "See each student's level, and mark their Writing and Speaking"
+    "point3": "See each student's level, and mark their Writing and Speaking",
+    "openPanel": "Open the Teacher panel",
+    "switchTitle": "Switch to a teacher account?",
+    "switchText": "Your account opens the Teacher panel from now on: classes, courses, online classes and your students' results. The student pages close for it; your results and words are kept.",
+    "switchConfirm": "Switch to teacher"
   },
   "online": {
     "title": "Online classes",
@@ -1675,5 +1680,27 @@
     "liveAfterSave": "Save the lesson first to add a live class on Google Meet.",
     "saveLesson": "Save lesson",
     "lessonSaved": "Lesson saved"
+  },
+  "panel": {
+    "teacher": "Teacher",
+    "admin": "Admin",
+    "dashboard": "Dashboard",
+    "myClasses": "My classes",
+    "tests": "Tests",
+    "testLibrary": "Test library",
+    "mockSessions": "Mock sessions",
+    "marking": "Marking",
+    "results": "Results",
+    "students": "Students",
+    "resources": "Resources",
+    "users": "Users",
+    "allTests": "All tests",
+    "packs": "Test packs",
+    "promos": "Promo codes",
+    "reports": "Reports",
+    "growth": "Growth",
+    "attempts": "Attempts",
+    "orders": "Orders",
+    "platform": "Platform settings"
   }
 }

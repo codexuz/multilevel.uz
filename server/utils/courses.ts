@@ -114,6 +114,8 @@ export async function findLesson(id: string) {
 // ---------- writing ----------
 
 const text = (v: unknown, max: number) => String(v ?? '').trim().slice(0, max)
+/** A short list for the course's page (what learners will learn, need, are): up to 20 lines. */
+const list = (v: unknown) => (Array.isArray(v) ? v : []).map(x => text(x, 200)).filter(Boolean).slice(0, 20)
 
 function optionalDate(v: unknown, label = 'date'): Date | null {
   if (v === null || v === undefined || v === '') return null
@@ -131,10 +133,12 @@ export function courseValues(body: Record<string, unknown>, partial: boolean) {
     out.title = title
   }
   if (body.summary !== undefined) out.summary = text(body.summary, 400) || null
-  if (body.coverUrl !== undefined) {
-    const cover = text(body.coverUrl, 500)
-    out.coverUrl = cover || null
-  }
+  if (body.coverUrl !== undefined) out.coverUrl = link(body.coverUrl)
+  if (body.description !== undefined) out.description = sanitizeRichText(String(body.description ?? '')).slice(0, 50_000) || null
+  if (body.introVideoUrl !== undefined) out.introVideoUrl = link(body.introVideoUrl)
+  if (body.outcomes !== undefined) out.outcomes = list(body.outcomes)
+  if (body.requirements !== undefined) out.requirements = list(body.requirements)
+  if (body.audience !== undefined) out.audience = list(body.audience)
   if (body.exam !== undefined) out.exam = isExam(body.exam) ? body.exam : null
   if (body.level !== undefined) out.level = LEVELS.includes(String(body.level)) ? String(body.level) : null
   if (body.visibility !== undefined) {
@@ -399,6 +403,11 @@ async function cards(rows: Course[]) {
   })
 }
 
+/** What a course's page says beyond its card. */
+const pageOf = (c: Course) => ({
+  description: c.description, introVideoUrl: c.introVideoUrl, outcomes: c.outcomes ?? [], requirements: c.requirements ?? [], audience: c.audience ?? []
+})
+
 /** The catalogue: published public courses, newest first (?exam=). */
 export async function publicCourses(exam?: string) {
   const rows = await useDb().select().from(courses)
@@ -494,7 +503,10 @@ export async function courseView(viewer: Viewer, course: Course) {
 
   return {
     ...card!,
+    ...pageOf(course),
     access,
+    totalMinutes: lessons.reduce((n, l) => n + (l.durationMinutes ?? 0), 0),
+    exerciseTotal: [...exCountMap.values()].reduce((n, x) => n + x, 0),
     modules: moduleList,
     lessons: lessonItems
   }
@@ -695,6 +707,7 @@ export async function manageView(course: Course) {
 
   return {
     ...card!,
+    ...pageOf(course),
     modules: mods.map(m => ({
       id: m.id,
       position: m.position,

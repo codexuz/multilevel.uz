@@ -14,16 +14,15 @@ const menuOpen = ref(false)
 watch(() => route.fullPath, () => (menuOpen.value = false))
 
 const links = computed(() => [
-  { label: t('nav.exams'), to: '/#exams' },
   { label: t('nav.tests'), to: '/tests' },
-  { label: t('nav.packs'), to: '/tests?view=packs' },
   { label: t('nav.courses'), to: '/courses' },
-  { label: t('nav.teach'), to: '/teach' },
-  { label: t('pub.how'), to: '/#how' },
-  { label: t('pub.faq'), to: '/#faq' }
+  { label: t('nav.teach'), to: '/teach' }
 ])
 const isActive = (to: string) => !to.includes('#') && (route.path === to || route.path.startsWith(`${to}/`))
-const signInTo = computed(() => `/login?next=${encodeURIComponent(route.path === '/' ? '/tests' : route.fullPath)}`)
+const signInTo = computed(() => (route.path === '/' ? '/login' : `/login?next=${encodeURIComponent(route.fullPath)}`))
+/** A signed-in visitor's way back into their part of Mockmee: the dashboard, or the Teacher or Admin panel. */
+const appHome = computed(() => homeOf(me.value?.role))
+const isStudent = computed(() => areaOf(me.value?.role) === 'student')
 const social = config.public.socialLinks as { telegramUrl: string, youtubeUrl: string }
 const year = new Date().getFullYear()
 </script>
@@ -52,6 +51,7 @@ const year = new Date().getFullYear()
         <div class="ms-auto flex items-center gap-2">
           <template v-if="loggedIn">
             <UButton
+              v-if="isStudent"
               to="/results"
               :label="t('nav.results')"
               color="neutral"
@@ -59,12 +59,12 @@ const year = new Date().getFullYear()
               class="hidden sm:inline-flex font-semibold"
             />
             <UButton
-              to="/tests"
+              :to="appHome"
               :label="t('pub.openApp')"
               class="rounded-full px-5 font-semibold hidden sm:inline-flex"
             />
             <NuxtLink
-              to="/profile"
+              :to="isStudent ? '/profile' : '/settings'"
               class="shrink-0"
               :aria-label="t('nav.profile')"
             >
@@ -128,12 +128,13 @@ const year = new Date().getFullYear()
         <div class="flex flex-col gap-2">
           <template v-if="loggedIn">
             <UButton
-              to="/tests"
+              :to="appHome"
               :label="t('pub.openApp')"
               size="lg"
               block
             />
             <UButton
+              v-if="isStudent"
               to="/results"
               :label="t('nav.results')"
               color="neutral"
@@ -242,21 +243,15 @@ const year = new Date().getFullYear()
           <ul class="flex flex-col gap-2 text-sm">
             <li>
               <NuxtLink
-                to="/tests?view=packs"
+                to="/courses"
                 class="hover:text-white"
-              >{{ t('nav.packs') }}</NuxtLink>
+              >{{ t('nav.courses') }}</NuxtLink>
             </li>
             <li>
               <NuxtLink
-                to="/#how"
+                to="/teach"
                 class="hover:text-white"
-              >{{ t('pub.how') }}</NuxtLink>
-            </li>
-            <li>
-              <NuxtLink
-                to="/#faq"
-                class="hover:text-white"
-              >{{ t('pub.faq') }}</NuxtLink>
+              >{{ t('nav.teach') }}</NuxtLink>
             </li>
           </ul>
         </div>
@@ -265,20 +260,12 @@ const year = new Date().getFullYear()
             {{ t('nav.account') }}
           </p>
           <ul class="flex flex-col gap-2 text-sm">
-            <template v-if="loggedIn">
-              <li>
-                <NuxtLink
-                  to="/results"
-                  class="hover:text-white"
-                >{{ t('nav.results') }}</NuxtLink>
-              </li>
-              <li>
-                <NuxtLink
-                  to="/profile"
-                  class="hover:text-white"
-                >{{ t('nav.profile') }}</NuxtLink>
-              </li>
-            </template>
+            <li v-if="loggedIn">
+              <NuxtLink
+                :to="appHome"
+                class="hover:text-white"
+              >{{ t('pub.openApp') }}</NuxtLink>
+            </li>
             <li v-else>
               <NuxtLink
                 :to="signInTo"

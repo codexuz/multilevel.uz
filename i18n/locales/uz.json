@@ -52,7 +52,8 @@
     "teach": "O‘qituvchilar uchun",
     "earnShort": "Kreditlar",
     "courses": "Kurslar",
-    "online": "Onlayn darslar"
+    "online": "Onlayn darslar",
+    "dashboard": "Bosh sahifa"
   },
   "pub": {
     "how": "Qanday ishlaydi",
@@ -1524,7 +1525,11 @@
     "ctaText": "Sinf yaratish va havolasini yuborish bir daqiqa oladi.",
     "point1": "O‘quvchilar havola orqali qo‘shiladi: soni cheklanmagan",
     "point2": "Istalgan test yoki qismni muddat bilan uy vazifasi qiling",
-    "point3": "Har bir o‘quvchining darajasini ko‘ring, Writing va Speakingni baholang"
+    "point3": "Har bir o‘quvchining darajasini ko‘ring, Writing va Speakingni baholang",
+    "openPanel": "O‘qituvchi panelini ochish",
+    "switchTitle": "O‘qituvchi hisobiga o‘tasizmi?",
+    "switchText": "Hisobingiz bundan buyon O‘qituvchi panelini ochadi: sinflar, kurslar, onlayn darslar va o‘quvchilaringiz natijalari. O‘quvchi sahifalari yopiladi; natijalaringiz va so‘zlaringiz saqlanadi.",
+    "switchConfirm": "O‘qituvchiga o‘tish"
   },
   "online": {
     "title": "Onlayn darslar",
@@ -1675,5 +1680,27 @@
     "liveAfterSave": "Google Meet’dagi jonli dars qo‘shish uchun avval darsni saqlang.",
     "saveLesson": "Darsni saqlash",
     "lessonSaved": "Dars saqlandi"
+  },
+  "panel": {
+    "teacher": "O‘qituvchi",
+    "admin": "Admin",
+    "dashboard": "Bosh sahifa",
+    "myClasses": "Sinflarim",
+    "tests": "Testlar",
+    "testLibrary": "Testlar kutubxonasi",
+    "mockSessions": "Mock sessiyalar",
+    "marking": "Baholash",
+    "results": "Natijalar",
+    "students": "O‘quvchilar",
+    "resources": "Resurslar",
+    "users": "Foydalanuvchilar",
+    "allTests": "Barcha testlar",
+    "packs": "Test paketlari",
+    "promos": "Promo kodlar",
+    "reports": "Hisobotlar",
+    "growth": "O‘sish",
+    "attempts": "Urinishlar",
+    "orders": "Buyurtmalar",
+    "platform": "Platforma sozlamalari"
   }
 }

@@ -27,11 +27,7 @@ const initialsOf = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 
  * - Group Performance across the last 4 weeks
  */
 export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
-  if (!['teacher', 'center_owner', 'admin'].includes(user.role)) {
-    const has = await hasClasses(user.id)
-    if (!has) throw createError({ statusCode: 403, message: 'Teacher access required' })
-  }
+  const user = await requireTeacher(event)
 
   const db = useDb()
   const now = new Date()
