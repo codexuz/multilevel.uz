@@ -14,6 +14,7 @@ export interface EditableLesson {
   durationMinutes?: number | null
   body: string | null
   videoUrl: string | null
+  audioUrl?: string | null
   availableFrom?: string | null
   availableTo?: string | null
   files: { name: string, url: string, size: number | null }[]
@@ -55,6 +56,7 @@ const form = reactive({
   durationMinutes: props.lesson?.durationMinutes ?? undefined as number | undefined,
   body: props.lesson?.body ?? '',
   videoUrl: props.lesson?.videoUrl ?? '',
+  audioUrl: props.lesson?.audioUrl ?? '',
   availableFrom: toLocalInput(props.lesson?.availableFrom),
   availableTo: toLocalInput(props.lesson?.availableTo),
   testId: props.lesson?.task?.testId as string | undefined,
@@ -81,6 +83,27 @@ watch(() => form.testId, () => {
 })
 
 // ---- files (PDF) ----
+// ---- the lesson's audio (uploaded, or an address) ----
+const audioInput = ref<HTMLInputElement | null>(null)
+const uploadingAudio = ref(false)
+async function pickAudio(e: Event) {
+  const f = (e.target as HTMLInputElement).files?.[0]
+  if (!f) return
+  if (!f.type.startsWith('audio/')) {
+    toast.add({ title: t('media.audioType'), color: 'warning' })
+    return
+  }
+  uploadingAudio.value = true
+  try {
+    form.audioUrl = (await uploadFile(f, { purpose: 'course-audio' })).url
+  } catch (err) {
+    toast.add({ title: t('courses.notUploaded'), description: errorMessage(err), color: 'error' })
+  } finally {
+    uploadingAudio.value = false
+    if (audioInput.value) audioInput.value.value = ''
+  }
+}
+
 const uploading = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 async function addFiles(e: Event) {
@@ -116,6 +139,7 @@ async function save() {
     durationMinutes: form.durationMinutes || null,
     body: form.body,
     videoUrl: form.videoUrl.trim() || null,
+    audioUrl: form.audioUrl.trim() || null,
     availableFrom: form.availableFrom ? new Date(form.availableFrom).toISOString() : null,
     availableTo: form.availableTo ? new Date(form.availableTo).toISOString() : null,
     task: withTask.value && form.testId ? { testId: form.testId, skill: form.skill, partNumber: form.part || null } : null,
@@ -221,6 +245,41 @@ async function cancelLive() {
         placeholder="https://www.youtube.com/watch?v=…"
         icon="i-lucide-play-circle"
         class="w-full"
+      />
+    </UFormField>
+
+    <UFormField
+      :label="t('media.audio')"
+      :help="t('media.audioHelp')"
+    >
+      <div class="flex gap-2">
+        <UInput
+          v-model="form.audioUrl"
+          placeholder="https://…/podcast.mp3"
+          icon="i-lucide-audio-lines"
+          class="flex-1"
+        />
+        <UButton
+          :label="t('media.uploadAudio')"
+          icon="i-lucide-upload"
+          color="neutral"
+          variant="outline"
+          :loading="uploadingAudio"
+          @click="audioInput?.click()"
+        />
+        <input
+          ref="audioInput"
+          type="file"
+          accept="audio/*"
+          class="hidden"
+          @change="pickAudio"
+        >
+      </div>
+      <MediaWaveAudio
+        v-if="form.audioUrl.trim()"
+        :key="form.audioUrl"
+        :src="form.audioUrl.trim()"
+        class="mt-2"
       />
     </UFormField>
 

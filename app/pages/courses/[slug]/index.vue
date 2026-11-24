@@ -19,7 +19,7 @@ interface LessonRow {
   summary: string | null
   durationMinutes: number | null
   exerciseCount: number
-  has: { text: boolean, video: boolean, task: boolean, files: boolean, live: boolean, exercises: boolean }
+  has: { text: boolean, video: boolean, audio?: boolean, task: boolean, files: boolean, live: boolean, exercises: boolean }
   done: boolean
   taskDone: boolean
   drip: DripState
@@ -67,7 +67,8 @@ useSeoMeta({
   robots: () => (c.value!.visibility === 'PUBLIC' && c.value!.published ? undefined : 'noindex')
 })
 
-const embed = computed(() => videoEmbed(c.value!.introVideoUrl))
+/** The intro video plays here (YouTube, Vimeo or a video file). */
+const playable = computed(() => !!(youtubeId(c.value!.introVideoUrl) || isVideoFile(c.value!.introVideoUrl) || videoEmbed(c.value!.introVideoUrl)))
 const duration = (min: number) => (min >= 60 ? t('builder.hoursMinutes', { h: Math.floor(min / 60), m: min % 60 }) : t('builder.minutes', { n: min }))
 /** What the course includes, for the card beside it. */
 const includes = computed(() => [
@@ -95,12 +96,34 @@ async function enroll() {
     await $fetch(`/api/courses/${c.value!.id}/enroll`, { method: 'POST' })
     await refresh()
     toast.add({ title: t('courses.enrolled'), color: 'success' })
+    // Enrolled from a lesson's prompt: on to that lesson.
+    const target = enrollFor.value
+    enrollFor.value = null
+    if (target) await navigateTo(`/courses/${c.value!.slug}/${target.id}`)
   } catch (e) {
     toast.add({ title: t('courses.notEnrolled'), description: errorMessage(e), color: 'error' })
   } finally {
     busy.value = false
   }
 }
+
+// ---- a unit or a lesson, opened: the lesson for a learner; for anyone else, the way in ----
+const enrollFor = ref<LessonRow | null>(null)
+const enrollOpen = computed({ get: () => !!enrollFor.value, set: (v: boolean) => { if (!v) enrollFor.value = null } })
+const lessonPath = (l: LessonRow) => `/courses/${c.value!.slug}/${l.id}`
+function openLesson(l: LessonRow) {
+  if (c.value!.access.learn) return navigateTo(lessonPath(l))
+  enrollFor.value = l
+}
+function openUnit(m: ModuleView) {
+  if (c.value!.access.learn || !m.lessons.length) return toggle(m.id)
+  enrollFor.value = m.lessons[0]!
+}
+// A lesson's address opened without enrolling comes back here with ?enroll={lesson}.
+onMounted(() => {
+  const want = typeof route.query.enroll === 'string' ? c.value!.lessons.find(l => l.id === route.query.enroll) : null
+  if (want && !c.value!.access.learn) enrollFor.value = want
+})
 const { confirm } = useDialogs()
 async function leave() {
   if (!await confirm({ title: t('courses.leaveSure'), confirmLabel: t('courses.leave') })) return
@@ -110,6 +133,7 @@ async function leave() {
 
 const icons = (l: LessonRow) => [
   l.has.video && 'i-lucide-play-circle',
+  l.has.audio && 'i-lucide-audio-lines',
   l.has.text && 'i-lucide-file-text',
   l.has.exercises && 'i-lucide-list-checks',
   l.has.task && 'i-lucide-clipboard-check',
@@ -194,25 +218,18 @@ function lockLabel(drip: DripState): string {
           </div>
         </header>
 
-        <div
-          v-if="embed || c!.coverUrl"
-          class="aspect-video rounded-xl overflow-hidden bg-elevated ring ring-default"
+        <MediaVideoPlayer
+          v-if="c!.introVideoUrl && playable"
+          :src="c!.introVideoUrl"
+          :title="c!.title"
+          :poster="c!.coverUrl"
+        />
+        <img
+          v-else-if="c!.coverUrl"
+          :src="c!.coverUrl"
+          :alt="c!.title"
+          class="aspect-video w-full rounded-xl object-cover ring ring-default"
         >
-          <iframe
-            v-if="embed"
-            :src="embed"
-            class="size-full"
-            :title="c!.title"
-            allow="encrypted-media; picture-in-picture; fullscreen"
-            allowfullscreen
-          />
-          <img
-            v-else
-            :src="c!.coverUrl!"
-            :alt="c!.title"
-            class="size-full object-cover"
-          >
-        </div>
 
         <section
           v-if="c!.outcomes.length"
@@ -272,7 +289,7 @@ function lockLabel(drip: DripState): string {
                 type="button"
                 class="w-full flex items-center gap-3 px-4 py-3.5 bg-muted hover:bg-elevated/60 transition-colors text-start cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
                 :aria-expanded="!folded[mod.id]"
-                @click="toggle(mod.id)"
+                @click="openUnit(mod)"
               >
                 <UIcon
                   name="i-lucide-chevron-right"
@@ -306,11 +323,12 @@ function lockLabel(drip: DripState): string {
                   :key="l.id"
                 >
                   <component
-                    :is="c!.access.learn && !l.drip.locked ? resolveComponent('NuxtLink') : 'div'"
-                    :to="c!.access.learn && !l.drip.locked ? `/courses/${c!.slug}/${l.id}` : undefined"
-                    class="flex items-center gap-3 px-4 py-2.5"
-                    :class="c!.access.learn && !l.drip.locked ? 'hover:bg-elevated/50' : ''"
+                    :is="c!.access.learn ? resolveComponent('NuxtLink') : 'button'"
+                    :to="c!.access.learn ? lessonPath(l) : undefined"
+                    :type="c!.access.learn ? undefined : 'button'"
+                    class="w-full flex items-center gap-3 px-4 py-2.5 text-start cursor-pointer hover:bg-elevated/50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
                     data-testid="lesson-row"
+                    @click="c!.access.learn ? undefined : openLesson(l)"
                   >
                     <span
                       class="size-7 shrink-0 rounded-full grid place-items-center text-xs font-semibold"
@@ -409,7 +427,7 @@ function lockLabel(drip: DripState): string {
           data-testid="course-cta"
         >
           <img
-            v-if="c!.coverUrl && embed"
+            v-if="c!.coverUrl && c!.introVideoUrl && playable"
             :src="c!.coverUrl"
             :alt="c!.title"
             class="hidden lg:block aspect-video w-full object-cover rounded-t-xl"
@@ -508,5 +526,72 @@ function lockLabel(drip: DripState): string {
         </UCard>
       </aside>
     </div>
+    <!-- Opening a lesson without being in the course: the way in -->
+    <UModal
+      v-model:open="enrollOpen"
+      :title="c!.access.canEnroll || !loggedIn ? t('enrollAsk.title') : t('enrollAsk.privateTitle')"
+      data-testid="enroll-modal"
+    >
+      <template #body>
+        <div
+          v-if="enrollFor"
+          class="flex flex-col gap-4"
+        >
+          <div class="flex items-center gap-3 rounded-xl bg-elevated/60 p-3">
+            <span class="grid place-items-center size-10 rounded-lg bg-default text-toned shrink-0">
+              <UIcon
+                name="i-lucide-lock"
+                class="size-5"
+              />
+            </span>
+            <div class="min-w-0">
+              <p class="text-xs text-muted">
+                {{ t('courses.lessonOf', { n: enrollFor.position, of: c!.lessons.length }) }}
+              </p>
+              <p class="font-medium text-highlighted truncate">
+                {{ enrollFor.title }}
+              </p>
+            </div>
+          </div>
+          <p class="text-sm text-toned">
+            {{ c!.access.canEnroll || !loggedIn ? t('enrollAsk.text', { course: c!.title }) : t('enrollAsk.privateText') }}
+          </p>
+          <ul class="flex flex-col gap-1.5 text-sm text-muted">
+            <li
+              v-for="i in includes.slice(0, 4)"
+              :key="i.icon + i.label"
+              class="flex items-center gap-2"
+            >
+              <UIcon
+                :name="i.icon"
+                class="size-4 shrink-0"
+              />{{ i.label }}
+            </li>
+          </ul>
+          <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
+            <UButton
+              :label="t('common.cancel')"
+              color="neutral"
+              variant="ghost"
+              @click="enrollFor = null"
+            />
+            <UButton
+              v-if="loggedIn && c!.access.canEnroll"
+              :label="t('enrollAsk.enroll')"
+              icon="i-lucide-plus"
+              :loading="busy"
+              data-testid="enroll-confirm"
+              @click="enroll"
+            />
+            <UButton
+              v-else-if="!loggedIn"
+              :to="`/login?next=${encodeURIComponent(`/courses/${c!.slug}?enroll=${enrollFor.id}`)}`"
+              :label="t('courses.signInToEnroll')"
+              icon="i-lucide-log-in"
+            />
+          </div>
+        </div>
+      </template>
+    </UModal>
   </AppPage>
 </template>

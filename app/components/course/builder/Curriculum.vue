@@ -234,11 +234,12 @@ function lessonMenu(g: Group, l: EditableLesson, index: number): DropdownMenuIte
 const contentIcons = (l: EditableLesson) => [
   l.body && { icon: 'i-lucide-file-text', label: t('courses.text') },
   l.videoUrl && { icon: 'i-lucide-play-circle', label: t('courses.video') },
+  l.audioUrl && { icon: 'i-lucide-audio-lines', label: t('media.audio') },
   l.task && { icon: 'i-lucide-clipboard-check', label: t('courses.withTask') },
   l.files.length && { icon: 'i-lucide-paperclip', label: t('courses.files') },
   l.live?.status === 'SCHEDULED' && { icon: 'i-lucide-video', label: t('courses.liveTitle') }
 ].filter(Boolean) as { icon: string, label: string }[]
-const lessonIcon = (l: EditableLesson) => (l.videoUrl ? 'i-lucide-circle-play' : l.live?.status === 'SCHEDULED' ? 'i-lucide-video' : 'i-lucide-file-text')
+const lessonIcon = (l: EditableLesson) => (l.videoUrl ? 'i-lucide-circle-play' : l.audioUrl ? 'i-lucide-audio-lines' : l.live?.status === 'SCHEDULED' ? 'i-lucide-video' : 'i-lucide-file-text')
 const topicNumber = (g: Group) => props.topics.findIndex(m => m.id === g.id) + 1
 </script>
 

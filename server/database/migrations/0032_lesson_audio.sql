@@ -1,0 +1,1 @@
+ALTER TABLE "course_lessons" ADD COLUMN "audio_url" text;

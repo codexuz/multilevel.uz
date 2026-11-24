@@ -160,11 +160,10 @@ export async function importIeltsMax(ownerId: string) {
       if (d.podcast?.audio) {
         const minutes = d.podcast.end ? Math.ceil(d.podcast.end / 60) : 6
         items.push({
-          title: `Podcast${d.podcast.title ? `: ${d.podcast.title}` : ''}`, durationMinutes: minutes * 4, courseId: course!.id,
+          title: `Podcast${d.podcast.title ? `: ${d.podcast.title}` : ''}`, durationMinutes: minutes * 4, courseId: course!.id, audioUrl: d.podcast.audio,
           summary: 'Listen and write down what the speakers say.',
           body: [
             paras(d.podcast.note || 'Listen as many times as you need and write down everything the speakers say, word for word.'),
-            `<p>${link(d.podcast.audio, 'Listen to the podcast (MP3)')}</p>`,
             d.podcast.lines?.length ? `<details><summary>Show the transcript (when you have finished)</summary>${d.podcast.lines.map(l => `<p>${esc(l.text)}</p>`).join('')}</details>` : ''
           ].join('')
         })

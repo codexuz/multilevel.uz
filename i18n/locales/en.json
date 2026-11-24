@@ -1688,7 +1688,9 @@
     "makeLive": "Make a Meet link",
     "liveAfterSave": "Save the lesson first to add a live class on Google Meet.",
     "saveLesson": "Save lesson",
-    "lessonSaved": "Lesson saved"
+    "lessonSaved": "Lesson saved",
+    "mineEmpty": "No courses yet",
+    "mineEmptyText": "Courses you enroll in, and your teachers' courses, appear here with your progress."
   },
   "panel": {
     "teacher": "Teacher",
@@ -2201,5 +2203,36 @@
       "lessons": "Online class reminders",
       "lessonsText": "Reminds students of Google Meet classes starting soon"
     }
+  },
+  "media": {
+    "play": "Play",
+    "pause": "Pause",
+    "position": "Position",
+    "cannotPlay": "Cannot play this file",
+    "speed": "Speed {rate}×",
+    "video": "Video",
+    "videoNamed": "Video: {title}",
+    "back10": "Back 10 seconds",
+    "forward10": "Forward 10 seconds",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "volume": "Volume",
+    "full": "Full screen",
+    "exitFull": "Exit full screen",
+    "audio": "Audio",
+    "audioHelp": "An MP3 or another audio file: upload it, or paste its address. It plays with the waveform player.",
+    "uploadAudio": "Upload audio",
+    "audioType": "Choose an audio file (MP3, M4A, WAV, OGG)",
+    "listen": "Listen"
+  },
+  "enrollAsk": {
+    "title": "Enroll to open this lesson",
+    "privateTitle": "For the teacher's students",
+    "text": "Lessons of “{course}” open once you enroll. It is free, and your progress is kept.",
+    "privateText": "This course is for the students of its teacher's classes. Ask your teacher for the class link to join.",
+    "enroll": "Enroll and open the lesson"
+  },
+  "lessonNav": {
+    "back": "Course page"
   }
 }

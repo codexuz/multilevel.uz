@@ -289,6 +289,7 @@ export async function lessonValues(body: Record<string, unknown>, partial: boole
   }
   if (body.body !== undefined) out.body = sanitizeRichText(String(body.body ?? '')).slice(0, 100_000) || null
   if (body.videoUrl !== undefined) out.videoUrl = link(body.videoUrl)
+  if (body.audioUrl !== undefined) out.audioUrl = link(body.audioUrl)
   if (body.task !== undefined) {
     const task = body.task as { testId?: string, skill?: string, partNumber?: number | null } | null
     if (!task?.testId) {
@@ -386,6 +387,7 @@ export function evaluateCourseDrip(course: Course, mods: ModuleRow[], orderedLes
 const what = (l: Lesson, exerciseCount = 0) => ({
   text: !!l.body,
   video: !!l.videoUrl,
+  audio: !!l.audioUrl,
   task: !!l.taskTestId,
   files: Array.isArray(l.files) && l.files.length > 0,
   live: !!l.liveLessonId,
@@ -645,6 +647,7 @@ export async function lessonView(viewer: Viewer, lesson: Lesson) {
     durationMinutes: lesson.durationMinutes,
     body: lesson.body,
     videoUrl: lesson.videoUrl,
+    audioUrl: lesson.audioUrl,
     files: lesson.files,
     task: test && lesson.taskSkill ? { test: test.title, skill: lesson.taskSkill, partNumber: lesson.taskPartNumber, to: taskPath(test.slug, lesson), done: taskDoneSet.has(lesson.id) } : null,
     live: live ? liveView(live, true) : null,
@@ -722,6 +725,7 @@ export async function manageView(course: Course) {
       durationMinutes: l.durationMinutes,
       body: l.body,
       videoUrl: l.videoUrl,
+      audioUrl: l.audioUrl,
       files: l.files,
       availableFrom: l.availableFrom,
       availableTo: l.availableTo,
