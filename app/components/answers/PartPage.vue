@@ -15,6 +15,8 @@ const route = useRoute()
 const base = `/${props.kind.toLowerCase()}`
 const { data: p, error } = await useFetch<Page>(`/api/public${base}/${route.params.slug}`)
 if (error.value || !p.value) throw createError({ statusCode: 404, statusMessage: t('answers.notFound'), fatal: true })
+// An older address of this page (its title has changed since): on to the current one, for good.
+if (p.value.slug && route.params.slug !== p.value.slug) await navigateTo({ path: `${base}/${p.value.slug}`, query: route.query }, { redirectCode: 301, replace: true })
 
 const kindName = computed(() => skillLabel(props.kind))
 const where = computed(() => `${examLabel(p.value!.exam)} · ${partName(props.kind, p.value!.partNumber, p.value!.exam)}`)
@@ -22,9 +24,15 @@ const range = computed(() => {
   const n = p.value!.answers.map(a => a.number)
   return n.length ? `${Math.min(...n)}–${Math.max(...n)}` : ''
 })
+const seoTitle = computed(() => t('answers.partSeoTitle', { title: p.value!.title, skill: kindName.value }))
+const seoDescription = computed(() => t('answers.partSeoDescription', { title: p.value!.title, skill: kindName.value, n: p.value!.answers.length }))
 useSeoMeta({
-  title: () => t('answers.partSeoTitle', { title: p.value!.title, skill: kindName.value }),
-  description: () => t('answers.partSeoDescription', { title: p.value!.title, skill: kindName.value, n: p.value!.answers.length }),
+  title: () => seoTitle.value,
+  description: () => seoDescription.value,
+  ogTitle: () => seoTitle.value,
+  ogDescription: () => seoDescription.value,
+  twitterTitle: () => seoTitle.value,
+  twitterDescription: () => seoDescription.value,
   ogType: 'article'
 })
 // What a search engine can read as questions and answers.
