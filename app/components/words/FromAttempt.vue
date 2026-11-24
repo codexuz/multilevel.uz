@@ -43,6 +43,13 @@ async function remove(id: string) {
           class="text-primary"
         />
         <span class="font-semibold">{{ t('words.fromTest', { n: data.items.length }, data.items.length) }}</span>
+        <UButton
+          to="/words/review"
+          :label="t('words.practiseNow')"
+          icon="i-lucide-layers"
+          size="sm"
+          class="ms-auto"
+        />
       </div>
       <p class="text-sm text-muted mt-1">
         {{ t('words.fromTestText') }}

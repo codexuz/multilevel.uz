@@ -1,8 +1,9 @@
-import { and, desc, eq, gte, ilike, inArray, lte, or, sql, type SQL } from 'drizzle-orm'
+import { and, between, desc, eq, gte, ilike, inArray, lte, or, sql, type SQL } from 'drizzle-orm'
 import { attempts, sectionItems, userWords } from '../../../database/schema'
 
 /**
- * My saved words, newest first. ?q= searches them; ?attempt= gives the ones I saved while sitting
+ * My saved words, newest first. ?q= searches them; ?show= narrows them to the ones due now, new
+ * (not yet reviewed), being learnt or known; ?attempt= gives the ones I saved while sitting
  * that attempt (from its parts, between its start and its hand-in), for its result page.
  */
 export default defineEventHandler(async (event) => {
@@ -16,6 +17,12 @@ export default defineEventHandler(async (event) => {
     const like = `%${q.replace(/[\\%_]/g, m => `\\${m}`)}%`
     where.push(or(ilike(userWords.term, like), ilike(userWords.definition, like), ilike(userWords.translation, like))!)
   }
+
+  const show = String(query.show ?? '')
+  if (show === 'due') where.push(lte(userWords.dueAt, new Date()))
+  else if (show === 'new') where.push(eq(userWords.box, 0))
+  else if (show === 'learning') where.push(between(userWords.box, 1, TOP_WORD_BOX - 1))
+  else if (show === 'known') where.push(gte(userWords.box, TOP_WORD_BOX))
 
   if (query.attempt) {
     const id = String(query.attempt)

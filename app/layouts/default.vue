@@ -15,7 +15,7 @@ const mainNav = computed<NavigationMenuItem[]>(() => [
   { label: t('nav.live'), icon: 'i-lucide-trophy', to: '/live', badge: live.value ? { label: t('nav.liveBadge'), color: 'error' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined },
   // The centres catalogue is for guests choosing where to study; signed-in users don't need it in the menu.
   ...(loggedIn.value ? [] : [{ label: t('nav.centres'), icon: 'i-lucide-building-2', to: '/centres' }]),
-  ...(loggedIn.value ? [{ label: t('nav.results'), icon: 'i-lucide-chart-column', to: '/results' }] : []),
+  ...(loggedIn.value ? [{ label: t('nav.results'), icon: 'i-lucide-chart-column', to: '/results' }, { label: t('nav.words'), icon: 'i-lucide-book-open-text', to: '/words' }] : []),
   ...(me.value?.centres?.some(c => c.role !== 'STUDENT') ? [{ label: t('nav.centre'), icon: 'i-lucide-school', to: '/centre' }] : []),
   ...(me.value?.runsMocks ? [{ label: t('nav.mocks'), icon: 'i-lucide-monitor-check', to: '/mocks' }] : []),
   { label: t('nav.premium'), icon: 'i-lucide-sparkles', to: '/pricing', badge: isPremium.value ? { label: t('nav.on'), color: 'success' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined },
@@ -39,7 +39,7 @@ const bottomLinks = computed<NavigationMenuItem[]>(() => loggedIn.value
 const tabBar = computed(() => [
   { label: t('nav.tests'), icon: 'i-lucide-clipboard-list', to: '/tests' },
   ...(loggedIn.value
-    ? [{ label: t('nav.resultsShort'), icon: 'i-lucide-chart-column', to: '/results' }, { label: t('nav.premium'), icon: 'i-lucide-sparkles', to: '/pricing' }, { label: t('nav.profile'), icon: 'i-lucide-circle-user', to: '/profile' }]
+    ? [{ label: t('nav.resultsShort'), icon: 'i-lucide-chart-column', to: '/results' }, { label: t('nav.wordsShort'), icon: 'i-lucide-book-open-text', to: '/words' }, { label: t('nav.premium'), icon: 'i-lucide-sparkles', to: '/pricing' }, { label: t('nav.profile'), icon: 'i-lucide-circle-user', to: '/profile' }]
     : [{ label: t('nav.signIn'), icon: 'i-lucide-log-in', to: `/login?next=${encodeURIComponent(route.fullPath)}` }])
 ])
 const tabActive = (to: string) => (to === '/' ? route.path === '/' : route.path === to.split('?')[0] || route.path.startsWith(`${to}/`))

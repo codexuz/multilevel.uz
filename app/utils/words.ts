@@ -12,7 +12,20 @@ export interface SavedWord {
   cefr: string | null
   box: number
   dueAt: string
+  reviews: number
+  lastReviewedAt: string | null
   createdAt: string
+}
+
+/** How My Words stands (/api/me/words/stats). */
+export interface WordStats {
+  total: number
+  due: number
+  new: number
+  learning: number
+  known: number
+  reviewedToday: number
+  nextDueAt: string | null
 }
 
 const MAX_WORDS = 5
@@ -77,4 +90,13 @@ export function splitSentence(sentence: string, word: string): [string, string, 
   const i = sentence.toLowerCase().indexOf(word.toLowerCase())
   if (i < 0) return [sentence, '', '']
   return [sentence.slice(0, i), sentence.slice(i, i + word.length), sentence.slice(i + word.length)]
+}
+
+/** When a word comes back for review, in words: due now, later today, or in so many days. */
+export function wordDueLabel(dueAt: string, t: (key: string, ...args: any[]) => string) {
+  const ms = new Date(dueAt).getTime() - Date.now()
+  if (ms <= 0) return { now: true, label: t('words.dueNow') }
+  const days = Math.round(ms / 86_400_000)
+  if (days < 1) return { now: false, label: t('words.dueToday') }
+  return { now: false, label: t('words.dueIn', { n: days }, days) }
 }

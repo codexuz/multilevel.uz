@@ -112,11 +112,18 @@ export function defineTerm(term: string, locale: WordLocale, sentence: string | 
   return job
 }
 
-/** Fills a saved word's meaning from defineTerm, when it has none yet. Returns the row as it is now. */
+/** Fills a saved word's meaning (or only its translation) from defineTerm, when it lacks it. Returns the row as it is now. */
 export async function defineSavedWord(row: typeof userWords.$inferSelect, locale: WordLocale) {
-  if (row.definition) return row
+  // Saved while the site was in English, read now in Uzbek or Russian: the translation is added.
+  const wantsTranslation = locale !== 'en' && !row.translation
+  if (row.definition && !wantsTranslation) return row
   const d = await defineTerm(row.term, locale, row.sentence, row.userId)
   if (!d) return row
+  if (row.definition) {
+    if (!d.translation) return row
+    const [updated] = await useDb().update(userWords).set({ translation: d.translation }).where(eq(userWords.id, row.id)).returning()
+    return updated ?? row
+  }
   const [updated] = await useDb().update(userWords).set({
     lemma: d.lemma,
     partOfSpeech: d.partOfSpeech || null,
@@ -142,7 +149,19 @@ export function wordView(row: typeof userWords.$inferSelect) {
     cefr: row.cefr,
     box: row.box,
     dueAt: row.dueAt,
+    reviews: row.reviews,
+    lastReviewedAt: row.lastReviewedAt,
     createdAt: row.createdAt
   }
 }
 export type WordView = ReturnType<typeof wordView>
+
+// ---------- review schedule: shared/utils/word-review.ts ----------
+
+const DAY = 86_400_000
+
+/** Midnight today in Tashkent (UTC+5, no summer time), as an instant. */
+export function tashkentDayStart(now = new Date()) {
+  const offset = 5 * 3_600_000
+  return new Date(Math.floor((now.getTime() + offset) / DAY) * DAY - offset)
+}

@@ -16,6 +16,9 @@ const props = defineProps<{
 const emit = defineEmits<{ close: [], removed: [] }>()
 const { t } = useI18n()
 const saver = useWordSaver()
+// Inside a test a link away would leave the paper; on a review page it is fine.
+const route = useRoute()
+const inTest = computed(() => route.path.startsWith('/tests/'))
 
 const WIDTH = 320
 const style = computed(() => {
@@ -70,6 +73,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       <template v-else>
         <p class="text-xs text-muted mb-1 flex items-center gap-1">
           <UIcon name="i-lucide-book-check" />{{ t('words.addedToMyWords') }}
+          <ULink
+            v-if="saver?.mode.value === 'card' && !inTest"
+            to="/words"
+            class="ms-auto text-primary"
+          >{{ t('words.open') }}</ULink>
         </p>
         <WordsCard
           :word="word"
