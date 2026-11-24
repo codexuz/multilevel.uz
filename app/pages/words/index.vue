@@ -107,6 +107,45 @@ async function remove(word: SavedWord) {
         </div>
       </UCard>
 
+      <UCard
+        v-if="stats?.total"
+        :ui="{ body: 'p-4 sm:p-5' }"
+        data-testid="quiz-cta"
+      >
+        <div class="flex flex-wrap items-center gap-4">
+          <UAvatar
+            icon="i-lucide-puzzle"
+            size="lg"
+            class="rounded-lg"
+            :ui="{ root: 'bg-secondary/10', icon: 'text-secondary' }"
+          />
+          <div class="min-w-0 flex-1">
+            <p class="font-semibold text-highlighted">
+              {{ t('words.quizCta') }}
+            </p>
+            <p class="text-sm text-muted">
+              {{ t('words.quizCtaText') }}
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <UButton
+              to="/words/practice?mode=gap"
+              :label="t('words.modeGap')"
+              icon="i-lucide-text-cursor-input"
+              color="neutral"
+              variant="outline"
+            />
+            <UButton
+              to="/words/practice?mode=meaning"
+              :label="t('words.modeMeaning')"
+              icon="i-lucide-list-checks"
+              color="neutral"
+              variant="outline"
+            />
+          </div>
+        </div>
+      </UCard>
+
       <div
         v-if="stats?.total"
         class="grid grid-cols-2 sm:grid-cols-4 gap-3"

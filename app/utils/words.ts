@@ -100,3 +100,38 @@ export function wordDueLabel(dueAt: string, t: (key: string, ...args: any[]) => 
   if (days < 1) return { now: false, label: t('words.dueToday') }
   return { now: false, label: t('words.dueIn', { n: days }, days) }
 }
+
+/** A question of a My Words quiz (/api/me/words/quiz). */
+export type QuizQuestion
+  = | { kind: 'gap', wordId: string, before: string, after: string, answer: string, accept: string[], clue: string | null, translation: string | null, partOfSpeech: string | null }
+    | { kind: 'meaning', wordId: string, word: string, context: { before: string, answer: string, after: string } | null, choices: string[], correct: number }
+
+const squashAnswer = (s: string) => s.toLowerCase().replace(/[‘’`]/g, '\'').replace(/[‐‑‒–—]/g, '-').replace(/\s+/g, ' ').trim()
+
+/** How far apart two short strings are (letters added, taken away or changed). */
+function editDistance(a: string, b: string) {
+  const row = Array.from({ length: b.length + 1 }, (_, i) => i)
+  for (let i = 1; i <= a.length; i++) {
+    let prev = row[0]!
+    row[0] = i
+    for (let j = 1; j <= b.length; j++) {
+      const keep = row[j]!
+      row[j] = Math.min(row[j]! + 1, row[j - 1]! + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1))
+      prev = keep
+    }
+  }
+  return row[b.length]!
+}
+
+/**
+ * Marks a word typed into a gap: right; close (one letter off in a word of five letters or more:
+ * counted right, with the spelling shown); or wrong.
+ */
+export function markGap(typed: string, accept: string[]): 'right' | 'close' | 'wrong' {
+  const t = squashAnswer(typed)
+  if (!t) return 'wrong'
+  const keys = accept.map(squashAnswer)
+  if (keys.includes(t)) return 'right'
+  if (keys.some(k => k.length >= 5 && editDistance(t, k) <= 1)) return 'close'
+  return 'wrong'
+}

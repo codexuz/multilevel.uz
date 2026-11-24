@@ -15,7 +15,8 @@ export default defineEventHandler(async (event) => {
   const term = normaliseTerm(word)
   const problem = termProblem(term)
   if (problem) throw createError({ statusCode: 400, message: problem })
-  const sentence = String(body?.sentence ?? '').replace(/\s+/g, ' ').trim().slice(0, 400) || null
+  // A paragraph's letter ("A Most people assume…") is not part of its first sentence.
+  const sentence = String(body?.sentence ?? '').replace(/\s+/g, ' ').trim().replace(/^[A-H]\s+(?=[A-Z])/, '').slice(0, 400) || null
 
   const db = useDb()
   let partId: string | null = typeof body?.partId === 'string' && UUID.test(body.partId) ? body.partId : null

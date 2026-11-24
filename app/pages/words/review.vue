@@ -187,6 +187,13 @@ function again(practiseAhead: boolean) {
             @click="again(false)"
           />
           <UButton
+            to="/words/practice"
+            :label="t('words.tryQuiz')"
+            icon="i-lucide-puzzle"
+            color="neutral"
+            variant="outline"
+          />
+          <UButton
             to="/words"
             :label="t('words.backToWords')"
             color="neutral"
