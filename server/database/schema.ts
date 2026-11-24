@@ -693,6 +693,62 @@ export const mockCreditTransactions = pgTable('mock_credit_transactions', {
   createdAt: created()
 }, t => [index('mock_credit_centre_idx').on(t.centreId), index('mock_credit_user_idx').on(t.userId)])
 
+// ---------- vocabulary: My Words ----------
+/**
+ * What a word or phrase means, written once by the AI for each interface language and shared by
+ * everyone who saves it (words.ts): the second student to save "mitigate" costs nothing.
+ */
+export const wordCache = pgTable('word_cache', {
+  /** The words as saved, normalised (lower case, single spaces, no punctuation around them). */
+  term: text('term').notNull(),
+  /** The language the translation is in (en, uz, ru); en has none. */
+  locale: text('locale').notNull(),
+  /** The dictionary form ("mitigated" → "mitigate"). */
+  lemma: text('lemma').notNull(),
+  partOfSpeech: text('part_of_speech'),
+  /** A plain English definition, for a learner. */
+  definition: text('definition').notNull(),
+  translation: text('translation'),
+  /** A1..C2. */
+  cefr: text('cefr'),
+  createdAt: created()
+}, t => [primaryKey({ columns: [t.term, t.locale] })])
+
+/**
+ * A word or phrase a student picked out of a text to learn, with the sentence it came from and its
+ * place in their review schedule (a Leitner box: the higher the box, the longer until it comes back).
+ */
+export const userWords = pgTable('user_words', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  /** As the student selected it. */
+  word: text('word').notNull(),
+  /** Normalised, as in word_cache: one entry per word for each student. */
+  term: text('term').notNull(),
+  lemma: text('lemma'),
+  /** The sentence of the text it was picked from. */
+  sentence: text('sentence'),
+  /** The Reading or Listening part it came from. */
+  partId: uuid('part_id').references(() => parts.id, { onDelete: 'set null' }),
+  // Copied from word_cache when it is defined, so the student's own copy can be changed later.
+  partOfSpeech: text('part_of_speech'),
+  definition: text('definition'),
+  translation: text('translation'),
+  cefr: text('cefr'),
+  /** Review schedule: box 0 (new) to 5, when it is next due, and how it has gone. */
+  box: integer('box').notNull().default(0),
+  dueAt: timestamp('due_at', { withTimezone: true }).notNull().defaultNow(),
+  reviews: integer('reviews').notNull().default(0),
+  lapses: integer('lapses').notNull().default(0),
+  lastReviewedAt: timestamp('last_reviewed_at', { withTimezone: true }),
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [
+  uniqueIndex('user_words_user_term_uq').on(t.userId, t.term),
+  index('user_words_due_idx').on(t.userId, t.dueAt),
+  index('user_words_created_idx').on(t.userId, t.createdAt)
+])
+
 /** Premium tests a user opened with credits or bought in a pack: theirs for good. */
 export const testUnlocks = pgTable('test_unlocks', {
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),

@@ -83,6 +83,9 @@ const submitting = ref(false)
 // At a mock session's seat (the paper says so), what the page sees goes to the invigilator's board,
 // from Start on (the cover before it is not the test); practice and live mocks keep nothing.
 const atSeat = computed(() => !!data.value?.seat)
+// My Words: a part practised on its own shows what a saved word means at once; a whole section only
+// keeps it, for the result page, so it stays like the real test. Not at a mock session's seat.
+provideWordSaver({ mode: () => (partNo ? 'card' : 'quiet'), enabled: () => !atSeat.value })
 const begun = ref(false)
 const integrity = useIntegrity(key, { active: () => atSeat.value && begun.value && !submitting.value })
 let pinger: ReturnType<typeof setInterval> | undefined

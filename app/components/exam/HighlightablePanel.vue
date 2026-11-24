@@ -1,4 +1,10 @@
 <script setup lang="ts">
+const props = defineProps<{
+  /** Offer Save word (My Words) for a word or short phrase selected here, to a signed-in student. */
+  saveWords?: boolean
+  /** The part the text belongs to, kept with a saved word. */
+  partId?: string
+}>()
 const { t } = useI18n()
 const COLORS = [
   { value: '#fef08a', label: 'Yellow' },
@@ -7,7 +13,15 @@ const COLORS = [
   { value: '#bfdbfe', label: 'Blue' }
 ]
 
-const { container, highlights, popup, addHighlight, updateComment, removeHighlight, closePopup, onMouseUp } = useHighlighter()
+const { container, highlights, popup, addHighlight, updateComment, removeHighlight, closePopup, onMouseUp, selection } = useHighlighter()
+const pick = useWordPick()
+const canSaveWord = computed(() => props.saveWords && popup.value.visible && !popup.value.highlightId && pick.canSave(selection()))
+
+function saveWord() {
+  const range = selection()
+  closePopup()
+  pick.saveRange(range, props.partId)
+}
 
 const noteOpen = ref(false)
 const activeId = ref<string | null>(null)
@@ -97,9 +111,33 @@ function saveNote(text: string) {
               @mousedown.prevent.stop="openNote(null)"
             />
           </UTooltip>
+          <UTooltip
+            v-if="canSaveWord"
+            :text="t('words.save')"
+          >
+            <UButton
+              icon="i-lucide-book-plus"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              data-testid="save-word"
+              :aria-label="t('words.save')"
+              @mousedown.prevent.stop="saveWord"
+            />
+          </UTooltip>
         </template>
       </UCard>
     </template>
+
+    <WordsPopover
+      v-if="pick.card.value"
+      :anchor="pick.card.value.anchor"
+      :word="pick.card.value.word"
+      :loading="pick.card.value.loading"
+      :text="pick.card.value.text"
+      @close="pick.close"
+      @removed="pick.close"
+    />
 
     <ExamNotesSlideover
       v-model:open="noteOpen"

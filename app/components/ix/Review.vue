@@ -18,6 +18,8 @@ const router = useRouter()
 const { me } = useMe()
 
 const theme = provideIxTheme()
+// Words picked out of the passage go to My Words, with their meaning shown at once.
+provideWordSaver({ mode: 'card' })
 const section = computed(() => props.view.review?.sections?.[0] ?? null)
 const skill = computed(() => section.value?.skill ?? props.view.skill)
 const candidate = computed(() => me.value?.name || accountHandle(me.value) || '')
@@ -175,7 +177,10 @@ const band = computed(() => props.view.band ?? section.value?.band ?? null)
                 :transcript-url="transcriptUrl"
                 :title="part.title"
               />
-              <div v-else>
+              <WordsPicker
+                v-else
+                :part-id="part.id"
+              >
                 <h2
                   v-if="part.title"
                   class="ix-passage-title"
@@ -186,7 +191,7 @@ const band = computed(() => props.view.band ?? section.value?.band ?? null)
                   class="ix-passage"
                   v-html="passage"
                 />
-              </div>
+              </WordsPicker>
             </template>
             <template #right>
               <div class="ix-questions">

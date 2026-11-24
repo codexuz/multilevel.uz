@@ -13,7 +13,7 @@ type Skill = 'LISTENING' | 'READING'
 const PAGE_SIZE = 40
 
 /** An address for a part or task: its title, then the first 8 characters of its id. */
-export const publicSlug = (title: string | null | undefined, id: string) => `${slugify(title || 'ielts')}-${id.slice(0, 8)}`
+export const publicSlug = (title: string | null | undefined, id: string) => `${slugify(title || 'ielts').replace(/-+$/, '')}-${id.slice(0, 8)}`
 const idPrefixOf = (slug: string) => /-([0-9a-f]{8})$/.exec(slug)?.[1] ?? null
 
 /** Text from HTML: tags out, entities read, spaces tidied. */
@@ -172,13 +172,43 @@ async function publishedTasks(opts: { exam?: Exam, task?: number, prefix?: strin
   return [...rows]
 }
 
-const taskTitle = (r: { title: string | null, prompt: string }) => r.title || opening(plain(r.prompt).split('\n')[0] ?? '', 70)
+/**
+ * Lines every task of a kind has ("You should spend about 20 minutes on this task.", "Write at least
+ * 250 words."): they say nothing of the task, so they make neither its title nor its description.
+ */
+const BOILERPLATE = [
+  /^you should spend about \d+ minutes/i,
+  /^write at least \d+ words/i,
+  /^write about the following topic/i,
+  /^summari[sz]e the information/i,
+  /^give reasons for your answer/i,
+  /^(you do not need to|do not) write (any )?(your own )?address/i,
+  /^begin your letter/i
+]
+/** A task's words without those lines. */
+const taskText = (prompt: string) => plain(prompt).split('\n').filter(l => l.trim() && !BOILERPLATE.some(re => re.test(l.trim()))).join('\n')
+/**
+ * What a task is about: the topic it quotes ('Write your article on this topic: "Does homework help
+ * students learn?"'), else the first sentence that is not one of those lines.
+ */
+const topicOf = (prompt: string) => {
+  const text = taskText(prompt)
+  const quoted = /topic(?:\s+is)?\s*:\s*["“]([^"”]{8,})["”]/i.exec(text)?.[1]?.trim()
+  if (quoted) return opening(quoted, 90)
+  const line = text.split('\n')[0]?.trim() ?? ''
+  const sentence = line.split(/(?<=[.!?])\s+/)[0] ?? line
+  return opening(sentence.replace(/[.:]$/, ''), 90)
+}
+/** A title a builder gave that names only the task's kind ("Task 2 — Essay"), or the time line. */
+const genericTitle = (title: string) => /^task\s*[\d.]+\b/i.test(title.trim()) || BOILERPLATE.some(re => re.test(title.trim()))
+/** A task's title: the builder's, unless it only names the kind of task; else what the task is about. */
+const taskTitle = (r: { title: string | null, prompt: string }) => (r.title && !genericTitle(r.title) ? r.title : topicOf(r.prompt) || r.title || 'Writing task')
 const taskCard = (r: Awaited<ReturnType<typeof publishedTasks>>[number]) => ({
   slug: publicSlug(taskTitle(r), r.id),
   title: taskTitle(r),
   exam: r.exam,
   taskNumber: r.taskNumber,
-  preview: opening(plain(r.prompt), 200),
+  preview: opening(taskText(r.prompt), 200),
   samples: r.samples,
   test: { slug: r.testSlug, title: r.testTitle }
 })

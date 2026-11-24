@@ -68,7 +68,10 @@ function submit() {
       :labels="['Passage', 'Questions']"
     >
       <template #first>
-        <ExamHighlightablePanel>
+        <ExamHighlightablePanel
+          save-words
+          :part-id="session.part.value.id"
+        >
           <div class="h-full overflow-y-auto px-4 md:px-6 py-4 bg-default">
             <p
               v-if="session.part.value.title"
@@ -91,7 +94,10 @@ function submit() {
         </ExamHighlightablePanel>
       </template>
       <template #second>
-        <ExamHighlightablePanel>
+        <ExamHighlightablePanel
+          save-words
+          :part-id="session.part.value.id"
+        >
           <ExamQuestionPanel
             :questions="session.part.value.questions"
             :answers="session.answers.value"

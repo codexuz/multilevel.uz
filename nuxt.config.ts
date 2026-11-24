@@ -2,6 +2,14 @@ const siteName = 'Mockmee'
 const siteUrl = (process.env.NUXT_PUBLIC_SITE_URL || 'https://mockmee.uz').replace(/\/$/, '')
 const siteDescription = 'Mockmee: online IELTS and Multilevel (CEFR) English mock tests in the official format: Listening, Reading, Writing and Speaking, marked instantly.'
 const noIndex = { robots: false, sitemap: false }
+// Pages for signed-in people, a mock session's seat, and private links: kept out of search engines
+// (an X-Robots-Tag noindex) and out of the sitemap, which otherwise lists every page file. A path
+// with /** covers the page itself too (/results and /results/…).
+const privatePaths = [
+  '/account/**', '/admin/**', '/billing/**', '/builder/**', '/centre/**', '/feedback/**', '/join/**',
+  '/login', '/marking/**', '/mocks/**', '/onboarding', '/profile', '/promo', '/report/**', '/results/**',
+  '/seat', '/settings', '/share/**', '/words/**'
+]
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -80,8 +88,9 @@ export default defineNuxtConfig({
   },
 
   // Open to search engines: the home page, the catalogue and each test's page (/tests/{slug}).
-  // Everything behind a sign-in is not indexed; sitting a section, its result and its review
-  // (/tests/{slug}/{skill}/…) say noindex on the page itself.
+  // Everything behind a sign-in is not indexed (privatePaths above); sitting a section, its result
+  // and its review (/tests/{slug}/{skill}/…) say noindex on the page itself, as a pattern for them
+  // here would catch /tests/{slug} too.
   routeRules: {
     '/': { prerender: false },
     '/dashboard': { redirect: '/results' },
@@ -89,16 +98,7 @@ export default defineNuxtConfig({
     '/centres/apply': { redirect: '/centres?apply=1' },
     // Packs are a segment of the catalogue.
     '/packs': { redirect: '/tests?view=packs' },
-    '/admin/**': noIndex,
-    '/billing/**': noIndex,
-    '/builder/**': noIndex,
-    '/marking/**': noIndex,
-    '/login': noIndex,
-    '/onboarding': noIndex,
-    '/profile': noIndex,
-    '/promo': noIndex,
-    '/results/**': noIndex,
-    '/settings': noIndex
+    ...Object.fromEntries(privatePaths.map(path => [path, noIndex]))
   },
 
   compatibilityDate: '2026-06-30',
@@ -148,6 +148,6 @@ export default defineNuxtConfig({
 
   sitemap: {
     sources: ['/api/__sitemap__/urls'],
-    exclude: ['/admin/**', '/builder/**', '/marking/**', '/results/**', '/login', '/onboarding', '/profile', '/promo', '/settings']
+    exclude: privatePaths
   }
 })

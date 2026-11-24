@@ -14,12 +14,21 @@ const toast = useToast()
 const { isAdmin } = useMe()
 const { data: p, error, refresh } = await useFetch<Page>(`/api/public/writing/${route.params.slug}`)
 if (error.value || !p.value) throw createError({ statusCode: 404, statusMessage: t('answers.notFound'), fatal: true })
+// An older address of this page (its title has changed since): on to the current one, for good.
+if (p.value.slug && route.params.slug !== p.value.slug) await navigateTo({ path: `/writing/${p.value.slug}`, query: route.query }, { redirectCode: 301, replace: true })
 
 const name = computed(() => `${examLabel(p.value!.exam)} ${taskName(p.value!.exam, p.value!.taskNumber)}`)
 const ielts = computed(() => p.value!.exam === 'IELTS')
+// The description on one line: the task's own words, as search results and shared links show it.
+const seoTitle = computed(() => t('answers.taskSeoTitle', { title: p.value!.title, task: name.value }))
+const seoDescription = computed(() => p.value!.preview.replace(/\s+/g, ' ').trim())
 useSeoMeta({
-  title: () => t('answers.taskSeoTitle', { title: p.value!.title, task: name.value }),
-  description: () => p.value!.preview,
+  title: () => seoTitle.value,
+  description: () => seoDescription.value,
+  ogTitle: () => seoTitle.value,
+  ogDescription: () => seoDescription.value,
+  twitterTitle: () => seoTitle.value,
+  twitterDescription: () => seoDescription.value,
   ogType: 'article'
 })
 
