@@ -1,16 +1,16 @@
 <script setup lang="ts">
 /**
- * Mock credits for a centre or a teacher: what is left, and credits sold (or taken back, with a
+ * Mock credits for a teacher: what is left, and credits sold (or taken back, with a
  * negative number). One credit is spent on each candidate's first check-in at a mock session.
  */
-const props = defineProps<{ target: { centreId?: string, userId?: string, name: string } | null }>()
+const props = defineProps<{ target: { userId?: string, name: string } | null }>()
 const emit = defineEmits<{ close: [] }>()
 const toast = useToast()
 const left = ref<number | null>(null)
 const credits = ref<number>(10)
 const note = ref('')
 const saving = ref(false)
-const query = computed(() => (props.target?.centreId ? { centreId: props.target.centreId } : { userId: props.target?.userId }))
+const query = computed(() => ({ userId: props.target?.userId }))
 watch(() => props.target, async (t) => {
   left.value = null
   if (!t) return

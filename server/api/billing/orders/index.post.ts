@@ -1,34 +1,19 @@
 import { and, eq } from 'drizzle-orm'
-import { orders, packs, plans } from '../../../database/schema'
+import { orders, packs } from '../../../database/schema'
 
-// A Click order for a plan or a test pack, and the Click page to pay it on. A promo code takes its
-// share off the price; one that brings it down to nothing switches the plan (or opens the pack) at once.
+// A Click order for a test pack, and the Click page to pay it on. A promo code takes its share off
+// the price; one that brings it down to nothing opens the pack at once.
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  const body = await readBody<{ plan?: string, pack?: string, promo?: string }>(event)
+  const body = await readBody<{ pack?: string, promo?: string }>(event)
   const db = useDb()
-  let values: typeof orders.$inferInsert
-  let price: number
-  if (body?.pack) {
-    const [pack] = await db.select().from(packs).where(and(eq(packs.slug, String(body.pack)), eq(packs.active, true))).limit(1)
-    if (!pack) throw createError({ statusCode: 404, message: 'Pack not found' })
-    if ((await ownedPackIds(user.id)).has(pack.id)) throw createError({ statusCode: 409, message: 'You already have this pack' })
-    // A promo code for every plan (none named) works on packs too; one for named plans does not.
-    const promo = body.promo ? await usablePromo(body.promo, user.id, `pack:${pack.slug}`) : null
-    price = pack.priceUzs
-    const amount = priceWithPromo(promo, price)
-    values = { userId: user.id, packId: pack.id, planName: pack.title, amountUzs: amount, provider: 'click', promoCodeId: promo?.id ?? null, discountUzs: price - amount }
-  } else {
-    const [plan] = await db.select().from(plans).where(and(eq(plans.code, String(body?.plan ?? '')), eq(plans.active, true))).limit(1)
-    if (!plan) throw createError({ statusCode: 404, message: 'Plan not found' })
-    const promo = body?.promo ? await usablePromo(body.promo, user.id, plan.code) : null
-    price = plan.priceUzs
-    const amount = priceWithPromo(promo, price)
-    values = {
-      userId: user.id, planId: plan.id, planName: plan.name, amountUzs: amount, durationDays: plan.durationDays, credits: plan.credits, provider: 'click',
-      promoCodeId: promo?.id ?? null, discountUzs: price - amount
-    }
-  }
+  const [pack] = await db.select().from(packs).where(and(eq(packs.slug, String(body?.pack ?? '')), eq(packs.active, true))).limit(1)
+  if (!pack) throw createError({ statusCode: 404, message: 'Pack not found' })
+  if ((await ownedPackIds(user.id)).has(pack.id)) throw createError({ statusCode: 409, message: 'You already have this pack' })
+  const promo = body?.promo ? await usablePromo(body.promo, user.id, `pack:${pack.slug}`) : null
+  const price = pack.priceUzs
+  const values: typeof orders.$inferInsert = { userId: user.id, packId: pack.id, planName: pack.title, amountUzs: priceWithPromo(promo, price), provider: 'click', promoCodeId: promo?.id ?? null }
+  values.discountUzs = price - values.amountUzs!
   const amount = values.amountUzs
 
   if (amount === 0) {

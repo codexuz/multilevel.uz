@@ -9,13 +9,13 @@ const { t } = useI18n()
  */
 const props = defineProps<{ view: ResultView & { correct?: number | null, total?: number | null, durationSeconds?: number | null, submittedAt?: string | null }, reviewTo: string }>()
 const emit = defineEmits<{ sent: [] }>()
-const { loggedIn, me, isStaff, credits, refresh: refreshMe } = useMe()
-// A centre's student: their own teachers mark Writing and Speaking.
+const { loggedIn, me, refresh: refreshMe } = useMe()
+// A student in a teacher's class: their teacher marks Writing and Speaking.
 const byTeacher = computed(() => !!me.value?.teacherMarks)
 
-// Writing or Speaking saved without a marking credit: sent for marking from here once there is one.
-const awaitingCredit = computed(() => props.view.status === 'AWAITING_CREDIT')
-const canSend = computed(() => isStaff.value || byTeacher.value || credits.value > 0)
+// Writing or Speaking saved with nobody to mark it (the AI check only): sent to the student's
+// teacher from here once they are in a class.
+const savedOnly = computed(() => props.view.status === 'SAVED')
 const sending = ref(false)
 const toast = useToast()
 async function sendForMarking() {
@@ -147,8 +147,8 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
       </div>
     </UCard>
 
-    <!-- Writing or Speaking saved, waiting for a marking credit -->
-    <UCard v-else-if="awaitingCredit">
+    <!-- Writing or Speaking saved, with nobody to mark it: the AI check, and a teacher once in a class -->
+    <UCard v-else-if="savedOnly">
       <div class="flex items-center gap-4">
         <img
           src="/illustrations/memo.svg"
@@ -160,24 +160,26 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
             {{ t('result.notSent') }}
           </p>
           <p class="text-sm text-muted text-pretty">
-            {{ t('result.notSentText', { skill: skillLabel(view.skill) }) }}
+            {{ t(byTeacher ? 'result.notSentTeacherText' : 'result.notSentText', { skill: skillLabel(view.skill) }) }}
           </p>
         </div>
       </div>
       <div class="mt-4">
         <UButton
-          v-if="canSend"
-          :label="t('result.sendForMarking')"
+          v-if="byTeacher"
+          :label="t('result.sendToTeacher')"
           icon="i-lucide-send"
           :loading="sending"
           data-testid="send-for-marking"
           @click="sendForMarking"
         />
-        <BillingPaywall
+        <UButton
           v-else
-          reason="credit"
-          :exam="view.exam"
-          compact
+          to="/profile"
+          :label="t('result.joinClass')"
+          icon="i-lucide-school"
+          color="neutral"
+          variant="outline"
         />
       </div>
     </UCard>
@@ -192,11 +194,11 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
         >
         <div>
           <p class="font-semibold text-highlighted">
-            {{ view.saved ? t(byTeacher ? 'result.withTeacher' : 'result.withExaminer') : t('result.practiceOnly') }}
+            {{ view.saved ? t('result.withTeacher') : t('result.practiceOnly') }}
           </p>
           <p class="text-sm text-muted text-pretty">
             {{ view.saved
-              ? t(byTeacher ? 'result.waitingTeacherText' : 'result.waitingText', { skill: skillLabel(view.skill) })
+              ? t('result.waitingTeacherText', { skill: skillLabel(view.skill) })
               : t('result.practiceText', { skill: skillLabel(view.skill) }) }}
           </p>
         </div>
@@ -239,6 +241,7 @@ const partsWent = computed(() => (props.view.review?.sections?.[0]?.parts ?? [])
       v-if="view.review?.sections?.[0]?.locked"
       reason="explanations"
       :count="view.review.sections[0].locked"
+      :limit="view.review.sections[0].explanationsLimit"
       compact
     />
 

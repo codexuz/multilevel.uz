@@ -1,23 +1,25 @@
 <script setup lang="ts">
 /**
- * One group for its teachers: the join link, each student's level per skill and activity (opening
+ * One class for its teacher: the join link, each student's level per skill and activity (opening
  * their results), and assignments with who has done them.
  */
 const { t } = useI18n()
-useSeoMeta({ title: () => t('centre.group'), robots: 'noindex' })
+useSeoMeta({ title: () => t('classes.class'), robots: 'noindex' })
 
 interface Student { id: string, name: string, avatarUrl: string | null, joinedAt: string, attempts: number, lastActive: string | null, level: Record<string, number | null>, bands?: string[] }
 interface AssignmentRow { id: string, skill: string, partNumber: number | null, note: string | null, dueAt: string | null, createdAt: string, test: { slug: string, title: string } | null, to: string | null, exam: string, done: number, of: number, average: number | null }
-interface GroupView { id: string, name: string, joinCode: string, archived: boolean, role: string, centre: { id: string, name: string }, students: Student[], assignments: AssignmentRow[] }
+interface GroupView { id: string, name: string, joinCode: string, archived: boolean, students: Student[], assignments: AssignmentRow[] }
 interface Detail extends AssignmentRow { students: { id: string, name: string, handIn: { attemptId: string, score: number | null, band: number | null, status: string, at: string } | null }[] }
 
 const route = useRoute()
+// Just made in onboarding or on /teach: say what to do first.
+const welcome = computed(() => route.query.welcome === '1')
 const toast = useToast()
 const config = useRuntimeConfig()
 const site = String(config.public.siteUrl || '').replace(/\/$/, '')
 const id = computed(() => String(route.params.id))
 const { data, refresh, error } = await useFetch<GroupView>(() => `/api/groups/${id.value}`)
-useSeoMeta({ title: () => data.value?.name ?? t('centre.group') })
+useSeoMeta({ title: () => data.value?.name ?? t('classes.class') })
 
 const SKILLS = ['LISTENING', 'READING', 'WRITING', 'SPEAKING']
 const tab = ref<'students' | 'assignments'>('students')
@@ -117,13 +119,13 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
 
 <template>
   <AppPage
-    :title="data?.name ?? 'Group'"
+    :title="data?.name ?? t('classes.class')"
     icon="i-lucide-users"
   >
     <template #actions>
       <UButton
-        to="/centre"
-        :label="t('centre.centre')"
+        to="/classes"
+        :label="t('nav.classes')"
         icon="i-lucide-arrow-left"
         color="neutral"
         variant="ghost"
@@ -140,7 +142,7 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
       v-if="error"
       icon="i-lucide-users"
       :title="t('centre.groupNotFound')"
-      :actions="[{ label: t('nav.centre'), to: '/centre' }]"
+      :actions="[{ label: t('nav.classes'), to: '/classes' }]"
     />
 
     <div
@@ -149,9 +151,6 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
     >
       <div class="flex flex-col sm:flex-row sm:items-end gap-3">
         <div class="flex-1 min-w-0">
-          <p class="text-sm text-muted">
-            {{ data.centre.name }}
-          </p>
           <h1 class="text-2xl sm:text-3xl font-bold text-highlighted">
             {{ data.name }}
           </h1>
@@ -168,6 +167,16 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
         </UDropdownMenu>
       </div>
 
+      <UAlert
+        v-if="welcome && !data.students.length"
+        color="primary"
+        variant="subtle"
+        icon="i-lucide-party-popper"
+        :title="t('classes.welcomeTitle')"
+        :description="t('classes.welcomeText')"
+        data-testid="class-welcome"
+      />
+
       <UCard
         v-if="!data.archived"
         variant="subtle"
@@ -181,12 +190,25 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
             {{ site }}/join/{{ data.joinCode }} · {{ t('centre.orCode') }} <span class="font-mono font-semibold">{{ data.joinCode }}</span>
           </p>
         </div>
-        <UButton
-          :label="t('share.copyLink')"
-          icon="i-lucide-link"
-          size="sm"
-          @click="copy(`${site}/join/${data.joinCode}`, t('centre.joinLinkCopied'))"
-        />
+        <div class="flex flex-wrap gap-2">
+          <UButton
+            :label="t('share.copyLink')"
+            icon="i-lucide-link"
+            size="sm"
+            @click="copy(`${site}/join/${data.joinCode}`, t('centre.joinLinkCopied'))"
+          />
+          <UButton
+            :href="`https://t.me/share/url?url=${encodeURIComponent(`${site}/join/${data.joinCode}`)}&text=${encodeURIComponent(t('classes.shareText', { name: data.name }))}`"
+            target="_blank"
+            rel="noopener"
+            :label="t('classes.shareTelegram')"
+            icon="i-simple-icons-telegram"
+            size="sm"
+            color="neutral"
+            variant="outline"
+            data-testid="share-telegram"
+          />
+        </div>
       </UCard>
 
       <UTabs

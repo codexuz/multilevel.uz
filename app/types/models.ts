@@ -28,9 +28,10 @@ export interface Me {
   onboarded: boolean
   /** Premium now (staff always): every test and every explanation. */
   premium: boolean
+  /** Premium time bought before subscriptions were stopped, while it runs. */
   premiumUntil: string | null
-  /** Writing or Speaking markings left. */
-  credits: number
+  /** Results whose explanations can still be opened today. */
+  explanations?: { left: number, limit: number }
   /** Credits earned (invites, the Telegram channel) that open premium tests. */
   rewardCredits: number
   /** Credits one premium test takes to open. */
@@ -39,16 +40,16 @@ export interface Me {
   unlockedTests: string[]
   mockOnly?: boolean
   runsMocks?: boolean
-  /** Switched on by an admin: marks students outside a centre. */
-  marker?: boolean
-  /** Has a marking queue (an admin, a marker, or a centre's owner or teacher). */
+  /** Has a marking queue (an admin, or a teacher with classes). */
   marks?: boolean
-  /** Studies at a centre whose licence runs: their teachers mark Writing and Speaking, free. */
+  /** In a teacher's class: that teacher marks my Writing and Speaking. */
   teacherMarks?: boolean
   /** Single parts (section items) bought in packs. */
   unlockedParts?: string[]
-  /** Learning centres I belong to, and my role in each. */
-  centres?: { id: string, name: string, role: 'OWNER' | 'TEACHER' | 'STUDENT' }[]
+  /** The classes I am in as a student, with their teachers. */
+  classes?: { id: string, name: string, teacher: string }[]
+  /** I have classes of my own (I teach). */
+  teaches?: boolean
 }
 
 export interface DeviceSessionDto {

@@ -6,6 +6,9 @@
  * means, and "not sure"), how long they have learnt, and their goal (an IELTS band, or a Multilevel
  * level and score). The answers are saved before the last step, which asks to send notifications:
  * the browser's, and the Telegram bot's. Anyone signed in without an exam is sent here.
+ *
+ * It opens on who they are: a student goes on as above; a teacher picks the exam they teach and
+ * names their first class, which is made and opened (My classes, /classes).
  */
 definePageMeta({ layout: 'onboarding' })
 const { t } = useI18n()
@@ -45,20 +48,32 @@ const targetLevel = ref<string | null>(me.value?.targetLevel ?? null)
 const targetScore = ref<number | null>(me.value?.targetScore ?? null)
 const targetBand = ref<number | null>(me.value?.targetBand ?? null)
 
-type StepKey = 'exam' | 'level' | 'duration' | 'goal' | 'notify'
-const STEPS: StepKey[] = ['exam', 'level', 'duration', 'goal', 'notify']
+// Coming from the teachers' page (/teach → My classes), they are a teacher already.
+const nextPath = typeof route.query.next === 'string' ? route.query.next : ''
+const who = ref<'student' | 'teacher' | null>(nextPath.startsWith('/teach') || nextPath.startsWith('/classes') ? 'teacher' : null)
+const className = ref('')
+
+type StepKey = 'who' | 'exam' | 'level' | 'duration' | 'goal' | 'notify' | 'class'
+const STEPS = computed<StepKey[]>(() => (who.value === 'teacher'
+  ? ['who', 'exam', 'class']
+  : ['who', 'exam', 'level', 'duration', 'goal', 'notify']))
 const stepIndex = ref(0)
-const step = computed(() => STEPS[stepIndex.value]!)
-const progress = computed(() => ((stepIndex.value + 1) / STEPS.length) * 100)
+const step = computed(() => STEPS.value[stepIndex.value]!)
+const progress = computed(() => ((stepIndex.value + 1) / STEPS.value.length) * 100)
+const teacher = computed(() => who.value === 'teacher')
 const title = computed(() => ({
-  exam: t('onboarding.sExamTitle'),
+  who: t('onboarding.whoTitle'),
+  class: t('onboarding.classTitle'),
+  exam: teacher.value ? t('onboarding.sExamTitleTeacher') : t('onboarding.sExamTitle'),
   level: t('onboarding.s1Title'),
   duration: t('onboarding.s2Title'),
   goal: exam.value === 'IELTS' ? t('onboarding.sBandTitle') : t('onboarding.s3Title'),
   notify: t('onboarding.notifyTitle')
 })[step.value])
 const lead = computed(() => ({
-  exam: t('onboarding.sExamText'),
+  who: t('onboarding.whoText'),
+  class: t('onboarding.classText'),
+  exam: teacher.value ? t('onboarding.sExamTextTeacher') : t('onboarding.sExamText'),
   level: t('onboarding.s1Text'),
   duration: t('onboarding.s2Text'),
   goal: exam.value === 'IELTS' ? t('onboarding.sBandText') : t('onboarding.goalText'),
@@ -67,6 +82,8 @@ const lead = computed(() => ({
 
 const goalChosen = computed(() => (exam.value === 'IELTS' ? targetBand.value != null : !!targetLevel.value || targetScore.value != null))
 const canContinue = computed(() => ({
+  who: !!who.value,
+  class: true,
   exam: !!exam.value,
   level: !!currentLevel.value || notSure.value,
   duration: !!learningDuration.value,
@@ -101,8 +118,24 @@ async function save() {
   }
 }
 
+/** A teacher's answers: the exam they teach, then their first class (made, and opened). */
+async function startClass() {
+  if (!(await save())) return
+  saving.value = true
+  try {
+    const res = await $fetch<{ id: string }>('/api/classes', { method: 'POST', body: { name: className.value.trim() || t('onboarding.classDefault') } })
+    await refresh()
+    return navigateTo(`/classes/${res.id}?welcome=1`)
+  } catch (e) {
+    toast.add({ title: t('centre.notCreated'), description: errorMessage(e), color: 'error' })
+  } finally {
+    saving.value = false
+  }
+}
+
 async function next() {
   if (!canContinue.value || saving.value) return
+  if (step.value === 'class') return startClass()
   if (step.value === 'goal' && !(await save())) return
   if (step.value === 'notify') return finish()
   stepIndex.value += 1
@@ -198,9 +231,73 @@ async function openBot() {
             </p>
           </div>
 
+          <!-- Who they are -->
+          <div
+            v-if="step === 'who'"
+            class="grid sm:grid-cols-2 gap-4"
+          >
+            <button
+              v-for="w in ([
+                { value: 'student', icon: 'i-lucide-graduation-cap', label: t('onboarding.whoStudent'), text: t('onboarding.whoStudentText') },
+                { value: 'teacher', icon: 'i-lucide-presentation', label: t('onboarding.whoTeacher'), text: t('onboarding.whoTeacherText') }
+              ] as const)"
+              :key="w.value"
+              type="button"
+              :aria-pressed="who === w.value"
+              :data-testid="`who-${w.value}`"
+              class="relative flex flex-col items-start gap-3 rounded-2xl p-6 text-left bg-default ring-2 transition focus-visible:outline-3 focus-visible:outline-primary/40"
+              :class="who === w.value ? 'ring-primary shadow-lg shadow-primary-500/15' : 'ring-default hover:ring-primary/40'"
+              @click="who = w.value"
+            >
+              <UIcon
+                v-if="who === w.value"
+                name="i-lucide-circle-check"
+                class="absolute top-4 right-4 size-6 text-primary"
+              />
+              <div class="size-12 rounded-2xl bg-primary/10 text-primary grid place-items-center">
+                <UIcon
+                  :name="w.icon"
+                  class="size-6"
+                />
+              </div>
+              <span class="text-xl font-bold text-highlighted">{{ w.label }}</span>
+              <span class="text-sm text-muted">{{ w.text }}</span>
+            </button>
+          </div>
+
+          <!-- A teacher's first class -->
+          <div
+            v-else-if="step === 'class'"
+            class="flex flex-col gap-4 max-w-md w-full mx-auto"
+          >
+            <UFormField :label="t('onboarding.className')">
+              <UInput
+                v-model="className"
+                :placeholder="t('centre.namePlaceholder')"
+                size="xl"
+                class="w-full"
+                autofocus
+                data-testid="class-name"
+                @keydown.enter.prevent="next"
+              />
+            </UFormField>
+            <ul class="flex flex-col gap-2 text-sm text-toned">
+              <li
+                v-for="n in 3"
+                :key="n"
+                class="flex gap-2"
+              >
+                <UIcon
+                  name="i-lucide-check"
+                  class="size-4 mt-0.5 shrink-0 text-success"
+                />{{ t(`onboarding.classPoint${n}`) }}
+              </li>
+            </ul>
+          </div>
+
           <!-- The exam -->
           <div
-            v-if="step === 'exam'"
+            v-else-if="step === 'exam'"
             class="grid sm:grid-cols-2 gap-4"
           >
             <button
@@ -430,7 +527,7 @@ async function openBot() {
           @click="finish"
         />
         <UButton
-          :label="step === 'notify' ? t('onboarding.startLearning') : t('common.continue')"
+          :label="step === 'notify' ? t('onboarding.startLearning') : step === 'class' ? t('onboarding.createClass') : t('common.continue')"
           trailing-icon="i-lucide-arrow-right"
           size="xl"
           :loading="saving"

@@ -8,10 +8,10 @@ export default defineEventHandler(async (event) => {
   const body = (await readBody<Body>(event)) ?? {}
   const code = normalizeCode(body.code)
   if (!/^[A-Z0-9_-]{3,32}$/.test(code)) throw createError({ statusCode: 400, message: 'The code is 3–32 letters, digits, - or _' })
-  if (!['PERCENT', 'AMOUNT', 'DAYS'].includes(String(body.kind))) throw createError({ statusCode: 400, message: 'Choose what the code gives' })
+  if (!['PERCENT', 'AMOUNT'].includes(String(body.kind))) throw createError({ statusCode: 400, message: 'Choose what the code takes off' })
   const value = Math.round(Number(body.value))
-  if (!Number.isFinite(value) || value < 1 || (body.kind === 'PERCENT' && value > 100) || (body.kind === 'DAYS' && value > 366)) {
-    throw createError({ statusCode: 400, message: body.kind === 'PERCENT' ? 'Percent off is 1–100' : body.kind === 'DAYS' ? 'Days are 1–366' : 'The amount must be positive' })
+  if (!Number.isFinite(value) || value < 1 || (body.kind === 'PERCENT' && value > 100)) {
+    throw createError({ statusCode: 400, message: body.kind === 'PERCENT' ? 'Percent off is 1–100' : 'The amount must be positive' })
   }
   const maxUses = body.maxUses == null || body.maxUses === ('' as any) ? null : Math.max(1, Math.round(Number(body.maxUses)))
   const endsAt = body.endsAt ? new Date(body.endsAt) : null

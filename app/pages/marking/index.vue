@@ -1,15 +1,15 @@
 <script setup lang="ts">
 /**
- * Writing and Speaking handed in for practice (the IELTS app's Marking), newest first: a centre's
- * teachers see their students', markers the rest; admins see all and can narrow it.
+ * Writing and Speaking handed in for practice (the IELTS app's Marking), newest first: a teacher
+ * sees their classes' students'; admins see all and can narrow it.
  */
 definePageMeta({ middleware: 'marker' })
 useSeoMeta({ title: 'Marking', robots: 'noindex' })
 
-interface Row { id: string, skill: string, exam?: string, status: string, user?: { name: string, avatarUrl?: string | null }, test: { title: string } | null, submittedAt: string, score: number | null, band?: number | null, cefrLevel: string | null, centre: string | null }
+interface Row { id: string, skill: string, exam?: string, status: string, user?: { name: string, avatarUrl?: string | null }, test: { title: string } | null, submittedAt: string, score: number | null, band?: number | null, cefrLevel: string | null, className: string | null }
 
 const status = ref<'SUBMITTED' | 'GRADED'>('SUBMITTED')
-const from = ref<'ALL' | 'POOL' | 'CENTRES'>('ALL')
+const from = ref<'ALL' | 'CLASSES' | 'OUTSIDE'>('ALL')
 const page = ref(1)
 watch([status, from], () => (page.value = 1))
 const { isAdmin } = useMe()
@@ -17,7 +17,7 @@ const { data, status: loadState } = await useFetch<{ items: Row[], total: number
   query: { status, page, limit: 20, from: computed(() => (from.value === 'ALL' ? undefined : from.value)) },
   lazy: true
 })
-const fromItems = [{ label: 'Everyone', value: 'ALL' }, { label: 'Outside centres', value: 'POOL' }, { label: 'Centre students', value: 'CENTRES' }]
+const fromItems = [{ label: 'Everyone', value: 'ALL' }, { label: 'In a class', value: 'CLASSES' }, { label: 'Not in a class', value: 'OUTSIDE' }]
 const tabs = [{ label: 'To mark', value: 'SUBMITTED' }, { label: 'Marked', value: 'GRADED' }]
 </script>
 
@@ -76,8 +76,8 @@ const tabs = [{ label: 'To mark', value: 'SUBMITTED' }, { label: 'Marked', value
               <p class="font-medium text-highlighted truncate flex items-center gap-2">
                 {{ skillLabel(a.skill) }}
                 <UBadge
-                  v-if="a.centre"
-                  :label="a.centre"
+                  v-if="a.className"
+                  :label="a.className"
                   icon="i-lucide-school"
                   color="neutral"
                   variant="subtle"

@@ -2,17 +2,16 @@
 import type { Part } from '~/types/ielts'
 
 /**
- * Under a reviewed Listening or Reading part with questions nobody has explained yet: a Premium
- * candidate (or staff) asks the AI once, the explanations are saved with the questions, and the
- * review shows them (and everyone after reads them for free).
+ * Under a reviewed Listening or Reading part with questions nobody has explained yet: the
+ * candidate (with the result's explanations open, or staff) asks the AI once, the explanations are
+ * saved with the questions, and the review shows them (and everyone after reads them).
  */
 const props = defineProps<{ attemptId?: string | null, part: Part, locked?: number }>()
 const { t } = useI18n()
 const toast = useToast()
-const { isPremium, isStaff } = useMe()
 const { data: ai } = useFetch<{ enabled: boolean }>('/api/ai/status', { key: 'ai-status' })
 const missing = computed(() => (props.part.groups ?? []).flatMap(g => g.items).filter(i => !i.explanation?.trim()).length)
-const shown = computed(() => !!props.attemptId && !!ai.value?.enabled && (isPremium.value || isStaff.value) && !props.locked && missing.value > 0)
+const shown = computed(() => !!props.attemptId && !!ai.value?.enabled && !props.locked && missing.value > 0)
 const busy = ref(false)
 async function explain() {
   busy.value = true

@@ -2,10 +2,11 @@ import { createHash } from 'node:crypto'
 import OpenAI from 'openai'
 import { zodTextFormat } from 'openai/helpers/zod'
 import * as z from 'zod/v4'
-import { and, eq, gt, lt, ne, sql } from 'drizzle-orm'
+import { and, eq, gt, inArray, lt, ne, sql } from 'drizzle-orm'
 import { aiReviews, attempts, essays, tests, users, writingTasks } from '../database/schema'
 import { cefrLevel } from './score'
-import { accessOf, isStaffRole } from './billing'
+import { isStaffRole } from './billing'
+import { tashkentDayStart } from './words'
 import { notifyAiReview } from './notify'
 import { minimumWordsFor } from './content'
 import { assessSpeaking, attemptSpeakingParts, type AiSpeakingPart } from './ai-speaking'
@@ -19,7 +20,7 @@ import { assessObjective, type ObjectiveInput } from './ai-objective'
  * estimate; an examiner's mark stays the real thing.
  *
  * Runs in the background: the request makes a PENDING row and returns, the page polls it.
- * Needs OPENAI_API_KEY. How many a user gets is set in the environment.
+ * Needs OPENAI_API_KEY. Everyone gets two Writing and two Speaking checks a day (aiRules).
  */
 
 export const AI_MODEL = () => process.env.AI_FEEDBACK_MODEL || 'gpt-6-luna'
@@ -33,35 +34,45 @@ export const openaiClient = () => (client ??= new OpenAI())
 
 const num = (v: string | undefined, fallback: number) => (v != null && v !== '' && Number.isFinite(Number(v)) ? Math.max(0, Math.floor(Number(v))) : fallback)
 
-export function aiRules() {
+/** What the AI checks, each with a daily allowance: Writing, Speaking, and the analysis of Listening and Reading. */
+export type AiKind = 'WRITING' | 'SPEAKING' | 'ANALYSIS'
+export const aiKindOf = (skill?: string | null): AiKind => (skill === 'SPEAKING' ? 'SPEAKING' : skill === 'READING' || skill === 'LISTENING' ? 'ANALYSIS' : 'WRITING')
+const KIND_SKILLS: Record<AiKind, string[]> = { WRITING: ['WRITING'], SPEAKING: ['SPEAKING'], ANALYSIS: ['READING', 'LISTENING'] }
+
+/** AI checks a day for everyone (Tashkent time): AI_WRITING_PER_DAY, AI_SPEAKING_PER_DAY, AI_ANALYSIS_PER_DAY. */
+export function aiRules(): Record<AiKind, number> {
   return {
-    /** Reviews a month without Premium. */
-    freePerMonth: num(process.env.AI_FEEDBACK_FREE_PER_MONTH, 2),
-    /** Reviews a day with Premium (fair use). */
-    premiumPerDay: num(process.env.AI_FEEDBACK_PREMIUM_PER_DAY, 10)
+    WRITING: num(process.env.AI_WRITING_PER_DAY, 2),
+    SPEAKING: num(process.env.AI_SPEAKING_PER_DAY, 2),
+    ANALYSIS: num(process.env.AI_ANALYSIS_PER_DAY, 2)
   }
 }
 
 type Db = ReturnType<typeof useDb>
 type Tx = Parameters<Parameters<Db['transaction']>[0]>[0]
 
-export interface AiAllowance { limit: number | null, used: number, left: number | null, period: 'month' | 'day' | null, bonus: number }
+export interface AiAllowance { kind: AiKind, limit: number | null, used: number, left: number | null, bonus: number }
 
-/** How many reviews this user has left now. Staff have no limit; failed reviews do not count. */
-export async function aiAllowance(user: { id: string, role: string }, db: Db | Tx = useDb()): Promise<AiAllowance> {
-  if (isStaffRole(user.role)) return { limit: null, used: 0, left: null, period: null, bonus: 0 }
-  const { premium } = await accessOf(user, db)
-  const { freePerMonth, premiumPerDay } = aiRules()
-  const period = premium ? 'day' : 'month'
-  const limit = premium ? premiumPerDay : freePerMonth
-  const since = new Date(Date.now() - (premium ? 1 : 30) * 86_400_000)
+/**
+ * How many AI checks of a kind this user has left today. Staff have no limit; failed checks do not
+ * count, nor a teacher's draft for marking (free). After the day's, checks an admin gave are used.
+ */
+export async function aiAllowance(user: { id: string, role: string }, kind: AiKind = 'WRITING', db: Db | Tx = useDb()): Promise<AiAllowance> {
+  if (isStaffRole(user.role)) return { kind, limit: null, used: 0, left: null, bonus: 0 }
+  const limit = aiRules()[kind]
   const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(aiReviews)
-    .where(and(eq(aiReviews.userId, user.id), eq(aiReviews.free, false), ne(aiReviews.status, 'FAILED'), gt(aiReviews.createdAt, since)))
+    .where(and(eq(aiReviews.userId, user.id), eq(aiReviews.free, false), ne(aiReviews.status, 'FAILED'),
+      inArray(aiReviews.skill, KIND_SKILLS[kind]), gt(aiReviews.createdAt, tashkentDayStart())))
   const used = row?.n ?? 0
   const [u] = await db.select({ bonus: users.aiBonusReviews }).from(users).where(eq(users.id, user.id)).limit(1)
   const bonus = u?.bonus ?? 0
-  // The regular allowance first; then reviews an admin gave.
-  return { limit, used, left: Math.max(0, limit - used) + bonus, period, bonus }
+  return { kind, limit, used, left: Math.max(0, limit - used) + bonus, bonus }
+}
+
+/** Every kind's allowance, for the pages. */
+export async function aiAllowances(user: { id: string, role: string }) {
+  const [writing, speaking, analysis] = await Promise.all((['WRITING', 'SPEAKING', 'ANALYSIS'] as const).map(k => aiAllowance(user, k)))
+  return { writing: writing!, speaking: speaking!, analysis: analysis! }
 }
 
 // ---------- what is assessed ----------
@@ -375,16 +386,13 @@ export async function startWritingReview(user: { id: string, role: string }, opt
   const db = useDb()
   const id = await db.transaction(async (tx) => {
     await tx.execute(sql`select 1 from ${users} where ${users.id} = ${user.id} for update`)
-    const allowance = opts.free ? null : await aiAllowance(user, tx)
+    const allowance = opts.free ? null : await aiAllowance(user, aiKindOf(opts.skill), tx)
     // Past the regular allowance, a review given by an admin is used (and not counted again).
     const fromBonus = !!allowance && allowance.left != null && allowance.left > 0 && allowance.left <= allowance.bonus
     if (fromBonus) await tx.update(users).set({ aiBonusReviews: sql`${users.aiBonusReviews} - 1` }).where(eq(users.id, user.id))
     if (allowance?.left === 0) {
-      throw createError({
-        statusCode: 402,
-        message: allowance.period === 'day' ? 'You have used today\'s AI feedback. More tomorrow.' : 'You have used this month\'s free AI feedback. Premium gives you more every day.',
-        data: { code: 'AI_LIMIT' }
-      })
+      const what = { WRITING: 'Writing', SPEAKING: 'Speaking', ANALYSIS: 'analysis' }[allowance.kind]
+      throw createError({ statusCode: 429, message: `You have used today's ${allowance.limit} AI checks for ${what}. More tomorrow.`, data: { code: 'AI_LIMIT' } })
     }
     if (opts.attemptId) await tx.delete(aiReviews).where(and(eq(aiReviews.attemptId, opts.attemptId), eq(aiReviews.status, 'FAILED')))
     const [row] = await tx.insert(aiReviews).values({ userId: opts.ownerId ?? user.id, attemptId: opts.attemptId ?? null, testId: opts.testId, skill: opts.skill ?? 'WRITING', input: opts.tasks, free: !!opts.free || fromBonus, locale: await reviewLocale(opts.locale, opts.ownerId ?? user.id) }).returning({ id: aiReviews.id })
@@ -409,14 +417,22 @@ export async function attemptWritingTasks(attemptId: string): Promise<AiTaskInpu
 }
 
 /**
- * A Writing handed in for an examiner gets an AI review at once, as part of the marking paid for:
- * the candidate sees an estimate straight away and the examiner finds a draft. Best effort.
+ * A Writing handed in gets its AI check at once, while the day's allowance lasts (one of today's
+ * two): the candidate sees an estimate straight away and their teacher finds a draft. Best effort:
+ * with none left it is skipped, and can be asked for from the result tomorrow.
  */
 export async function reviewHandedInWriting(attempt: { id: string, userId: string, testId: string | null }, locale?: string | null) {
   if (!aiEnabled()) return
   const tasks = await attemptWritingTasks(attempt.id)
   if (!tasks.length || tasks.every(t => t.wordCount < 10)) return
-  await startWritingReview({ id: attempt.userId, role: 'student' }, { attemptId: attempt.id, testId: attempt.testId, tasks, free: true, locale })
+  const owner = await ownerOf(attempt.userId)
+  if ((await aiAllowance(owner, 'WRITING')).left === 0) return
+  await startWritingReview(owner, { attemptId: attempt.id, testId: attempt.testId, tasks, locale })
+}
+
+async function ownerOf(userId: string) {
+  const [u] = await useDb().select({ id: users.id, role: users.role }).from(users).where(eq(users.id, userId)).limit(1)
+  return { id: userId, role: u?.role ?? 'student' }
 }
 
 /** A review as the page shows it. Reviews left PENDING by a restart are marked failed. */
@@ -437,13 +453,12 @@ export async function aiReviewView(id: string) {
   }
 }
 
-/**
- * Speaking handed in for an examiner: an AI review at once, as part of the marking paid for (like
- * Writing). Best effort.
- */
+/** Speaking handed in: its AI check at once while the day's allowance lasts (like Writing). Best effort. */
 export async function reviewHandedInSpeaking(attempt: { id: string, userId: string, testId: string | null }, locale?: string | null) {
   if (!speakingAiEnabled()) return
   const parts = await attemptSpeakingParts(attempt.id)
   if (!parts.length) return
-  await startWritingReview({ id: attempt.userId, role: 'student' }, { attemptId: attempt.id, testId: attempt.testId, tasks: parts, skill: 'SPEAKING', free: true, locale })
+  const owner = await ownerOf(attempt.userId)
+  if ((await aiAllowance(owner, 'SPEAKING')).left === 0) return
+  await startWritingReview(owner, { attemptId: attempt.id, testId: attempt.testId, tasks: parts, skill: 'SPEAKING', locale })
 }

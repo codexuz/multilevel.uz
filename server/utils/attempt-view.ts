@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { answers, attempts, essays, speakingResponses, users } from '../database/schema'
 import { SECTION_WITH, pickPart } from './content'
 import { userLabel } from './sign-in'
-import { teachesStudent } from './centres'
+import { teachesStudent } from './classes'
 
 /** An attempt as a list shows it. */
 export function attemptSummary(row: any) {
@@ -36,7 +36,7 @@ export async function attemptView(id: string, viewer: { id: string, role: string
   const row = await db.query.attempts.findFirst({ where: eq(attempts.id, id), with: { test: true, user: true } })
   if (!row) throw createError({ statusCode: 404, message: 'Attempt not found' })
   const staff = viewer.role === 'admin' || !!opts.marker
-  // A learning centre's teachers may see their students' results.
+  // A student's teachers may see their results.
   // …and whoever runs the mock session it was sat in, a walk-in's too.
   if (row.userId !== viewer.id && !staff && !(await teachesStudent(viewer.id, row.userId)) && !(await runsSessionOf(viewer.id, row.mockCandidateId))) throw createError({ statusCode: 404, message: 'Attempt not found' })
   // A mock session that holds its results keeps them from the candidate until they are announced.
@@ -51,11 +51,10 @@ export async function attemptView(id: string, viewer: { id: string, role: string
     db.select().from(speakingResponses).where(eq(speakingResponses.attemptId, id))
   ])
   const examiner = row.examinerId ? (await db.select({ name: users.name, email: users.email, telegramUsername: users.telegramUsername }).from(users).where(eq(users.id, row.examinerId)).limit(1))[0] : null
-  // Explanations follow the owner's Premium (staff always see them).
-  const explanations = staff || (await accessOf({ id: row.userId, role: row.user?.role ?? 'student' })).premium
+  // Explanations: 10 results a day for their owner; staff, teachers and invigilators see them freely.
   const review = section
-    ? reviewSection(section, {
-        explanations,
+    ? await explainedReview(section, {
+        ownerId: row.userId, attemptId: id, free: staff || row.userId !== viewer.id,
         given: new Map(given.map(a => [a.itemId, a.response ?? ''])),
         marks: new Map(given.map(a => [a.itemId, !!a.isCorrect])),
         correct: row.correct, total: row.total, score: row.score, band: row.band,

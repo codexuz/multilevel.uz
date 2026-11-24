@@ -97,14 +97,11 @@ export async function mergeAccounts(keepId: string, otherId: string) {
     // Promo codes used: once per person, so a code both accounts used counts once.
     await tx.execute(sql`delete from promo_redemptions where user_id = ${otherId} and promo_code_id in (select promo_code_id from promo_redemptions where user_id = ${keepId})`)
     await tx.execute(sql`update promo_redemptions set user_id = ${keepId} where user_id = ${otherId}`)
-    // Learning centres and classes: the higher role in each centre (owner, then teacher, then student).
-    await tx.execute(sql`insert into centre_members (centre_id, user_id, role, created_at)
-      select centre_id, ${keepId}, role, created_at from centre_members where user_id = ${otherId}
-      on conflict (centre_id, user_id) do update set role = case
-        when 'OWNER' in (centre_members.role, excluded.role) then 'OWNER'
-        when 'TEACHER' in (centre_members.role, excluded.role) then 'TEACHER' else 'STUDENT' end`)
-    await tx.execute(sql`insert into class_members (group_id, user_id, joined_at) select group_id, ${keepId}, joined_at from class_members where user_id = ${otherId} on conflict do nothing`)
+    // Classes: those the other account taught become the kept one's (which then leaves them as a
+    // student), and those it was in, the kept one joins.
     await tx.execute(sql`update class_groups set teacher_id = ${keepId} where teacher_id = ${otherId}`)
+    await tx.execute(sql`insert into class_members (group_id, user_id, joined_at) select group_id, ${keepId}, joined_at from class_members where user_id = ${otherId} on conflict do nothing`)
+    await tx.execute(sql`delete from class_members m using class_groups g where g.id = m.group_id and g.teacher_id = ${keepId} and m.user_id = ${keepId}`)
     // Unlocked tests: the ones the kept account does not have yet.
     await tx.execute(sql`insert into ${testUnlocks} (user_id, test_id, created_at) select ${keepId}, test_id, created_at from ${testUnlocks} where user_id = ${otherId} on conflict do nothing`)
     await tx.execute(sql`insert into ${partUnlocks} (user_id, section_item_id, created_at) select ${keepId}, section_item_id, created_at from ${partUnlocks} where user_id = ${otherId} on conflict do nothing`)

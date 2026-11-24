@@ -49,8 +49,8 @@ export function itemIdsOf(section: any) {
 
 /**
  * The marked section as the result screens show it: every key, the answer given, right or wrong.
- * Without `explanations` (no Premium), the reasons and the lines in the passage that hold each
- * answer are left out, and `locked` says how many there were.
+ * Without `explanations` (none left today, explanations.ts), the reasons and the lines in the
+ * passage that hold each answer are left out, and `locked` says how many there were.
  */
 export function reviewSection(section: any, opts: {
   explanations?: boolean

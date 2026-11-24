@@ -27,7 +27,7 @@ export interface ResultView {
   cefrLevel?: string | null
   feedback?: string | null
   recordings?: { partId: string, position?: number, audioUrl: string, durationSeconds?: number | null }[]
-  review: { sections: (ReviewSection & { speaking?: any[], locked?: number })[] } | null
+  review: { sections: (ReviewSection & { speaking?: any[], locked?: number, explanationsLeft?: number | null, explanationsLimit?: number | null })[] } | null
 }
 
 const section = computed(() => props.view.review?.sections?.[0] ?? null)
@@ -128,7 +128,7 @@ const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') 
       </template>
     </ReviewHeader>
 
-    <!-- Without Premium the key is shown, the reasons are not -->
+    <!-- Today's explanations used up: the key is shown, the reasons open again tomorrow -->
     <div
       v-if="section.locked"
       class="shrink-0 flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-2 border-b border-default bg-primary/5 text-sm"
@@ -137,12 +137,7 @@ const skillMeta = computed(() => SKILL_META[(section.value?.skill ?? 'READING') 
         name="i-lucide-lightbulb"
         class="size-4 text-primary shrink-0"
       />
-      <span class="text-toned flex-1 min-w-48">{{ t('review.lockedExplanations', { n: section.locked }, section.locked) }}</span>
-      <UButton
-        :to="`/pricing?from=${encodeURIComponent(route.fullPath)}`"
-        :label="t('home.seePremium')"
-        size="xs"
-      />
+      <span class="text-toned flex-1 min-w-48">{{ t('review.lockedExplanations', { n: section.locked, limit: section.explanationsLimit ?? 10 }, section.locked) }}</span>
     </div>
 
     <!-- Listening and Reading -->

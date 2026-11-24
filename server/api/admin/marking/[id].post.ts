@@ -2,7 +2,7 @@ import { and, eq } from 'drizzle-orm'
 import { attempts, essays } from '../../../database/schema'
 
 /**
- * The marker's mark (an admin, a marker, or the candidate's centre teacher, markers.ts): a Multilevel score out of 75 or an IELTS band (0–9 in halves) for the section,
+ * The marker's mark (an admin, or the candidate's teacher, markers.ts): a Multilevel score out of 75 or an IELTS band (0–9 in halves) for the section,
  * a word for the candidate, and a comment on each essay. The candidate is told (push and the open
  * page), and sees it on their result.
  */
@@ -17,8 +17,8 @@ export default defineEventHandler(async (event) => {
   const db = useDb()
   const [attempt] = await db.select().from(attempts).where(eq(attempts.id, id)).limit(1)
   if (!attempt || (attempt.skill !== 'WRITING' && attempt.skill !== 'SPEAKING')) throw createError({ statusCode: 404, message: 'Attempt not found' })
-  // Saved without a marking credit: its owner has not sent it for marking yet.
-  if (attempt.status === 'AWAITING_CREDIT') throw createError({ statusCode: 409, message: 'Not sent for marking yet' })
+  // Saved with nobody to mark it: its owner has not sent it to a teacher yet.
+  if (attempt.status === 'SAVED') throw createError({ statusCode: 409, message: 'Not sent for marking yet' })
 
   const ielts = attempt.exam === 'IELTS'
   const band = ielts ? Number(body?.band) : null

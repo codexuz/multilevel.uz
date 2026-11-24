@@ -8,7 +8,7 @@ const props = defineProps<{ attemptId: string, skill: 'LISTENING' | 'READING' }>
 const { t } = useI18n()
 const route = useRoute()
 const toast = useToast()
-const { loggedIn, isPremium } = useMe()
+const { loggedIn } = useMe()
 
 interface Analysis {
   id: string
@@ -26,7 +26,7 @@ interface Analysis {
   focusType?: string | null
   types?: { type: string, label: string, correct: number, total: number }[]
 }
-interface Status { enabled: boolean, allowance: { limit: number | null, used: number, left: number | null, period: 'month' | 'day' | null } | null }
+interface Status { enabled: boolean, allowances: Record<'writing' | 'speaking' | 'analysis', { limit: number | null, used: number, left: number | null }> | null }
 const { data: status, refresh: refreshStatus } = useFetch<Status>('/api/ai/status', { key: 'ai-status' })
 
 const analysis = ref<Analysis | null>(null)
@@ -58,18 +58,20 @@ async function start() {
     analysis.value = { id, status: 'PENDING', error: null }
     poll(id)
   } catch (e: any) {
-    toast.add({ title: t('ai.noFeedback'), description: e?.data?.message || t('test.tryAgain'), color: e?.statusCode === 402 ? 'warning' : 'error' })
+    toast.add({ title: t('ai.noFeedback'), description: e?.data?.message || t('test.tryAgain'), color: e?.statusCode === 429 ? 'warning' : 'error' })
     refreshStatus()
   } finally {
     starting.value = false
   }
 }
 
-const left = computed(() => status.value?.allowance?.left)
+/** Today's AI checks of this kind. */
+const allowance = computed(() => status.value?.allowances?.['analysis'] ?? null)
+const left = computed(() => allowance.value?.left)
 const leftText = computed(() => {
-  const a = status.value?.allowance
+  const a = allowance.value
   if (!a || a.left == null) return ''
-  return a.period === 'day' ? t('ai.leftToday', { left: a.left, limit: a.limit }) : t('ai.leftMonth', { left: a.left, limit: a.limit })
+  return t('ai.leftToday', { left: a.left, limit: a.limit })
 })
 const reviewTo = (n?: number) => `/results/${props.attemptId}/review${n ? `?q=${n}` : ''}`
 const weakest = computed(() => (analysis.value?.types ?? []).filter(x => x.total).slice(0, 4))
@@ -113,10 +115,9 @@ const weakest = computed(() => (analysis.value?.types ?? []).filter(x => x.total
         />
         <UButton
           v-else-if="left === 0"
-          :to="isPremium ? undefined : `/pricing?from=${encodeURIComponent(route.fullPath)}`"
-          :disabled="isPremium"
-          :label="isPremium ? t('ai.moreTomorrow') : t('ai.morePremium')"
-          icon="i-lucide-sparkles"
+          disabled
+          :label="t('ai.moreTomorrow')"
+          icon="i-lucide-clock"
           color="neutral"
           variant="outline"
           class="justify-center"

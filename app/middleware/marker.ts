@@ -1,4 +1,4 @@
-// Route middleware: the marking pages: admins, markers, and centres' owners and teachers.
+// Route middleware: the marking pages: admins, and teachers with classes.
 export default defineNuxtRouteMiddleware(async () => {
   const { me, canMark, refresh } = useMe()
   if (!me.value) await refresh()

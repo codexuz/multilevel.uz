@@ -6,8 +6,8 @@ const noIndex = { robots: false, sitemap: false }
 // (an X-Robots-Tag noindex) and out of the sitemap, which otherwise lists every page file. A path
 // with /** covers the page itself too (/results and /results/…).
 const privatePaths = [
-  '/account/**', '/admin/**', '/billing/**', '/builder/**', '/centre/**', '/feedback/**', '/join/**',
-  '/login', '/marking/**', '/mocks/**', '/onboarding', '/profile', '/promo', '/report/**', '/results/**',
+  '/account/**', '/admin/**', '/billing/**', '/builder/**', '/classes/**', '/feedback/**', '/join/**',
+  '/login', '/marking/**', '/mocks/**', '/onboarding', '/profile', '/report/**', '/results/**',
   '/seat', '/settings', '/share/**', '/words/**'
 ]
 
@@ -94,20 +94,27 @@ export default defineNuxtConfig({
   routeRules: {
     '/': { prerender: false },
     '/dashboard': { redirect: '/results' },
-    // The request form is a modal on the catalogue now.
-    '/centres/apply': { redirect: '/centres?apply=1' },
+    // Learning centres were removed: their pages lead to the teachers' page and My classes.
+    '/centres': { redirect: { to: '/teach', statusCode: 301 } },
+    '/centres/**': { redirect: { to: '/teach', statusCode: 301 } },
+    '/centre': { redirect: '/classes' },
+    '/centre/**': { redirect: '/classes' },
+    // Premium plans and promo days are no longer sold: premium tests open with packs (the catalogue's
+    // Packs) or credits.
+    '/pricing': { redirect: { to: '/tests?view=packs', statusCode: 301 } },
+    '/promo': { redirect: { to: '/tests?view=packs', statusCode: 301 } },
     // Packs are a segment of the catalogue.
     '/packs': { redirect: '/tests?view=packs' },
     ...Object.fromEntries(privatePaths.map(path => [path, noIndex]))
   },
 
   compatibilityDate: '2026-06-30',
-  // Background jobs on a timer (server/tasks): Premium and exam plan reminders, and live mocks.
+  // Background jobs on a timer (server/tasks): exam plan and marking reminders, and live mocks.
   // Times are UTC (Tashkent is UTC+5).
   nitro: {
     experimental: { tasks: true },
     scheduledTasks: {
-      '7 * * * *': ['reminders:premium', 'live:mocks', 'reminders:marking'],
+      '7 * * * *': ['live:mocks', 'reminders:marking'],
       // 09:41 in Tashkent
       '41 4 * * *': ['reminders:plan']
     }

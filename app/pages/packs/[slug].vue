@@ -16,7 +16,7 @@ const slug = String(route.params.slug)
 
 const { data: pack, error, refresh } = await useFetch<Pack>(`/api/packs/${slug}`)
 if (error.value?.statusCode === 404) throw createError({ statusCode: 404, statusMessage: t('packs.notFound'), fatal: true })
-const { data: billing } = await useFetch<{ click: boolean, telegram: string }>('/api/billing/plans')
+const { data: billing } = await useFetch<{ click: boolean, telegram: string }>('/api/billing/config')
 
 useSeoMeta({
   title: () => pack.value?.title ?? t('packs.pack'),

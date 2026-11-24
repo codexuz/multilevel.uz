@@ -16,8 +16,8 @@ watch(() => route.fullPath, () => (menuOpen.value = false))
 const links = computed(() => [
   { label: t('nav.exams'), to: '/#exams' },
   { label: t('nav.tests'), to: '/tests' },
-  { label: t('nav.premium'), to: '/pricing' },
-  { label: t('nav.centres'), to: '/centres' },
+  { label: t('nav.packs'), to: '/tests?view=packs' },
+  { label: t('nav.teach'), to: '/teach' },
   { label: t('pub.how'), to: '/#how' },
   { label: t('pub.faq'), to: '/#faq' }
 ])
@@ -241,9 +241,9 @@ const year = new Date().getFullYear()
           <ul class="flex flex-col gap-2 text-sm">
             <li>
               <NuxtLink
-                to="/pricing"
+                to="/tests?view=packs"
                 class="hover:text-white"
-              >Premium</NuxtLink>
+              >{{ t('nav.packs') }}</NuxtLink>
             </li>
             <li>
               <NuxtLink

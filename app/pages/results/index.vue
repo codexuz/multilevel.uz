@@ -91,8 +91,8 @@ const { data, status } = await useFetch<{ items: Row[], total: number, pages: nu
           </div>
           <UBadge
             v-else
-            :label="r.status === 'AWAITING_CREDIT' ? t('result.notSentBadge') : t('result.withExaminer')"
-            :color="r.status === 'AWAITING_CREDIT' ? 'neutral' : 'warning'"
+            :label="r.status === 'SAVED' ? t('result.notSentBadge') : t('result.withTeacher')"
+            :color="r.status === 'SAVED' ? 'neutral' : 'warning'"
             variant="soft"
             size="sm"
             class="shrink-0"

@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   const db = useDb()
   const [u] = await db.select().from(users).where(eq(users.id, auth.id)).limit(1)
   if (!u) throw createError({ statusCode: 404, message: 'User not found' })
-  const [access, rewardCredits, unlockedTests, unlockedParts, centres, marking, atCentre] = await Promise.all([accessOf(auth, db), rewardBalance(auth.id), unlockedTestIds(auth.id), unlockedPartIds(auth.id), centresOf(auth.id), markingScopeOf(auth), studiesAtCentre(auth.id)])
+  const [access, rewardCredits, unlockedTests, unlockedParts, classes, marking, teaches, explanations] = await Promise.all([accessOf(auth, db), rewardBalance(auth.id), unlockedTestIds(auth.id), unlockedPartIds(auth.id), classesOfStudent(auth.id), markingScopeOf(auth), hasClasses(auth.id), explanationsToday(auth.id)])
 
   return {
     id: u.id,
@@ -29,22 +29,23 @@ export default defineEventHandler(async (event) => {
     onboarded: u.onboarded,
     premium: access.premium,
     premiumUntil: access.premiumUntil,
-    credits: access.credits,
+    /** Results whose explanations can still be opened today (10 a day). */
+    explanations: { left: explanations.left, limit: explanations.limit },
     rewardCredits,
     unlockCost: rewardRules().unlockCost,
     unlockedTests,
     unlockedParts,
-    /** Learning centres I belong to, and my role in each (OWNER, TEACHER or STUDENT). */
-    centres,
+    /** The classes I am in as a student, with their teachers. */
+    classes,
+    /** I have classes of my own (I teach). */
+    teaches,
     /** A walk-in's account for a mock session: it sits at its seat and nowhere else. */
     mockOnly: u.mockOnly,
-    /** May run mock sessions: teachers, centre owners and admins. */
-    /** Switched on by an admin: marks Writing and Speaking of students outside a centre. */
-    marker: u.marker,
-    /** Has a marking queue: an admin, a marker, or a centre's owner or teacher. */
+    /** May run mock sessions: teachers and admins. */
+    /** Has a marking queue: an admin, or a teacher with classes. */
     marks: marksAnything(marking),
-    /** Studies at a centre whose licence runs: their teachers mark Writing and Speaking, free. */
-    teacherMarks: atCentre,
-    runsMocks: !u.mockOnly && (u.role === 'teacher' || u.role === 'center_owner' || u.role === 'admin')
+    /** In a teacher's class: that teacher marks my Writing and Speaking. */
+    teacherMarks: classes.length > 0,
+    runsMocks: !u.mockOnly && (u.role === 'teacher' || u.role === 'center_owner' || u.role === 'admin' || teaches)
   }
 })
