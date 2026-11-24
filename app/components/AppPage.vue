@@ -1,10 +1,8 @@
 <script setup lang="ts">
 /**
- * A page's frame:
- * - In public site (layouts/public.vue): plain centred section with back link and actions.
- * - In split Admin / Teacher panels (layouts/admin.vue, layouts/teacher.vue): clean panel content
- *   wrapper with inline page actions and toolbar (no duplicate sidebar/top navbar).
- * - In student app (layouts/default.vue): Nuxt UI UDashboardPanel with top navbar.
+ * A page's frame. In the app (layouts/default.vue, layouts/admin.vue, layouts/teacher.vue) it is a
+ * Nuxt UI UDashboardPanel with a top navbar; in the public site (layouts/public.vue) it is a plain
+ * centred section with back link and actions.
  */
 defineProps<{
   title?: string
@@ -44,60 +42,6 @@ const { t } = useI18n()
     <slot />
   </div>
 
-  <!-- Inside Admin or Teacher Panel Shell -->
-  <div
-    v-else-if="panel"
-    class="mx-auto w-full flex flex-col gap-5"
-    :class="wide ? '' : 'max-w-7xl'"
-  >
-    <div
-      v-if="back || title || $slots.actions"
-      class="flex flex-wrap items-center justify-between gap-3"
-    >
-      <div class="flex items-center gap-2 min-w-0">
-        <UButton
-          v-if="back"
-          :to="back"
-          icon="i-lucide-arrow-left"
-          color="neutral"
-          variant="soft"
-          size="sm"
-          square
-        />
-        <div
-          v-if="title"
-          class="flex items-center gap-2 min-w-0"
-        >
-          <UIcon
-            v-if="icon && !back"
-            :name="icon"
-            class="size-5 text-primary shrink-0"
-          />
-          <h2 class="text-lg sm:text-xl font-bold text-highlighted truncate">
-            {{ title }}
-          </h2>
-        </div>
-      </div>
-      <div
-        v-if="$slots.actions"
-        class="flex flex-wrap items-center gap-2 ms-auto"
-      >
-        <slot name="actions" />
-      </div>
-    </div>
-
-    <div v-if="$slots.toolbar">
-      <slot name="toolbar" />
-    </div>
-
-    <div
-      class="flex flex-col gap-4 sm:gap-6"
-      :class="wide ? 'w-full' : 'w-full'"
-    >
-      <slot />
-    </div>
-  </div>
-
   <UDashboardPanel
     v-else
     :id="id"
@@ -107,7 +51,7 @@ const { t } = useI18n()
       <UDashboardNavbar
         :title="title"
         :icon="back ? undefined : icon"
-        :toggle="false"
+        :toggle="panel ? true : false"
       >
         <template
           v-if="back"

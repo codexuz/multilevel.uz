@@ -64,15 +64,6 @@ function joinClass() {
           />
         </div>
       </form>
-      <UButton
-        :to="me?.teaches ? '/classes' : '/teach'"
-        :label="me?.teaches ? t('nav.classes') : t('classes.iTeach')"
-        :icon="me?.teaches ? 'i-lucide-school' : 'i-lucide-presentation'"
-        variant="link"
-        color="neutral"
-        size="xs"
-        class="self-start px-0"
-      />
     </div>
   </UCard>
 </template>

@@ -30,6 +30,7 @@ const exams = computed(() => [
   { label: 'IELTS', value: 'IELTS' },
   { label: 'Multilevel', value: 'MULTILEVEL' }
 ])
+const isTeacher = computed(() => !!me.value && (me.value.role === 'teacher' || me.value.role === 'center_owner' || me.value.role === 'admin' || !!me.value.teaches))
 </script>
 
 <template>
@@ -39,9 +40,9 @@ const exams = computed(() => [
   >
     <template #actions>
       <UButton
-        v-if="loggedIn"
-        to="/courses/manage"
-        :label="mine.teaching.length || me?.teaches ? t('courses.myTeaching') : t('courses.make')"
+        v-if="isTeacher"
+        to="/teacher/courses"
+        :label="t('courses.myTeaching')"
         icon="i-lucide-pencil-ruler"
         color="neutral"
         variant="outline"
@@ -109,7 +110,7 @@ const exams = computed(() => [
           icon="i-lucide-graduation-cap"
           :title="t('courses.noneYet')"
           :description="t('courses.noneYetText')"
-          :actions="[{ label: t('courses.make'), to: loggedIn ? '/courses/manage' : '/teach', icon: 'i-lucide-plus' }]"
+          :actions="isTeacher ? [{ label: t('courses.make'), to: '/teacher/courses', icon: 'i-lucide-plus' }] : undefined"
         />
       </section>
     </div>

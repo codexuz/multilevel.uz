@@ -1,0 +1,1 @@
+ALTER TABLE "class_groups" ADD COLUMN "exam" text DEFAULT 'MULTILEVEL' NOT NULL;

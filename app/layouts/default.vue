@@ -2,7 +2,7 @@
 import type { DropdownMenuItem, NavigationMenuItem } from '@nuxt/ui'
 
 // Student View shell: cleanly separated from Admin Panel (/admin) and Teacher Panel (/teacher).
-// Teachers and admins see compact workspace switcher buttons instead of mixed admin menus.
+// Online classes link appears only when the student has joined a group; Test packs is a tab inside /tests.
 const { me, loggedIn, isAdmin, rewardCredits } = useMe()
 const { live } = useLiveMock()
 const { t } = useI18n()
@@ -11,15 +11,16 @@ const colorMode = useColorMode()
 const route = useRoute()
 
 const isTeacher = computed(() => !!me.value && (me.value.role === 'teacher' || me.value.role === 'center_owner' || me.value.role === 'admin' || !!me.value.teaches || !!me.value.runsMocks))
+const hasGroup = computed(() => (me.value?.classes?.length ?? 0) > 0)
 
 const mainNav = computed<NavigationMenuItem[]>(() => [
+  ...(loggedIn.value ? [{ label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/dashboard' }] : []),
   { label: t('nav.tests'), icon: 'i-lucide-clipboard-list', to: '/tests' },
   { label: t('nav.live'), icon: 'i-lucide-trophy', to: '/live', badge: live.value ? { label: t('nav.liveBadge'), color: 'error' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined },
   { label: t('nav.courses'), icon: 'i-lucide-graduation-cap', to: '/courses' },
-  ...(loggedIn.value ? [{ label: t('nav.results'), icon: 'i-lucide-chart-column', to: '/results' }, { label: t('nav.words'), icon: 'i-lucide-book-open-text', to: '/words' }, { label: t('nav.online'), icon: 'i-lucide-video', to: '/online' }] : []),
-  { label: t('nav.packs'), icon: 'i-lucide-package', to: '/tests?view=packs' },
-  { label: t('nav.earn'), icon: 'i-lucide-gift', to: '/earn', badge: rewardCredits.value ? { label: String(rewardCredits.value), color: 'primary' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined },
-  ...(!isTeacher.value ? [{ label: t('nav.teach'), icon: 'i-lucide-presentation', to: '/teach' }] : [])
+  ...(loggedIn.value ? [{ label: t('nav.results'), icon: 'i-lucide-chart-column', to: '/results' }, { label: t('nav.words'), icon: 'i-lucide-book-open-text', to: '/words' }] : []),
+  ...(loggedIn.value && hasGroup.value ? [{ label: t('nav.online'), icon: 'i-lucide-video', to: '/online' }] : []),
+  { label: t('nav.earn'), icon: 'i-lucide-gift', to: '/earn', badge: rewardCredits.value ? { label: String(rewardCredits.value), color: 'primary' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined }
 ])
 
 const nearestTo = computed(() => mainNav.value
@@ -34,10 +35,11 @@ const bottomLinks = computed<NavigationMenuItem[]>(() => loggedIn.value
 
 // Phone bottom tab bar: focused strictly on learner flows.
 const tabBar = computed(() => [
+  ...(loggedIn.value ? [{ label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/dashboard' }] : []),
   { label: t('nav.tests'), icon: 'i-lucide-clipboard-list', to: '/tests' },
   { label: t('nav.courses'), icon: 'i-lucide-graduation-cap', to: '/courses' },
   ...(loggedIn.value
-    ? [{ label: t('nav.resultsShort'), icon: 'i-lucide-chart-column', to: '/results' }, { label: t('nav.wordsShort'), icon: 'i-lucide-book-open-text', to: '/words' }, { label: t('nav.profile'), icon: 'i-lucide-circle-user', to: '/profile' }]
+    ? [{ label: t('nav.resultsShort'), icon: 'i-lucide-chart-column', to: '/results' }, { label: t('nav.profile'), icon: 'i-lucide-circle-user', to: '/profile' }]
     : [{ label: t('nav.signIn'), icon: 'i-lucide-log-in', to: `/login?next=${encodeURIComponent(route.fullPath)}` }])
 ])
 const tabActive = (to: string) => (to === '/' ? route.path === '/' : route.path === to.split('?')[0] || route.path.startsWith(`${to}/`))
@@ -95,7 +97,7 @@ const userMenu = computed<DropdownMenuItem[][]>(() => [
       <template #header="{ collapsed }">
         <AppLogo
           :collapsed="collapsed"
-          to="/tests"
+          :to="loggedIn ? '/dashboard' : '/tests'"
         />
       </template>
 
@@ -108,7 +110,7 @@ const userMenu = computed<DropdownMenuItem[][]>(() => [
           popover
         />
 
-        <!-- Separate Portal Launchers for Teachers & Admins (keeps Student View clean) -->
+        <!-- Separate Portal Launchers for Teachers & Admins -->
         <div
           v-if="isAdmin || isTeacher"
           class="mt-4 pt-3 border-t border-default flex flex-col gap-1.5"

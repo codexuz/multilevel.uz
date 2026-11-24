@@ -348,6 +348,8 @@ export const speakingResponses = pgTable('speaking_responses', {
 export const classGroups = pgTable('class_groups', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
+  /** Group exam track: IELTS | MULTILEVEL (CEFR). Assignments filter tests by this exam. */
+  exam: text('exam').notNull().default('MULTILEVEL'),
   /** Optional level/exam label shown on Teacher Panel cards (e.g. A2, B1, B2, C1, IELTS). */
   level: text('level'),
   description: text('description'),

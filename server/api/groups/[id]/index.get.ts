@@ -1,7 +1,7 @@
 import { desc, eq } from 'drizzle-orm'
 import { assignments } from '../../../database/schema'
 
-// A class for its teacher: its students and where each stands, and its assignments with how many did each.
+// A class for its teacher: its exam type, students and where each stands, and its assignments.
 export default defineEventHandler(async (event) => {
   const { group } = await requireClassTeacher(event, String(getRouterParam(event, 'id')))
   const [students, list] = await Promise.all([
@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
   ])
   const ids = students.map(s => s.id)
   return {
-    id: group.id, name: group.name, joinCode: group.joinCode, archived: group.archived,
+    id: group.id, name: group.name, exam: group.exam, level: group.level, description: group.description, joinCode: group.joinCode, archived: group.archived,
     students,
     assignments: await Promise.all(list.map(a => assignmentView(a, ids)))
   }

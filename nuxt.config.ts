@@ -6,7 +6,7 @@ const noIndex = { robots: false, sitemap: false }
 // (an X-Robots-Tag noindex) and out of the sitemap, which otherwise lists every page file. A path
 // with /** covers the page itself too (/results and /results/…).
 const privatePaths = [
-  '/account/**', '/admin/**', '/billing/**', '/builder/**', '/classes/**', '/feedback/**', '/join/**',
+  '/account/**', '/admin/**', '/billing/**', '/builder/**', '/classes/**', '/dashboard', '/feedback/**', '/join/**',
   '/courses/manage/**', '/login', '/marking/**', '/mocks/**', '/online', '/onboarding', '/profile', '/report/**', '/results/**',
   '/seat', '/settings', '/share/**', '/teacher/**', '/words/**'
 ]
@@ -93,7 +93,6 @@ export default defineNuxtConfig({
   // here would catch /tests/{slug} too.
   routeRules: {
     '/': { prerender: false },
-    '/dashboard': { redirect: '/results' },
     // Learning centres were removed: their pages lead to the teachers' page and My classes.
     '/centres': { redirect: { to: '/teach', statusCode: 301 } },
     '/centres/**': { redirect: { to: '/teach', statusCode: 301 } },
