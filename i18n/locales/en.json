@@ -2005,5 +2005,190 @@
     "dictationPlaceholder": "Type exactly what you hear…",
     "correct": "Correct",
     "review": "Check the answer"
+  },
+  "xe": {
+    "questionsTab": "Questions ({n})",
+    "settingsTab": "Settings",
+    "deleteQuestion": "Delete this question?",
+    "addQuestion": "Add question",
+    "chooseType": "Choose a question type",
+    "noQuestions": "No questions yet",
+    "noQuestionsText": "Add questions of 12 kinds: sentence building, error spotting, multiple choice, drag and drop, dictation, translation and more.",
+    "instructions": "Instructions",
+    "passScore": "Pass mark (%)",
+    "timeLimit": "Time limit (minutes, optional)",
+    "maxAttempts": "Most attempts (optional)",
+    "required": "Required to finish the lesson",
+    "requiredText": "Learners pass this quiz before the lesson counts as done (and, when lessons open one after another, before the next one opens).",
+    "shuffle": "Shuffle the questions on each attempt",
+    "editQuestion": "Edit question",
+    "newQuestion": "New question: {type}"
+  },
+  "qe": {
+    "audioUploaded": "Audio uploaded",
+    "imageUploaded": "Picture uploaded",
+    "updated": "Question saved",
+    "added": "Question added",
+    "type": "Question type",
+    "points": "Points",
+    "prompt": "Instruction or question",
+    "target": "Target sentence",
+    "targetHelp": "Its words are shuffled into tiles for learners.",
+    "targetPlaceholder": "She has been studying English for three years.",
+    "distractors": "Extra words to mislead (optional, comma-separated)",
+    "acceptedSentences": "Accepted sentences (one per line)",
+    "acceptedSentencesHelp": "Empty: the target sentence is accepted; add lines for other correct word orders.",
+    "errorSentence": "Sentence with a mistake",
+    "errorPlaceholder": "She go to the university library every morning.",
+    "markError": "Click the wrong word to mark it",
+    "requireCorrection": "Learners also type the correction",
+    "corrections": "Accepted corrections",
+    "correctionsHelp": "Separate alternatives with / (e.g. goes / walks)",
+    "addOption": "Add option",
+    "wordLimit": "Word limit (optional)",
+    "inputPlaceholder": "Answer box hint",
+    "accepted": "Accepted answers (one per line)",
+    "acceptedHelp": "Use / for alternatives and brackets for optional words: (the) library / main hall",
+    "gapLimit": "Word limit per gap (optional)",
+    "addWord": "Add word",
+    "wordPlaceholder": "Word or phrase",
+    "reuse": "A word may fill more than one gap",
+    "pickWord": "Pick the right word",
+    "statement": "Statement",
+    "correctAnswer": "Correct answer",
+    "includeNotGiven": "Add a Not Given option",
+    "addStep": "Add step",
+    "stepPlaceholder": "Sentence or step…",
+    "fromLang": "From",
+    "toLang": "To",
+    "sourceSentence": "Sentence to translate",
+    "acceptedTranslations": "Accepted translations (one per line)",
+    "acceptedTranslationsHelp": "Case and punctuation are ignored; optional words go in brackets, like (very) good.",
+    "hint": "Hint (optional)",
+    "tts": "Sentence read aloud (when no audio is uploaded)",
+    "ttsPlaceholder": "The sentence to read aloud…",
+    "replays": "Most replays (optional)",
+    "transcripts": "Accepted transcripts (one per line)",
+    "transcriptsHelp": "Empty: the sentence read aloud.",
+    "explanation": "Explanation (shown after marking)",
+    "explanationPlaceholder": "Why the answer is right…",
+    "image": "Picture (optional)",
+    "insertGap": "Insert gap",
+    "optionsMany": "Options: tick every correct answer",
+    "optionsOne": "Options: choose the one correct answer",
+    "markedCorrect": "Correct",
+    "markCorrect": "Mark as correct",
+    "option": "Option {key}",
+    "notesTemplate": "Notes",
+    "summaryText": "Summary",
+    "gapSyntax": "(write {'{'}{'{'}1{'}'}{'}'}, {'{'}{'{'}2{'}'}{'}'} for the gaps)",
+    "gapKeys": "Answers for each gap (alternatives separated by /)",
+    "gapAnswers": "Accepted answers for gap {n}",
+    "wordBank": "Word bank (add words that mislead too)",
+    "gapWords": "The right word for each gap",
+    "orderItems": "Items in the right order (learners see them shuffled)",
+    "audioSource": "Audio: upload an MP3 or WAV, or have a sentence read aloud",
+    "uploading": "Uploading…",
+    "uploadAudio": "Upload audio",
+    "uploadImage": "Upload picture"
+  },
+  "lmsq": {
+    "SENTENCE_BUILD": {
+      "label": "Sentence building",
+      "short": "Sentence",
+      "text": "Put shuffled words and phrases together into a correct sentence."
+    },
+    "ERROR_SPOT": {
+      "label": "Spot the mistake",
+      "short": "Mistake",
+      "text": "Find the wrong word in a sentence, and type the correction if asked."
+    },
+    "MCQ": {
+      "label": "Multiple choice (several answers)",
+      "short": "Multiple choice",
+      "text": "Choose every correct answer from the options."
+    },
+    "SINGLE_CHOICE": {
+      "label": "Single choice",
+      "short": "Single choice",
+      "text": "Choose the one best answer."
+    },
+    "SHORT_ANSWER": {
+      "label": "Short answer",
+      "short": "Short answer",
+      "text": "Type a word or a short phrase (alternatives and word limits allowed)."
+    },
+    "NOTE_COMPLETION": {
+      "label": "Note completion",
+      "short": "Notes",
+      "text": "Fill the gaps in notes written with {'{'}{'{'}1{'}'}{'}'}, {'{'}{'{'}2{'}'}{'}'} gaps."
+    },
+    "SUMMARY_COMPLETION": {
+      "label": "Summary completion",
+      "short": "Summary",
+      "text": "Type the missing words into a summary's gaps."
+    },
+    "SUMMARY_DRAG_DROP": {
+      "label": "Summary with a word bank",
+      "short": "Word bank",
+      "text": "Drag or tap words from a bank into a summary's gaps."
+    },
+    "TRUE_FALSE": {
+      "label": "True / False",
+      "short": "True / False",
+      "text": "Decide whether a statement is true or false (Not Given optional)."
+    },
+    "ORDER": {
+      "label": "Put in order",
+      "short": "Order",
+      "text": "Arrange shuffled sentences, paragraphs or steps in the right order."
+    },
+    "TRANSLATION": {
+      "label": "Translation",
+      "short": "Translation",
+      "text": "Translate a sentence, with several accepted answers."
+    },
+    "DICTATION": {
+      "label": "Dictation",
+      "short": "Dictation",
+      "text": "Listen to audio or a sentence read aloud and write it down."
+    }
+  },
+  "acourses": {
+    "deleted": "Course deleted",
+    "search": "Search courses or teachers…",
+    "builder": "Builder",
+    "course": "Course",
+    "teacher": "Teacher",
+    "structure": "Contents",
+    "actions": "Actions",
+    "none": "No courses yet. Make the first one."
+  },
+  "asettings": {
+    "gConnected": "Google Calendar connected for every online class",
+    "gScope": "The calendar permission was not given",
+    "gCancelled": "Google sign-in was cancelled or refused (add this admin's email to the Google Cloud OAuth test users)",
+    "gFailed": "Google was not connected: check this admin's email is among the Google Cloud OAuth test users",
+    "taskFailed": "The job failed",
+    "taskDone": "Job \"{name}\" ran",
+    "webhookDone": "Telegram webhook refreshed",
+    "sync": "Refresh webhook",
+    "run": "Run",
+    "meetTitle": "Google Meet (one shared account)",
+    "meetText": "An admin connects Google Calendar here once. Every teacher's online classes then get Google Meet links through it, with no Google sign-in of their own.",
+    "webhookTitle": "Telegram bot webhook",
+    "webhookText": "Where Telegram delivers the bot's updates, and any recent delivery errors.",
+    "jobsTitle": "Scheduled jobs",
+    "jobsText": "Run the background reminder and notification jobs now.",
+    "job": {
+      "liveMocks": "Live mock announcer",
+      "liveMocksText": "Opens live mocks and posts their results to the channels",
+      "plan": "Exam plan reminders",
+      "planText": "Daily study-plan countdown",
+      "marking": "Marking reminders",
+      "markingText": "Tells teachers about scripts waiting to be marked",
+      "lessons": "Online class reminders",
+      "lessonsText": "Reminds students of Google Meet classes starting soon"
+    }
   }
 }

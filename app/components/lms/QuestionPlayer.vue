@@ -187,7 +187,7 @@ const tfChoices = computed(() => [
         <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-1.5 mb-1">
             <UBadge
-              :label="meta.shortLabel"
+              :label="t(`lmsq.${question.type}.short`)"
               :icon="meta.icon"
               color="neutral"
               variant="subtle"

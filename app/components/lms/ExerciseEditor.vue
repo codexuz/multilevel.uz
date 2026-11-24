@@ -10,15 +10,16 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{ updated: [], close: [] }>()
+const { t } = useI18n()
 const toast = useToast()
 
 const { data: ex, refresh } = await useFetch<ExerciseFull>(() => `/api/course-exercises/${props.exerciseId}`)
 
 const tab = ref<'questions' | 'settings' | 'preview'>('questions')
 const tabs = computed(() => [
-  { label: `Questions (${ex.value?.questions?.length ?? 0})`, value: 'questions', icon: 'i-lucide-list-checks' },
-  { label: 'Exercise Settings', value: 'settings', icon: 'i-lucide-sliders-horizontal' },
-  { label: 'Preview', value: 'preview', icon: 'i-lucide-eye' }
+  { label: t('xe.questionsTab', { n: ex.value?.questions?.length ?? 0 }), value: 'questions', icon: 'i-lucide-list-checks' },
+  { label: t('xe.settingsTab'), value: 'settings', icon: 'i-lucide-sliders-horizontal' },
+  { label: t('builder.preview'), value: 'preview', icon: 'i-lucide-eye' }
 ])
 
 const settings = reactive({
@@ -64,9 +65,9 @@ async function saveSettings() {
     })
     await refresh()
     emit('updated')
-    toast.add({ title: 'Exercise settings saved', color: 'success' })
+    toast.add({ title: t('courses.saved'), color: 'success' })
   } catch (e) {
-    toast.add({ title: 'Could not save settings', description: errorMessage(e), color: 'error' })
+    toast.add({ title: t('common.notSaved'), description: errorMessage(e), color: 'error' })
   } finally {
     savingSettings.value = false
   }
@@ -110,7 +111,7 @@ async function moveQuestion(idx: number, delta: -1 | 1) {
 }
 
 async function deleteQuestion(q: LmsQuestionDto) {
-  if (!confirm('Delete this question?')) return
+  if (!confirm(t('xe.deleteQuestion'))) return
   await $fetch(`/api/course-questions/${q.id}`, { method: 'DELETE' })
   await refresh()
   emit('updated')
@@ -130,7 +131,7 @@ async function deleteQuestion(q: LmsQuestionDto) {
       />
       <UButton
         v-if="tab === 'questions'"
-        label="Add Question"
+        :label="t('xe.addQuestion')"
         icon="i-lucide-plus"
         size="sm"
         @click="pickingType = !pickingType"
@@ -144,7 +145,7 @@ async function deleteQuestion(q: LmsQuestionDto) {
     >
       <div class="flex items-center justify-between">
         <p class="text-sm font-semibold text-highlighted">
-          Choose Question Type (12 LMS Types)
+          {{ t('xe.chooseType') }}
         </p>
         <UButton
           icon="i-lucide-x"
@@ -170,10 +171,10 @@ async function deleteQuestion(q: LmsQuestionDto) {
           </div>
           <div class="min-w-0">
             <p class="text-xs font-semibold text-highlighted">
-              {{ opt.label }}
+              {{ t(`lmsq.${opt.type}.label`) }}
             </p>
             <p class="text-[11px] text-muted line-clamp-2 mt-0.5">
-              {{ opt.description }}
+              {{ t(`lmsq.${opt.type}.text`) }}
             </p>
           </div>
         </button>
@@ -199,7 +200,7 @@ async function deleteQuestion(q: LmsQuestionDto) {
           >
             <div class="flex items-center gap-2">
               <UBadge
-                :label="LMS_QUESTION_META[q.type]?.shortLabel ?? q.type"
+                :label="t(`lmsq.${q.type}.short`)"
                 :icon="LMS_QUESTION_META[q.type]?.icon"
                 color="primary"
                 variant="subtle"
@@ -246,9 +247,9 @@ async function deleteQuestion(q: LmsQuestionDto) {
       <UEmpty
         v-else
         icon="i-lucide-blocks"
-        title="No questions yet"
-        description="Add interactive questions from all 12 LMS types: Sentence Build, Error Spot, MCQ, Drag & Drop, Dictation, Translation, and more."
-        :actions="[{ label: 'Add First Question', icon: 'i-lucide-plus', onClick: () => { pickingType = true } }]"
+        :title="t('xe.noQuestions')"
+        :description="t('xe.noQuestionsText')"
+        :actions="[{ label: t('xe.addQuestion'), icon: 'i-lucide-plus', onClick: () => { pickingType = true } }]"
         variant="naked"
       />
     </template>
@@ -261,7 +262,7 @@ async function deleteQuestion(q: LmsQuestionDto) {
     >
       <div class="grid sm:grid-cols-3 gap-3">
         <UFormField
-          label="Exercise Title"
+          :label="t('builder.quizTitle')"
           class="sm:col-span-2"
         >
           <UInput
@@ -269,15 +270,15 @@ async function deleteQuestion(q: LmsQuestionDto) {
             class="w-full"
           />
         </UFormField>
-        <UFormField label="Type">
+        <UFormField :label="t('builder.quizKind')">
           <USelect
             v-model="settings.exerciseType"
-            :items="[{ label: 'Practice', value: 'PRACTICE' }, { label: 'Quiz', value: 'QUIZ' }, { label: 'Homework', value: 'HOMEWORK' }]"
+            :items="EXERCISE_TYPES.map(x => ({ label: t(`builder.exType.${x}`), value: x }))"
             class="w-full"
           />
         </UFormField>
       </div>
-      <UFormField label="Instructions">
+      <UFormField :label="t('xe.instructions')">
         <UTextarea
           v-model="settings.instructions"
           :rows="2"
@@ -285,7 +286,7 @@ async function deleteQuestion(q: LmsQuestionDto) {
         />
       </UFormField>
       <div class="grid sm:grid-cols-3 gap-3">
-        <UFormField label="Passing Score (%)">
+        <UFormField :label="t('xe.passScore')">
           <UInputNumber
             v-model="settings.passingScore"
             :min="0"
@@ -293,7 +294,7 @@ async function deleteQuestion(q: LmsQuestionDto) {
             class="w-full"
           />
         </UFormField>
-        <UFormField label="Time Limit (minutes, optional)">
+        <UFormField :label="t('xe.timeLimit')">
           <UInputNumber
             v-model="settings.timeLimitMinutes"
             :min="1"
@@ -301,7 +302,7 @@ async function deleteQuestion(q: LmsQuestionDto) {
             class="w-full"
           />
         </UFormField>
-        <UFormField label="Max Attempts (optional)">
+        <UFormField :label="t('xe.maxAttempts')">
           <UInputNumber
             v-model="settings.maxAttempts"
             :min="1"
@@ -313,18 +314,18 @@ async function deleteQuestion(q: LmsQuestionDto) {
       <div class="flex flex-col gap-2">
         <USwitch
           v-model="settings.requiredForCompletion"
-          label="Required to complete lesson"
-          description="Students must pass this exercise before marking the lesson done (and unlocking the next lesson in Sequential drip mode)."
+          :label="t('xe.required')"
+          :description="t('xe.requiredText')"
         />
         <USwitch
           v-model="settings.shuffleQuestions"
-          label="Shuffle question order for each attempt"
+          :label="t('xe.shuffle')"
         />
       </div>
       <div class="flex justify-end">
         <UButton
           type="submit"
-          label="Save Settings"
+          :label="t('common.save')"
           :loading="savingSettings"
         />
       </div>
@@ -339,7 +340,7 @@ async function deleteQuestion(q: LmsQuestionDto) {
     <!-- Question Create/Edit Modal -->
     <UModal
       v-model:open="questionModalOpen"
-      :title="editingQuestion ? 'Edit Question' : `New ${LMS_QUESTION_META[newQuestionType]?.label ?? 'Question'}`"
+      :title="editingQuestion ? t('xe.editQuestion') : t('xe.newQuestion', { type: t(`lmsq.${newQuestionType}.label`) })"
       :ui="{ content: 'sm:max-w-3xl' }"
     >
       <template #body>

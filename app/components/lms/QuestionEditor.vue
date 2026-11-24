@@ -9,6 +9,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{ saved: [], close: [] }>()
+const { t } = useI18n()
 const toast = useToast()
 
 const initialType: LmsQuestionType = props.question?.type ?? props.initialType ?? 'SINGLE_CHOICE'
@@ -167,9 +168,9 @@ async function onUploadAudio(e: Event) {
   try {
     const up = await uploadFile(file, { purpose: 'course-audio' })
     audioRef.value = up.url
-    toast.add({ title: 'Audio uploaded', color: 'success' })
+    toast.add({ title: t('qe.audioUploaded'), color: 'success' })
   } catch (err) {
-    toast.add({ title: 'Audio upload failed', description: errorMessage(err), color: 'error' })
+    toast.add({ title: t('courses.notUploaded'), description: errorMessage(err), color: 'error' })
   } finally {
     uploadingAudio.value = false
   }
@@ -181,9 +182,9 @@ async function onUploadImage(e: Event) {
   try {
     const up = await uploadFile(file, { purpose: 'course-image' })
     imageRef.value = up.url
-    toast.add({ title: 'Image uploaded', color: 'success' })
+    toast.add({ title: t('qe.imageUploaded'), color: 'success' })
   } catch (err) {
-    toast.add({ title: 'Image upload failed', description: errorMessage(err), color: 'error' })
+    toast.add({ title: t('courses.notUploaded'), description: errorMessage(err), color: 'error' })
   } finally {
     uploadingImage.value = false
   }
@@ -266,10 +267,10 @@ async function save() {
     } else {
       await $fetch(`/api/course-exercises/${props.exerciseId}/questions`, { method: 'POST', body: payload })
     }
-    toast.add({ title: props.question ? 'Question updated' : 'Question added', color: 'success' })
+    toast.add({ title: props.question ? t('qe.updated') : t('qe.added'), color: 'success' })
     emit('saved')
   } catch (e) {
-    toast.add({ title: 'Could not save question', description: errorMessage(e), color: 'error' })
+    toast.add({ title: t('common.notSaved'), description: errorMessage(e), color: 'error' })
   } finally {
     saving.value = false
   }
@@ -284,17 +285,17 @@ async function save() {
     <!-- Question Type Selector + Points -->
     <div class="grid sm:grid-cols-4 gap-3">
       <UFormField
-        label="Question Type"
+        :label="t('qe.type')"
         class="sm:col-span-3"
       >
         <USelect
           :model-value="type"
-          :items="LMS_QUESTION_OPTIONS.map(o => ({ label: `${o.label}`, value: o.type }))"
+          :items="LMS_QUESTION_OPTIONS.map(o => ({ label: t(`lmsq.${o.type}.label`), value: o.type }))"
           class="w-full"
           @update:model-value="switchType($event as LmsQuestionType)"
         />
       </UFormField>
-      <UFormField label="Points">
+      <UFormField :label="t('qe.points')">
         <UInputNumber
           v-model="points"
           :min="1"
@@ -304,7 +305,7 @@ async function save() {
       </UFormField>
     </div>
 
-    <UFormField label="Instruction / Question Prompt">
+    <UFormField :label="t('qe.prompt')">
       <UTextarea
         v-model="prompt"
         :rows="2"
@@ -315,16 +316,16 @@ async function save() {
     <!-- TYPE 1: SENTENCE_BUILD -->
     <template v-if="type === 'SENTENCE_BUILD'">
       <UFormField
-        label="Target Sentence"
-        help="Words will be automatically split into scrambled tiles for students."
+        :label="t('qe.target')"
+        :help="t('qe.targetHelp')"
       >
         <UInput
           v-model="sbSentence"
-          placeholder="She has been studying English for three years."
+          :placeholder="t('qe.targetPlaceholder')"
           class="w-full"
         />
       </UFormField>
-      <UFormField label="Optional Distractor Words (comma-separated)">
+      <UFormField :label="t('qe.distractors')">
         <UInput
           v-model="sbDistractors"
           placeholder="e.g. had, was"
@@ -332,8 +333,8 @@ async function save() {
         />
       </UFormField>
       <UFormField
-        label="Accepted Sentences (one per line)"
-        help="Leave blank to accept the target sentence above; add extra lines for alternate valid word orders."
+        :label="t('qe.acceptedSentences')"
+        :help="t('qe.acceptedSentencesHelp')"
       >
         <UTextarea
           v-model="sbAltAnswers"
@@ -345,14 +346,14 @@ async function save() {
 
     <!-- TYPE 2: ERROR_SPOT -->
     <template v-else-if="type === 'ERROR_SPOT'">
-      <UFormField label="Sentence with an Error">
+      <UFormField :label="t('qe.errorSentence')">
         <UInput
           v-model="context"
-          placeholder="She go to the university library every morning."
+          :placeholder="t('qe.errorPlaceholder')"
           class="w-full"
         />
       </UFormField>
-      <UFormField label="Click the erroneous word below to mark it">
+      <UFormField :label="t('qe.markError')">
         <div class="flex flex-wrap gap-1.5 rounded-xl bg-elevated/50 ring ring-default p-3">
           <button
             v-for="(tok, ti) in esTokens"
@@ -368,12 +369,12 @@ async function save() {
       </UFormField>
       <USwitch
         v-model="esRequireCorrection"
-        label="Require student to type the correction"
+        :label="t('qe.requireCorrection')"
       />
       <UFormField
         v-if="esRequireCorrection"
-        label="Accepted Correction(s)"
-        help="Separate alternatives with / (e.g. goes / walks)"
+        :label="t('qe.corrections')"
+        :help="t('qe.correctionsHelp')"
       >
         <UInput
           v-model="esCorrections"
@@ -388,10 +389,10 @@ async function save() {
       <div class="flex flex-col gap-2">
         <div class="flex items-center justify-between">
           <p class="text-sm font-medium text-highlighted">
-            Options ({{ type === 'MCQ' ? 'Check all correct answers' : 'Select the single correct answer' }})
+            {{ type === 'MCQ' ? t('qe.optionsMany') : t('qe.optionsOne') }}
           </p>
           <UButton
-            label="Add Option"
+            :label="t('qe.addOption')"
             icon="i-lucide-plus"
             size="xs"
             variant="soft"
@@ -406,15 +407,15 @@ async function save() {
           <button
             type="button"
             class="size-8 rounded-lg border text-xs font-bold grid place-items-center shrink-0 cursor-pointer transition-colors"
-            :class="selectedCorrectKeys.includes(opt.key) ? 'bg-emerald-500 text-white border-emerald-500' : 'border-default text-muted hover:bg-elevated'"
-            :title="selectedCorrectKeys.includes(opt.key) ? 'Marked correct' : 'Mark as correct'"
+            :class="selectedCorrectKeys.includes(opt.key) ? 'bg-success text-inverted border-success' : 'border-default text-muted hover:bg-elevated'"
+            :title="selectedCorrectKeys.includes(opt.key) ? t('qe.markedCorrect') : t('qe.markCorrect')"
             @click="toggleCorrectKey(opt.key)"
           >
             {{ opt.key }}
           </button>
           <UInput
             v-model="opt.text"
-            :placeholder="`Option ${opt.key}`"
+            :placeholder="t('qe.option', { key: opt.key })"
             class="flex-1"
           />
           <UButton
@@ -432,7 +433,7 @@ async function save() {
     <!-- TYPE 5: SHORT_ANSWER -->
     <template v-else-if="type === 'SHORT_ANSWER'">
       <div class="grid sm:grid-cols-2 gap-3">
-        <UFormField label="Word Limit (optional)">
+        <UFormField :label="t('qe.wordLimit')">
           <UInputNumber
             v-model="wordLimit"
             :min="1"
@@ -440,17 +441,17 @@ async function save() {
             class="w-full"
           />
         </UFormField>
-        <UFormField label="Input Placeholder">
+        <UFormField :label="t('qe.inputPlaceholder')">
           <UInput
             v-model="placeholder"
-            placeholder="Type your answer..."
+            :placeholder="t('quiz.answerPlaceholder')"
             class="w-full"
           />
         </UFormField>
       </div>
       <UFormField
-        label="Accepted Answers (one per line)"
-        help="Supports / alternatives and (optional) words like: (the) library / main hall"
+        :label="t('qe.accepted')"
+        :help="t('qe.acceptedHelp')"
       >
         <UTextarea
           v-model="textAnswers"
@@ -465,10 +466,10 @@ async function save() {
       <div class="flex flex-col gap-2">
         <div class="flex items-center justify-between">
           <label class="text-sm font-medium text-highlighted">
-            {{ type === 'NOTE_COMPLETION' ? 'Notes Template' : 'Summary Text' }} (use &#123;&#123;1&#125;&#125;, &#123;&#123;2&#125;&#125; for blanks)
+            {{ type === 'NOTE_COMPLETION' ? t('qe.notesTemplate') : t('qe.summaryText') }} {{ t('qe.gapSyntax') }}
           </label>
           <UButton
-            label="Insert Gap"
+            :label="t('qe.insertGap')"
             icon="i-lucide-plus"
             size="xs"
             variant="soft"
@@ -481,7 +482,7 @@ async function save() {
           class="w-full font-mono text-xs"
         />
       </div>
-      <UFormField label="Word Limit per Gap (optional)">
+      <UFormField :label="t('qe.gapLimit')">
         <UInputNumber
           v-model="wordLimit"
           :min="1"
@@ -494,7 +495,7 @@ async function save() {
         class="grid gap-2 rounded-xl bg-elevated/40 ring ring-default p-3"
       >
         <p class="text-xs font-semibold text-muted">
-          Answer Keys per Gap (separate alternatives with /)
+          {{ t('qe.gapKeys') }}
         </p>
         <div
           v-for="n in gapNumbers"
@@ -502,7 +503,7 @@ async function save() {
           class="flex items-center gap-2"
         >
           <UBadge
-            :label="`Gap ${n}`"
+            :label="t('quiz.gap', { n })"
             color="primary"
             variant="subtle"
             size="xs"
@@ -510,7 +511,7 @@ async function save() {
           />
           <UInput
             v-model="gapAnswers[n]"
-            :placeholder="`Accepted answers for {{${n}}}`"
+            :placeholder="t('qe.gapAnswers', { n })"
             class="flex-1"
             size="sm"
           />
@@ -524,7 +525,7 @@ async function save() {
         <div class="flex items-center justify-between">
           <label class="text-sm font-medium text-highlighted">Summary Text (use &#123;&#123;1&#125;&#125;, &#123;&#123;2&#125;&#125; for drop slots)</label>
           <UButton
-            label="Insert Gap"
+            :label="t('qe.insertGap')"
             icon="i-lucide-plus"
             size="xs"
             variant="soft"
@@ -541,10 +542,10 @@ async function save() {
       <div class="flex flex-col gap-2 rounded-xl bg-elevated/40 ring ring-default p-3">
         <div class="flex items-center justify-between">
           <p class="text-xs font-semibold text-muted">
-            Word Bank (include distractors)
+            {{ t('qe.wordBank') }}
           </p>
           <UButton
-            label="Add Word"
+            :label="t('qe.addWord')"
             icon="i-lucide-plus"
             size="xs"
             variant="soft"
@@ -567,7 +568,7 @@ async function save() {
               v-model="w.text"
               size="sm"
               class="flex-1"
-              placeholder="Word or phrase"
+              :placeholder="t('qe.wordPlaceholder')"
             />
             <UButton
               icon="i-lucide-x"
@@ -580,7 +581,7 @@ async function save() {
         </div>
         <USwitch
           v-model="reuseWords"
-          label="Allow reusing the same word in multiple gaps"
+          :label="t('qe.reuse')"
           size="sm"
           class="mt-1"
         />
@@ -591,7 +592,7 @@ async function save() {
         class="grid gap-2"
       >
         <p class="text-xs font-semibold text-muted">
-          Correct Word for Each Gap
+          {{ t('qe.gapWords') }}
         </p>
         <div
           v-for="n in gapNumbers"
@@ -599,7 +600,7 @@ async function save() {
           class="flex items-center gap-2"
         >
           <UBadge
-            :label="`Gap ${n}`"
+            :label="t('quiz.gap', { n })"
             color="primary"
             variant="subtle"
             size="xs"
@@ -608,7 +609,7 @@ async function save() {
           <USelect
             v-model="gapAnswers[n]"
             :items="wordBank.filter(w => w.text.trim()).map(w => ({ label: `${w.key} — ${w.text}`, value: w.key }))"
-            placeholder="Pick correct word"
+            :placeholder="t('qe.pickWord')"
             class="flex-1"
             size="sm"
           />
@@ -618,7 +619,7 @@ async function save() {
 
     <!-- TYPE 9: TRUE_FALSE -->
     <template v-else-if="type === 'TRUE_FALSE'">
-      <UFormField label="Statement">
+      <UFormField :label="t('qe.statement')">
         <UTextarea
           v-model="context"
           :rows="2"
@@ -626,7 +627,7 @@ async function save() {
         />
       </UFormField>
       <div class="flex flex-wrap items-center gap-4">
-        <UFormField label="Correct Answer">
+        <UFormField :label="t('qe.correctAnswer')">
           <USelect
             v-model="tfAnswer"
             :items="[{ label: 'True', value: 'TRUE' }, { label: 'False', value: 'FALSE' }, ...(allowNotGiven ? [{ label: 'Not Given', value: 'NOT_GIVEN' }] : [])]"
@@ -635,7 +636,7 @@ async function save() {
         </UFormField>
         <USwitch
           v-model="allowNotGiven"
-          label="Include 'Not Given' option"
+          :label="t('qe.includeNotGiven')"
           class="mt-5"
         />
       </div>
@@ -646,10 +647,10 @@ async function save() {
       <div class="flex flex-col gap-2">
         <div class="flex items-center justify-between">
           <p class="text-sm font-medium text-highlighted">
-            Items in CORRECT Sequence (automatically shuffled for students)
+            {{ t('qe.orderItems') }}
           </p>
           <UButton
-            label="Add Step"
+            :label="t('qe.addStep')"
             icon="i-lucide-plus"
             size="xs"
             variant="soft"
@@ -664,7 +665,7 @@ async function save() {
           <span class="size-6 rounded-full bg-elevated text-xs font-bold grid place-items-center shrink-0">{{ idx + 1 }}</span>
           <UInput
             v-model="item.text"
-            placeholder="Sentence or step..."
+            :placeholder="t('qe.stepPlaceholder')"
             class="flex-1"
           />
           <UButton
@@ -698,14 +699,14 @@ async function save() {
     <!-- TYPE 11: TRANSLATION -->
     <template v-else-if="type === 'TRANSLATION'">
       <div class="grid grid-cols-2 gap-3">
-        <UFormField label="From Language">
+        <UFormField :label="t('qe.fromLang')">
           <USelect
             v-model="sourceLang"
             :items="['UZ', 'RU', 'EN']"
             class="w-full"
           />
         </UFormField>
-        <UFormField label="To Language">
+        <UFormField :label="t('qe.toLang')">
           <USelect
             v-model="targetLang"
             :items="['EN', 'UZ', 'RU']"
@@ -713,7 +714,7 @@ async function save() {
           />
         </UFormField>
       </div>
-      <UFormField label="Source Sentence">
+      <UFormField :label="t('qe.sourceSentence')">
         <UTextarea
           v-model="context"
           :rows="2"
@@ -721,8 +722,8 @@ async function save() {
         />
       </UFormField>
       <UFormField
-        label="Accepted Translations (one per line)"
-        help="Case & punctuation ignored; optional words in brackets like (very) good."
+        :label="t('qe.acceptedTranslations')"
+        :help="t('qe.acceptedTranslationsHelp')"
       >
         <UTextarea
           v-model="textAnswers"
@@ -730,7 +731,7 @@ async function save() {
           class="w-full"
         />
       </UFormField>
-      <UFormField label="Optional Hint">
+      <UFormField :label="t('qe.hint')">
         <UInput
           v-model="hint"
           placeholder="e.g. Use Present Simple"
@@ -744,12 +745,12 @@ async function save() {
       <div class="rounded-xl bg-elevated/40 ring ring-default p-3 flex flex-col gap-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <p class="text-xs font-semibold text-highlighted">
-            Audio Source (Upload MP3/WAV OR use built-in Voice TTS)
+            {{ t('qe.audioSource') }}
           </p>
           <label class="cursor-pointer">
             <UButton
               as="span"
-              :label="uploadingAudio ? 'Uploading...' : 'Upload Audio'"
+              :label="uploadingAudio ? t('qe.uploading') : t('qe.uploadAudio')"
               icon="i-lucide-upload"
               size="xs"
               variant="outline"
@@ -771,16 +772,16 @@ async function save() {
         />
         <div class="grid sm:grid-cols-3 gap-2">
           <UFormField
-            label="Built-in TTS Sentence (used if no audio uploaded)"
+            :label="t('qe.tts')"
             class="sm:col-span-2"
           >
             <UInput
               v-model="ttsText"
-              placeholder="Type sentence to speak automatically..."
+              :placeholder="t('qe.ttsPlaceholder')"
               class="w-full"
             />
           </UFormField>
-          <UFormField label="Max Replays (optional)">
+          <UFormField :label="t('qe.replays')">
             <UInputNumber
               v-model="maxPlays"
               :min="1"
@@ -791,8 +792,8 @@ async function save() {
         </div>
       </div>
       <UFormField
-        label="Accepted Transcript(s) (one per line)"
-        help="Defaults to TTS sentence if left empty."
+        :label="t('qe.transcripts')"
+        :help="t('qe.transcriptsHelp')"
       >
         <UTextarea
           v-model="textAnswers"
@@ -804,20 +805,20 @@ async function save() {
 
     <!-- Optional Illustration & Explanation -->
     <div class="grid sm:grid-cols-2 gap-3 pt-2 border-t border-default">
-      <UFormField label="Explanation (shown after grading)">
+      <UFormField :label="t('qe.explanation')">
         <UTextarea
           v-model="explanation"
           :rows="2"
-          placeholder="Explain why the answer is correct..."
+          :placeholder="t('qe.explanationPlaceholder')"
           class="w-full"
         />
       </UFormField>
-      <UFormField label="Optional Question Image">
+      <UFormField :label="t('qe.image')">
         <div class="flex items-center gap-2">
           <label class="cursor-pointer">
             <UButton
               as="span"
-              :label="uploadingImage ? 'Uploading...' : (imageRef ? 'Replace Image' : 'Upload Image')"
+              :label="uploadingImage ? t('qe.uploading') : (imageRef ? t('builder.coverChange') : t('qe.uploadImage'))"
               icon="i-lucide-image"
               size="sm"
               color="neutral"
@@ -851,14 +852,14 @@ async function save() {
 
     <div class="flex justify-end gap-2 pt-2">
       <UButton
-        label="Cancel"
+        :label="t('common.cancel')"
         color="neutral"
         variant="ghost"
         @click="emit('close')"
       />
       <UButton
         type="submit"
-        :label="question ? 'Save Question' : 'Add Question'"
+        :label="question ? t('common.save') : t('xe.addQuestion')"
         :loading="saving"
       />
     </div>

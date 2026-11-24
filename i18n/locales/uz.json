@@ -2005,5 +2005,190 @@
     "dictationPlaceholder": "Eshitganingizni aynan yozing…",
     "correct": "To‘g‘ri",
     "review": "Javobni tekshiring"
+  },
+  "xe": {
+    "questionsTab": "Savollar ({n})",
+    "settingsTab": "Sozlamalar",
+    "deleteQuestion": "Savol o‘chirilsinmi?",
+    "addQuestion": "Savol qo‘shish",
+    "chooseType": "Savol turini tanlang",
+    "noQuestions": "Hali savol yo‘q",
+    "noQuestionsText": "12 turdagi savollarni qo‘shing: gap tuzish, xatoni topish, test, sudrab joylash, diktant, tarjima va boshqalar.",
+    "instructions": "Ko‘rsatma",
+    "passScore": "O‘tish bali (%)",
+    "timeLimit": "Vaqt chegarasi (daqiqa, ixtiyoriy)",
+    "maxAttempts": "Eng ko‘p urinish (ixtiyoriy)",
+    "required": "Darsni tugatish uchun majburiy",
+    "requiredText": "Dars bajarilgan hisoblanishi uchun (darslar ketma-ket ochilsa, keyingisi ochilishi uchun ham) bu testdan o‘tish kerak.",
+    "shuffle": "Har urinishda savollar aralashtiriladi",
+    "editQuestion": "Savolni tahrirlash",
+    "newQuestion": "Yangi savol: {type}"
+  },
+  "qe": {
+    "audioUploaded": "Audio yuklandi",
+    "imageUploaded": "Rasm yuklandi",
+    "updated": "Savol saqlandi",
+    "added": "Savol qo‘shildi",
+    "type": "Savol turi",
+    "points": "Ball",
+    "prompt": "Ko‘rsatma yoki savol",
+    "target": "Maqsadli gap",
+    "targetHelp": "Uning so‘zlari o‘quvchilar uchun aralash kartochkalarga bo‘linadi.",
+    "targetPlaceholder": "She has been studying English for three years.",
+    "distractors": "Chalg‘ituvchi so‘zlar (ixtiyoriy, vergul bilan)",
+    "acceptedSentences": "Qabul qilinadigan gaplar (har biri yangi qatorda)",
+    "acceptedSentencesHelp": "Bo‘sh bo‘lsa, maqsadli gap qabul qilinadi; boshqa to‘g‘ri tartiblar uchun qator qo‘shing.",
+    "errorSentence": "Xatosi bor gap",
+    "errorPlaceholder": "She go to the university library every morning.",
+    "markError": "Xato so‘zni belgilash uchun ustiga bosing",
+    "requireCorrection": "O‘quvchi to‘g‘risini ham yozadi",
+    "corrections": "Qabul qilinadigan tuzatishlar",
+    "correctionsHelp": "Variantlarni / bilan ajrating (masalan, goes / walks)",
+    "addOption": "Variant qo‘shish",
+    "wordLimit": "So‘z chegarasi (ixtiyoriy)",
+    "inputPlaceholder": "Javob maydonidagi ko‘rsatma",
+    "accepted": "Qabul qilinadigan javoblar (har biri yangi qatorda)",
+    "acceptedHelp": "Variantlar uchun /, ixtiyoriy so‘zlar uchun qavs: (the) library / main hall",
+    "gapLimit": "Har bir bo‘shliq uchun so‘z chegarasi (ixtiyoriy)",
+    "addWord": "So‘z qo‘shish",
+    "wordPlaceholder": "So‘z yoki ibora",
+    "reuse": "Bitta so‘z bir nechta bo‘shliqqa tushishi mumkin",
+    "pickWord": "To‘g‘ri so‘zni tanlang",
+    "statement": "Tasdiq",
+    "correctAnswer": "To‘g‘ri javob",
+    "includeNotGiven": "Not Given variantini qo‘shish",
+    "addStep": "Qadam qo‘shish",
+    "stepPlaceholder": "Gap yoki qadam…",
+    "fromLang": "Qaysi tildan",
+    "toLang": "Qaysi tilga",
+    "sourceSentence": "Tarjima qilinadigan gap",
+    "acceptedTranslations": "Qabul qilinadigan tarjimalar (har biri yangi qatorda)",
+    "acceptedTranslationsHelp": "Katta-kichik harf va tinish belgilari hisobga olinmaydi; ixtiyoriy so‘zlar qavsda: (very) good.",
+    "hint": "Maslahat (ixtiyoriy)",
+    "tts": "Ovozda o‘qiladigan gap (audio yuklanmasa)",
+    "ttsPlaceholder": "Ovozda o‘qiladigan gap…",
+    "replays": "Eng ko‘p qayta tinglash (ixtiyoriy)",
+    "transcripts": "Qabul qilinadigan matnlar (har biri yangi qatorda)",
+    "transcriptsHelp": "Bo‘sh bo‘lsa: ovozda o‘qiladigan gap.",
+    "explanation": "Izoh (baholangandan keyin ko‘rinadi)",
+    "explanationPlaceholder": "Javob nega to‘g‘ri…",
+    "image": "Rasm (ixtiyoriy)",
+    "insertGap": "Bo‘shliq qo‘yish",
+    "optionsMany": "Variantlar: barcha to‘g‘ri javoblarni belgilang",
+    "optionsOne": "Variantlar: bitta to‘g‘ri javobni tanlang",
+    "markedCorrect": "To‘g‘ri",
+    "markCorrect": "To‘g‘ri deb belgilash",
+    "option": "{key} variant",
+    "notesTemplate": "Qaydlar",
+    "summaryText": "Qisqacha mazmun",
+    "gapSyntax": "(bo‘shliqlar uchun {'{'}{'{'}1{'}'}{'}'}, {'{'}{'{'}2{'}'}{'}'} yozing)",
+    "gapKeys": "Har bir bo‘shliq javoblari (variantlar / bilan)",
+    "gapAnswers": "{n}-bo‘shliq uchun qabul qilinadigan javoblar",
+    "wordBank": "So‘zlar banki (chalg‘ituvchi so‘zlarni ham qo‘shing)",
+    "gapWords": "Har bir bo‘shliq uchun to‘g‘ri so‘z",
+    "orderItems": "To‘g‘ri tartibdagi bandlar (o‘quvchilarga aralash ko‘rinadi)",
+    "audioSource": "Audio: MP3 yoki WAV yuklang yoki gapni ovozda o‘qitib qo‘ying",
+    "uploading": "Yuklanmoqda…",
+    "uploadAudio": "Audio yuklash",
+    "uploadImage": "Rasm yuklash"
+  },
+  "lmsq": {
+    "SENTENCE_BUILD": {
+      "label": "Gap tuzish",
+      "short": "Gap",
+      "text": "Aralash so‘z va iboralardan to‘g‘ri gap tuzing."
+    },
+    "ERROR_SPOT": {
+      "label": "Xatoni topish",
+      "short": "Xato",
+      "text": "Gapdagi xato so‘zni toping, so‘ralsa to‘g‘risini yozing."
+    },
+    "MCQ": {
+      "label": "Ko‘p javobli test",
+      "short": "Ko‘p javobli",
+      "text": "Barcha to‘g‘ri javoblarni tanlang."
+    },
+    "SINGLE_CHOICE": {
+      "label": "Bir javobli test",
+      "short": "Bir javobli",
+      "text": "Eng to‘g‘ri bitta javobni tanlang."
+    },
+    "SHORT_ANSWER": {
+      "label": "Qisqa javob",
+      "short": "Qisqa javob",
+      "text": "So‘z yoki qisqa ibora yozing (variantlar va so‘z chegarasi bilan)."
+    },
+    "NOTE_COMPLETION": {
+      "label": "Qaydlarni to‘ldirish",
+      "short": "Qaydlar",
+      "text": "{'{'}{'{'}1{'}'}{'}'}, {'{'}{'{'}2{'}'}{'}'} bo‘shliqli qaydlarni to‘ldiring."
+    },
+    "SUMMARY_COMPLETION": {
+      "label": "Mazmunni to‘ldirish",
+      "short": "Mazmun",
+      "text": "Qisqacha mazmundagi bo‘shliqlarga so‘z yozing."
+    },
+    "SUMMARY_DRAG_DROP": {
+      "label": "So‘zlar banki bilan mazmun",
+      "short": "So‘zlar banki",
+      "text": "So‘zlarni bankdan mazmundagi bo‘shliqlarga sudrang yoki bosing."
+    },
+    "TRUE_FALSE": {
+      "label": "True / False",
+      "short": "True / False",
+      "text": "Tasdiq to‘g‘ri yoki noto‘g‘ri ekanini aniqlang (Not Given ixtiyoriy)."
+    },
+    "ORDER": {
+      "label": "Tartibga solish",
+      "short": "Tartib",
+      "text": "Aralash gap, xatboshi yoki qadamlarni to‘g‘ri tartibga keltiring."
+    },
+    "TRANSLATION": {
+      "label": "Tarjima",
+      "short": "Tarjima",
+      "text": "Gapni tarjima qiling, bir nechta javob qabul qilinadi."
+    },
+    "DICTATION": {
+      "label": "Diktant",
+      "short": "Diktant",
+      "text": "Audio yoki ovozda o‘qilgan gapni tinglab yozing."
+    }
+  },
+  "acourses": {
+    "deleted": "Kurs o‘chirildi",
+    "search": "Kurs yoki o‘qituvchini qidirish…",
+    "builder": "Tuzuvchi",
+    "course": "Kurs",
+    "teacher": "O‘qituvchi",
+    "structure": "Tarkibi",
+    "actions": "Amallar",
+    "none": "Hali kurs yo‘q. Birinchisini yarating."
+  },
+  "asettings": {
+    "gConnected": "Google Calendar barcha onlayn darslar uchun ulandi",
+    "gScope": "Taqvim ruxsati berilmadi",
+    "gCancelled": "Google kirishi bekor qilindi yoki rad etildi (bu admin emailini Google Cloud OAuth test foydalanuvchilariga qo‘shing)",
+    "gFailed": "Google ulanmadi: bu admin emaili Google Cloud OAuth test foydalanuvchilarida borligini tekshiring",
+    "taskFailed": "Vazifa bajarilmadi",
+    "taskDone": "«{name}» vazifasi bajarildi",
+    "webhookDone": "Telegram webhook yangilandi",
+    "sync": "Webhookni yangilash",
+    "run": "Ishga tushirish",
+    "meetTitle": "Google Meet (bitta umumiy hisob)",
+    "meetText": "Admin Google Calendar’ni shu yerda bir marta ulaydi. Shundan so‘ng barcha o‘qituvchilarning onlayn darslari Google Meet havolalarini u orqali oladi, o‘zlari Google’ga kirmaydi.",
+    "webhookTitle": "Telegram bot webhooki",
+    "webhookText": "Telegram bot yangilanishlarini qayerga yuboradi va so‘nggi xatolar.",
+    "jobsTitle": "Rejalashtirilgan vazifalar",
+    "jobsText": "Fondagi eslatma va bildirishnoma vazifalarini hozir ishga tushiring.",
+    "job": {
+      "liveMocks": "Jonli mock e’lonchisi",
+      "liveMocksText": "Jonli mocklarni ochadi va natijalarini kanallarga joylaydi",
+      "plan": "Imtihon rejasi eslatmalari",
+      "planText": "Kunlik o‘quv reja hisobi",
+      "marking": "Baholash eslatmalari",
+      "markingText": "O‘qituvchilarga baholanmagan ishlar haqida xabar beradi",
+      "lessons": "Onlayn dars eslatmalari",
+      "lessonsText": "O‘quvchilarga yaqinlashayotgan Google Meet darslarini eslatadi"
+    }
   }
 }
