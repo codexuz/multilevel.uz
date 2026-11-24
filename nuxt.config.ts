@@ -97,6 +97,8 @@ export default defineNuxtConfig({
     '/centres': { redirect: { to: '/teach', statusCode: 301 } },
     '/centres/**': { redirect: { to: '/teach', statusCode: 301 } },
     '/centre': { redirect: '/classes' },
+    // A teacher's courses live in the Teacher panel; the builder stays at /courses/manage/{id}.
+    '/courses/manage': { redirect: '/teacher/courses' },
     '/centre/**': { redirect: '/classes' },
     // Premium plans and promo days are no longer sold: premium tests open with packs (the catalogue's
     // Packs) or credits.

@@ -217,6 +217,32 @@ export async function reorderModules(course: Course, ids: string[]) {
   })
 }
 
+/**
+ * The whole curriculum laid out at once, as the course builder's drag and drop leaves it: the topics
+ * (units) in order, and every lesson in order with the topic it is in (null: not in a topic).
+ */
+export async function arrangeCurriculum(course: Course, layout: { modules: string[], lessons: { id: string, moduleId: string | null }[] }) {
+  const db = useDb()
+  const [mods, lessons] = await Promise.all([
+    db.select({ id: courseModules.id }).from(courseModules).where(eq(courseModules.courseId, course.id)),
+    db.select({ id: courseLessons.id }).from(courseLessons).where(eq(courseLessons.courseId, course.id))
+  ])
+  const modIds = new Set(mods.map(m => m.id))
+  const lessonIds = new Set(lessons.map(l => l.id))
+  const same = (given: string[], have: Set<string>) => given.length === have.size && new Set(given).size === given.length && given.every(id => have.has(id))
+  if (!same(layout.modules, modIds) || !same(layout.lessons.map(l => l.id), lessonIds)) throw createError({ statusCode: 400, message: 'Give every topic and lesson of the course' })
+  if (layout.lessons.some(l => l.moduleId !== null && !modIds.has(l.moduleId))) throw createError({ statusCode: 400, message: 'A lesson is in a topic of another course' })
+  await db.transaction(async (tx) => {
+    for (const [i, id] of layout.modules.entries()) await tx.update(courseModules).set({ position: i + 1, updatedAt: new Date() }).where(eq(courseModules.id, id))
+    const nth = new Map<string | null, number>()
+    for (const l of layout.lessons) {
+      const n = (nth.get(l.moduleId) ?? 0) + 1
+      nth.set(l.moduleId, n)
+      await tx.update(courseLessons).set({ moduleId: l.moduleId, position: n, updatedAt: new Date() }).where(eq(courseLessons.id, l.id))
+    }
+  })
+}
+
 /** Only an http(s) address. */
 function link(v: unknown) {
   const s = text(v, 500)
