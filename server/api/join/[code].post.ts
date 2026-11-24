@@ -1,5 +1,5 @@
-// Joins a group with its code (taking a seat at its centre, which gives Premium).
+// Joins a class with its code: the teacher's work comes to me, and they see my results.
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  return joinGroup(user.id, String(getRouterParam(event, 'code')))
+  return joinClass(user.id, String(getRouterParam(event, 'code')))
 })

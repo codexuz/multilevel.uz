@@ -26,7 +26,7 @@ export function useMe() {
   // Mockmee's staff are its admins (marking and the test builder are theirs).
   const isStaff = computed(() => role.value === 'admin')
   const isAdmin = computed(() => role.value === 'admin')
-  /** Has a marking queue: an admin, a marker, or a centre's owner or teacher. */
+  /** Has a marking queue: an admin, or a teacher with classes. */
   const canMark = computed(() => !!me.value?.marks)
   const isPremium = computed(() => !!me.value?.premium)
   const credits = computed(() => me.value?.credits ?? 0)

@@ -2,7 +2,7 @@ import { and, eq } from 'drizzle-orm'
 import { attempts, essays } from '../../../database/schema'
 
 /**
- * The marker's mark (an admin, a marker, or the candidate's centre teacher, markers.ts): a Multilevel score out of 75 or an IELTS band (0–9 in halves) for the section,
+ * The marker's mark (an admin, or the candidate's teacher, markers.ts): a Multilevel score out of 75 or an IELTS band (0–9 in halves) for the section,
  * a word for the candidate, and a comment on each essay. The candidate is told (push and the open
  * page), and sees it on their result.
  */

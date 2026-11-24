@@ -183,6 +183,13 @@
       "when": 1795522081323,
       "tag": "0025_user_words",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1795526739982,
+      "tag": "0026_teacher_classes",
+      "breakpoints": true
     }
   ]
 }

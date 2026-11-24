@@ -68,8 +68,8 @@ export default defineEventHandler(async (event) => {
   let liveMockId: string | null = null
   if (skill === 'SPEAKING' && !recordings.length) throw createError({ statusCode: 400, message: 'Record at least one answer before handing in' })
   // An examiner's time is what a marking credit pays for; staff hand in freely, and so do students
-  // of a centre whose licence runs: their own teachers mark them (markers.ts).
-  const byTeacher = !seat && !objective && await studiesAtCentre(user.id)
+  // in a teacher's class: their teacher marks them (markers.ts).
+  const byTeacher = !seat && !objective && await inAClass(user.id)
   const needsCredit = !seat && !objective && !byTeacher && !isStaffRole(user.role)
   const db = useDb()
   // A whole section sat during a live mock of this test counts there, the first one of each skill.

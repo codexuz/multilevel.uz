@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * The invigilator's board for one mock session. Candidates are added (the centre's students, or
+ * The invigilator's board for one mock session. Candidates are added (the teacher's class students, or
  * walk-ins registered at the desk) and checked in once their ID is seen: each gets a six-digit seat
  * code, printed on a slip if wanted. Sections are opened for the room together (or for a late
  * candidate), and the board shows, every few seconds, who is sitting what and what their exam page
@@ -36,7 +36,7 @@ interface Cand {
   reportToken: string | null
 }
 interface Board {
-  session: { id: string, title: string, opensAt: string, closesAt: string, room: string | null, capacity: number | null, priceUzs: number | null, holdResults: boolean, status: string, centreId: string | null, centreName: string | null }
+  session: { id: string, title: string, opensAt: string, closesAt: string, room: string | null, capacity: number | null, priceUzs: number | null, holdResults: boolean, status: string }
   test: { slug: string, title: string, exam: 'IELTS' | 'MULTILEVEL', module: string }
   skills: string[]
   credits: number
@@ -129,7 +129,7 @@ function printCode(name: string, code: string) {
   const esc = (x: string) => x.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]!)
   w.document.write(`<!doctype html><meta charset="utf-8"><title>${esc(name)}</title>
     <body style="font-family:Arial,sans-serif;text-align:center;padding:24px">
-    <p style="margin:0;color:#555">${esc(s.centreName ?? 'Mockmee')} · ${esc(s.title)}${s.room ? ` · ${esc(s.room)}` : ''}</p>
+    <p style="margin:0;color:#555">${esc(s.title)}${s.room ? ` · ${esc(s.room)}` : ''}</p>
     <h2 style="margin:12px 0 4px">${esc(name)}</h2>
     <p style="margin:0 0 16px;color:#555">${esc(t('mocks.slipSeatCode'))}</p>
     <div style="font-size:48px;font-weight:700;letter-spacing:10px">${esc(code)}</div>
@@ -237,13 +237,6 @@ async function removeSession() {
             name="i-lucide-door-open"
             class="size-4 text-dimmed"
           />{{ b.session.room }}</span>
-          <span
-            v-if="b.session.centreName"
-            class="inline-flex items-center gap-1.5"
-          ><UIcon
-            name="i-lucide-school"
-            class="size-4 text-dimmed"
-          />{{ b.session.centreName }}</span>
         </div>
         <div class="flex items-center gap-4 shrink-0">
           <USwitch
@@ -343,7 +336,6 @@ async function removeSession() {
             {{ t('mocks.candidatesTitle') }}
           </h2>
           <UButton
-            v-if="b.session.centreId"
             :label="t('mocks.addStudents')"
             icon="i-lucide-users"
             size="sm"

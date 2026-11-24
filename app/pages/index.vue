@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import type { PublicCentre } from '~/components/centre/Card.vue'
-
 /**
  * The landing page, laid out the way multi-exam prep sites are: one clear promise and one way in,
  * then "choose your exam" as a card for each exam with its own button, what you get (shown, not
- * told), the four skills, how it works, the learning centres that use Mockmee, the questions
+ * told), the four skills, how it works, what teachers get (free classes), the questions
  * people ask, and the way in again. No catalogue here: the exam card leads to it. Always the public site.
  */
 definePageMeta({ layout: 'public' })
@@ -13,7 +11,6 @@ const { loggedIn, me } = useMe()
 const { t } = useI18n()
 const { setExam } = useExam()
 
-const { data: centres } = await useFetch<PublicCentre[]>('/api/centres', { default: () => [] })
 const EXAM_CARDS = computed(() => [
   { exam: 'IELTS' as const, icon: 'i-lucide-globe-2', title: 'IELTS', tag: t('exam.ieltsHint'), lead: t('home.ieltsLead'), points: [1, 2, 3, 4].map(n => t(`home.ielts${n}`)), cta: t('home.ieltsCta') },
   { exam: 'MULTILEVEL' as const, icon: 'i-lucide-flag', title: 'Multilevel', tag: t('exam.multilevelHint'), lead: t('home.multilevelLead'), points: [1, 2, 3, 4].map(n => t(`home.multilevel${n}`)), cta: t('home.multilevelCta') }
@@ -515,21 +512,34 @@ const invited = computed(() => route.query.invited === '1' && !loggedIn.value)
       </ol>
     </section>
 
-    <!-- The learning centres that use Mockmee -->
+    <!-- For teachers: free classes -->
     <section
-      v-if="centres.length"
       :class="wrap"
-      class="flex flex-col gap-8"
+      class="rounded-3xl bg-primary/10 p-6 sm:p-10 flex flex-col lg:flex-row lg:items-center gap-6"
+      data-testid="home-teachers"
     >
-      <div class="flex flex-col gap-2 items-center text-center">
-        <h2 class="text-3xl sm:text-[2.6rem] leading-tight font-bold text-highlighted text-balance">
-          {{ t('home.centresTitle') }}
+      <div class="flex-1 flex flex-col gap-2">
+        <UBadge
+          :label="t('teach.badge')"
+          icon="i-lucide-presentation"
+          color="primary"
+          variant="subtle"
+          class="self-start"
+        />
+        <h2 class="text-3xl sm:text-[2.4rem] leading-tight font-bold text-highlighted text-balance">
+          {{ t('home.teachersTitle') }}
         </h2>
         <p class="text-toned text-lg max-w-2xl text-pretty">
-          {{ t('home.centresText') }}
+          {{ t('home.teachersText') }}
         </p>
       </div>
-      <CentreStrip :centres="centres" />
+      <UButton
+        to="/teach"
+        :label="t('home.teachersCta')"
+        trailing-icon="i-lucide-arrow-right"
+        size="xl"
+        class="self-start lg:self-center"
+      />
     </section>
 
     <!-- Questions -->

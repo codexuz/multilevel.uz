@@ -39,16 +39,16 @@ export interface Me {
   unlockedTests: string[]
   mockOnly?: boolean
   runsMocks?: boolean
-  /** Switched on by an admin: marks students outside a centre. */
-  marker?: boolean
-  /** Has a marking queue (an admin, a marker, or a centre's owner or teacher). */
+  /** Has a marking queue (an admin, or a teacher with classes). */
   marks?: boolean
-  /** Studies at a centre whose licence runs: their teachers mark Writing and Speaking, free. */
+  /** In a teacher's class: that teacher marks my Writing and Speaking. */
   teacherMarks?: boolean
   /** Single parts (section items) bought in packs. */
   unlockedParts?: string[]
-  /** Learning centres I belong to, and my role in each. */
-  centres?: { id: string, name: string, role: 'OWNER' | 'TEACHER' | 'STUDENT' }[]
+  /** The classes I am in as a student, with their teachers. */
+  classes?: { id: string, name: string, teacher: string }[]
+  /** I have classes of my own (I teach). */
+  teaches?: boolean
 }
 
 export interface DeviceSessionDto {

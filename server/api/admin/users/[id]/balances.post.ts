@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
     await tx.execute(sql`select 1 from ${users} where ${users.id} = ${id} for update`)
     const [u] = await tx.select({ bonus: users.aiBonusReviews }).from(users).where(eq(users.id, id)).limit(1)
     if (!u) throw createError({ statusCode: 404, message: 'User not found' })
-    const [now, testNow, mockNow] = await Promise.all([accessOf({ id, role: 'student' }, tx), rewardBalance(id, tx), creditBalance({ centreId: null, userId: id }, tx)])
+    const [now, testNow, mockNow] = await Promise.all([accessOf({ id, role: 'student' }, tx), rewardBalance(id, tx), creditBalance(id, tx)])
     const short = (have: number, delta: number, what: string) => {
       if (have + delta < 0) throw createError({ statusCode: 400, message: `They have ${have} ${what}; you cannot take more than that` })
     }
@@ -40,7 +40,7 @@ export default defineEventHandler(async (event) => {
     if (marking) await tx.insert(creditTransactions).values({ userId: id, delta: marking, reason: 'GRANT' })
     if (test) await tx.insert(rewardTransactions).values({ userId: id, delta: test, reason: 'GRANT' })
     if (ai) await tx.update(users).set({ aiBonusReviews: u.bonus + ai }).where(eq(users.id, id))
-    if (mock) await tx.insert(mockCreditTransactions).values({ centreId: null, userId: id, delta: mock, reason: 'GRANT', note, createdById: admin.id })
+    if (mock) await tx.insert(mockCreditTransactions).values({ userId: id, delta: mock, reason: 'GRANT', note, createdById: admin.id })
     return { markingCredits: now.credits + marking, testCredits: testNow + test, aiReviews: u.bonus + ai, mockCredits: mockNow + mock }
   })
   if (marking > 0 || test > 0 || ai > 0) {

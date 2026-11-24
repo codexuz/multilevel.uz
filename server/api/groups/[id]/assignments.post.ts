@@ -3,10 +3,10 @@ import { assignments, classMembers } from '../../../database/schema'
 
 const SKILL_WORD: Record<string, string> = { LISTENING: 'Listening', READING: 'Reading', WRITING: 'Writing', SPEAKING: 'Speaking' }
 
-// Sets the group a section of a published test (or one part of it), with an optional due date and
+// Sets the class a section of a published test (or one part of it), with an optional due date and
 // note, and tells each student on Telegram.
 export default defineEventHandler(async (event) => {
-  const { user, group } = await requireGroupStaff(event, String(getRouterParam(event, 'id')))
+  const { user, group } = await requireClassTeacher(event, String(getRouterParam(event, 'id')))
   const body = (await readBody<{ testId?: string, skill?: string, partNumber?: number | null, dueAt?: string | null, note?: string }>(event)) ?? {}
   const skill = String(body.skill ?? '').toUpperCase()
   if (!SKILL_WORD[skill]) throw createError({ statusCode: 400, message: 'Pick a skill' })

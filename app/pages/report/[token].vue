@@ -10,7 +10,7 @@ definePageMeta({ guestLayout: true })
  */
 interface Report {
   name: string
-  held: { by: string, centre: boolean, title: string, at: string, room: string | null }
+  held: { by: string, title: string, at: string, room: string | null }
   test: { title: string, exam: 'IELTS' | 'MULTILEVEL', module: string }
   skills: string[]
   marks: Record<string, number | null>

@@ -26,8 +26,6 @@ interface AdminUser {
   marker: boolean
   createdAt: string
   premiumUntil: string | null
-  /** Premium through a seat at a centre whose licence runs. */
-  centrePremium: boolean
   credits: number
   rewardCredits: number
   aiBonusReviews: number
@@ -81,7 +79,7 @@ function clearFilters() {
   q.value = ''
 }
 const filterItems = {
-  role: [{ label: 'All roles', value: 'ALL' }, { label: 'Students', value: 'student' }, { label: 'Teachers', value: 'teacher' }, { label: 'Centre owners', value: 'center_owner' }, { label: 'Admins', value: 'admin' }],
+  role: [{ label: 'All roles', value: 'ALL' }, { label: 'Students', value: 'student' }, { label: 'Teachers', value: 'teacher' }, { label: 'Admins', value: 'admin' }],
   plan: [{ label: 'Any plan', value: 'ALL' }, { label: 'Premium', value: 'PREMIUM' }, { label: 'Free', value: 'FREE' }],
   status: [{ label: 'Any status', value: 'ALL' }, { label: 'Active', value: 'ACTIVE' }, { label: 'Banned', value: 'BANNED' }],
   extra: [{ label: 'Everyone', value: 'ALL' }, { label: 'Markers', value: 'MARKER' }, { label: 'With Telegram', value: 'TELEGRAM' }],
@@ -89,7 +87,7 @@ const filterItems = {
   size: [20, 50, 100].map(n => ({ label: `${n} per page`, value: n }))
 }
 
-const ROLE_LABEL: Record<UserRole, string> = { student: 'Student', teacher: 'Teacher', center_owner: 'Centre owner', admin: 'Admin' }
+const ROLE_LABEL: Record<UserRole, string> = { student: 'Student', teacher: 'Teacher', center_owner: 'Teacher', admin: 'Admin' }
 const roles = (Object.keys(ROLE_LABEL) as UserRole[]).map(value => ({ label: ROLE_LABEL[value], value }))
 
 function fail(e: unknown) {
@@ -444,12 +442,12 @@ async function endPremium(p: AdminUser) {
                 />{{ accountHandle(p) }} · joined {{ localeDate(p.createdAt, 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) }}
               </p>
               <p class="text-xs mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
-                <span :class="p.premiumUntil || p.centrePremium ? 'text-success' : 'text-muted'">
+                <span :class="p.premiumUntil ? 'text-success' : 'text-muted'">
                   <UIcon
                     name="i-lucide-sparkles"
                     class="size-3 align-[-1px]"
                   />
-                  {{ p.premiumUntil ? `Premium until ${formatDate(p.premiumUntil)}` : p.centrePremium ? 'Premium (centre)' : 'Free' }}
+                  {{ p.premiumUntil ? `Premium until ${formatDate(p.premiumUntil)}` : 'Free' }}
                 </span>
                 <span class="text-muted tabular-nums"><UIcon
                   name="i-lucide-pen-line"

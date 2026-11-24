@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** A class's join link: shows the group and centre; joining takes a seat there, which gives Premium. */
+/** A class's join link: shows the class and its teacher; joining brings the teacher's work, and they see the student's results. */
 const { t } = useI18n()
 useSeoMeta({ title: () => t('join.title'), robots: 'noindex' })
 
@@ -7,7 +7,7 @@ const route = useRoute()
 const toast = useToast()
 const { loggedIn, refresh: refreshMe } = useMe()
 const code = computed(() => String(route.params.code).toUpperCase())
-const { data, error, refresh } = await useFetch<{ group: { id: string, name: string }, centre: { name: string }, open: boolean, member: boolean }>(() => `/api/join/${code.value}`)
+const { data, error, refresh } = await useFetch<{ group: { id: string, name: string }, teacher: string | null, member: boolean, mine: boolean }>(() => `/api/join/${code.value}`)
 const joining = ref(false)
 
 async function join() {
@@ -47,8 +47,11 @@ async function join() {
             class="size-8"
           />
         </div>
-        <p class="text-sm text-muted">
-          {{ data.centre.name }}
+        <p
+          v-if="data.teacher"
+          class="text-sm text-muted"
+        >
+          {{ t('join.teacher', { name: data.teacher }) }}
         </p>
         <h1 class="text-2xl font-bold text-highlighted">
           {{ data.group.name }}
@@ -68,10 +71,14 @@ async function join() {
             :label="t('join.seeWork')"
           />
         </template>
-        <template v-else-if="!data.open">
+        <template v-else-if="data.mine">
           <p class="text-sm text-muted">
-            {{ t('join.full') }}
+            {{ t('join.mine') }}
           </p>
+          <UButton
+            :to="`/classes/${data.group.id}`"
+            :label="t('join.openMine')"
+          />
         </template>
         <template v-else>
           <p class="text-sm text-muted">

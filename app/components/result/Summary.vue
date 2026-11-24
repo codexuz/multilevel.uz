@@ -10,7 +10,7 @@ const { t } = useI18n()
 const props = defineProps<{ view: ResultView & { correct?: number | null, total?: number | null, durationSeconds?: number | null, submittedAt?: string | null }, reviewTo: string }>()
 const emit = defineEmits<{ sent: [] }>()
 const { loggedIn, me, isStaff, credits, refresh: refreshMe } = useMe()
-// A centre's student: their own teachers mark Writing and Speaking.
+// A student in a teacher's class: their teacher marks Writing and Speaking.
 const byTeacher = computed(() => !!me.value?.teacherMarks)
 
 // Writing or Speaking saved without a marking credit: sent for marking from here once there is one.

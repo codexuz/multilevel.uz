@@ -1,8 +1,7 @@
 import type { H3Event } from 'h3'
 import type { SQL } from 'drizzle-orm'
 import { and, eq, inArray, ne, sql } from 'drizzle-orm'
-import { attempts, centreMembers, centres, users } from '../database/schema'
-import { licenceOpen } from './centres'
+import { attempts, classGroups, classMembers, users } from '../database/schema'
 import { notifyTelegram } from './notify'
 import { MSG } from './messages'
 import { sendPush } from './firebase'
@@ -10,27 +9,19 @@ import { sendPush } from './firebase'
 /**
  * Who marks Writing and Speaking handed in for practice (a mock session's scripts are marked on its
  * board, mock-sessions.ts):
- * - a student of a learning centre (one whose licence runs): that centre's owner and teachers;
- * - anyone else: Mockmee's markers (users an admin switched marking on for) and admins;
+ * - a student in a teacher's class: that teacher (any of their teachers, if they are in several classes);
  * - admins may mark everything.
- * Nobody but an admin marks their own script.
+ * Nobody but an admin marks their own script. A student in no class gets the AI check only.
  */
-export interface MarkingScope { userId: string, all: boolean, pool: boolean, centreIds: string[] }
+export interface MarkingScope { userId: string, all: boolean, teacher: boolean }
 
 export async function markingScopeOf(user: { id: string, role: string }): Promise<MarkingScope> {
-  const db = useDb()
-  const [[me], rows] = await Promise.all([
-    db.select({ marker: users.marker, mockOnly: users.mockOnly }).from(users).where(eq(users.id, user.id)).limit(1),
-    db.select({ id: centres.id, active: centres.active, licensedUntil: centres.licensedUntil }).from(centreMembers)
-      .innerJoin(centres, eq(centres.id, centreMembers.centreId))
-      .where(and(eq(centreMembers.userId, user.id), inArray(centreMembers.role, ['OWNER', 'TEACHER'])))
-  ])
-  if (!me || me.mockOnly) return { userId: user.id, all: false, pool: false, centreIds: [] }
-  const all = user.role === 'admin'
-  return { userId: user.id, all, pool: all || me.marker, centreIds: rows.filter(r => licenceOpen(r)).map(r => r.id) }
+  const [me] = await useDb().select({ mockOnly: users.mockOnly }).from(users).where(eq(users.id, user.id)).limit(1)
+  if (!me || me.mockOnly) return { userId: user.id, all: false, teacher: false }
+  return { userId: user.id, all: user.role === 'admin', teacher: await hasClasses(user.id) }
 }
 
-export const marksAnything = (s: MarkingScope) => s.all || s.pool || s.centreIds.length > 0
+export const marksAnything = (s: MarkingScope) => s.all || s.teacher
 
 /** The user, and what they may mark; 403 for someone who marks nothing. */
 export async function requireMarker(event: H3Event) {
@@ -40,24 +31,22 @@ export async function requireMarker(event: H3Event) {
   return { user, scope }
 }
 
-/** The attempt's candidate studies at a centre whose licence runs (any of `centreIds`, when given). */
-function inCentre(centreIds?: string[]) {
-  return sql`exists (select 1 from ${centreMembers} m join ${centres} c on c.id = m.centre_id
-    where m.user_id = ${attempts.userId} and m.role = 'STUDENT' and c.active and c.licensed_until > now()
-    ${centreIds ? sql`and m.centre_id in (${sql.join(centreIds.map(id => sql`${id}`), sql`, `)})` : sql``})`
+/** The attempt's candidate is in a class (of `teacherId`, when given). */
+function inClass(teacherId?: string) {
+  return sql`exists (select 1 from ${classMembers} m join ${classGroups} g on g.id = m.group_id
+    where m.user_id = ${attempts.userId} and g.teacher_id <> ${attempts.userId}
+    ${teacherId ? sql`and g.teacher_id = ${teacherId}` : sql``})`
 }
 
 /**
  * The Writing and Speaking attempts this scope marks (a mock session's are never in it). `from` narrows
- * an admin's queue: POOL (students outside a centre) or CENTRES (centre students).
+ * an admin's queue: CLASSES (students in a teacher's class) or OUTSIDE (the rest).
  */
-export function markableWhere(scope: MarkingScope, from?: 'POOL' | 'CENTRES'): SQL {
+export function markableWhere(scope: MarkingScope, from?: 'CLASSES' | 'OUTSIDE'): SQL {
   const base = and(inArray(attempts.skill, ['WRITING', 'SPEAKING']), sql`${attempts.mockCandidateId} is null`)!
-  if (scope.all) return and(base, from === 'POOL' ? sql`not ${inCentre()}` : from === 'CENTRES' ? inCentre() : undefined)!
-  const reach: SQL[] = []
-  if (scope.pool) reach.push(sql`not ${inCentre()}`)
-  if (scope.centreIds.length) reach.push(inCentre(scope.centreIds))
-  return and(base, ne(attempts.userId, scope.userId), sql`(${sql.join(reach, sql` or `)})`)!
+  if (scope.all) return and(base, from === 'CLASSES' ? inClass() : from === 'OUTSIDE' ? sql`not ${inClass()}` : undefined)!
+  if (!scope.teacher) return sql`false`
+  return and(base, ne(attempts.userId, scope.userId), inClass(scope.userId))!
 }
 
 /** 404 unless this scope marks the attempt. */
@@ -74,34 +63,16 @@ export async function marksAttempt(user: { id: string, role: string }, attemptId
   return requireMarkable(scope, attemptId).then(() => true, () => false)
 }
 
-/** The centre each candidate studies at (licence running), for the queue. */
-export async function centreOfStudents(userIds: string[]) {
+/** The class each candidate is in (one name; a teacher sees only their own classes), for the queue. */
+export async function classOfStudents(userIds: string[], teacherId?: string) {
   if (!userIds.length) return new Map<string, string>()
-  const rows = await useDb().select({ userId: centreMembers.userId, name: centres.name, active: centres.active, licensedUntil: centres.licensedUntil }).from(centreMembers)
-    .innerJoin(centres, eq(centres.id, centreMembers.centreId))
-    .where(and(inArray(centreMembers.userId, userIds), eq(centreMembers.role, 'STUDENT')))
-  return new Map(rows.filter(r => licenceOpen(r)).map(r => [r.userId, r.name]))
+  const rows = await useDb().select({ userId: classMembers.userId, name: classGroups.name }).from(classMembers)
+    .innerJoin(classGroups, eq(classGroups.id, classMembers.groupId))
+    .where(and(inArray(classMembers.userId, userIds), teacherId ? eq(classGroups.teacherId, teacherId) : undefined))
+  return new Map(rows.map(r => [r.userId, r.name]))
 }
 
-/** Whether the user studies at a centre whose licence runs: their teachers mark their Writing and Speaking, free. */
-export async function studiesAtCentre(userId: string) {
-  const [row] = await useDb().select({ one: sql<number>`1` }).from(centreMembers)
-    .innerJoin(centres, eq(centres.id, centreMembers.centreId))
-    .where(and(eq(centreMembers.userId, userId), eq(centreMembers.role, 'STUDENT'), eq(centres.active, true), sql`${centres.licensedUntil} > now()`)).limit(1)
-  return !!row
-}
-
-/** The owners and teachers of the centres (licence running) where the student studies. */
-async function teachersOf(studentId: string) {
-  const rows = await useDb().execute(sql`
-    select distinct t.user_id as id from centre_members s
-    join centres c on c.id = s.centre_id and c.active and c.licensed_until > now()
-    join centre_members t on t.centre_id = s.centre_id and t.role in ('OWNER', 'TEACHER')
-    where s.user_id = ${studentId} and s.role = 'STUDENT' and t.user_id <> ${studentId}`) as unknown as { id: string }[]
-  return rows.map(r => r.id)
-}
-
-/** A centre student handed in Writing or Speaking: their teachers hear of it (Telegram and push). */
+/** A student in a class handed in Writing or Speaking: their teachers hear of it (Telegram and push). */
 export async function tellTeachersToMark(attempt: { id: string, userId: string, skill: string }) {
   const teacherIds = await teachersOf(attempt.userId)
   if (!teacherIds.length) return
@@ -113,14 +84,14 @@ export async function tellTeachersToMark(attempt: { id: string, userId: string, 
 }
 
 /**
- * Every hour: centre students' scripts that have waited over two days get their teachers one reminder
+ * Every hour: class students' scripts that have waited over two days get their teachers one reminder
  * (each script once), counted per teacher.
  */
 export async function sendMarkingReminders() {
   const db = useDb()
   const due = await db.select({ id: attempts.id, userId: attempts.userId }).from(attempts)
     .where(and(eq(attempts.status, 'SUBMITTED'), inArray(attempts.skill, ['WRITING', 'SPEAKING']), sql`${attempts.mockCandidateId} is null`,
-      sql`${attempts.markRemindedAt} is null`, sql`${attempts.submittedAt} < now() - interval '48 hours'`, inCentre()))
+      sql`${attempts.markRemindedAt} is null`, sql`${attempts.submittedAt} < now() - interval '48 hours'`, inClass()))
     .limit(500)
   if (!due.length) return { scripts: 0, teachers: 0 }
   const waiting = new Map<string, number>()

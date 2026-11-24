@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Mock sessions: a centre (or a Premium teacher) runs a mock on its own computers. Each session is a
+ * Mock sessions: a teacher runs a mock on their own computers. Each session is a
  * test, a time and a room; candidates are checked in at the desk and sit at the room's computers
  * with a seat code. One mock credit is spent on each candidate's first check-in.
  */
@@ -8,10 +8,10 @@ const { t } = useI18n()
 const toast = useToast()
 useSeoMeta({ title: () => t('mocks.title'), robots: 'noindex' })
 
-interface Scope { kind: 'CENTRE' | 'TEACHER', centreId: string | null, name: string, credits: number }
-interface Row { id: string, title: string, opensAt: string, closesAt: string, room: string | null, status: string, centreId: string | null, centreName: string | null, candidates: number, checkedIn: number, started: boolean, test: { title: string, exam: string } }
+interface Scope { kind: 'TEACHER', name: string, credits: number }
+interface Row { id: string, title: string, opensAt: string, closesAt: string, room: string | null, status: string, candidates: number, checkedIn: number, started: boolean, test: { title: string, exam: string } }
 const { data, refresh } = await useFetch<{ scopes: Scope[], sessions: Row[] }>('/api/mocks', { default: () => ({ scopes: [], sessions: [] }) })
-const scopeName = (s: Scope) => (s.kind === 'TEACHER' ? t('mocks.own') : s.name)
+const scopeName = (_s: Scope) => t('mocks.own')
 
 const { data: testData } = await useFetch<{ items: { id: string, title: string, module: string }[] }>('/api/tests', { query: { limit: 60 }, default: () => ({ items: [] }) })
 const testItems = computed(() => testData.value.items.map(x => ({ label: `${examLabel(examOfModule(x.module))} · ${x.title}`, value: x.id })))
@@ -22,13 +22,13 @@ function today() {
   const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   return { opensAt: `${day}T10:00`, closesAt: `${day}T14:00` }
 }
-const form = ref<{ centreId: string | null, title: string, testId?: string, opensAt: string, closesAt: string, room: string, capacity?: number, priceUzs?: number, holdResults: boolean } | null>(null)
+const form = ref<{ title: string, testId?: string, opensAt: string, closesAt: string, room: string, capacity?: number, priceUzs?: number, holdResults: boolean } | null>(null)
 /** Where a session can be made now: a place with mock credits left (none left, none made). */
 const withCredits = computed(() => data.value.scopes.filter(s => s.credits > 0))
 const canCreate = computed(() => withCredits.value.length > 0)
 function startCreate() {
   if (!canCreate.value) return
-  form.value = { centreId: withCredits.value[0]!.centreId, title: t('mocks.defaultTitle'), ...today(), room: '', holdResults: true }
+  form.value = { title: t('mocks.defaultTitle'), ...today(), room: '', holdResults: true }
 }
 const saving = ref(false)
 async function save() {
@@ -92,12 +92,12 @@ async function remove(r: Row) {
       >
         <div
           v-for="s in data.scopes"
-          :key="s.centreId ?? 'own'"
+          :key="s.kind"
           class="h-8 flex items-center gap-1.5 rounded-md ring ring-default px-2.5 text-sm"
           data-testid="credit-chip"
         >
           <UIcon
-            :name="s.kind === 'CENTRE' ? 'i-lucide-school' : 'i-lucide-user-round'"
+            name="i-lucide-user-round"
             class="size-4 shrink-0 text-primary"
           />
           <span class="font-medium text-highlighted">{{ scopeName(s) }}</span>
@@ -164,8 +164,6 @@ async function remove(r: Row) {
             <p class="text-sm text-muted truncate">
               {{ examLabel(r.test.exam) }} · {{ r.test.title }} · {{ when(r.opensAt) }}<template v-if="r.room">
                 · {{ r.room }}
-              </template><template v-if="r.centreName">
-                · {{ r.centreName }}
               </template>
             </p>
           </div>
@@ -196,16 +194,6 @@ async function remove(r: Row) {
           class="grid gap-4"
           @submit.prevent="save"
         >
-          <UFormField
-            v-if="withCredits.length > 1"
-            :label="t('mocks.runBy')"
-          >
-            <USelect
-              v-model="form.centreId as any"
-              :items="withCredits.map(s => ({ label: `${scopeName(s)} · ${t('mocks.credits', { n: s.credits }, s.credits)}`, value: s.centreId as any }))"
-              class="w-full"
-            />
-          </UFormField>
           <UFormField :label="t('mocks.sessionTitle')">
             <UInput
               v-model="form.title"

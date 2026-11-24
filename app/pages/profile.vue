@@ -68,7 +68,9 @@ async function logout() {
   reloadNuxtApp({ path: '/' })
 }
 const accountLinks = computed(() => [
-  ...(me.value?.centres?.some(c => c.role !== 'STUDENT') ? [{ label: t('nav.centre'), description: t('profile.centreText'), icon: 'i-lucide-school', to: '/centre' }] : []),
+  me.value?.teaches
+    ? { label: t('nav.classes'), description: t('profile.classesText'), icon: 'i-lucide-school', to: '/classes' }
+    : { label: t('nav.teach'), description: t('profile.teachText'), icon: 'i-lucide-presentation', to: '/teach' },
   { label: t('nav.live'), description: t('profile.liveText'), icon: 'i-lucide-trophy', to: '/live' },
   { label: t('nav.earn'), icon: 'i-lucide-gift', to: '/earn' },
   { label: t('nav.promo'), description: t('profile.promoText'), icon: 'i-lucide-ticket', to: '/promo' },

@@ -5,7 +5,7 @@ import {
 } from 'drizzle-orm/pg-core'
 
 // ---------- Enums ----------
-/** student; teacher (runs their own mock sessions, teaches at a centre); center_owner (owns a learning centre); admin. */
+/** student; teacher (has classes, runs mock sessions); admin. center_owner is no longer given (learning centres were removed). */
 export const userRole = pgEnum('user_role', ['student', 'teacher', 'center_owner', 'admin'])
 
 // ---------- users ----------
@@ -294,7 +294,7 @@ export const attempts = pgTable('attempts', {
   integrityReviewedById: uuid('integrity_reviewed_by_id').references(() => users.id, { onDelete: 'set null' }),
   /** Sat at a mock session's seat: whose seat it was. */
   mockCandidateId: uuid('mock_candidate_id').references((): AnyPgColumn => mockCandidates.id, { onDelete: 'set null' }),
-  /** When the candidate's centre teachers were reminded that this script still waits for a mark. */
+  /** When the candidate's teachers were reminded that this script still waits for a mark. */
   markRemindedAt: timestamp('mark_reminded_at', { withTimezone: true }),
   createdAt: created(),
   updatedAt: updated()
@@ -341,67 +341,22 @@ export const speakingResponses = pgTable('speaking_responses', {
   createdAt: created()
 }, t => [uniqueIndex('speaking_responses_attempt_part_position_uq').on(t.attemptId, t.partId, t.position)])
 
-// ---------- learning centres (B2B) ----------
-// A centre buys seats: each student in it has Premium while its licence runs. Its owner and teachers
-// run groups (classes) that students join with a code, set tests as assignments and follow progress.
-
-export const centres = pgTable('centres', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  name: text('name').notNull(),
-  /** Students the licence covers. */
-  seats: integer('seats').notNull().default(0),
-  licensedUntil: timestamp('licensed_until', { withTimezone: true }),
-  /** Teachers join the centre with this code (the owner shares it). */
-  teacherCode: text('teacher_code').notNull().unique(),
-  active: boolean('active').notNull().default(true),
-  createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
-  // The public catalogue (/centres): shown there only when `listed` and the licence runs.
-  listed: boolean('listed').notNull().default(false),
-  city: text('city'),
-  address: text('address'),
-  description: text('description'),
-  phone: text('phone'),
-  telegram: text('telegram'),
-  website: text('website'),
-  logoUrl: text('logo_url'),
-  createdAt: created()
-})
-
-/** A learning centre asking to join (Apply on /centres); an admin opens the centre from it or turns it down. */
-export const centreRequests = pgTable('centre_requests', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  name: text('name').notNull(),
-  city: text('city'),
-  phone: text('phone').notNull(),
-  telegram: text('telegram'),
-  /** About how many students would take a seat. */
-  students: integer('students'),
-  message: text('message'),
-  status: text('status').notNull().default('PENDING'), // PENDING | APPROVED | REJECTED
-  centreId: uuid('centre_id').references(() => centres.id, { onDelete: 'set null' }),
-  reviewedById: uuid('reviewed_by_id').references(() => users.id, { onDelete: 'set null' }),
-  reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
-  createdAt: created()
-}, t => [index('centre_requests_status_idx').on(t.status, t.createdAt), index('centre_requests_user_idx').on(t.userId)])
-
-export const centreMembers = pgTable('centre_members', {
-  centreId: uuid('centre_id').notNull().references(() => centres.id, { onDelete: 'cascade' }),
-  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  role: text('role').notNull(), // OWNER | TEACHER | STUDENT (a student takes a seat)
-  createdAt: created()
-}, t => [primaryKey({ columns: [t.centreId, t.userId] }), index('centre_members_user_idx').on(t.userId)])
-
+// ---------- teachers' classes ----------
+/**
+ * A teacher's class: students join it with its code (/join/<code>); the teacher sets it work
+ * (assignments), sees each student's results and marks their Writing and Speaking. Classes are free,
+ * with no limit on students.
+ */
 export const classGroups = pgTable('class_groups', {
   id: uuid('id').primaryKey().defaultRandom(),
-  centreId: uuid('centre_id').notNull().references(() => centres.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
-  teacherId: uuid('teacher_id').references(() => users.id, { onDelete: 'set null' }),
+  /** The teacher it belongs to: they made it, and their classes go with their account. */
+  teacherId: uuid('teacher_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   /** Students join with /join/<code>. */
   joinCode: text('join_code').notNull().unique(),
   archived: boolean('archived').notNull().default(false),
   createdAt: created()
-}, t => [index('class_groups_centre_idx').on(t.centreId)])
+}, t => [index('class_groups_teacher_idx').on(t.teacherId)])
 
 export const classMembers = pgTable('class_members', {
   groupId: uuid('group_id').notNull().references(() => classGroups.id, { onDelete: 'cascade' }),
@@ -621,7 +576,7 @@ export const partUnlocks = pgTable('part_unlocks', {
   createdAt: created()
 }, t => [primaryKey({ columns: [t.userId, t.sectionItemId] })])
 
-// ---------- Mock sessions: a centre (or a Premium teacher) runs a mock on its own computers ----------
+// ---------- Mock sessions: a teacher runs a mock on their own computers ----------
 // Candidates (its students, or walk-ins registered at the desk) are checked in by the invigilator,
 // who gives each a seat code; the code signs them in at a room computer for that session only.
 // The invigilator opens sections for the room, watches the board, marks Writing and Speaking, and
@@ -629,9 +584,7 @@ export const partUnlocks = pgTable('part_unlocks', {
 
 export const mockSessions = pgTable('mock_sessions', {
   id: uuid('id').primaryKey().defaultRandom(),
-  /** The centre that runs it; null for a Premium teacher's own session. */
-  centreId: uuid('centre_id').references(() => centres.id, { onDelete: 'cascade' }),
-  /** Who made it: the teacher for their own session, a centre's owner or teacher for the centre's. */
+  /** The teacher who runs it. */
   ownerId: uuid('owner_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),
   testId: uuid('test_id').notNull().references(() => tests.id, { onDelete: 'restrict' }),
@@ -639,7 +592,7 @@ export const mockSessions = pgTable('mock_sessions', {
   closesAt: timestamp('closes_at', { withTimezone: true }).notNull(),
   room: text('room'),
   capacity: integer('capacity'),
-  /** The fee a walk-in pays at the desk, in so'm (shown on the board; collected by the centre). */
+  /** The fee a walk-in pays at the desk, in so'm (shown on the board; collected by the teacher). */
   priceUzs: integer('price_uzs'),
   /** Bands are kept from candidates until announced. */
   holdResults: boolean('hold_results').notNull().default(true),
@@ -647,12 +600,12 @@ export const mockSessions = pgTable('mock_sessions', {
   status: text('status').notNull().default('ACTIVE'),
   createdAt: created(),
   updatedAt: updated()
-}, t => [index('mock_sessions_centre_idx').on(t.centreId, t.opensAt), index('mock_sessions_owner_idx').on(t.ownerId, t.opensAt)])
+}, t => [index('mock_sessions_owner_idx').on(t.ownerId, t.opensAt)])
 
 export const mockCandidates = pgTable('mock_candidates', {
   id: uuid('id').primaryKey().defaultRandom(),
   sessionId: uuid('session_id').notNull().references(() => mockSessions.id, { onDelete: 'cascade' }),
-  /** The account they sit as: their own (a centre's student) or one made for a walk-in (users.mock_only). */
+  /** The account they sit as: their own (a student of the teacher's classes) or one made for a walk-in (users.mock_only). */
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   external: boolean('external').notNull().default(false),
   fullName: text('full_name').notNull(),
@@ -679,11 +632,10 @@ export const mockCandidates = pgTable('mock_candidates', {
   createdAt: created()
 }, t => [uniqueIndex('mock_candidates_session_user_uq').on(t.sessionId, t.userId), index('mock_candidates_code_idx').on(t.seatCode)])
 
-/** Mock credits: one is spent when a candidate is first checked in. A centre's or a teacher's. */
+/** Mock credits: one is spent when a candidate is first checked in. A teacher's. */
 export const mockCreditTransactions = pgTable('mock_credit_transactions', {
   id: uuid('id').primaryKey().defaultRandom(),
-  centreId: uuid('centre_id').references(() => centres.id, { onDelete: 'cascade' }),
-  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   delta: integer('delta').notNull(),
   /** GRANT (bought) | CHECK_IN | REFUND (a candidate removed before sitting) */
   reason: text('reason').notNull(),
@@ -691,7 +643,7 @@ export const mockCreditTransactions = pgTable('mock_credit_transactions', {
   note: text('note'),
   createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: created()
-}, t => [index('mock_credit_centre_idx').on(t.centreId), index('mock_credit_user_idx').on(t.userId)])
+}, t => [index('mock_credit_user_idx').on(t.userId)])
 
 // ---------- vocabulary: My Words ----------
 /**

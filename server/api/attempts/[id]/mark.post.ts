@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   if (!attempt || attempt.userId !== user.id) throw createError({ statusCode: 404, message: 'Result not found' })
   if (attempt.status !== 'AWAITING_CREDIT') throw createError({ statusCode: 409, message: 'This result is already sent for marking' })
 
-  const byTeacher = await studiesAtCentre(user.id)
+  const byTeacher = await inAClass(user.id)
   const needsCredit = !byTeacher && !isStaffRole(user.role)
   const sent = await db.transaction(async (tx) => {
     if (needsCredit && !(await holdCredits(tx, user.id))) paymentRequired('CREDIT_REQUIRED', 'Marking by an examiner needs a marking credit')

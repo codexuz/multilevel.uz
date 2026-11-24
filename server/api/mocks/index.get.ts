@@ -1,2 +1,2 @@
-// The mock sessions this user runs (a licensed centre's, or their own as a Premium teacher), and where they can make one.
+// The mock sessions this teacher runs, and whether they can make one (their mock credits).
 export default defineEventHandler(async event => listSessions(await requireUser(event)))

@@ -154,7 +154,7 @@ function finishObjective(next: AnswerMap) {
 // ─── Writing and Speaking, where a guest practises: nothing is marked or sent ───
 const practice = ref<'WRITING' | 'SPEAKING' | null>(null)
 // Signed in, Writing and Speaking are always handed in and saved, a live mock's too: with a marking
-// credit (or a centre's teachers, or a mock session's seat) straight to marking, without one kept
+// credit (or a teacher's class, or a mock session's seat) straight to marking, without one kept
 // until one is spent on it from the result. Only a guest's stays on the practice screen.
 const canBeMarked = computed(() => atSeat.value || loggedIn.value)
 const recordings = ref<SpeakingRecording[]>([])

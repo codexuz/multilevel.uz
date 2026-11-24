@@ -6,7 +6,7 @@ const noIndex = { robots: false, sitemap: false }
 // (an X-Robots-Tag noindex) and out of the sitemap, which otherwise lists every page file. A path
 // with /** covers the page itself too (/results and /results/…).
 const privatePaths = [
-  '/account/**', '/admin/**', '/billing/**', '/builder/**', '/centre/**', '/feedback/**', '/join/**',
+  '/account/**', '/admin/**', '/billing/**', '/builder/**', '/classes/**', '/feedback/**', '/join/**',
   '/login', '/marking/**', '/mocks/**', '/onboarding', '/profile', '/promo', '/report/**', '/results/**',
   '/seat', '/settings', '/share/**', '/words/**'
 ]
@@ -94,8 +94,11 @@ export default defineNuxtConfig({
   routeRules: {
     '/': { prerender: false },
     '/dashboard': { redirect: '/results' },
-    // The request form is a modal on the catalogue now.
-    '/centres/apply': { redirect: '/centres?apply=1' },
+    // Learning centres were removed: their pages lead to the teachers' page and My classes.
+    '/centres': { redirect: { to: '/teach', statusCode: 301 } },
+    '/centres/**': { redirect: { to: '/teach', statusCode: 301 } },
+    '/centre': { redirect: '/classes' },
+    '/centre/**': { redirect: '/classes' },
     // Packs are a segment of the catalogue.
     '/packs': { redirect: '/tests?view=packs' },
     ...Object.fromEntries(privatePaths.map(path => [path, noIndex]))
