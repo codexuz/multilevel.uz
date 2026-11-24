@@ -7,7 +7,7 @@ const noIndex = { robots: false, sitemap: false }
 // with /** covers the page itself too (/results and /results/…).
 const privatePaths = [
   '/account/**', '/admin/**', '/billing/**', '/builder/**', '/classes/**', '/feedback/**', '/join/**',
-  '/login', '/marking/**', '/mocks/**', '/onboarding', '/profile', '/report/**', '/results/**',
+  '/courses/manage/**', '/login', '/marking/**', '/mocks/**', '/online', '/onboarding', '/profile', '/report/**', '/results/**',
   '/seat', '/settings', '/share/**', '/words/**'
 ]
 
@@ -88,7 +88,7 @@ export default defineNuxtConfig({
   },
 
   // Open to search engines: the home page, the catalogue and each test's page (/tests/{slug}).
-  // Everything behind a sign-in is not indexed (privatePaths above); sitting a section, its result
+  // Everything behind a sign-in is not indexed (privatePaths above); a course's lesson, sitting a section, its result
   // and its review (/tests/{slug}/{skill}/…) say noindex on the page itself, as a pattern for them
   // here would catch /tests/{slug} too.
   routeRules: {
@@ -109,12 +109,14 @@ export default defineNuxtConfig({
   },
 
   compatibilityDate: '2026-06-30',
-  // Background jobs on a timer (server/tasks): exam plan and marking reminders, and live mocks.
+  // Background jobs on a timer (server/tasks): exam plan, marking and online class reminders, and live mocks.
   // Times are UTC (Tashkent is UTC+5).
   nitro: {
     experimental: { tasks: true },
     scheduledTasks: {
       '7 * * * *': ['live:mocks', 'reminders:marking'],
+      // Online classes starting soon.
+      '*/5 * * * *': ['lessons:remind'],
       // 09:41 in Tashkent
       '41 4 * * *': ['reminders:plan']
     }

@@ -1,14 +1,15 @@
 import { randomUUID } from 'node:crypto'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
 
-type Purpose = 'test-audio' | 'test-asset' | 'recording' | 'avatar'
+type Purpose = 'test-audio' | 'test-asset' | 'recording' | 'avatar' | 'course-file'
 const STAFF_PURPOSES: Purpose[] = ['test-audio', 'test-asset']
 
 const PREFIX: Record<Purpose, string> = {
   'test-audio': 'tests/audio',
   'test-asset': 'tests/assets',
   'recording': 'recordings',
-  'avatar': 'avatars'
+  'avatar': 'avatars',
+  'course-file': 'courses/files'
 }
 
 // What each purpose may hold. Test files are pictures (maps, diagrams, charts) and
@@ -17,7 +18,9 @@ const ALLOWED: Record<Purpose, (mime: string) => boolean> = {
   'test-audio': mime => mime.startsWith('audio/'),
   'test-asset': mime => (mime.startsWith('image/') && mime !== 'image/svg+xml') || ['text/vtt', 'text/plain', 'application/pdf'].includes(mime),
   'recording': mime => mime.startsWith('audio/'),
-  'avatar': mime => mime.startsWith('image/') && mime !== 'image/svg+xml'
+  'avatar': mime => mime.startsWith('image/') && mime !== 'image/svg+xml',
+  // A course lesson's handouts: PDFs.
+  'course-file': mime => mime === 'application/pdf'
 }
 
 const EXT_BY_TYPE: Record<string, string> = {
@@ -25,7 +28,7 @@ const EXT_BY_TYPE: Record<string, string> = {
   'audio/wav': 'wav', 'audio/x-wav': 'wav', 'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a',
   'audio/aac': 'aac', 'audio/flac': 'flac',
   'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif',
-  'image/avif': 'avif', 'image/heic': 'heic', 'text/vtt': 'vtt'
+  'image/avif': 'avif', 'image/heic': 'heic', 'text/vtt': 'vtt', 'application/pdf': 'pdf'
 }
 
 /**
@@ -60,6 +63,10 @@ export default defineEventHandler(async (event) => {
   if (STAFF_PURPOSES.includes(purpose) && user.role !== 'admin') {
     throw createError({ statusCode: 403, message: 'Forbidden' })
   }
+  // Course files: teachers only.
+  if (purpose === 'course-file' && !['teacher', 'center_owner', 'admin'].includes(user.role)) {
+    throw createError({ statusCode: 403, message: 'Forbidden' })
+  }
 
   const contentType = filePart.type || 'application/octet-stream'
   if (!ALLOWED[purpose](baseType(contentType))) {
@@ -69,7 +76,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 413, message: 'File too large' })
   }
 
-  const scope = purpose === 'avatar' || purpose === 'recording' ? user.id : 'shared'
+  const scope = purpose === 'avatar' || purpose === 'recording' || purpose === 'course-file' ? user.id : 'shared'
   const key = `${PREFIX[purpose]}/${scope}/${randomUUID()}.${extFromType(contentType, filePart.filename)}`
 
   const client = useS3Client()
