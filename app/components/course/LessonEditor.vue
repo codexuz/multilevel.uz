@@ -3,35 +3,71 @@ import type { LiveLesson } from '~/components/online/Row.vue'
 import { uploadFile } from '~/services/http'
 
 /**
- * A course lesson as its teacher writes it: the title, a text, a video address, a test to do (a
- * section or one part), PDFs, and, once saved, an online class on Google Meet.
+ * A course lesson as its teacher writes it: module assignment, title, summary, duration,
+ * content drip date window, rich text, video, exam task, PDFs, and Google Meet online class.
  */
 export interface EditableLesson {
   id: string
+  moduleId?: string | null
   title: string
+  summary?: string | null
+  durationMinutes?: number | null
   body: string | null
   videoUrl: string | null
+  availableFrom?: string | null
+  availableTo?: string | null
   files: { name: string, url: string, size: number | null }[]
   task: { testId: string, test: string | null, skill: string | null, partNumber: number | null } | null
   live: LiveLesson | null
+  exercises?: Array<{
+    id: string
+    title: string
+    exerciseType: string
+    passingScore: number
+    requiredForCompletion: boolean
+    questionCount: number
+  }>
 }
-const props = defineProps<{ courseId: string, lesson: EditableLesson | null }>()
+
+const props = defineProps<{
+  courseId: string
+  lesson: EditableLesson | null
+  modules?: Array<{ id: string, title: string }>
+  defaultModuleId?: string | null
+}>()
 const emit = defineEmits<{ saved: [id: string], close: [] }>()
 const { t } = useI18n()
 const toast = useToast()
 const route = useRoute()
 
+const toLocalInput = (iso?: string | null) => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
+}
+
 const SKILLS = ['LISTENING', 'READING', 'WRITING', 'SPEAKING']
 const form = reactive({
+  moduleId: props.lesson ? (props.lesson.moduleId ?? 'NONE') : (props.defaultModuleId ?? props.modules?.[0]?.id ?? 'NONE'),
   title: props.lesson?.title ?? '',
+  summary: props.lesson?.summary ?? '',
+  durationMinutes: props.lesson?.durationMinutes ?? undefined as number | undefined,
   body: props.lesson?.body ?? '',
   videoUrl: props.lesson?.videoUrl ?? '',
+  availableFrom: toLocalInput(props.lesson?.availableFrom),
+  availableTo: toLocalInput(props.lesson?.availableTo),
   testId: props.lesson?.task?.testId as string | undefined,
   skill: props.lesson?.task?.skill ?? 'READING',
   part: props.lesson?.task?.partNumber ?? 0,
   files: [...(props.lesson?.files ?? [])]
 })
 const withTask = ref(!!props.lesson?.task)
+
+const moduleOptions = computed(() => [
+  { label: 'No unit (Ungrouped)', value: 'NONE' },
+  ...(props.modules ?? []).map(m => ({ label: m.title, value: m.id }))
+])
 
 const { data: testList } = await useFetch<{ items: { id: string, title: string, sections: { skill: string, items: number }[] }[] }>('/api/tests', { query: { limit: 60 }, lazy: true })
 const testItems = computed(() => (testList.value?.items ?? []).map(x => ({ label: x.title, value: x.id })))
@@ -74,9 +110,14 @@ async function save() {
   if (!form.title.trim()) return
   saving.value = true
   const body = {
+    moduleId: form.moduleId === 'NONE' ? null : form.moduleId,
     title: form.title,
+    summary: form.summary.trim() || null,
+    durationMinutes: form.durationMinutes || null,
     body: form.body,
     videoUrl: form.videoUrl.trim() || null,
+    availableFrom: form.availableFrom ? new Date(form.availableFrom).toISOString() : null,
+    availableTo: form.availableTo ? new Date(form.availableTo).toISOString() : null,
     task: withTask.value && form.testId ? { testId: form.testId, skill: form.skill, partNumber: form.part || null } : null,
     files: form.files
   }
@@ -124,12 +165,42 @@ async function cancelLive() {
     data-testid="lesson-editor"
     @submit.prevent="save"
   >
+    <div class="grid sm:grid-cols-3 gap-3">
+      <UFormField
+        v-if="modules?.length"
+        label="Unit / Module"
+        class="sm:col-span-2"
+      >
+        <USelect
+          v-model="form.moduleId"
+          :items="moduleOptions"
+          class="w-full"
+        />
+      </UFormField>
+      <UFormField label="Est. Duration (min)">
+        <UInputNumber
+          v-model="form.durationMinutes"
+          :min="1"
+          :max="600"
+          class="w-full"
+        />
+      </UFormField>
+    </div>
+
     <UFormField :label="t('courses.lessonTitle')">
       <UInput
         v-model="form.title"
         class="w-full"
         autofocus
         data-testid="lesson-title"
+      />
+    </UFormField>
+
+    <UFormField label="Short Summary (optional)">
+      <UInput
+        v-model="form.summary"
+        placeholder="Brief description of lesson objectives..."
+        class="w-full"
       />
     </UFormField>
 
@@ -152,6 +223,33 @@ async function cancelLive() {
         class="w-full"
       />
     </UFormField>
+
+    <!-- Content Drip Window for this Lesson -->
+    <div class="flex flex-col gap-3 rounded-lg ring ring-default p-3">
+      <p class="text-sm font-medium text-highlighted flex items-center gap-2">
+        <UIcon name="i-lucide-calendar-clock" />
+        Lesson Content Drip Window (optional)
+      </p>
+      <p class="text-xs text-muted">
+        Used when the course or unit uses "Specific date (from – to)" drip mode, or to schedule a specific release window.
+      </p>
+      <div class="grid sm:grid-cols-2 gap-3">
+        <UFormField label="Available From">
+          <UInput
+            v-model="form.availableFrom"
+            type="datetime-local"
+            class="w-full"
+          />
+        </UFormField>
+        <UFormField label="Available Until (optional)">
+          <UInput
+            v-model="form.availableTo"
+            type="datetime-local"
+            class="w-full"
+          />
+        </UFormField>
+      </div>
+    </div>
 
     <div class="flex flex-col gap-3 rounded-lg ring ring-default p-3">
       <USwitch

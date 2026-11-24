@@ -1,14 +1,44 @@
 <script setup lang="ts">
 import type { CourseCard } from '~/components/course/Card.vue'
+import type { DripMode, DripState } from '#shared/utils/lms'
 
 /**
- * A course's page: what it is, who teaches it, its lessons (what each holds, and which I did), and
- * the way in: Enroll for a public course (free), the first lesson for a private course's students.
- * A public course is for search engines too; a private one is not.
+ * Student Course Overview: structured into Units/Modules => Lessons with Content Drip badges,
+ * exercise counts, and enrollment/progress tracking.
  */
 definePageMeta({ guestLayout: true })
-interface LessonRow { id: string, position: number, title: string, has: { text: boolean, video: boolean, task: boolean, files: boolean, live: boolean }, done: boolean, taskDone: boolean }
-interface CourseView extends Omit<CourseCard, 'lessons'> { access: { teaches: boolean, see: boolean, learn: boolean, enrolled: boolean, canEnroll: boolean }, lessons: LessonRow[] }
+
+interface LessonRow {
+  id: string
+  moduleId: string | null
+  position: number
+  title: string
+  summary: string | null
+  durationMinutes: number | null
+  exerciseCount: number
+  has: { text: boolean, video: boolean, task: boolean, files: boolean, live: boolean, exercises: boolean }
+  done: boolean
+  taskDone: boolean
+  drip: DripState
+}
+interface ModuleView {
+  id: string
+  position: number
+  title: string
+  description: string | null
+  dripMode: string | null
+  availableFrom: string | null
+  availableTo: string | null
+  lessons: LessonRow[]
+}
+interface CourseView extends Omit<CourseCard, 'lessons'> {
+  dripMode: DripMode
+  dripStartAt: string | null
+  dripEndAt: string | null
+  access: { teaches: boolean, see: boolean, learn: boolean, enrolled: boolean, canEnroll: boolean }
+  modules: ModuleView[]
+  lessons: LessonRow[]
+}
 
 const { t } = useI18n()
 const route = useRoute()
@@ -28,12 +58,19 @@ useSeoMeta({
 
 const meta = computed(() => [
   c.value!.teacher?.name,
+  `${c.value!.modules.length} unit${c.value!.modules.length === 1 ? '' : 's'}`,
   t('courses.lessons', { n: c.value!.lessons.length }, c.value!.lessons.length),
   c.value!.visibility === 'PUBLIC' ? t('courses.learners', { n: c.value!.learners }, c.value!.learners) : null
 ].filter(Boolean).join(' · '))
+
 const done = computed(() => c.value!.lessons.filter(l => l.done).length)
 const progress = computed(() => (c.value!.lessons.length ? Math.round(done.value / c.value!.lessons.length * 100) : 0))
-const nextLesson = computed(() => c.value!.lessons.find(l => !l.done) ?? c.value!.lessons[0] ?? null)
+const nextLesson = computed(() => c.value!.lessons.find(l => !l.done && !l.drip.locked) ?? c.value!.lessons.find(l => !l.drip.locked) ?? c.value!.lessons[0] ?? null)
+
+const collapsedUnits = ref<Record<string, boolean>>({})
+function toggleUnit(id: string) {
+  collapsedUnits.value[id] = !collapsedUnits.value[id]
+}
 
 const busy = ref(false)
 async function enroll() {
@@ -53,9 +90,28 @@ async function leave() {
   await $fetch(`/api/courses/${c.value!.id}/enroll`, { method: 'DELETE' }).catch(() => {})
   await refresh()
 }
+
 const icons = (l: LessonRow) => [
-  l.has.text && 'i-lucide-file-text', l.has.video && 'i-lucide-play-circle', l.has.task && 'i-lucide-clipboard-check', l.has.files && 'i-lucide-paperclip', l.has.live && 'i-lucide-video'
+  l.has.video && 'i-lucide-play-circle',
+  l.has.text && 'i-lucide-file-text',
+  l.has.exercises && 'i-lucide-list-checks',
+  l.has.task && 'i-lucide-clipboard-check',
+  l.has.files && 'i-lucide-paperclip',
+  l.has.live && 'i-lucide-video'
 ].filter(Boolean) as string[]
+
+const fmtDate = (iso: string | null) => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+}
+
+function lockLabel(drip: DripState): string {
+  if (drip.reason === 'DATE_NOT_STARTED' && drip.availableFrom) return `Opens ${fmtDate(drip.availableFrom)}`
+  if (drip.reason === 'DATE_EXPIRED') return 'Closed'
+  if (drip.reason === 'PREVIOUS_INCOMPLETE') return 'Complete previous lesson'
+  return 'Locked'
+}
 </script>
 
 <template>
@@ -75,7 +131,7 @@ const icons = (l: LessonRow) => [
       />
     </template>
 
-    <div class="flex flex-col gap-6 max-w-3xl w-full">
+    <div class="flex flex-col gap-6 max-w-4xl w-full">
       <section class="flex flex-col gap-3">
         <div class="flex flex-wrap items-center gap-1.5">
           <UBadge
@@ -89,6 +145,12 @@ const icons = (l: LessonRow) => [
             :label="c!.level"
             color="neutral"
             variant="subtle"
+          />
+          <UBadge
+            :label="DRIP_MODE_META[c!.dripMode ?? 'ALWAYS_OPEN'].label"
+            :icon="DRIP_MODE_META[c!.dripMode ?? 'ALWAYS_OPEN'].icon"
+            color="info"
+            variant="soft"
           />
           <UBadge
             v-if="c!.visibility === 'PRIVATE'"
@@ -125,7 +187,7 @@ const icons = (l: LessonRow) => [
           <template v-if="c!.access.learn">
             <div class="flex-1 min-w-48">
               <p class="text-sm font-medium text-highlighted">
-                {{ t('courses.progress', { done, of: c!.lessons.length }) }}
+                {{ t('courses.progress', { done, of: c!.lessons.length }) }} ({{ progress }}%)
               </p>
               <UProgress
                 :model-value="progress"
@@ -134,7 +196,7 @@ const icons = (l: LessonRow) => [
               />
             </div>
             <UButton
-              v-if="nextLesson"
+              v-if="nextLesson && !nextLesson.drip.locked"
               :to="`/courses/${c!.slug}/${nextLesson.id}`"
               :label="done ? t('courses.continue') : t('courses.start')"
               trailing-icon="i-lucide-arrow-right"
@@ -170,53 +232,126 @@ const icons = (l: LessonRow) => [
         </UCard>
       </section>
 
-      <section class="flex flex-col gap-2">
-        <h2 class="font-semibold text-highlighted">
-          {{ t('courses.lessonsTitle') }}
+      <!-- Curriculum grouped by Units / Modules -->
+      <section class="flex flex-col gap-3">
+        <h2 class="font-semibold text-highlighted text-lg">
+          Curriculum
         </h2>
-        <ol
-          v-if="c!.lessons.length"
-          class="rounded-xl ring ring-default divide-y divide-default overflow-hidden"
-        >
-          <li
-            v-for="l in c!.lessons"
-            :key="l.id"
+
+        <template v-if="c!.modules.length">
+          <UCard
+            v-for="(mod, mIdx) in c!.modules"
+            :key="mod.id"
+            :ui="{ body: 'p-0' }"
           >
-            <component
-              :is="c!.access.learn ? resolveComponent('NuxtLink') : 'div'"
-              :to="c!.access.learn ? `/courses/${c!.slug}/${l.id}` : undefined"
-              class="flex items-center gap-3 px-4 py-3"
-              :class="c!.access.learn ? 'hover:bg-elevated/50' : ''"
-              data-testid="lesson-row"
+            <button
+              type="button"
+              class="w-full flex items-center gap-3 px-4 py-3.5 bg-elevated/40 hover:bg-elevated/70 transition-colors text-start cursor-pointer"
+              :class="!collapsedUnits[mod.id] && mod.lessons.length ? 'border-b border-default' : ''"
+              @click="toggleUnit(mod.id)"
             >
-              <span
-                class="size-7 shrink-0 rounded-full grid place-items-center text-xs font-semibold"
-                :class="l.done ? 'bg-success text-inverted' : 'bg-elevated text-toned'"
-              >
-                <UIcon
-                  v-if="l.done"
-                  name="i-lucide-check"
-                  class="size-4"
-                />
-                <template v-else>{{ l.position }}</template>
-              </span>
-              <span class="flex-1 min-w-0 font-medium text-highlighted truncate">{{ l.title }}</span>
-              <span class="flex items-center gap-1.5 text-muted">
-                <UIcon
-                  v-for="i in icons(l)"
-                  :key="i"
-                  :name="i"
-                  class="size-4"
-                />
+              <UBadge
+                :label="`Unit ${mIdx + 1}`"
+                color="primary"
+                variant="subtle"
+                size="xs"
+              />
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold text-highlighted text-sm sm:text-base truncate">
+                  {{ mod.title }}
+                </p>
+                <p
+                  v-if="mod.description"
+                  class="text-xs text-muted truncate"
+                >
+                  {{ mod.description }}
+                </p>
+              </div>
+              <span class="text-xs text-muted tabular-nums shrink-0">
+                {{ mod.lessons.filter(l => l.done).length }}/{{ mod.lessons.length }} done
               </span>
               <UIcon
-                v-if="!c!.access.learn"
-                name="i-lucide-lock"
-                class="size-4 text-dimmed"
+                name="i-lucide-chevron-down"
+                class="size-4 text-muted transition-transform shrink-0"
+                :class="collapsedUnits[mod.id] ? '-rotate-90' : ''"
               />
-            </component>
-          </li>
-        </ol>
+            </button>
+
+            <ol
+              v-if="!collapsedUnits[mod.id] && mod.lessons.length"
+              class="divide-y divide-default"
+            >
+              <li
+                v-for="l in mod.lessons"
+                :key="l.id"
+              >
+                <component
+                  :is="c!.access.learn && !l.drip.locked ? resolveComponent('NuxtLink') : 'div'"
+                  :to="c!.access.learn && !l.drip.locked ? `/courses/${c!.slug}/${l.id}` : undefined"
+                  class="flex items-center gap-3 px-4 py-3 transition-colors"
+                  :class="c!.access.learn && !l.drip.locked ? 'hover:bg-elevated/50' : 'opacity-70'"
+                  data-testid="lesson-row"
+                >
+                  <span
+                    class="size-7 shrink-0 rounded-full grid place-items-center text-xs font-semibold"
+                    :class="l.done ? 'bg-success text-white' : l.drip.locked ? 'bg-elevated text-dimmed' : 'bg-elevated text-toned'"
+                  >
+                    <UIcon
+                      v-if="l.done"
+                      name="i-lucide-check"
+                      class="size-4"
+                    />
+                    <UIcon
+                      v-else-if="l.drip.locked"
+                      name="i-lucide-lock"
+                      class="size-3.5"
+                    />
+                    <template v-else>{{ l.position }}</template>
+                  </span>
+                  <div class="flex-1 min-w-0">
+                    <p class="font-medium text-highlighted truncate text-sm sm:text-base">
+                      {{ l.title }}
+                    </p>
+                    <div class="flex flex-wrap items-center gap-2 text-xs text-muted mt-0.5">
+                      <span v-if="l.durationMinutes">{{ l.durationMinutes }} min</span>
+                      <span
+                        v-if="l.exerciseCount"
+                        class="text-primary font-medium"
+                      >
+                        {{ l.exerciseCount }} exercise{{ l.exerciseCount === 1 ? '' : 's' }}
+                      </span>
+                      <span
+                        v-if="l.drip.locked && c!.access.learn"
+                        class="text-warning font-medium"
+                      >
+                        {{ lockLabel(l.drip) }}
+                      </span>
+                    </div>
+                  </div>
+                  <span class="hidden sm:flex items-center gap-1.5 text-muted">
+                    <UIcon
+                      v-for="i in icons(l)"
+                      :key="i"
+                      :name="i"
+                      class="size-4"
+                    />
+                  </span>
+                  <UIcon
+                    v-if="!c!.access.learn || l.drip.locked"
+                    name="i-lucide-lock"
+                    class="size-4 text-dimmed shrink-0"
+                  />
+                  <UIcon
+                    v-else
+                    name="i-lucide-chevron-right"
+                    class="size-4 text-muted shrink-0"
+                  />
+                </component>
+              </li>
+            </ol>
+          </UCard>
+        </template>
+
         <p
           v-else
           class="text-sm text-muted"

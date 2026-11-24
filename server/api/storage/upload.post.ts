@@ -1,15 +1,18 @@
 import { randomUUID } from 'node:crypto'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
 
-type Purpose = 'test-audio' | 'test-asset' | 'recording' | 'avatar' | 'course-file'
+type Purpose = 'test-audio' | 'test-asset' | 'recording' | 'avatar' | 'course-file' | 'course-audio' | 'course-image'
 const STAFF_PURPOSES: Purpose[] = ['test-audio', 'test-asset']
+const TEACHER_PURPOSES: Purpose[] = ['course-file', 'course-audio', 'course-image']
 
 const PREFIX: Record<Purpose, string> = {
   'test-audio': 'tests/audio',
   'test-asset': 'tests/assets',
   'recording': 'recordings',
   'avatar': 'avatars',
-  'course-file': 'courses/files'
+  'course-file': 'courses/files',
+  'course-audio': 'courses/audio',
+  'course-image': 'courses/images'
 }
 
 // What each purpose may hold. Test files are pictures (maps, diagrams, charts) and
@@ -20,7 +23,11 @@ const ALLOWED: Record<Purpose, (mime: string) => boolean> = {
   'recording': mime => mime.startsWith('audio/'),
   'avatar': mime => mime.startsWith('image/') && mime !== 'image/svg+xml',
   // A course lesson's handouts: PDFs.
-  'course-file': mime => mime === 'application/pdf'
+  'course-file': mime => mime === 'application/pdf',
+  // Dictation / listening audio in LMS exercises.
+  'course-audio': mime => mime.startsWith('audio/'),
+  // Course covers and LMS question illustrations.
+  'course-image': mime => mime.startsWith('image/') && mime !== 'image/svg+xml'
 }
 
 const EXT_BY_TYPE: Record<string, string> = {
@@ -63,8 +70,8 @@ export default defineEventHandler(async (event) => {
   if (STAFF_PURPOSES.includes(purpose) && user.role !== 'admin') {
     throw createError({ statusCode: 403, message: 'Forbidden' })
   }
-  // Course files: teachers only.
-  if (purpose === 'course-file' && !['teacher', 'center_owner', 'admin'].includes(user.role)) {
+  // Course assets: teachers and admins only.
+  if (TEACHER_PURPOSES.includes(purpose) && !['teacher', 'center_owner', 'admin'].includes(user.role)) {
     throw createError({ statusCode: 403, message: 'Forbidden' })
   }
 
@@ -76,7 +83,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 413, message: 'File too large' })
   }
 
-  const scope = purpose === 'avatar' || purpose === 'recording' || purpose === 'course-file' ? user.id : 'shared'
+  const scope = purpose === 'avatar' || purpose === 'recording' || TEACHER_PURPOSES.includes(purpose) ? user.id : 'shared'
   const key = `${PREFIX[purpose]}/${scope}/${randomUUID()}.${extFromType(contentType, filePart.filename)}`
 
   const client = useS3Client()

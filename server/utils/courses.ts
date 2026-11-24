@@ -1,22 +1,37 @@
 import { randomBytes } from 'node:crypto'
 import type { H3Event } from 'h3'
 import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm'
-import { attempts, classGroups, classMembers, courseEnrollments, courseLessons, courses, lessonProgress, liveLessons, tests, users } from '../database/schema'
+import {
+  attempts,
+  classGroups,
+  classMembers,
+  courseEnrollments,
+  courseLessons,
+  courseModules,
+  courses,
+  exerciseAttempts,
+  exerciseQuestions,
+  lessonExercises,
+  lessonProgress,
+  liveLessons,
+  tests,
+  users
+} from '../database/schema'
 
 /**
- * Teachers' courses: lessons in order, each with any of a text, a video, a test to do (a section or
- * one part), PDFs and an online class on Google Meet (live-lessons.ts). A course is
- * - PRIVATE: for the students of the teacher's classes only (they see it once it is published);
- * - PUBLIC: in the catalogue (/courses) once published; any signed-in user enrolls, free.
- * The teacher sees who takes it and how far each has got (lessons done, tasks handed in).
+ * LMS Courses: Course => Units/Modules => Lessons => Exercises => Questions (12 types),
+ * plus videos, rich text, PDFs, exam tasks, Google Meet live classes, and Content Drip
+ * (ALWAYS_OPEN, DATE_RANGE from-to, SEQUENTIAL one-after-another).
  */
 
 type Course = typeof courses.$inferSelect
+type ModuleRow = typeof courseModules.$inferSelect
 type Lesson = typeof courseLessons.$inferSelect
 type Viewer = { id: string, role: string } | null
 
 export const VISIBILITIES = ['PRIVATE', 'PUBLIC'] as const
 const SKILLS = ['LISTENING', 'READING', 'WRITING', 'SPEAKING']
+const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 
 const nameOf = (u: { name: string | null, telegramUsername: string | null }) => u.name || (u.telegramUsername ? `@${u.telegramUsername}` : 'Teacher')
 
@@ -31,7 +46,7 @@ export async function studiesWith(userId: string, teacherId: string) {
 export interface CourseAccess {
   /** The teacher (or an admin): everything, published or not. */
   teaches: boolean
-  /** May see the course's page (its lessons' titles). */
+  /** May see the course's page (its modules and lessons' titles). */
   see: boolean
   /** May open its lessons (a private course's student; an enrolled learner of a public one). */
   learn: boolean
@@ -69,6 +84,19 @@ export async function requireCourseTeacher(event: H3Event, key: string) {
   return { user, course }
 }
 
+export async function findModule(id: string) {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) throw createError({ statusCode: 404, message: 'Module not found' })
+  const [m] = await useDb().select().from(courseModules).where(eq(courseModules.id, id)).limit(1)
+  if (!m) throw createError({ statusCode: 404, message: 'Module not found' })
+  return m
+}
+
+export async function requireModuleTeacher(event: H3Event, moduleId: string) {
+  const mod = await findModule(moduleId)
+  const { user, course } = await requireCourseTeacher(event, mod.courseId)
+  return { user, course, module: mod }
+}
+
 /** A lesson and its course, for the course's teacher. */
 export async function requireLessonTeacher(event: H3Event, lessonId: string) {
   const lesson = await findLesson(lessonId)
@@ -87,6 +115,13 @@ export async function findLesson(id: string) {
 
 const text = (v: unknown, max: number) => String(v ?? '').trim().slice(0, max)
 
+function optionalDate(v: unknown, label = 'date'): Date | null {
+  if (v === null || v === undefined || v === '') return null
+  const d = new Date(String(v))
+  if (Number.isNaN(d.getTime())) throw createError({ statusCode: 400, message: `Invalid ${label}` })
+  return d
+}
+
 /** The course's fields as the editor sends them; only those given are kept. */
 export function courseValues(body: Record<string, unknown>, partial: boolean) {
   const out: Partial<typeof courses.$inferInsert> = {}
@@ -96,13 +131,31 @@ export function courseValues(body: Record<string, unknown>, partial: boolean) {
     out.title = title
   }
   if (body.summary !== undefined) out.summary = text(body.summary, 400) || null
+  if (body.coverUrl !== undefined) {
+    const cover = text(body.coverUrl, 500)
+    out.coverUrl = cover || null
+  }
   if (body.exam !== undefined) out.exam = isExam(body.exam) ? body.exam : null
-  if (body.level !== undefined) out.level = ['A1', 'A2', 'B1', 'B2', 'C1'].includes(String(body.level)) ? String(body.level) : null
+  if (body.level !== undefined) out.level = LEVELS.includes(String(body.level)) ? String(body.level) : null
   if (body.visibility !== undefined) {
     if (!VISIBILITIES.includes(body.visibility as never)) throw createError({ statusCode: 400, message: 'Private or public?' })
     out.visibility = String(body.visibility)
   }
   if (body.published !== undefined) out.published = !!body.published
+  if (body.dripMode !== undefined) {
+    if (!isDripMode(body.dripMode)) throw createError({ statusCode: 400, message: 'Invalid content drip mode' })
+    out.dripMode = body.dripMode
+  }
+  if (body.dripStartAt !== undefined) out.dripStartAt = optionalDate(body.dripStartAt, 'start date')
+  if (body.dripEndAt !== undefined) out.dripEndAt = optionalDate(body.dripEndAt, 'end date')
+  if (out.dripStartAt && out.dripEndAt && out.dripEndAt <= out.dripStartAt) {
+    throw createError({ statusCode: 400, message: 'End date must be after start date' })
+  }
+  if (body.passingScore !== undefined) {
+    const n = Math.round(Number(body.passingScore))
+    if (!Number.isFinite(n) || n < 0 || n > 100) throw createError({ statusCode: 400, message: 'Passing score must be between 0 and 100' })
+    out.passingScore = n
+  }
   return out
 }
 
@@ -114,7 +167,49 @@ export async function createCourse(userId: string, body: Record<string, unknown>
     await raiseToTeacher(tx, userId)
     const slug = `${slugify(v.title!).replace(/-+$/, '').slice(0, 60) || 'course'}-${randomBytes(3).toString('hex')}`
     const [c] = await tx.insert(courses).values({ ...v, title: v.title!, teacherId: userId, slug }).returning()
+    // Seed a starter Unit 1 so the LMS hierarchy is ready immediately.
+    await tx.insert(courseModules).values({ courseId: c!.id, position: 1, title: 'Unit 1: Getting Started' })
     return c!
+  })
+}
+
+/** A module's fields as the editor sends them. */
+export function moduleValues(body: Record<string, unknown>, partial: boolean) {
+  const out: Partial<typeof courseModules.$inferInsert> = {}
+  if (body.title !== undefined || !partial) {
+    const title = text(body.title, 160)
+    if (!title) throw createError({ statusCode: 400, message: 'Give the unit/module a title' })
+    out.title = title
+  }
+  if (body.description !== undefined) out.description = text(body.description, 500) || null
+  if (body.dripMode !== undefined) {
+    if (body.dripMode === null || body.dripMode === '' || body.dripMode === 'INHERIT') out.dripMode = null
+    else if (isDripMode(body.dripMode)) out.dripMode = body.dripMode
+    else throw createError({ statusCode: 400, message: 'Invalid drip mode' })
+  }
+  if (body.availableFrom !== undefined) out.availableFrom = optionalDate(body.availableFrom, 'available from date')
+  if (body.availableTo !== undefined) out.availableTo = optionalDate(body.availableTo, 'available to date')
+  if (out.availableFrom && out.availableTo && out.availableTo <= out.availableFrom) {
+    throw createError({ statusCode: 400, message: 'Available-to date must be after available-from date' })
+  }
+  return out
+}
+
+export async function addModule(course: Course, body: Record<string, unknown>) {
+  const v = moduleValues(body, false)
+  const db = useDb()
+  const [last] = await db.select({ n: sql<number>`coalesce(max(${courseModules.position}), 0)::int` }).from(courseModules).where(eq(courseModules.courseId, course.id))
+  const [m] = await db.insert(courseModules).values({ ...v, title: v.title!, courseId: course.id, position: (last?.n ?? 0) + 1 }).returning()
+  await db.update(courses).set({ updatedAt: new Date() }).where(eq(courses.id, course.id))
+  return m!
+}
+
+export async function reorderModules(course: Course, ids: string[]) {
+  const db = useDb()
+  const mine = (await db.select({ id: courseModules.id }).from(courseModules).where(eq(courseModules.courseId, course.id))).map(r => r.id)
+  if (ids.length !== mine.length || ids.some(id => !mine.includes(id))) throw createError({ statusCode: 400, message: 'Give every unit/module of the course, in order' })
+  await db.transaction(async (tx) => {
+    for (const [i, id] of ids.entries()) await tx.update(courseModules).set({ position: i + 1 }).where(eq(courseModules.id, id))
   })
 }
 
@@ -132,12 +227,35 @@ function link(v: unknown) {
 }
 
 /** A lesson's fields as the editor sends them; only those given are kept. */
-export async function lessonValues(body: Record<string, unknown>, partial: boolean) {
+export async function lessonValues(body: Record<string, unknown>, partial: boolean, courseId?: string) {
   const out: Partial<typeof courseLessons.$inferInsert> = {}
   if (body.title !== undefined || !partial) {
     const title = text(body.title, 160)
     if (!title) throw createError({ statusCode: 400, message: 'Give the lesson a title' })
     out.title = title
+  }
+  if (body.summary !== undefined) out.summary = text(body.summary, 400) || null
+  if (body.durationMinutes !== undefined) {
+    const d = body.durationMinutes === null || body.durationMinutes === '' ? null : Math.round(Number(body.durationMinutes))
+    out.durationMinutes = d && Number.isFinite(d) && d > 0 ? Math.min(600, d) : null
+  }
+  if (body.moduleId !== undefined) {
+    const mid = body.moduleId ? String(body.moduleId) : null
+    if (mid) {
+      if (!/^[0-9a-f-]{36}$/i.test(mid)) throw createError({ statusCode: 400, message: 'Invalid unit/module' })
+      if (courseId) {
+        const [mod] = await useDb().select({ id: courseModules.id }).from(courseModules).where(and(eq(courseModules.id, mid), eq(courseModules.courseId, courseId))).limit(1)
+        if (!mod) throw createError({ statusCode: 400, message: 'Unit/module does not belong to this course' })
+      }
+      out.moduleId = mid
+    } else {
+      out.moduleId = null
+    }
+  }
+  if (body.availableFrom !== undefined) out.availableFrom = optionalDate(body.availableFrom, 'available from date')
+  if (body.availableTo !== undefined) out.availableTo = optionalDate(body.availableTo, 'available to date')
+  if (out.availableFrom && out.availableTo && out.availableTo <= out.availableFrom) {
+    throw createError({ statusCode: 400, message: 'Available-to date must be after available-from date' })
   }
   if (body.body !== undefined) out.body = sanitizeRichText(String(body.body ?? '')).slice(0, 100_000) || null
   if (body.videoUrl !== undefined) out.videoUrl = link(body.videoUrl)
@@ -171,7 +289,7 @@ export async function lessonValues(body: Record<string, unknown>, partial: boole
 }
 
 export async function addLesson(course: Course, body: Record<string, unknown>) {
-  const v = await lessonValues(body, false)
+  const v = await lessonValues(body, false, course.id)
   const db = useDb()
   const [last] = await db.select({ n: sql<number>`coalesce(max(${courseLessons.position}), 0)::int` }).from(courseLessons).where(eq(courseLessons.courseId, course.id))
   const [l] = await db.insert(courseLessons).values({ ...v, title: v.title!, courseId: course.id, position: (last?.n ?? 0) + 1 }).returning()
@@ -179,19 +297,70 @@ export async function addLesson(course: Course, body: Record<string, unknown>) {
   return l!
 }
 
-/** Puts the lessons in the order given (ids of this course's lessons). */
-export async function reorderLessons(course: Course, ids: string[]) {
+/** Puts the lessons in the order given (ids of this course's lessons, or a module's lessons). */
+export async function reorderLessons(course: Course, ids: string[], moduleId?: string | null) {
   const db = useDb()
-  const mine = (await db.select({ id: courseLessons.id }).from(courseLessons).where(eq(courseLessons.courseId, course.id))).map(r => r.id)
-  if (ids.length !== mine.length || ids.some(id => !mine.includes(id))) throw createError({ statusCode: 400, message: 'Give every lesson of the course, in order' })
+  const mine = (await db.select({ id: courseLessons.id, moduleId: courseLessons.moduleId }).from(courseLessons).where(eq(courseLessons.courseId, course.id)))
+  const scoped = moduleId === undefined ? mine.map(r => r.id) : mine.filter(r => (r.moduleId ?? null) === (moduleId ?? null)).map(r => r.id)
+  if (ids.length !== scoped.length || ids.some(id => !scoped.includes(id))) throw createError({ statusCode: 400, message: 'Give every lesson in order' })
   await db.transaction(async (tx) => {
     for (const [i, id] of ids.entries()) await tx.update(courseLessons).set({ position: i + 1 }).where(eq(courseLessons.id, id))
   })
 }
 
-// ---------- reading ----------
+// ---------- reading & ordering ----------
 
-const what = (l: Lesson) => ({ text: !!l.body, video: !!l.videoUrl, task: !!l.taskTestId, files: Array.isArray(l.files) && l.files.length > 0, live: !!l.liveLessonId })
+/** Returns modules and lessons ordered canonically: module.position asc, then lesson.position asc; ungrouped lessons last. */
+export async function loadOrderedCurriculum(courseId: string) {
+  const db = useDb()
+  const [mods, rawLessons] = await Promise.all([
+    db.select().from(courseModules).where(eq(courseModules.courseId, courseId)).orderBy(asc(courseModules.position), asc(courseModules.createdAt)),
+    db.select().from(courseLessons).where(eq(courseLessons.courseId, courseId)).orderBy(asc(courseLessons.position), asc(courseLessons.createdAt))
+  ])
+  const modOrder = new Map(mods.map((m, idx) => [m.id, idx]))
+  const lessons = [...rawLessons].sort((a, b) => {
+    const ma = a.moduleId && modOrder.has(a.moduleId) ? modOrder.get(a.moduleId)! : Number.MAX_SAFE_INTEGER
+    const mb = b.moduleId && modOrder.has(b.moduleId) ? modOrder.get(b.moduleId)! : Number.MAX_SAFE_INTEGER
+    if (ma !== mb) return ma - mb
+    return a.position - b.position
+  })
+  return { modules: mods, lessons }
+}
+
+/** Compute content-drip state for every lesson in canonical order. */
+export function evaluateCourseDrip(course: Course, mods: ModuleRow[], orderedLessons: Lesson[], doneIds: Set<string>, bypass: boolean) {
+  const modMap = new Map(mods.map(m => [m.id, m]))
+  const map = new Map<string, DripState>()
+  const now = new Date()
+  for (let i = 0; i < orderedLessons.length; i++) {
+    const l = orderedLessons[i]!
+    const mod = l.moduleId ? modMap.get(l.moduleId) : undefined
+    const prev = i > 0 ? orderedLessons[i - 1]! : null
+    const state = computeDripState({
+      courseDripMode: course.dripMode,
+      courseStartAt: course.dripStartAt,
+      courseEndAt: course.dripEndAt,
+      moduleDripMode: mod?.dripMode ?? null,
+      moduleFrom: mod?.availableFrom ?? null,
+      moduleTo: mod?.availableTo ?? null,
+      lessonFrom: l.availableFrom,
+      lessonTo: l.availableTo,
+      prevLesson: prev ? { id: prev.id, title: prev.title, done: doneIds.has(prev.id) } : null,
+      now
+    })
+    map.set(l.id, bypass ? { ...state, locked: false, reason: null } : state)
+  }
+  return map
+}
+
+const what = (l: Lesson, exerciseCount = 0) => ({
+  text: !!l.body,
+  video: !!l.videoUrl,
+  task: !!l.taskTestId,
+  files: Array.isArray(l.files) && l.files.length > 0,
+  live: !!l.liveLessonId,
+  exercises: exerciseCount > 0
+})
 
 /** Whether each of these lessons' tasks has been handed in by the user. */
 async function tasksDone(userId: string, lessons: Lesson[]) {
@@ -209,16 +378,20 @@ async function cards(rows: Course[]) {
   if (!rows.length) return []
   const db = useDb()
   const ids = rows.map(r => r.id)
-  const [teachers, lessonCounts, learners] = await Promise.all([
+  const [teachers, moduleCounts, lessonCounts, learners] = await Promise.all([
     db.select({ id: users.id, name: users.name, telegramUsername: users.telegramUsername, avatarUrl: users.avatarUrl }).from(users).where(inArray(users.id, [...new Set(rows.map(r => r.teacherId))])),
+    db.select({ id: courseModules.courseId, n: count() }).from(courseModules).where(inArray(courseModules.courseId, ids)).groupBy(courseModules.courseId),
     db.select({ id: courseLessons.courseId, n: count() }).from(courseLessons).where(inArray(courseLessons.courseId, ids)).groupBy(courseLessons.courseId),
     db.select({ id: courseEnrollments.courseId, n: count() }).from(courseEnrollments).where(inArray(courseEnrollments.courseId, ids)).groupBy(courseEnrollments.courseId)
   ])
   return rows.map((c) => {
     const t = teachers.find(x => x.id === c.teacherId)
     return {
-      id: c.id, slug: c.slug, title: c.title, summary: c.summary, exam: c.exam, level: c.level, visibility: c.visibility, published: c.published,
+      id: c.id, slug: c.slug, title: c.title, summary: c.summary, coverUrl: c.coverUrl, exam: c.exam, level: c.level,
+      visibility: c.visibility, published: c.published,
+      dripMode: c.dripMode as DripMode, dripStartAt: c.dripStartAt, dripEndAt: c.dripEndAt, passingScore: c.passingScore,
       teacher: t ? { name: nameOf(t), avatarUrl: t.avatarUrl } : null,
+      modules: moduleCounts.find(x => x.id === c.id)?.n ?? 0,
       lessons: lessonCounts.find(x => x.id === c.id)?.n ?? 0,
       learners: learners.find(x => x.id === c.id)?.n ?? 0,
       updatedAt: c.updatedAt
@@ -257,88 +430,297 @@ export async function learnerCourses(userId: string) {
   return list.map(c => ({ ...c, done: done.find(d => d.courseId === c.id)?.n ?? 0 }))
 }
 
-/** A course's page: its lessons (what each holds, and whether the viewer did it), and what the viewer may do. */
+/** A course's page: its units/modules, lessons (with content drip state and exercise counts), and viewer access. */
 export async function courseView(viewer: Viewer, course: Course) {
   const access = await accessTo(viewer, course)
   if (!access.see) throw createError({ statusCode: 404, message: 'Course not found' })
   const db = useDb()
-  const lessons = await db.select().from(courseLessons).where(eq(courseLessons.courseId, course.id)).orderBy(asc(courseLessons.position))
+  const { modules: mods, lessons } = await loadOrderedCurriculum(course.id)
   const [card] = await cards([course])
-  const doneIds = viewer && access.learn
-    ? new Set((await db.select({ id: lessonProgress.lessonId }).from(lessonProgress)
-        .where(and(eq(lessonProgress.userId, viewer.id), lessons.length ? inArray(lessonProgress.lessonId, lessons.map(l => l.id)) : sql`false`))).map(r => r.id))
-    : new Set<string>()
-  const handedIn = viewer && access.learn ? await tasksDone(viewer.id, lessons) : new Set<string>()
+  const lessonIds = lessons.map(l => l.id)
+  const [doneRows, exerciseCounts, handedIn] = await Promise.all([
+    viewer && access.learn && lessonIds.length
+      ? db.select({ id: lessonProgress.lessonId }).from(lessonProgress).where(and(eq(lessonProgress.userId, viewer.id), inArray(lessonProgress.lessonId, lessonIds)))
+      : [],
+    lessonIds.length
+      ? db.select({ lessonId: lessonExercises.lessonId, n: count() }).from(lessonExercises).where(inArray(lessonExercises.lessonId, lessonIds)).groupBy(lessonExercises.lessonId)
+      : [],
+    viewer && access.learn ? tasksDone(viewer.id, lessons) : Promise.resolve(new Set<string>())
+  ])
+  const doneIds = new Set(doneRows.map(r => r.id))
+  const exCountMap = new Map(exerciseCounts.map(r => [r.lessonId, r.n]))
+  const dripMap = evaluateCourseDrip(course, mods, lessons, doneIds, access.teaches)
+
+  const lessonItems = lessons.map((l, idx) => {
+    const exerciseCount = exCountMap.get(l.id) ?? 0
+    return {
+      id: l.id,
+      moduleId: l.moduleId,
+      position: idx + 1,
+      title: l.title,
+      summary: l.summary,
+      durationMinutes: l.durationMinutes,
+      exerciseCount,
+      has: what(l, exerciseCount),
+      done: doneIds.has(l.id),
+      taskDone: handedIn.has(l.id),
+      drip: dripMap.get(l.id)!
+    }
+  })
+
+  const moduleList = mods.map(m => ({
+    id: m.id,
+    position: m.position,
+    title: m.title,
+    description: m.description,
+    dripMode: m.dripMode,
+    availableFrom: m.availableFrom,
+    availableTo: m.availableTo,
+    lessons: lessonItems.filter(l => l.moduleId === m.id)
+  }))
+  const ungrouped = lessonItems.filter(l => !l.moduleId || !mods.some(m => m.id === l.moduleId))
+  if (ungrouped.length) {
+    moduleList.push({
+      id: '__ungrouped__',
+      position: moduleList.length + 1,
+      title: moduleList.length ? 'Additional Lessons' : 'Course Lessons',
+      description: null,
+      dripMode: null,
+      availableFrom: null,
+      availableTo: null,
+      lessons: ungrouped
+    })
+  }
+
   return {
     ...card!,
     access,
-    lessons: lessons.map(l => ({ id: l.id, position: l.position, title: l.title, has: what(l), done: doneIds.has(l.id), taskDone: handedIn.has(l.id) }))
+    modules: moduleList,
+    lessons: lessonItems
   }
 }
 
-/** A lesson for a learner (or the teacher): its content, the course's order around it, and their progress. */
+/** A lesson for a learner (or the teacher): enforces content drip, includes exercises and full outline. */
 export async function lessonView(viewer: Viewer, lesson: Lesson) {
   const course = await findCourse(lesson.courseId)
   const access = await accessTo(viewer, course)
   if (!access.see) throw createError({ statusCode: 404, message: 'Lesson not found' })
   if (!access.learn) throw createError({ statusCode: 403, message: course.visibility === 'PUBLIC' ? 'Enroll in the course to open its lessons' : 'This course is for the teacher\'s students', data: { code: 'ENROLL', slug: course.slug } })
+
   const db = useDb()
-  const order = await db.select({ id: courseLessons.id, title: courseLessons.title }).from(courseLessons).where(eq(courseLessons.courseId, course.id)).orderBy(asc(courseLessons.position))
-  const at = order.findIndex(o => o.id === lesson.id)
-  const [test] = lesson.taskTestId ? await db.select({ slug: tests.slug, title: tests.title }).from(tests).where(eq(tests.id, lesson.taskTestId)).limit(1) : []
-  const [live] = lesson.liveLessonId ? await db.select().from(liveLessons).where(eq(liveLessons.id, lesson.liveLessonId)).limit(1) : []
-  const [done] = viewer ? await db.select({ one: sql<number>`1` }).from(lessonProgress).where(and(eq(lessonProgress.lessonId, lesson.id), eq(lessonProgress.userId, viewer.id))).limit(1) : []
-  const taskDone = viewer ? (await tasksDone(viewer.id, [lesson])).has(lesson.id) : false
+  const { modules: mods, lessons } = await loadOrderedCurriculum(course.id)
+  const lessonIds = lessons.map(l => l.id)
+  const doneRows = viewer && lessonIds.length
+    ? await db.select({ id: lessonProgress.lessonId }).from(lessonProgress).where(and(eq(lessonProgress.userId, viewer.id), inArray(lessonProgress.lessonId, lessonIds)))
+    : []
+  const doneIds = new Set(doneRows.map(r => r.id))
+  const dripMap = evaluateCourseDrip(course, mods, lessons, doneIds, access.teaches)
+  const drip = dripMap.get(lesson.id)!
+
+  if (drip.locked && !access.teaches) {
+    throw createError({
+      statusCode: 403,
+      message: drip.reason === 'PREVIOUS_INCOMPLETE'
+        ? `Complete "${drip.previousLessonTitle || 'the previous lesson'}" first to unlock this lesson.`
+        : drip.reason === 'DATE_EXPIRED'
+          ? 'This lesson is no longer available.'
+          : 'This lesson is not open yet.',
+      data: { code: 'DRIP_LOCKED', drip, slug: course.slug }
+    })
+  }
+
+  const at = lessons.findIndex(o => o.id === lesson.id)
+  const mod = lesson.moduleId ? mods.find(m => m.id === lesson.moduleId) : null
+  const [testRow, liveRow, exRows, taskDoneSet] = await Promise.all([
+    lesson.taskTestId ? db.select({ slug: tests.slug, title: tests.title }).from(tests).where(eq(tests.id, lesson.taskTestId)).limit(1) : Promise.resolve([]),
+    lesson.liveLessonId ? db.select().from(liveLessons).where(eq(liveLessons.id, lesson.liveLessonId)).limit(1) : Promise.resolve([]),
+    db.select().from(lessonExercises).where(eq(lessonExercises.lessonId, lesson.id)).orderBy(asc(lessonExercises.position), asc(lessonExercises.createdAt)),
+    viewer ? tasksDone(viewer.id, [lesson]) : Promise.resolve(new Set<string>())
+  ])
+  const test = testRow[0]
+  const live = liveRow[0]
+
+  const exIds = exRows.map(e => e.id)
+  const [qCounts, myExAttempts] = await Promise.all([
+    exIds.length ? db.select({ exerciseId: exerciseQuestions.exerciseId, n: count() }).from(exerciseQuestions).where(inArray(exerciseQuestions.exerciseId, exIds)).groupBy(exerciseQuestions.exerciseId) : [],
+    viewer && exIds.length ? db.select().from(exerciseAttempts).where(and(eq(exerciseAttempts.userId, viewer.id), inArray(exerciseAttempts.exerciseId, exIds))).orderBy(desc(exerciseAttempts.submittedAt)) : []
+  ])
+
+  const exercises = exRows.map((e) => {
+    const mine = myExAttempts.filter(a => a.exerciseId === e.id)
+    const best = mine.reduce<number | null>((acc, a) => (acc == null ? a.score : Math.max(acc, a.score)), null)
+    const passed = mine.some(a => a.passed)
+    return {
+      id: e.id,
+      position: e.position,
+      title: e.title,
+      instructions: e.instructions,
+      exerciseType: e.exerciseType,
+      passingScore: e.passingScore,
+      timeLimitSeconds: e.timeLimitSeconds,
+      maxAttempts: e.maxAttempts,
+      shuffleQuestions: e.shuffleQuestions,
+      showFeedback: e.showFeedback,
+      requiredForCompletion: e.requiredForCompletion,
+      questionCount: qCounts.find(q => q.exerciseId === e.id)?.n ?? 0,
+      attemptsUsed: mine.length,
+      bestScore: best,
+      passed,
+      lastAttemptId: mine[0]?.id ?? null
+    }
+  })
+
+  const requiredPending = exercises.filter(e => e.requiredForCompletion && !e.passed).length
+  const outlineModules = mods.map(m => ({
+    id: m.id,
+    title: m.title,
+    lessons: lessons.filter(l => l.moduleId === m.id).map(l => ({
+      id: l.id,
+      title: l.title,
+      done: doneIds.has(l.id),
+      locked: dripMap.get(l.id)?.locked ?? false
+    }))
+  }))
+  const ungroupedOutline = lessons.filter(l => !l.moduleId || !mods.some(m => m.id === l.moduleId))
+  if (ungroupedOutline.length) {
+    outlineModules.push({
+      id: '__ungrouped__',
+      title: outlineModules.length ? 'Additional Lessons' : 'Lessons',
+      lessons: ungroupedOutline.map(l => ({
+        id: l.id,
+        title: l.title,
+        done: doneIds.has(l.id),
+        locked: dripMap.get(l.id)?.locked ?? false
+      }))
+    })
+  }
+
+  const prevL = at > 0 ? lessons[at - 1]! : null
+  const nextL = at >= 0 && at < lessons.length - 1 ? lessons[at + 1]! : null
+
   return {
-    id: lesson.id, title: lesson.title, body: lesson.body, videoUrl: lesson.videoUrl, files: lesson.files,
-    task: test && lesson.taskSkill ? { test: test.title, skill: lesson.taskSkill, partNumber: lesson.taskPartNumber, to: taskPath(test.slug, lesson), done: taskDone } : null,
+    id: lesson.id,
+    moduleId: lesson.moduleId,
+    module: mod ? { id: mod.id, title: mod.title, position: mod.position } : null,
+    title: lesson.title,
+    summary: lesson.summary,
+    durationMinutes: lesson.durationMinutes,
+    body: lesson.body,
+    videoUrl: lesson.videoUrl,
+    files: lesson.files,
+    task: test && lesson.taskSkill ? { test: test.title, skill: lesson.taskSkill, partNumber: lesson.taskPartNumber, to: taskPath(test.slug, lesson), done: taskDoneSet.has(lesson.id) } : null,
     live: live ? liveView(live, true) : null,
-    done: !!done,
-    course: { id: course.id, slug: course.slug, title: course.title, teaches: access.teaches },
-    position: at + 1, of: order.length,
-    prev: at > 0 ? order[at - 1] : null,
-    next: at >= 0 && at < order.length - 1 ? order[at + 1] : null
+    exercises,
+    canMarkDone: requiredPending === 0,
+    requiredPending,
+    drip,
+    done: doneIds.has(lesson.id),
+    course: { id: course.id, slug: course.slug, title: course.title, teaches: access.teaches, dripMode: course.dripMode },
+    outline: outlineModules,
+    position: at + 1,
+    of: lessons.length,
+    prev: prevL ? { id: prevL.id, title: prevL.title } : null,
+    next: nextL ? { id: nextL.id, title: nextL.title, locked: dripMap.get(nextL.id)?.locked ?? false } : null
   }
 }
 
-/** For the teacher: every lesson in full, and each learner's progress. */
+/** For the teacher/admin: full curriculum (modules -> lessons -> exercises) and each learner's progress. */
 export async function manageView(course: Course) {
   const db = useDb()
-  const lessons = await db.select().from(courseLessons).where(eq(courseLessons.courseId, course.id)).orderBy(asc(courseLessons.position))
+  const { modules: mods, lessons } = await loadOrderedCurriculum(course.id)
+  const lessonIds = lessons.map(l => l.id)
   const testIds = [...new Set(lessons.map(l => l.taskTestId).filter((x): x is string => !!x))]
   const liveIds = lessons.map(l => l.liveLessonId).filter((x): x is string => !!x)
-  const [testRows, liveRows, learnerIds] = await Promise.all([
+
+  const [testRows, liveRows, exRows, learnerIds] = await Promise.all([
     testIds.length ? db.select({ id: tests.id, slug: tests.slug, title: tests.title }).from(tests).where(inArray(tests.id, testIds)) : [],
     liveIds.length ? db.select().from(liveLessons).where(inArray(liveLessons.id, liveIds)) : [],
+    lessonIds.length ? db.select().from(lessonExercises).where(inArray(lessonExercises.lessonId, lessonIds)).orderBy(asc(lessonExercises.position), asc(lessonExercises.createdAt)) : [],
     courseAudience(course)
   ])
-  const learners = learnerIds.length
-    ? await db.select({ id: users.id, name: users.name, telegramUsername: users.telegramUsername, avatarUrl: users.avatarUrl }).from(users).where(inArray(users.id, learnerIds))
-    : []
-  const progress = learnerIds.length && lessons.length
-    ? await db.select({ userId: lessonProgress.userId, n: count() }).from(lessonProgress)
-        .where(and(inArray(lessonProgress.userId, learnerIds), inArray(lessonProgress.lessonId, lessons.map(l => l.id)))).groupBy(lessonProgress.userId)
-    : []
+
+  const exIds = exRows.map(e => e.id)
+  const [qCounts, learners, progress, exAttempts] = await Promise.all([
+    exIds.length ? db.select({ exerciseId: exerciseQuestions.exerciseId, n: count() }).from(exerciseQuestions).where(inArray(exerciseQuestions.exerciseId, exIds)).groupBy(exerciseQuestions.exerciseId) : [],
+    learnerIds.length ? db.select({ id: users.id, name: users.name, telegramUsername: users.telegramUsername, avatarUrl: users.avatarUrl }).from(users).where(inArray(users.id, learnerIds)) : [],
+    learnerIds.length && lessonIds.length
+      ? db.select({ userId: lessonProgress.userId, n: count() }).from(lessonProgress)
+          .where(and(inArray(lessonProgress.userId, learnerIds), inArray(lessonProgress.lessonId, lessonIds))).groupBy(lessonProgress.userId)
+      : [],
+    learnerIds.length && exIds.length
+      ? db.select({ userId: exerciseAttempts.userId, exerciseId: exerciseAttempts.exerciseId, score: exerciseAttempts.score, passed: exerciseAttempts.passed }).from(exerciseAttempts)
+          .where(and(inArray(exerciseAttempts.userId, learnerIds), inArray(exerciseAttempts.exerciseId, exIds)))
+      : []
+  ])
+
   const tasks = lessons.filter(l => l.taskTestId).length
   const taskCounts = await Promise.all(learners.map(async u => [u.id, (await tasksDone(u.id, lessons)).size] as const))
   const [card] = await cards([course])
+
+  const lessonList = lessons.map((l) => {
+    const t = testRows.find(x => x.id === l.taskTestId)
+    const live = liveRows.find(x => x.id === l.liveLessonId)
+    const exercises = exRows.filter(e => e.lessonId === l.id).map(e => ({
+      id: e.id,
+      lessonId: e.lessonId,
+      position: e.position,
+      title: e.title,
+      instructions: e.instructions,
+      exerciseType: e.exerciseType,
+      passingScore: e.passingScore,
+      timeLimitSeconds: e.timeLimitSeconds,
+      maxAttempts: e.maxAttempts,
+      shuffleQuestions: e.shuffleQuestions,
+      showFeedback: e.showFeedback,
+      requiredForCompletion: e.requiredForCompletion,
+      questionCount: qCounts.find(q => q.exerciseId === e.id)?.n ?? 0
+    }))
+    return {
+      id: l.id,
+      moduleId: l.moduleId,
+      position: l.position,
+      title: l.title,
+      summary: l.summary,
+      durationMinutes: l.durationMinutes,
+      body: l.body,
+      videoUrl: l.videoUrl,
+      files: l.files,
+      availableFrom: l.availableFrom,
+      availableTo: l.availableTo,
+      task: l.taskTestId ? { testId: l.taskTestId, test: t?.title ?? null, skill: l.taskSkill, partNumber: l.taskPartNumber } : null,
+      live: live ? liveView(live, true) : null,
+      exercises
+    }
+  })
+
   return {
     ...card!,
-    lessons: lessons.map((l) => {
-      const t = testRows.find(x => x.id === l.taskTestId)
-      const live = liveRows.find(x => x.id === l.liveLessonId)
-      return {
-        id: l.id, position: l.position, title: l.title, body: l.body, videoUrl: l.videoUrl, files: l.files,
-        task: l.taskTestId ? { testId: l.taskTestId, test: t?.title ?? null, skill: l.taskSkill, partNumber: l.taskPartNumber } : null,
-        live: live ? liveView(live, true) : null
-      }
-    }),
+    modules: mods.map(m => ({
+      id: m.id,
+      position: m.position,
+      title: m.title,
+      description: m.description,
+      dripMode: m.dripMode,
+      availableFrom: m.availableFrom,
+      availableTo: m.availableTo
+    })),
+    lessons: lessonList,
     tasks,
-    learners: learners.map(u => ({
-      id: u.id, name: nameOf(u), avatarUrl: u.avatarUrl,
-      done: progress.find(p => p.userId === u.id)?.n ?? 0,
-      tasksDone: taskCounts.find(([id]) => id === u.id)?.[1] ?? 0
-    })).sort((a, b) => b.done - a.done || a.name.localeCompare(b.name))
+    exerciseTotal: exRows.length,
+    learners: learners.map((u) => {
+      const mineEx = exAttempts.filter(a => a.userId === u.id)
+      const passedExercises = new Set(mineEx.filter(a => a.passed).map(a => a.exerciseId)).size
+      const avgScore = mineEx.length ? Math.round(mineEx.reduce((s, a) => s + a.score, 0) / mineEx.length) : null
+      return {
+        id: u.id,
+        name: nameOf(u),
+        avatarUrl: u.avatarUrl,
+        done: progress.find(p => p.userId === u.id)?.n ?? 0,
+        tasksDone: taskCounts.find(([id]) => id === u.id)?.[1] ?? 0,
+        exercisesPassed: passedExercises,
+        avgExerciseScore: avgScore
+      }
+    }).sort((a, b) => b.done - a.done || a.name.localeCompare(b.name))
   }
 }
 

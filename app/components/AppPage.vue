@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * A page's frame. In the app (layouts/default.vue) it is a dashboard panel with a top bar; in the
- * public site (layouts/public.vue) it is a plain centred section, the back link and actions above it.
- * On a phone the app has no drawer: the tab bar and Profile lead everywhere, so the top bar has no
- * menu button. The content sits in a centred column, and each block in it is centred too (a
- * narrower card stays in the middle); `wide` gives editors such as the builder the whole width.
+ * A page's frame:
+ * - In public site (layouts/public.vue): plain centred section with back link and actions.
+ * - In split Admin / Teacher panels (layouts/admin.vue, layouts/teacher.vue): clean panel content
+ *   wrapper with inline page actions and toolbar (no duplicate sidebar/top navbar).
+ * - In student app (layouts/default.vue): Nuxt UI UDashboardPanel with top navbar.
  */
 defineProps<{
   title?: string
@@ -14,6 +14,7 @@ defineProps<{
   wide?: boolean
 }>()
 const inPublic = useInPublicLayout()
+const panel = usePanelLayout()
 const { t } = useI18n()
 </script>
 
@@ -41,6 +42,60 @@ const { t } = useI18n()
     </div>
     <slot name="toolbar" />
     <slot />
+  </div>
+
+  <!-- Inside Admin or Teacher Panel Shell -->
+  <div
+    v-else-if="panel"
+    class="mx-auto w-full flex flex-col gap-5"
+    :class="wide ? '' : 'max-w-7xl'"
+  >
+    <div
+      v-if="back || title || $slots.actions"
+      class="flex flex-wrap items-center justify-between gap-3"
+    >
+      <div class="flex items-center gap-2 min-w-0">
+        <UButton
+          v-if="back"
+          :to="back"
+          icon="i-lucide-arrow-left"
+          color="neutral"
+          variant="soft"
+          size="sm"
+          square
+        />
+        <div
+          v-if="title"
+          class="flex items-center gap-2 min-w-0"
+        >
+          <UIcon
+            v-if="icon && !back"
+            :name="icon"
+            class="size-5 text-primary shrink-0"
+          />
+          <h2 class="text-lg sm:text-xl font-bold text-highlighted truncate">
+            {{ title }}
+          </h2>
+        </div>
+      </div>
+      <div
+        v-if="$slots.actions"
+        class="flex flex-wrap items-center gap-2 ms-auto"
+      >
+        <slot name="actions" />
+      </div>
+    </div>
+
+    <div v-if="$slots.toolbar">
+      <slot name="toolbar" />
+    </div>
+
+    <div
+      class="flex flex-col gap-4 sm:gap-6"
+      :class="wide ? 'w-full' : 'w-full'"
+    >
+      <slot />
+    </div>
   </div>
 
   <UDashboardPanel

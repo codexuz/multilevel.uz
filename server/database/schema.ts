@@ -348,6 +348,9 @@ export const speakingResponses = pgTable('speaking_responses', {
 export const classGroups = pgTable('class_groups', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
+  /** Optional level/exam label shown on Teacher Panel cards (e.g. A2, B1, B2, C1, IELTS). */
+  level: text('level'),
+  description: text('description'),
   /** The teacher it belongs to: they made it, and their classes go with their account. */
   teacherId: uuid('teacher_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   /** Students join with /join/<code>. */
@@ -690,10 +693,13 @@ export const liveLessons = pgTable('live_lessons', {
   index('live_lessons_course_idx').on(t.courseId, t.startsAt)
 ])
 
-// ---------- courses ----------
+// ---------- courses (LMS: Course => Units/Modules => Lessons => Exercises => Questions) ----------
 /**
- * A teacher's course: lessons in order. PRIVATE: only the students of the teacher's classes see it.
- * PUBLIC: in the catalogue (/courses) once published, and any signed-in user may enroll. Free.
+ * A teacher's course: units/modules containing ordered lessons, interactive exercises, videos,
+ * handouts, exam tasks, and Google Meet classes. Supports content drip:
+ * - ALWAYS_OPEN: all modules and lessons open immediately
+ * - DATE_RANGE: controlled by availableFrom / availableTo timestamps at course, module, or lesson level
+ * - SEQUENTIAL: learners unlock each lesson automatically after completing the previous one
  */
 export const courses = pgTable('courses', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -702,23 +708,48 @@ export const courses = pgTable('courses', {
   slug: text('slug').notNull().unique(),
   /** A line or two for the catalogue. */
   summary: text('summary'),
+  coverUrl: text('cover_url'),
   /** IELTS | MULTILEVEL, or null for general English. */
   exam: text('exam'),
-  /** A1..C1, the level it is for (optional). */
+  /** A1..C2, the level it is for (optional). */
   level: text('level'),
   /** PRIVATE | PUBLIC */
   visibility: text('visibility').notNull().default('PRIVATE'),
   published: boolean('published').notNull().default(false),
+  /** Content drip mode: ALWAYS_OPEN | DATE_RANGE | SEQUENTIAL. */
+  dripMode: text('drip_mode').notNull().default('ALWAYS_OPEN'),
+  dripStartAt: timestamp('drip_start_at', { withTimezone: true }),
+  dripEndAt: timestamp('drip_end_at', { withTimezone: true }),
+  /** Default passing percentage for exercises in this course. */
+  passingScore: integer('passing_score').notNull().default(70),
   createdAt: created(),
   updatedAt: updated()
 }, t => [index('courses_teacher_idx').on(t.teacherId), index('courses_public_idx').on(t.visibility, t.published)])
 
-/** A lesson of a course: any of a text, a video, a test to do, files to download, and an online class. */
-export const courseLessons = pgTable('course_lessons', {
+/** A unit/module inside a course grouping ordered lessons, with optional content-drip overrides. */
+export const courseModules = pgTable('course_modules', {
   id: uuid('id').primaryKey().defaultRandom(),
   courseId: uuid('course_id').notNull().references(() => courses.id, { onDelete: 'cascade' }),
   position: integer('position').notNull().default(1),
   title: text('title').notNull(),
+  description: text('description'),
+  /** Optional drip override: null inherits course dripMode, or ALWAYS_OPEN | DATE_RANGE | SEQUENTIAL. */
+  dripMode: text('drip_mode'),
+  availableFrom: timestamp('available_from', { withTimezone: true }),
+  availableTo: timestamp('available_to', { withTimezone: true }),
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [index('course_modules_course_idx').on(t.courseId, t.position)])
+
+/** A lesson of a course/unit: text, video, interactive exercises, exam task, PDFs, and Google Meet class. */
+export const courseLessons = pgTable('course_lessons', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  courseId: uuid('course_id').notNull().references(() => courses.id, { onDelete: 'cascade' }),
+  moduleId: uuid('module_id').references(() => courseModules.id, { onDelete: 'set null' }),
+  position: integer('position').notNull().default(1),
+  title: text('title').notNull(),
+  summary: text('summary'),
+  durationMinutes: integer('duration_minutes'),
   /** Sanitized rich text. */
   body: text('body'),
   videoUrl: text('video_url'),
@@ -729,9 +760,80 @@ export const courseLessons = pgTable('course_lessons', {
   /** PDFs to download: [{ name, url, size }]. */
   files: jsonb('files').notNull().default([]),
   liveLessonId: uuid('live_lesson_id').references(() => liveLessons.id, { onDelete: 'set null' }),
+  /** Optional content drip date window for this lesson. */
+  availableFrom: timestamp('available_from', { withTimezone: true }),
+  availableTo: timestamp('available_to', { withTimezone: true }),
   createdAt: created(),
   updatedAt: updated()
-}, t => [index('course_lessons_course_idx').on(t.courseId, t.position)])
+}, t => [
+  index('course_lessons_course_idx').on(t.courseId, t.position),
+  index('course_lessons_module_idx').on(t.moduleId, t.position)
+])
+
+/** An interactive exercise inside a lesson (Practice, Quiz, or Homework). */
+export const lessonExercises = pgTable('lesson_exercises', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  lessonId: uuid('lesson_id').notNull().references(() => courseLessons.id, { onDelete: 'cascade' }),
+  position: integer('position').notNull().default(1),
+  title: text('title').notNull(),
+  instructions: text('instructions'),
+  /** PRACTICE | QUIZ | HOMEWORK */
+  exerciseType: text('exercise_type').notNull().default('PRACTICE'),
+  passingScore: integer('passing_score').notNull().default(70),
+  timeLimitSeconds: integer('time_limit_seconds'),
+  maxAttempts: integer('max_attempts'),
+  shuffleQuestions: boolean('shuffle_questions').notNull().default(false),
+  /** IMMEDIATE | AFTER_SUBMIT */
+  showFeedback: text('show_feedback').notNull().default('AFTER_SUBMIT'),
+  requiredForCompletion: boolean('required_for_completion').notNull().default(false),
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [index('lesson_exercises_lesson_idx').on(t.lessonId, t.position)])
+
+/**
+ * A question inside an LMS exercise. Supported types:
+ * SENTENCE_BUILD | ERROR_SPOT | MCQ | SINGLE_CHOICE | SHORT_ANSWER | NOTE_COMPLETION |
+ * SUMMARY_COMPLETION | SUMMARY_DRAG_DROP | TRUE_FALSE | ORDER | TRANSLATION | DICTATION
+ */
+export const exerciseQuestions = pgTable('exercise_questions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  exerciseId: uuid('exercise_id').notNull().references(() => lessonExercises.id, { onDelete: 'cascade' }),
+  position: integer('position').notNull().default(1),
+  type: text('type').notNull(),
+  prompt: text('prompt').notNull().default(''),
+  /** Context passage/notes/summary with {{1}} gaps, or target sentence for ERROR_SPOT. */
+  context: text('context'),
+  audioRef: text('audio_ref'),
+  imageRef: text('image_ref'),
+  /** Type-specific structured config (options, words, distractors, segments, items, wordBank, ttsText, etc.). */
+  config: jsonb('config').notNull().default({}),
+  /** Accepted answer key(s): string[] or Record<string, string[]> for multi-blank questions. */
+  acceptedAnswers: jsonb('accepted_answers').notNull().default([]),
+  explanation: text('explanation'),
+  points: integer('points').notNull().default(1),
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [index('exercise_questions_exercise_idx').on(t.exerciseId, t.position)])
+
+/** A student's graded attempt at a lesson exercise. */
+export const exerciseAttempts = pgTable('exercise_attempts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  exerciseId: uuid('exercise_id').notNull().references(() => lessonExercises.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  answers: jsonb('answers').notNull().default({}),
+  results: jsonb('results').notNull().default({}),
+  /** Percentage 0..100 */
+  score: integer('score').notNull().default(0),
+  earnedPoints: integer('earned_points').notNull().default(0),
+  totalPoints: integer('total_points').notNull().default(0),
+  passed: boolean('passed').notNull().default(false),
+  durationSeconds: integer('duration_seconds'),
+  submittedAt: timestamp('submitted_at', { withTimezone: true }).notNull().defaultNow(),
+  createdAt: created()
+}, t => [
+  index('exercise_attempts_user_idx').on(t.userId, t.submittedAt),
+  index('exercise_attempts_exercise_idx').on(t.exerciseId, t.userId)
+])
 
 /** Who took a public course (a private one's students are the teacher's class students). */
 export const courseEnrollments = pgTable('course_enrollments', {
