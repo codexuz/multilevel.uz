@@ -3,7 +3,7 @@ import type { DropdownMenuItem, NavigationMenuItem } from '@nuxt/ui'
 
 // The erp-lms IELTS app's shell (layouts/default.vue there), open to guests: anyone can browse and
 // take tests; signing in keeps the results, and staff get the builder and marking.
-const { me, loggedIn, isPremium, rewardCredits } = useMe()
+const { me, loggedIn, rewardCredits } = useMe()
 const { live } = useLiveMock()
 const { t } = useI18n()
 const { locale, languages, choose } = useLanguage()
@@ -19,9 +19,9 @@ const mainNav = computed<NavigationMenuItem[]>(() => [
     ? { label: t('nav.classes'), icon: 'i-lucide-school', to: '/classes' }
     : { label: t('nav.teach'), icon: 'i-lucide-presentation', to: '/teach' },
   ...(me.value?.runsMocks ? [{ label: t('nav.mocks'), icon: 'i-lucide-monitor-check', to: '/mocks' }] : []),
-  { label: t('nav.premium'), icon: 'i-lucide-sparkles', to: '/pricing', badge: isPremium.value ? { label: t('nav.on'), color: 'success' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined },
-  { label: t('nav.earn'), icon: 'i-lucide-gift', to: '/earn', badge: rewardCredits.value ? { label: String(rewardCredits.value), color: 'primary' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined },
-  { label: t('nav.promo'), icon: 'i-lucide-ticket', to: '/promo' }
+  // Premium tests open with packs (bought) or credits (earned).
+  { label: t('nav.packs'), icon: 'i-lucide-package', to: '/tests?view=packs' },
+  { label: t('nav.earn'), icon: 'i-lucide-gift', to: '/earn', badge: rewardCredits.value ? { label: String(rewardCredits.value), color: 'primary' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined }
 ])
 
 const staffNav = useStaffNav()
@@ -40,7 +40,7 @@ const bottomLinks = computed<NavigationMenuItem[]>(() => loggedIn.value
 const tabBar = computed(() => [
   { label: t('nav.tests'), icon: 'i-lucide-clipboard-list', to: '/tests' },
   ...(loggedIn.value
-    ? [{ label: t('nav.resultsShort'), icon: 'i-lucide-chart-column', to: '/results' }, me.value?.teaches ? { label: t('nav.classesShort'), icon: 'i-lucide-school', to: '/classes' } : { label: t('nav.wordsShort'), icon: 'i-lucide-book-open-text', to: '/words' }, { label: t('nav.premium'), icon: 'i-lucide-sparkles', to: '/pricing' }, { label: t('nav.profile'), icon: 'i-lucide-circle-user', to: '/profile' }]
+    ? [{ label: t('nav.resultsShort'), icon: 'i-lucide-chart-column', to: '/results' }, me.value?.teaches ? { label: t('nav.classesShort'), icon: 'i-lucide-school', to: '/classes' } : { label: t('nav.wordsShort'), icon: 'i-lucide-book-open-text', to: '/words' }, { label: t('nav.earnShort'), icon: 'i-lucide-gift', to: '/earn' }, { label: t('nav.profile'), icon: 'i-lucide-circle-user', to: '/profile' }]
     : [{ label: t('nav.signIn'), icon: 'i-lucide-log-in', to: `/login?next=${encodeURIComponent(route.fullPath)}` }])
 ])
 const tabActive = (to: string) => (to === '/' ? route.path === '/' : route.path === to.split('?')[0] || route.path.startsWith(`${to}/`))

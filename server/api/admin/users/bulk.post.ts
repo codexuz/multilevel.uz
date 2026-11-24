@@ -2,10 +2,10 @@ import { and, inArray, ne } from 'drizzle-orm'
 import { sessions, users } from '../../../database/schema'
 import { publishToUser } from '../../../utils/events'
 
-const ROLES = ['student', 'teacher', 'center_owner', 'admin'] as const
+const ROLES = ['student', 'teacher', 'admin'] as const
 
 /**
- * One action on many users at once: `ROLE` (with `role`), `MARKER_ON`, `MARKER_OFF`, `BAN`, `UNBAN` or `DELETE`. The admin's own
+ * One action on many users at once: `ROLE` (with `role`), `BAN`, `UNBAN` or `DELETE`. The admin's own
  * account is always left out. Banning ends their sessions and signs open tabs out, as one by one.
  */
 export default defineEventHandler(async (event) => {
@@ -20,11 +20,6 @@ export default defineEventHandler(async (event) => {
     case 'ROLE': {
       if (!ROLES.includes(body.role as never)) throw createError({ statusCode: 400, message: 'Invalid role' })
       const done = await db.update(users).set({ role: body.role as never, updatedAt: now }).where(where).returning({ id: users.id })
-      return { updated: done.length }
-    }
-    case 'MARKER_ON':
-    case 'MARKER_OFF': {
-      const done = await db.update(users).set({ marker: body.action === 'MARKER_ON', updatedAt: now }).where(where).returning({ id: users.id })
       return { updated: done.length }
     }
     case 'BAN':

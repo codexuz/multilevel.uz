@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { Paginated, UserRole } from '~/types/models'
-import type { Pack, Plan } from '~/utils/billing'
+import type { Pack } from '~/utils/billing'
 
 /**
- * Users: roles, bans, and plans. A plan sold privately (on Telegram) is switched on here with
- * Grant, which records it as a paid order with the amount actually taken.
+ * Users: roles, bans, and what they hold. A test pack sold privately (on Telegram) is opened here
+ * with Grant, which records it as a paid order with the amount actually taken.
  */
 definePageMeta({ middleware: 'admin' })
 useSeoMeta({ title: 'Users', robots: 'noindex' })
@@ -22,11 +22,9 @@ interface AdminUser {
   avatarUrl: string | null
   role: UserRole
   banned: boolean
-  /** Marks Writing and Speaking of students outside a centre. */
-  marker: boolean
   createdAt: string
+  /** Premium time bought before subscriptions were stopped. */
   premiumUntil: string | null
-  credits: number
   rewardCredits: number
   aiBonusReviews: number
   /** Their own mock credits, for mock sessions they run as a teacher. */
@@ -58,14 +56,13 @@ const query = computed(() => ({
   role: filters.role === 'ALL' ? undefined : filters.role,
   plan: filters.plan === 'ALL' ? undefined : filters.plan,
   status: filters.status === 'ALL' ? undefined : filters.status,
-  marker: filters.extra === 'MARKER' ? '1' : undefined,
   telegram: filters.extra === 'TELEGRAM' ? '1' : undefined,
   sort: filters.sort === 'NEWEST' ? undefined : filters.sort,
   page: page.value > 1 ? page.value : undefined,
   pageSize: pageSize.value
 }))
-watch(query, ({ marker, telegram, pageSize: size, ...rest }) => {
-  router.replace({ query: { ...rest, extra: marker ? 'MARKER' : telegram ? 'TELEGRAM' : undefined, size: size === 20 ? undefined : size } })
+watch(query, ({ telegram, pageSize: size, ...rest }) => {
+  router.replace({ query: { ...rest, extra: telegram ? 'TELEGRAM' : undefined, size: size === 20 ? undefined : size } })
 })
 const { data, refresh, status: loadState } = await useFetch<Paginated<AdminUser>>('/api/admin/users', { query })
 const usersList = computed(() => data.value?.items ?? [])
@@ -82,7 +79,7 @@ const filterItems = {
   role: [{ label: 'All roles', value: 'ALL' }, { label: 'Students', value: 'student' }, { label: 'Teachers', value: 'teacher' }, { label: 'Admins', value: 'admin' }],
   plan: [{ label: 'Any plan', value: 'ALL' }, { label: 'Premium', value: 'PREMIUM' }, { label: 'Free', value: 'FREE' }],
   status: [{ label: 'Any status', value: 'ALL' }, { label: 'Active', value: 'ACTIVE' }, { label: 'Banned', value: 'BANNED' }],
-  extra: [{ label: 'Everyone', value: 'ALL' }, { label: 'Markers', value: 'MARKER' }, { label: 'With Telegram', value: 'TELEGRAM' }],
+  extra: [{ label: 'Everyone', value: 'ALL' }, { label: 'With Telegram', value: 'TELEGRAM' }],
   sort: [{ label: 'Newest first', value: 'NEWEST' }, { label: 'Oldest first', value: 'OLDEST' }, { label: 'Name A–Z', value: 'NAME' }],
   size: [20, 50, 100].map(n => ({ label: `${n} per page`, value: n }))
 }
@@ -107,7 +104,7 @@ function pick(id: string, on: boolean) {
 }
 const bulkRole = ref<UserRole | undefined>(undefined)
 const bulkBusy = ref(false)
-async function bulk(action: 'ROLE' | 'MARKER_ON' | 'MARKER_OFF' | 'BAN' | 'UNBAN' | 'DELETE', role?: UserRole) {
+async function bulk(action: 'ROLE' | 'BAN' | 'UNBAN' | 'DELETE', role?: UserRole) {
   const n = selected.value.length
   if (!n) return
   if ((action === 'DELETE' || action === 'BAN') && !await confirm({
@@ -119,7 +116,7 @@ async function bulk(action: 'ROLE' | 'MARKER_ON' | 'MARKER_OFF' | 'BAN' | 'UNBAN
   bulkBusy.value = true
   try {
     const res = await $fetch<{ updated: number }>('/api/admin/users/bulk', { method: 'POST', body: { ids: selected.value, action, role } })
-    toast.add({ title: `${res.updated} user${res.updated === 1 ? '' : 's'} ${action === 'ROLE' ? `set to ${ROLE_LABEL[role!]}` : action === 'MARKER_ON' ? 'can mark now' : action === 'MARKER_OFF' ? 'no longer mark' : action === 'BAN' ? 'banned' : action === 'UNBAN' ? 'unbanned' : 'deleted'}`, color: 'success' })
+    toast.add({ title: `${res.updated} user${res.updated === 1 ? '' : 's'} ${action === 'ROLE' ? `set to ${ROLE_LABEL[role!]}` : action === 'BAN' ? 'banned' : action === 'UNBAN' ? 'unbanned' : 'deleted'}`, color: 'success' })
     selected.value = []
     bulkRole.value = undefined
     await refresh()
@@ -134,17 +131,6 @@ async function setRole(p: AdminUser, role: UserRole) {
   try {
     await $fetch(`/api/admin/users/${p.id}/role`, { method: 'PATCH', body: { role } })
     toast.add({ title: `Role updated to ${role}`, color: 'success' })
-    await refresh()
-  } catch (e) {
-    fail(e)
-  }
-}
-
-// A marker marks Writing and Speaking handed in by students outside a learning centre.
-async function toggleMarker(p: AdminUser) {
-  try {
-    await $fetch(`/api/admin/users/${p.id}/marker`, { method: 'PATCH', body: { marker: !p.marker } })
-    toast.add({ title: p.marker ? 'Marking switched off' : 'Marking switched on', color: 'success' })
     await refresh()
   } catch (e) {
     fail(e)
@@ -184,32 +170,27 @@ async function removeUser(p: AdminUser) {
   }
 }
 
-// ─── Plans sold privately ───
-const { data: planData } = await useFetch<{ plans: Plan[] }>('/api/admin/plans')
-// Test packs sold privately are granted the same way (their value is "pack:<address>").
+// ─── Test packs sold privately ───
 const { data: packData } = await useFetch<Pack[]>('/api/admin/packs', { default: () => [] })
-const planItems = computed(() => [
-  ...(planData.value?.plans ?? []).map(p => ({ label: `${p.name} — ${fmtUzs(p.priceUzs)}${p.active ? '' : ' (off sale)'}`, value: p.code })),
-  ...packData.value.map(p => ({ label: `Pack: ${p.title} — ${fmtUzs(p.priceUzs)}${p.active ? '' : ' (off sale)'}`, value: `pack:${p.slug}` }))
-])
+const planItems = computed(() => packData.value.map(p => ({ label: `${p.title} — ${fmtUzs(p.priceUzs)}${p.active ? '' : ' (off sale)'}`, value: p.slug })))
 const granting = ref<AdminUser | null>(null)
 const grant = reactive({ plan: '', amount: null as number | null, note: '' })
 const grantSaving = ref(false)
 function openGrant(p: AdminUser) {
-  const first = planData.value?.plans.find(x => x.featured) ?? planData.value?.plans[0]
-  Object.assign(grant, { plan: first?.code ?? '', amount: first?.priceUzs ?? null, note: '' })
+  const first = packData.value.find(x => x.active) ?? packData.value[0]
+  Object.assign(grant, { plan: first?.slug ?? '', amount: first?.priceUzs ?? null, note: '' })
   granting.value = p
 }
-watch(() => grant.plan, (code) => {
-  const plan = planData.value?.plans.find(x => x.code === code) ?? packData.value.find(x => `pack:${x.slug}` === code)
-  if (plan) grant.amount = plan.priceUzs
+watch(() => grant.plan, (slug) => {
+  const pack = packData.value.find(x => x.slug === slug)
+  if (pack) grant.amount = pack.priceUzs
 })
 async function saveGrant() {
   if (!granting.value || !grant.plan) return
   grantSaving.value = true
   try {
-    await $fetch(`/api/admin/users/${granting.value.id}/grant`, { method: 'POST', body: { ...(grant.plan.startsWith('pack:') ? { pack: grant.plan.slice(5) } : { plan: grant.plan }), amountUzs: grant.amount, note: grant.note } })
-    toast.add({ title: 'Plan switched on', description: `${granting.value.name || accountHandle(granting.value)} has it now.`, color: 'success' })
+    await $fetch(`/api/admin/users/${granting.value.id}/grant`, { method: 'POST', body: { pack: grant.plan, amountUzs: grant.amount, note: grant.note } })
+    toast.add({ title: 'Pack opened', description: `${granting.value.name || accountHandle(granting.value)} has it now.`, color: 'success' })
     granting.value = null
     await refresh()
   } catch (e) {
@@ -220,18 +201,17 @@ async function saveGrant() {
 }
 // ─── What they hold: given (plus) or taken back (minus), for support cases, giveaways and sales ───
 const BALANCES = [
-  { key: 'markingCredits', label: 'Marking credits', help: 'One has an examiner mark a Writing or Speaking.', icon: 'i-lucide-pen-line', of: (p: AdminUser) => p.credits },
   { key: 'testCredits', label: 'Test credits', help: 'One opens one Premium test for good.', icon: 'i-lucide-gift', of: (p: AdminUser) => p.rewardCredits },
-  { key: 'aiReviews', label: 'Extra AI reviews', help: 'Used after their regular AI allowance runs out.', icon: 'i-lucide-sparkles', of: (p: AdminUser) => p.aiBonusReviews },
+  { key: 'aiReviews', label: 'Extra AI checks', help: 'Used after the day\'s AI checks run out.', icon: 'i-lucide-sparkles', of: (p: AdminUser) => p.aiBonusReviews },
   { key: 'mockCredits', label: 'Mock credits', help: 'Their own mock sessions: one per candidate checked in.', icon: 'i-lucide-monitor-check', of: (p: AdminUser) => p.mockCredits }
 ] as const
 type BalanceKey = typeof BALANCES[number]['key']
 const holding = ref<AdminUser | null>(null)
-const change = reactive<Record<BalanceKey, number> & { note: string }>({ markingCredits: 0, testCredits: 0, aiReviews: 0, mockCredits: 0, note: '' })
+const change = reactive<Record<BalanceKey, number> & { note: string }>({ testCredits: 0, aiReviews: 0, mockCredits: 0, note: '' })
 const changed = computed(() => BALANCES.some(b => change[b.key]))
 const balanceSaving = ref(false)
 function openBalances(p: AdminUser) {
-  Object.assign(change, { markingCredits: 0, testCredits: 0, aiReviews: 0, mockCredits: 0, note: '' })
+  Object.assign(change, { testCredits: 0, aiReviews: 0, mockCredits: 0, note: '' })
   holding.value = p
 }
 async function saveBalances() {
@@ -246,17 +226,6 @@ async function saveBalances() {
     fail(e)
   } finally {
     balanceSaving.value = false
-  }
-}
-
-async function endPremium(p: AdminUser) {
-  if (!await confirm({ title: `End Premium for ${p.name || accountHandle(p)}?`, description: 'Premium stops now. Their orders and marking credits stay.', confirmLabel: 'End Premium', color: 'error' })) return
-  try {
-    await $fetch(`/api/admin/users/${p.id}/premium`, { method: 'DELETE' })
-    toast.add({ title: 'Premium ended', color: 'success' })
-    await refresh()
-  } catch (e) {
-    fail(e)
   }
 }
 </script>
@@ -337,23 +306,6 @@ async function endPremium(p: AdminUser) {
               class="w-36 ms-2"
               @update:model-value="v => v && bulk('ROLE', v as UserRole)"
             />
-            <UDropdownMenu
-              :items="[[
-                { label: 'Switch marking on', icon: 'i-lucide-pen-line', onSelect: () => bulk('MARKER_ON') },
-                { label: 'Switch marking off', icon: 'i-lucide-pen-off', onSelect: () => bulk('MARKER_OFF') }
-              ]]"
-            >
-              <UButton
-                label="Marking"
-                icon="i-lucide-pen-line"
-                trailing-icon="i-lucide-chevron-down"
-                size="sm"
-                color="neutral"
-                variant="outline"
-                :loading="bulkBusy"
-                data-testid="bulk-marker"
-              />
-            </UDropdownMenu>
             <UButton
               label="Ban"
               icon="i-lucide-ban"
@@ -417,14 +369,6 @@ async function endPremium(p: AdminUser) {
               <p class="font-medium truncate flex items-center gap-2">
                 {{ p.name || 'Unnamed user' }}
                 <UBadge
-                  v-if="p.marker"
-                  color="primary"
-                  variant="subtle"
-                  size="sm"
-                  icon="i-lucide-pen-line"
-                  label="Marker"
-                />
-                <UBadge
                   v-if="p.banned"
                   color="error"
                   variant="subtle"
@@ -442,17 +386,16 @@ async function endPremium(p: AdminUser) {
                 />{{ accountHandle(p) }} · joined {{ localeDate(p.createdAt, 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) }}
               </p>
               <p class="text-xs mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
-                <span :class="p.premiumUntil ? 'text-success' : 'text-muted'">
+                <span
+                  v-if="p.premiumUntil"
+                  class="text-success"
+                >
                   <UIcon
                     name="i-lucide-sparkles"
                     class="size-3 align-[-1px]"
                   />
-                  {{ p.premiumUntil ? `Premium until ${formatDate(p.premiumUntil)}` : 'Free' }}
+                  Premium until {{ formatDate(p.premiumUntil) }}
                 </span>
-                <span class="text-muted tabular-nums"><UIcon
-                  name="i-lucide-pen-line"
-                  class="size-3 align-[-1px]"
-                /> {{ creditsText(p.credits) }}</span>
                 <span
                   v-if="p.rewardCredits"
                   class="text-muted tabular-nums"
@@ -507,8 +450,6 @@ async function endPremium(p: AdminUser) {
             <UDropdownMenu
               :items="[[
                 { label: 'Attempts', icon: 'i-lucide-clipboard-check', to: `/admin/attempts?user=${p.id}` },
-                { label: p.marker ? 'Switch marking off' : 'Switch marking on', icon: p.marker ? 'i-lucide-pen-off' : 'i-lucide-pen-line', onSelect: () => toggleMarker(p) },
-                ...(p.premiumUntil ? [{ label: 'End Premium', icon: 'i-lucide-circle-stop', onSelect: () => endPremium(p) }] : []),
                 ...(p.id !== me?.id ? [
                   { label: p.banned ? 'Unban' : 'Ban', icon: p.banned ? 'i-lucide-circle-check' : 'i-lucide-ban', onSelect: () => toggleBan(p) },
                   { label: 'Delete', icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: () => removeUser(p) }
@@ -567,14 +508,14 @@ async function endPremium(p: AdminUser) {
 
     <UModal
       :open="!!granting"
-      title="Grant a plan"
+      title="Open a test pack"
       :description="granting ? `For ${granting.name || accountHandle(granting)} — e.g. sold on Telegram.` : ''"
       @update:open="v => !v && (granting = null)"
     >
       <template #body>
         <div class="grid gap-4">
           <UFormField
-            label="Plan"
+            label="Pack"
             required
           >
             <USelect

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Plan } from '~/utils/billing'
+import type { Pack } from '~/utils/billing'
 
 /**
- * Promo codes: a percentage or an amount off plans, or days of Premium on their own. Each can be
- * limited to some plans, a number of uses and an end date; each user uses a code once. A code's
- * link (/pricing?promo=CODE) applies it, for the Telegram channel or a learning centre.
+ * Promo codes: a percentage or an amount off test packs. Each can be limited to some packs, a
+ * number of uses and an end date; each user uses a code once. A code's link (a pack's page with
+ * ?promo=CODE) applies it. Old days-of-Premium codes no longer work (Premium is not sold).
  */
 definePageMeta({ middleware: 'admin' })
 useSeoMeta({ title: 'Promo codes', robots: 'noindex' })
@@ -30,13 +30,13 @@ const toast = useToast()
 const config = useRuntimeConfig()
 const site = String(config.public.siteUrl || '').replace(/\/$/, '')
 const { data: promos, refresh } = await useFetch<Promo[]>('/api/admin/promos', { default: () => [] })
-const { data: planData } = await useFetch<{ plans: Plan[] }>('/api/admin/plans')
-const planItems = computed(() => (planData.value?.plans ?? []).map(p => ({ label: p.name, value: p.code })))
+const { data: packData } = await useFetch<Pack[]>('/api/admin/packs', { default: () => [] })
+// A code for some packs only names them as "pack:<address>".
+const planItems = computed(() => packData.value.map(p => ({ label: p.title, value: `pack:${p.slug}` })))
 
 const KINDS = [
   { label: 'Percent off', value: 'PERCENT', icon: 'i-lucide-percent' },
-  { label: 'So\'m off', value: 'AMOUNT', icon: 'i-lucide-banknote' },
-  { label: 'Days of Premium', value: 'DAYS', icon: 'i-lucide-calendar-plus' }
+  { label: 'So\'m off', value: 'AMOUNT', icon: 'i-lucide-banknote' }
 ]
 const randomCode = () => Array.from({ length: 8 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]).join('')
 const empty = () => ({ code: randomCode(), kind: 'PERCENT' as Promo['kind'], value: 20, planCodes: [] as string[], maxUses: null as number | null, endsAt: '', note: '' })
@@ -68,8 +68,11 @@ async function toggle(p: Promo) {
 }
 async function copyLink(p: Promo) {
   try {
-    await navigator.clipboard.writeText(`${site}/pricing?promo=${p.code}`)
-    toast.add({ title: 'Link copied', description: `${site}/pricing?promo=${p.code}`, color: 'success' })
+    // The code's first pack (or the catalogue's packs, for every pack).
+    const pack = p.planCodes.find(c => c.startsWith('pack:'))?.slice(5)
+    const link = pack ? `${site}/packs/${pack}?promo=${p.code}` : `${site}/tests?view=packs&promo=${p.code}`
+    await navigator.clipboard.writeText(link)
+    toast.add({ title: 'Link copied', description: link, color: 'success' })
   } catch {}
 }
 const state = (p: Promo) => (!p.active
@@ -79,7 +82,7 @@ const state = (p: Promo) => (!p.active
     : p.maxUses != null && p.uses >= p.maxUses
       ? { label: 'Used up', color: 'warning' as const }
       : { label: 'Active', color: 'success' as const })
-const planNames = (codes: string[]) => (codes.length ? codes.map(c => planItems.value.find(p => p.value === c)?.label ?? c).join(', ') : 'Every plan')
+const planNames = (codes: string[]) => (codes.length ? codes.map(c => planItems.value.find(p => p.value === c)?.label ?? c).join(', ') : 'Every pack')
 </script>
 
 <template>
@@ -120,7 +123,7 @@ const planNames = (codes: string[]) => (codes.length ? codes.map(c => planItems.
             <span class="text-sm text-toned">{{ p.text }}</span>
           </div>
           <p class="text-xs text-muted mt-1">
-            {{ p.kind === 'DAYS' ? 'On its own' : planNames(p.planCodes) }}
+            {{ p.kind === 'DAYS' ? 'Days of Premium (no longer valid)' : planNames(p.planCodes) }}
             · used {{ p.uses }}{{ p.maxUses != null ? ` of ${p.maxUses}` : '' }}
             <template v-if="p.endsAt">
               · until {{ formatDate(p.endsAt) }}
@@ -191,26 +194,25 @@ const planNames = (codes: string[]) => (codes.length ? codes.map(c => planItems.
               class="w-full"
             />
           </UFormField>
-          <UFormField :label="creating.kind === 'PERCENT' ? 'Percent off' : creating.kind === 'AMOUNT' ? 'So\'m off' : 'Days of Premium'">
+          <UFormField :label="creating.kind === 'PERCENT' ? 'Percent off' : 'So\'m off'">
             <UInputNumber
               v-model="creating.value"
               :min="1"
-              :max="creating.kind === 'PERCENT' ? 100 : creating.kind === 'DAYS' ? 366 : undefined"
+              :max="creating.kind === 'PERCENT' ? 100 : undefined"
               :step="creating.kind === 'AMOUNT' ? 1000 : 1"
               class="w-48"
             />
           </UFormField>
           <UFormField
-            v-if="creating.kind !== 'DAYS'"
-            label="Plans"
-            help="Leave empty for every plan."
+            label="Packs"
+            help="Leave empty for every pack."
           >
             <USelectMenu
               v-model="creating.planCodes"
               :items="planItems"
               value-key="value"
               multiple
-              placeholder="Every plan"
+              placeholder="Every pack"
               class="w-full"
             />
           </UFormField>

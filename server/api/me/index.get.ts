@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   const db = useDb()
   const [u] = await db.select().from(users).where(eq(users.id, auth.id)).limit(1)
   if (!u) throw createError({ statusCode: 404, message: 'User not found' })
-  const [access, rewardCredits, unlockedTests, unlockedParts, classes, marking, teaches] = await Promise.all([accessOf(auth, db), rewardBalance(auth.id), unlockedTestIds(auth.id), unlockedPartIds(auth.id), classesOfStudent(auth.id), markingScopeOf(auth), hasClasses(auth.id)])
+  const [access, rewardCredits, unlockedTests, unlockedParts, classes, marking, teaches, explanations] = await Promise.all([accessOf(auth, db), rewardBalance(auth.id), unlockedTestIds(auth.id), unlockedPartIds(auth.id), classesOfStudent(auth.id), markingScopeOf(auth), hasClasses(auth.id), explanationsToday(auth.id)])
 
   return {
     id: u.id,
@@ -29,7 +29,8 @@ export default defineEventHandler(async (event) => {
     onboarded: u.onboarded,
     premium: access.premium,
     premiumUntil: access.premiumUntil,
-    credits: access.credits,
+    /** Results whose explanations can still be opened today (10 a day). */
+    explanations: { left: explanations.left, limit: explanations.limit },
     rewardCredits,
     unlockCost: rewardRules().unlockCost,
     unlockedTests,

@@ -133,11 +133,10 @@ async function handIn(extra: { recordings?: { partId: string, position: number, 
     return router.replace(`/tests/${slug}/${skill.toLowerCase()}/result`)
   } catch (e: any) {
     if (e?.statusCode === 402 && !atSeat.value) {
-      // No marking credit (or no Premium) after all: keep the work here and offer what is missing.
+      // A premium test not open to them after all: keep the work here and offer the ways to open it.
       submitting.value = false
       refreshMe()
-      if (e?.data?.data?.code === 'PREMIUM_REQUIRED') premiumNeeded.value = true
-      else practice.value = skill === 'SPEAKING' ? 'SPEAKING' : 'WRITING'
+      premiumNeeded.value = true
       return
     }
     toast.add({ title: t('sit.notHandedIn'), description: e?.data?.message || e?.message || t('sit.notHandedInText'), color: 'error' })
@@ -153,9 +152,9 @@ function finishObjective(next: AnswerMap) {
 
 // ─── Writing and Speaking, where a guest practises: nothing is marked or sent ───
 const practice = ref<'WRITING' | 'SPEAKING' | null>(null)
-// Signed in, Writing and Speaking are always handed in and saved, a live mock's too: with a marking
-// credit (or a teacher's class, or a mock session's seat) straight to marking, without one kept
-// until one is spent on it from the result. Only a guest's stays on the practice screen.
+// Signed in, Writing and Speaking are always handed in and saved, a live mock's too: to the
+// student's teacher when they are in a class (or the mock session's board at a seat), with the AI
+// check. Only a guest's stays on the practice screen.
 const canBeMarked = computed(() => atSeat.value || loggedIn.value)
 const recordings = ref<SpeakingRecording[]>([])
 
@@ -222,7 +221,7 @@ function startOver() {
 }
 
 const leaveTo = computed(() => (atSeat.value || route.query.seat ? '/seat' : `/tests/${slug}`))
-// A premium test without Premium: the paper is not sent, the offer is shown instead.
+// A premium test not opened: the paper is not sent, the ways to open it are shown instead.
 const premiumNeeded = ref(false)
 watch(error, (e) => {
   if (e?.statusCode === 402) premiumNeeded.value = true
@@ -292,12 +291,6 @@ const pageError = computed(() => {
               icon="i-lucide-send"
               class="self-center"
               @click="() => { practice = null; handIn() }"
-            />
-            <BillingPaywall
-              v-else
-              reason="credit"
-              :exam="section?.exam"
-              compact
             />
           </template>
           <AiWritingFeedback
@@ -396,12 +389,6 @@ const pageError = computed(() => {
               icon="i-lucide-send"
               class="self-center"
               @click="() => { practice = null; finishSpeaking(recordings) }"
-            />
-            <BillingPaywall
-              v-else
-              reason="credit"
-              :exam="section?.exam"
-              compact
             />
           </template>
           <AiWritingFeedback

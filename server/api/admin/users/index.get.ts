@@ -1,6 +1,6 @@
 import type { SQL } from 'drizzle-orm'
 import { and, asc, count, desc, eq, gt, ilike, inArray, or, sql } from 'drizzle-orm'
-import { creditTransactions, mockCreditTransactions, rewardTransactions, subscriptions, users } from '../../../database/schema'
+import { mockCreditTransactions, rewardTransactions, subscriptions, users } from '../../../database/schema'
 
 const ROLES = ['student', 'teacher', 'admin'] as const
 /** Premium: paid for and running. */
@@ -13,8 +13,8 @@ const SORTS: Record<string, SQL[]> = {
 
 /**
  * Users, a page at a time, findable by name, email, Telegram username or id, and narrowed by
- * ?role, ?plan=PREMIUM|FREE, ?status=ACTIVE|BANNED, ?marker=1 and ?telegram=1; ?sort=NEWEST|OLDEST|NAME.
- * Each with what they hold: Premium, marking credits, test credits, AI reviews and mock credits.
+ * ?role, ?plan=PREMIUM|FREE, ?status=ACTIVE|BANNED and ?telegram=1; ?sort=NEWEST|OLDEST|NAME.
+ * Each with what they hold: Premium (bought before subscriptions stopped), test credits, extra AI checks and mock credits.
  */
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)
@@ -31,7 +31,6 @@ export default defineEventHandler(async (event) => {
     role ? eq(users.role, role) : undefined,
     query.plan === 'PREMIUM' ? PREMIUM : query.plan === 'FREE' ? sql`not ${PREMIUM}` : undefined,
     query.status === 'BANNED' ? eq(users.banned, true) : query.status === 'ACTIVE' ? eq(users.banned, false) : undefined,
-    query.marker === '1' ? eq(users.marker, true) : undefined,
     query.telegram === '1' ? sql`${users.telegramId} is not null` : undefined
   )
 
@@ -42,22 +41,20 @@ export default defineEventHandler(async (event) => {
 
   const ids = rows.map(u => u.id)
   const total = (n: SQL) => sql<number>`sum(${n})::int`
-  const [subs, marking, rewards, mock] = ids.length
+  const [subs, rewards, mock] = ids.length
     ? await Promise.all([
         db.select({ userId: subscriptions.userId, endsAt: sql<string>`max(${subscriptions.endsAt})` }).from(subscriptions)
           .where(and(inArray(subscriptions.userId, ids), gt(subscriptions.endsAt, new Date()))).groupBy(subscriptions.userId),
-        db.select({ userId: creditTransactions.userId, n: total(sql`${creditTransactions.delta}`) }).from(creditTransactions)
-          .where(inArray(creditTransactions.userId, ids)).groupBy(creditTransactions.userId),
         db.select({ userId: rewardTransactions.userId, n: total(sql`${rewardTransactions.delta}`) }).from(rewardTransactions)
           .where(inArray(rewardTransactions.userId, ids)).groupBy(rewardTransactions.userId),
         // A teacher's mock credits.
         db.select({ userId: mockCreditTransactions.userId, n: total(sql`${mockCreditTransactions.delta}`) }).from(mockCreditTransactions)
           .where(inArray(mockCreditTransactions.userId, ids)).groupBy(mockCreditTransactions.userId)
       ])
-    : [[], [], [], []]
+    : [[], [], []]
   const until = new Map(subs.map(s => [s.userId, s.endsAt]))
   const by = (list: { userId: string | null, n: number }[]) => new Map(list.map(r => [r.userId, r.n]))
-  const [credits, testCredits, mockCredits] = [by(marking), by(rewards), by(mock)]
+  const [testCredits, mockCredits] = [by(rewards), by(mock)]
 
   return paginate(rows.map(u => ({
     id: u.id,
@@ -68,10 +65,8 @@ export default defineEventHandler(async (event) => {
     avatarUrl: u.avatarUrl,
     role: u.role,
     banned: u.banned,
-    marker: u.marker,
     createdAt: u.createdAt,
     premiumUntil: until.get(u.id) ?? null,
-    credits: credits.get(u.id) ?? 0,
     rewardCredits: testCredits.get(u.id) ?? 0,
     aiBonusReviews: u.aiBonusReviews,
     mockCredits: mockCredits.get(u.id) ?? 0

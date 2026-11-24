@@ -105,8 +105,8 @@ function again() {
             {{ t('payment.failedText', { n: order.number }) }}
           </p>
           <UButton
-            to="/pricing"
-            :label="t('payment.backToPlans')"
+            to="/tests?view=packs"
+            :label="t('payment.backToPacks')"
           />
         </template>
         <template v-else-if="gaveUp">

@@ -51,11 +51,10 @@ export async function attemptView(id: string, viewer: { id: string, role: string
     db.select().from(speakingResponses).where(eq(speakingResponses.attemptId, id))
   ])
   const examiner = row.examinerId ? (await db.select({ name: users.name, email: users.email, telegramUsername: users.telegramUsername }).from(users).where(eq(users.id, row.examinerId)).limit(1))[0] : null
-  // Explanations follow the owner's Premium (staff always see them).
-  const explanations = staff || (await accessOf({ id: row.userId, role: row.user?.role ?? 'student' })).premium
+  // Explanations: 10 results a day for their owner; staff, teachers and invigilators see them freely.
   const review = section
-    ? reviewSection(section, {
-        explanations,
+    ? await explainedReview(section, {
+        ownerId: row.userId, attemptId: id, free: staff || row.userId !== viewer.id,
         given: new Map(given.map(a => [a.itemId, a.response ?? ''])),
         marks: new Map(given.map(a => [a.itemId, !!a.isCorrect])),
         correct: row.correct, total: row.total, score: row.score, band: row.band,

@@ -46,8 +46,6 @@ export const users = pgTable('users', {
   onboarded: boolean('onboarded').notNull().default(false),
   /** Made for a walk-in candidate of a mock session: it signs in only at their seat (mock-sessions.ts). */
   mockOnly: boolean('mock_only').notNull().default(false),
-  /** Marks Writing and Speaking handed in by students outside a learning centre (switched on by an admin). */
-  marker: boolean('marker').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 })
@@ -266,7 +264,7 @@ export const attempts = pgTable('attempts', {
   /** Set when one part was practised on its own (Listening/Reading part, Writing task, Speaking part). */
   partNumber: integer('part_number'),
   mode: text('mode').notNull().default('PRACTICE'),
-  status: text('status').notNull().default('SUBMITTED'), // SUBMITTED (awaiting an examiner) | AWAITING_CREDIT (saved, sent for marking once a credit is spent) | GRADED
+  status: text('status').notNull().default('SUBMITTED'), // SUBMITTED (waiting for the student's teacher) | SAVED (Writing or Speaking with nobody to mark it: the AI check only, until sent to a teacher) | GRADED
   startedAt: timestamp('started_at', { withTimezone: true }),
   submittedAt: timestamp('submitted_at', { withTimezone: true }).notNull().defaultNow(),
   gradedAt: timestamp('graded_at', { withTimezone: true }),
@@ -644,6 +642,19 @@ export const mockCreditTransactions = pgTable('mock_credit_transactions', {
   createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: created()
 }, t => [index('mock_credit_user_idx').on(t.userId)])
+
+// ---------- answer explanations: 10 results a day ----------
+/**
+ * The marked Listening and Reading results whose explanations a user has opened: up to 10 new ones a
+ * day (Tashkent time), and once opened, a result's explanations stay open (explanations.ts).
+ */
+export const explanationOpens = pgTable('explanation_opens', {
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  attemptId: uuid('attempt_id').notNull().references(() => attempts.id, { onDelete: 'cascade' }),
+  /** The Tashkent day it was opened, which it counts toward. */
+  openedOn: date('opened_on', { mode: 'string' }).notNull(),
+  createdAt: created()
+}, t => [primaryKey({ columns: [t.userId, t.attemptId] }), index('explanation_opens_day_idx').on(t.userId, t.openedOn)])
 
 // ---------- vocabulary: My Words ----------
 /**

@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
   const seat = await seatGate(user.id, test.id, skill, partNumber)
   if (seat) await ping(user.id, { skill })
   else if (test.access === 'PREMIUM') {
-    if (!(await canOpenTest(user, test, (await accessOf(user)).premium, partNumber ? section.items[0]?.id : null))) paymentRequired('PREMIUM_REQUIRED', 'This test is part of Premium')
+    if (!(await canOpenTest(user, test, (await accessOf(user)).premium, partNumber ? section.items[0]?.id : null))) paymentRequired('PREMIUM_REQUIRED', 'This is a premium test: open it with a pack or with credits')
   }
   return {
     test: { id: test.id, slug: test.slug, title: test.title, mode: test.mode, access: test.access, skills: test.sections.filter((s: any) => s.items?.length).map((s: any) => s.skill) },

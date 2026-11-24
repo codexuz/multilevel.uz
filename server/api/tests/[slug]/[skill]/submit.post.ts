@@ -2,10 +2,11 @@ import { and, eq, sql } from 'drizzle-orm'
 import { answers, attempts, essays, speakingResponses, users } from '../../../../database/schema'
 
 /**
- * Handing in one section, signed in. Listening and Reading are marked at once; Writing and
- * Speaking go to an examiner, for one marking credit. Without a credit they are saved all the same
- * (AWAITING_CREDIT) and sent for marking once one is spent on them (attempts/[id]/mark). The attempt
- * is saved and its result returned. Explanations in the review come with Premium.
+ * Handing in one section, signed in. Listening and Reading are marked at once. Writing and Speaking
+ * get the AI check (today's allowance), and go to the student's teacher to mark when they are in a
+ * class (SUBMITTED); otherwise they are SAVED, and can be sent to a teacher later
+ * (attempts/[id]/mark). The attempt is saved and its result returned, with its explanations while
+ * the day's 10 last (explanations.ts).
  */
 interface SubmitBody {
   answers?: { itemId: string, answer: string }[]
@@ -33,7 +34,7 @@ export default defineEventHandler(async (event) => {
   const access = await accessOf(user)
   // At a mock session's seat: the section the invigilator opened, paid for by the session.
   const seat = await seatGate(user.id, test.id, skill, partNumber)
-  if (!seat && !(await canOpenTest(user, test, access.premium, partNumber ? section.items[0]?.id : null))) paymentRequired('PREMIUM_REQUIRED', 'This test is part of Premium')
+  if (!seat && !(await canOpenTest(user, test, access.premium, partNumber ? section.items[0]?.id : null))) paymentRequired('PREMIUM_REQUIRED', 'This is a premium test: open it with a pack or with credits')
 
   // Only this section's questions and tasks count; anything else in the body is ignored.
   const ids = itemIdsOf(section)
@@ -67,16 +68,14 @@ export default defineEventHandler(async (event) => {
 
   let liveMockId: string | null = null
   if (skill === 'SPEAKING' && !recordings.length) throw createError({ statusCode: 400, message: 'Record at least one answer before handing in' })
-  // An examiner's time is what a marking credit pays for; staff hand in freely, and so do students
-  // in a teacher's class: their teacher marks them (markers.ts).
+  // A student in a teacher's class: their teacher marks them (markers.ts). A mock seat's script is
+  // marked on the session's board.
   const byTeacher = !seat && !objective && await inAClass(user.id)
-  const needsCredit = !seat && !objective && !byTeacher && !isStaffRole(user.role)
+  const status = objective ? 'GRADED' : seat || byTeacher ? 'SUBMITTED' : 'SAVED'
   const db = useDb()
   // A whole section sat during a live mock of this test counts there, the first one of each skill.
   const mock = partNumber || seat ? null : await openMockOfTest(test.id)
-  let paid = true
   const attemptId = await db.transaction(async (tx) => {
-    paid = !needsCredit || await holdCredits(tx, user.id)
     if (mock) {
       await tx.execute(sql`select 1 from ${users} where ${users.id} = ${user.id} for update`)
       const [before] = await tx.select({ id: attempts.id }).from(attempts)
@@ -85,7 +84,7 @@ export default defineEventHandler(async (event) => {
     }
     const [attempt] = await tx.insert(attempts).values({
       userId: user.id, testId: test.id, sectionId: section.id, skill, partNumber, mode: test.mode,
-      status: objective ? 'GRADED' : paid ? 'SUBMITTED' : 'AWAITING_CREDIT', startedAt, gradedAt: objective ? new Date() : null,
+      status, startedAt, gradedAt: objective ? new Date() : null,
       correct: objective ? marked.correct : null, total: objective ? marked.total : null, exam: marked.exam,
       score: objective ? marked.score : null, band: objective ? marked.band : null, cefrLevel: objective ? marked.cefrLevel : null, liveMockId,
       mockCandidateId: seat?.id ?? null,
@@ -96,15 +95,14 @@ export default defineEventHandler(async (event) => {
     const essayRows = [...essayMap.entries()].map(([taskId, e]) => ({ attemptId: attempt!.id, taskId, text: e.text, wordCount: e.wordCount }))
     if (essayRows.length) await tx.insert(essays).values(essayRows)
     if (recordings.length) await tx.insert(speakingResponses).values(recordings.map(r => ({ attemptId: attempt!.id, ...r })))
-    if (needsCredit && paid) await spendCredit(tx, user.id, attempt!.id)
     return attempt!.id
   })
   // A friend's invite pays off once they finish a test.
   if (!seat) await rewardInviter(user.id).catch(e => console.error('[rewards] inviter reward failed:', e))
-  // Writing for an examiner: an AI estimate for the candidate now, and a draft for the examiner.
+  // Writing and Speaking: the AI check now (while today's last), which is also the teacher's draft.
   if (byTeacher) await tellTeachersToMark({ id: attemptId, userId: user.id, skill }).catch(e => console.error('[marking] teachers not told:', e))
-  if (paid && skill === 'WRITING') await reviewHandedInWriting({ id: attemptId, userId: user.id, testId: test.id }, getCookie(event, 'lang')).catch(e => console.error('[ai-writing] auto review failed:', e))
-  if (paid && skill === 'SPEAKING') await reviewHandedInSpeaking({ id: attemptId, userId: user.id, testId: test.id }, getCookie(event, 'lang')).catch(e => console.error('[ai-speaking] auto review failed:', e))
+  if (skill === 'WRITING') await reviewHandedInWriting({ id: attemptId, userId: user.id, testId: test.id }, getCookie(event, 'lang')).catch(e => console.error('[ai-writing] auto review failed:', e))
+  if (skill === 'SPEAKING') await reviewHandedInSpeaking({ id: attemptId, userId: user.id, testId: test.id }, getCookie(event, 'lang')).catch(e => console.error('[ai-speaking] auto review failed:', e))
 
   return {
     id: attemptId,
@@ -112,7 +110,7 @@ export default defineEventHandler(async (event) => {
     liveMockId,
     skill,
     partNumber,
-    status: objective ? 'GRADED' : paid ? 'SUBMITTED' : 'AWAITING_CREDIT',
+    status,
     test: { id: test.id, slug: test.slug, title: test.title },
     submittedAt: new Date(),
     correct: objective ? marked.correct : null,
@@ -122,8 +120,8 @@ export default defineEventHandler(async (event) => {
     band: objective ? marked.band : null,
     cefrLevel: objective ? marked.cefrLevel : null,
     review: {
-      sections: [reviewSection(section, {
-        explanations: access.premium,
+      sections: [await explainedReview(section, {
+        ownerId: user.id, attemptId, free: isStaffRole(user.role),
         given, marks: marked.marks,
         correct: objective ? marked.correct : null, total: objective ? marked.total : null, score: objective ? marked.score : null, band: objective ? marked.band : null,
         essays: essayMap

@@ -8,7 +8,14 @@ const { t } = useI18n()
  * where there is no sidebar, also the account's settings, the staff pages, and logging out.
  */
 useSeoMeta({ title: () => t('nav.profile'), robots: 'noindex' })
-const { me, isPremium, credits, rewardCredits, refresh } = useMe()
+const { me, isPremium, rewardCredits, refresh } = useMe()
+// Today's AI checks left (Writing and Speaking, two each a day).
+const { data: ai } = useFetch<{ allowances: Record<'writing' | 'speaking' | 'analysis', { left: number | null, limit: number | null }> | null }>('/api/ai/status', { key: 'ai-status' })
+const aiLeft = computed(() => {
+  const a = ai.value?.allowances
+  if (!a || a.writing.left == null) return '—'
+  return t('profile.aiLeft', { writing: a.writing.left, speaking: a.speaking.left ?? 0 })
+})
 const toast = useToast()
 const { data: purchases } = await useFetch<Order[]>('/api/me/orders', { default: () => [] })
 
@@ -73,7 +80,6 @@ const accountLinks = computed(() => [
     : { label: t('nav.teach'), description: t('profile.teachText'), icon: 'i-lucide-presentation', to: '/teach' },
   { label: t('nav.live'), description: t('profile.liveText'), icon: 'i-lucide-trophy', to: '/live' },
   { label: t('nav.earn'), icon: 'i-lucide-gift', to: '/earn' },
-  { label: t('nav.promo'), description: t('profile.promoText'), icon: 'i-lucide-ticket', to: '/promo' },
   { label: t('profile.devices'), description: t('profile.devicesText'), icon: 'i-lucide-monitor-smartphone', to: '/settings' }
 ])
 </script>
@@ -157,27 +163,35 @@ const accountLinks = computed(() => [
               />{{ t('profile.plan') }}
             </h2>
             <UButton
-              to="/pricing"
-              :label="isPremium ? t('profile.extend') : t('profile.getPremium')"
+              to="/tests?view=packs"
+              :label="t('nav.packs')"
+              icon="i-lucide-package"
               size="sm"
-              :variant="isPremium ? 'outline' : 'solid'"
-              :color="isPremium ? 'neutral' : 'primary'"
+              color="neutral"
+              variant="outline"
             />
           </div>
         </template>
         <dl class="grid grid-cols-2 gap-4 text-sm">
-          <div>
+          <div v-if="isPremium">
             <dt class="text-muted">
               Premium
             </dt><dd class="font-medium">
-              {{ isPremium ? (me?.premiumUntil ? t('profile.until', { date: formatDate(me.premiumUntil) }) : t('nav.on')) : t('profile.freePlan') }}
+              {{ me?.premiumUntil ? t('profile.until', { date: formatDate(me.premiumUntil) }) : t('nav.on') }}
             </dd>
           </div>
           <div>
             <dt class="text-muted">
-              {{ t('profile.markingsLeft') }}
+              {{ t('profile.aiToday') }}
             </dt><dd class="font-medium tabular-nums">
-              {{ credits }}
+              {{ aiLeft }}
+            </dd>
+          </div>
+          <div>
+            <dt class="text-muted">
+              {{ t('profile.explanationsToday') }}
+            </dt><dd class="font-medium tabular-nums">
+              {{ me?.explanations ? `${me.explanations.left} / ${me.explanations.limit}` : '—' }}
             </dd>
           </div>
           <div class="col-span-2 flex items-center justify-between gap-3 rounded-lg bg-elevated px-3 py-2.5">

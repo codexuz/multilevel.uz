@@ -28,9 +28,10 @@ export interface Me {
   onboarded: boolean
   /** Premium now (staff always): every test and every explanation. */
   premium: boolean
+  /** Premium time bought before subscriptions were stopped, while it runs. */
   premiumUntil: string | null
-  /** Writing or Speaking markings left. */
-  credits: number
+  /** Results whose explanations can still be opened today. */
+  explanations?: { left: number, limit: number }
   /** Credits earned (invites, the Telegram channel) that open premium tests. */
   rewardCredits: number
   /** Credits one premium test takes to open. */

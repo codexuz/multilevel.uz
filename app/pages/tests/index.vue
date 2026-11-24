@@ -220,9 +220,9 @@ useSeoMeta({
             {{ t('packs.noneText') }}
           </p>
           <UButton
-            to="/pricing"
-            label="Premium"
-            icon="i-lucide-sparkles"
+            to="/earn"
+            :label="t('paywall.earn')"
+            icon="i-lucide-gift"
             color="neutral"
             variant="outline"
           />

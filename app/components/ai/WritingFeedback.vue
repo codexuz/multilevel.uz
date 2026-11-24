@@ -55,9 +55,9 @@ interface Review {
     answers?: { position: number, question: string | null, transcript: string, comment: string, modelAnswer?: string, metrics: { words: number, wpm: number, pauses: number, fillers: number } | null }[]
   }[]
 }
-interface Status { enabled: boolean, speaking?: boolean, allowance: { limit: number | null, used: number, left: number | null, period: 'month' | 'day' | null } | null }
+interface Status { enabled: boolean, speaking?: boolean, allowances: Record<'writing' | 'speaking' | 'analysis', { limit: number | null, used: number, left: number | null }> | null }
 
-const { loggedIn, isPremium } = useMe()
+const { loggedIn } = useMe()
 const route = useRoute()
 const toast = useToast()
 const { data: status, refresh: refreshStatus } = useFetch<Status>('/api/ai/status', { key: 'ai-status' })
@@ -152,18 +152,20 @@ async function start() {
     review.value = { id, status: 'PENDING', score: null, cefrLevel: null, error: null }
     poll(id)
   } catch (e: any) {
-    toast.add({ title: tr('ai.noFeedback'), description: e?.data?.message || tr('test.tryAgain'), color: e?.statusCode === 402 ? 'warning' : 'error' })
+    toast.add({ title: tr('ai.noFeedback'), description: e?.data?.message || tr('test.tryAgain'), color: e?.statusCode === 429 ? 'warning' : 'error' })
     refreshStatus()
   } finally {
     starting.value = false
   }
 }
 
-const left = computed(() => status.value?.allowance?.left)
+/** Today's AI checks of this kind. */
+const allowance = computed(() => status.value?.allowances?.[props.skill === 'SPEAKING' ? 'speaking' : 'writing'] ?? null)
+const left = computed(() => allowance.value?.left)
 const leftText = computed(() => {
-  const a = status.value?.allowance
+  const a = allowance.value
   if (!a || a.left == null) return ''
-  return a.period === 'day' ? tr('ai.leftToday', { left: a.left, limit: a.limit }) : tr('ai.leftMonth', { left: a.left, limit: a.limit })
+  return tr('ai.leftToday', { left: a.left, limit: a.limit })
 })
 const speaking = computed(() => !!review.value?.parts || props.skill === 'SPEAKING')
 // IELTS marks each criterion as a band out of 9, under the IELTS names.
@@ -230,10 +232,9 @@ const levelText = (l: string | null) => (l === 'A2' || l === 'A1' ? tr('common.b
         />
         <UButton
           v-else-if="left === 0"
-          :to="isPremium ? undefined : `/pricing?from=${encodeURIComponent(route.fullPath)}`"
-          :disabled="isPremium"
-          :label="isPremium ? tr('ai.moreTomorrow') : tr('ai.morePremium')"
-          icon="i-lucide-sparkles"
+          disabled
+          :label="tr('ai.moreTomorrow')"
+          icon="i-lucide-clock"
           color="neutral"
           variant="outline"
           class="justify-center"
