@@ -1,6 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ middleware: 'teacher', layout: 'teacher' })
-useSeoMeta({ title: 'Students · Teacher Panel', robots: 'noindex' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('panel.students'), robots: 'noindex' })
 
 interface StudentRow {
   id: string
@@ -25,7 +26,7 @@ const { data, status } = await useFetch<{ students: StudentRow[], groups: Array<
 })
 
 const groupOptions = computed(() => [
-  { label: 'All Groups', value: 'ALL' },
+  { label: t('tp.allClasses'), value: 'ALL' },
   ...data.value.groups.map(g => ({ label: g.name, value: g.id }))
 ])
 
@@ -43,7 +44,7 @@ const filtered = computed(() => {
 
 <template>
   <AppPage
-    title="My Students"
+    :title="t('panel.students')"
     icon="i-lucide-user-round"
   >
     <div class="flex flex-col gap-4">
@@ -51,7 +52,7 @@ const filtered = computed(() => {
         <UInput
           v-model="search"
           icon="i-lucide-search"
-          placeholder="Search student by name, email or @handle..."
+          :placeholder="t('tp.searchStudents')"
           class="w-full sm:w-80"
         />
         <USelect
@@ -68,22 +69,22 @@ const filtered = computed(() => {
             <thead>
               <tr class="border-b border-default text-left text-xs font-semibold text-muted">
                 <th class="px-4 py-3">
-                  Student
+                  {{ t('builder.learner') }}
                 </th>
                 <th class="px-4 py-3">
-                  Groups
+                  {{ t('panel.myClasses') }}
                 </th>
                 <th class="px-4 py-3">
-                  Level
+                  {{ t('courses.level') }}
                 </th>
                 <th class="px-4 py-3">
-                  Exam Attempts
+                  {{ t('tp.attempts') }}
                 </th>
                 <th class="px-4 py-3">
-                  LMS Exercises
+                  {{ t('builder.quizzes') }}
                 </th>
                 <th class="px-4 py-3">
-                  Last Active
+                  {{ t('tp.lastActive') }}
                 </th>
               </tr>
             </thead>
@@ -158,7 +159,7 @@ const filtered = computed(() => {
                   > · avg {{ s.avgExerciseScore }}%</span>
                 </td>
                 <td class="px-4 py-3 text-xs text-muted">
-                  {{ s.lastActive ? new Date(s.lastActive).toLocaleDateString() : '—' }}
+                  {{ s.lastActive ? localeDate(s.lastActive, intlLocale(), { day: 'numeric', month: 'short', year: 'numeric' }) : '—' }}
                 </td>
               </tr>
               <tr v-if="!filtered.length && status !== 'pending'">
@@ -166,7 +167,7 @@ const filtered = computed(() => {
                   colspan="6"
                   class="py-10 text-center text-muted"
                 >
-                  No students yet. Share a group join link from My Groups.
+                  {{ t('tp.noStudents') }}
                 </td>
               </tr>
             </tbody>

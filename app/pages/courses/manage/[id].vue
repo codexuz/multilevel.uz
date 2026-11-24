@@ -186,11 +186,13 @@ async function createQuiz() {
       <UButton
         :to="`/courses/${c.slug}`"
         target="_blank"
-        :label="t('builder.preview')"
         icon="i-lucide-eye"
         color="neutral"
         variant="ghost"
-      />
+        :aria-label="t('builder.preview')"
+      >
+        <span class="hidden sm:inline">{{ t('builder.preview') }}</span>
+      </UButton>
       <UButton
         :label="c.published ? t('courses.unpublish') : t('courses.publish')"
         :icon="c.published ? 'i-lucide-eye-off' : 'i-lucide-rocket'"
@@ -209,7 +211,7 @@ async function createQuiz() {
           :items="tabs"
           :content="false"
           variant="link"
-          class="w-full sm:w-auto overflow-x-auto"
+          :ui="{ root: 'w-full sm:w-auto overflow-x-auto [scrollbar-width:none]', list: 'w-max sm:w-auto', trigger: 'shrink-0', label: 'overflow-visible' }"
           data-testid="builder-tabs"
         />
         <p class="text-sm text-muted flex items-center gap-1.5">

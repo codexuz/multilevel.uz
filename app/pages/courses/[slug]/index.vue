@@ -121,7 +121,7 @@ const { locale } = useI18n()
 const fmtDate = (iso: string | null) => {
   if (!iso) return ''
   const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString(locale.value, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return Number.isNaN(d.getTime()) ? '' : localeDate(d, locale.value, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 function lockLabel(drip: DripState): string {
   if (drip.reason === 'DATE_NOT_STARTED' && drip.availableFrom) return t('builder.opensOn', { date: fmtDate(drip.availableFrom) })

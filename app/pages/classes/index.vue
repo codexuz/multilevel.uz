@@ -24,10 +24,10 @@ const creating = ref(false)
 const name = ref('')
 const exam = ref<'MULTILEVEL' | 'IELTS'>('MULTILEVEL')
 const level = ref('B2')
-const examChoices = [
-  { label: 'CEFR (Multilevel)', description: 'Assign CEFR / Multilevel tests to this group', value: 'MULTILEVEL' },
-  { label: 'IELTS', description: 'Assign IELTS Academic & General Training tests to this group', value: 'IELTS' }
-]
+const examChoices = computed(() => [
+  { label: 'Multilevel (CEFR)', description: t('tdash.examMultilevel'), value: 'MULTILEVEL' },
+  { label: 'IELTS', description: t('tdash.examIelts'), value: 'IELTS' }
+])
 const levelOptions = ['A1', 'A2', 'B1', 'B2', 'C1', 'IELTS']
 const saving = ref(false)
 function startCreate() {
@@ -36,6 +36,11 @@ function startCreate() {
   level.value = 'B2'
   creating.value = true
 }
+// ?new=1 (the dashboard's "New class") opens the form at once.
+const route = useRoute()
+onMounted(() => {
+  if (route.query.new) startCreate()
+})
 async function create() {
   if (!name.value.trim()) return
   saving.value = true
@@ -226,14 +231,14 @@ const telegramShare = (c: ClassRow) => `https://t.me/share/url?url=${encodeURICo
               data-testid="class-name-input"
             />
           </UFormField>
-          <UFormField label="Group Exam Type">
+          <UFormField :label="t('tdash.examType')">
             <URadioGroup
               v-model="exam"
               :items="examChoices"
               variant="card"
             />
           </UFormField>
-          <UFormField label="Level (optional)">
+          <UFormField :label="t('tdash.levelOptional')">
             <USelect
               v-model="level"
               :items="levelOptions"

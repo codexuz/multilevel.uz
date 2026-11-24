@@ -55,6 +55,12 @@
   --field-shadow: 0 0 0 0 transparent;
   /* The soft indigo glow SmallTalk2Me puts under its floating chips. */
   --glow-shadow: 0 8px 24px -6px rgb(88 112 245 / 0.45);
+
+  /* Chart series, in this fixed order (validated for colour-blind separation on this surface). */
+  --chart-1: #636eee;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
 }
 
 .dark {
@@ -76,6 +82,11 @@
 
   --overlay-shadow: 0 12px 32px -8px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.08);
   --glow-shadow: 0 8px 24px -6px rgb(99 110 238 / 0.35);
+
+  --chart-1: #7b83f1;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
 }
 
 body {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ middleware: 'teacher', layout: 'teacher' })
-useSeoMeta({ title: 'Resources · Teacher Panel', robots: 'noindex' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('panel.resources'), robots: 'noindex' })
 
 interface ResourceItem {
   id: string
@@ -28,18 +29,18 @@ const filtered = computed(() => data.value.resources.filter((r) => {
 }))
 
 const iconOf = (k: ResourceItem['kind']) => (k === 'PDF' ? 'i-lucide-file-text' : k === 'VIDEO' ? 'i-lucide-play-circle' : 'i-lucide-headphones')
-const colorOf = (k: ResourceItem['kind']) => (k === 'PDF' ? 'text-rose-500' : k === 'VIDEO' ? 'text-blue-500' : 'text-violet-500')
+const colorOf = (_k: ResourceItem['kind']) => 'text-muted'
 </script>
 
 <template>
   <AppPage
-    title="Course Resources"
+    :title="t('panel.resources')"
     icon="i-lucide-folder-open"
   >
     <template #actions>
       <UButton
         to="/teacher/courses"
-        label="Manage Courses"
+        :label="t('nav.courses')"
         icon="i-lucide-book-open"
         variant="outline"
       />
@@ -50,12 +51,12 @@ const colorOf = (k: ResourceItem['kind']) => (k === 'PDF' ? 'text-rose-500' : k 
         <UInput
           v-model="search"
           icon="i-lucide-search"
-          placeholder="Search PDFs, videos, or dictation audio..."
+          :placeholder="t('tp.searchResources')"
           class="w-full sm:w-80"
         />
         <USelect
           v-model="kindFilter"
-          :items="[{ label: 'All types', value: 'ALL' }, { label: 'PDF Handouts', value: 'PDF' }, { label: 'Videos', value: 'VIDEO' }, { label: 'Dictation Audio', value: 'AUDIO' }]"
+          :items="[{ label: t('tp.allTypes'), value: 'ALL' }, { label: t('tp.pdfs'), value: 'PDF' }, { label: t('tp.videos'), value: 'VIDEO' }, { label: t('tp.audio'), value: 'AUDIO' }]"
           class="w-44"
         />
       </div>
@@ -88,7 +89,7 @@ const colorOf = (k: ResourceItem['kind']) => (k === 'PDF' ? 'text-rose-500' : k 
                 :href="r.url"
                 target="_blank"
                 rel="noopener"
-                label="Open"
+                :label="t('tp.open')"
                 icon="i-lucide-external-link"
                 size="xs"
                 color="neutral"
@@ -96,7 +97,7 @@ const colorOf = (k: ResourceItem['kind']) => (k === 'PDF' ? 'text-rose-500' : k 
               />
               <UButton
                 :to="`/courses/manage/${r.courseId}`"
-                label="Edit Course"
+                :label="t('courses.edit')"
                 size="xs"
                 color="neutral"
                 variant="ghost"
@@ -109,9 +110,9 @@ const colorOf = (k: ResourceItem['kind']) => (k === 'PDF' ? 'text-rose-500' : k 
       <UEmpty
         v-else
         icon="i-lucide-folder-open"
-        title="No course resources yet"
-        description="PDF handouts, lesson videos, and dictation audio uploaded inside your courses will appear here."
-        :actions="[{ label: 'Open Course Studio', to: '/teacher/courses' }]"
+        :title="t('tp.noResources')"
+        :description="t('tp.noResourcesText')"
+        :actions="[{ label: t('nav.courses'), to: '/teacher/courses' }]"
       />
     </div>
   </AppPage>

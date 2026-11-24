@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import type { LiveLesson } from '~/components/online/Row.vue'
 
-useSeoMeta({ title: 'Dashboard', robots: 'noindex' })
-
 interface RecentTest {
   id: string
   skill: string
@@ -65,9 +63,10 @@ interface DashboardPayload {
 
 const { me } = useMe()
 const { t } = useI18n()
+useSeoMeta({ title: () => t('nav.dashboard'), robots: 'noindex' })
 const { data, status } = await useFetch<DashboardPayload>('/api/me/dashboard')
 
-const firstName = computed(() => me.value?.name?.split(' ')[0] || 'Student')
+const firstName = computed(() => me.value?.name?.split(' ')[0] || '')
 const courseOverallPct = computed(() => {
   const tot = data.value?.summary.totalCourseLessons ?? 0
   const done = data.value?.summary.lessonsCompleted ?? 0
@@ -79,19 +78,19 @@ const isOverdue = (dueAt: string | null, done: boolean) => !!dueAt && !done && n
 
 <template>
   <AppPage
-    title="Dashboard"
+    :title="t('nav.dashboard')"
     icon="i-lucide-layout-dashboard"
   >
     <template #actions>
       <UButton
         to="/tests"
-        label="Take a Test"
+        :label="t('sdash.takeTest')"
         icon="i-lucide-clipboard-list"
         size="sm"
       />
       <UButton
         to="/courses"
-        label="Courses"
+        :label="t('nav.courses')"
         icon="i-lucide-graduation-cap"
         size="sm"
         color="neutral"
@@ -104,10 +103,10 @@ const isOverdue = (dueAt: string | null, done: boolean) => !!dueAt && !done && n
       <div class="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 class="text-2xl sm:text-3xl font-bold text-highlighted">
-            Welcome back, {{ firstName }}
+            {{ firstName ? t('sdash.welcome', { name: firstName }) : t('nav.dashboard') }}
           </h1>
           <p class="text-sm text-muted mt-0.5">
-            Track your exam scores, LMS course progress, and group assignments in one place.
+            {{ t('sdash.lead') }}
           </p>
         </div>
         <div
@@ -117,7 +116,7 @@ const isOverdue = (dueAt: string | null, done: boolean) => !!dueAt && !done && n
           <UBadge
             v-for="g in data!.groups"
             :key="g.id"
-            :label="`${g.name} (${g.exam === 'IELTS' ? 'IELTS' : 'CEFR'})`"
+            :label="`${g.name} · ${g.exam === 'IELTS' ? 'IELTS' : 'Multilevel'}`"
             icon="i-lucide-users"
             color="primary"
             variant="subtle"
@@ -142,25 +141,25 @@ const isOverdue = (dueAt: string | null, done: boolean) => !!dueAt && !done && n
         <!-- 4 Summary Progress Tiles -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatTile
-            label="Tests Completed"
+            :label="t('sdash.testsDone')"
             :value="data.summary.testsDone"
             icon="i-lucide-clipboard-check"
-            color="primary"
+            color="neutral"
           />
           <StatTile
-            label="Course Progress"
+            :label="t('sdash.courseProgress')"
             :value="`${courseOverallPct}%`"
             icon="i-lucide-graduation-cap"
-            color="success"
+            color="neutral"
           />
           <StatTile
-            label="Exercises Passed"
+            :label="t('builder.quizzesPassed')"
             :value="data.summary.exercisesPassed"
             icon="i-lucide-list-checks"
             color="neutral"
           />
           <StatTile
-            :label="hasGroups ? 'Pending Assignments' : 'Words to Review'"
+            :label="hasGroups ? t('sdash.pending') : t('sdash.wordsDue')"
             :value="hasGroups ? data.summary.pendingAssignments : data.summary.wordsDue"
             :icon="hasGroups ? 'i-lucide-calendar-check' : 'i-lucide-book-open-text'"
             :color="(hasGroups ? data.summary.pendingAssignments : data.summary.wordsDue) > 0 ? 'warning' : 'neutral'"
@@ -175,11 +174,11 @@ const isOverdue = (dueAt: string | null, done: boolean) => !!dueAt && !done && n
                 name="i-lucide-trending-up"
                 class="size-4 text-primary"
               />
-              Skill Progress
+              {{ t('sdash.skills') }}
             </h2>
             <UButton
               to="/results"
-              label="Full Analytics"
+              :label="t('sdash.allResults')"
               trailing-icon="i-lucide-arrow-right"
               size="xs"
               color="neutral"
@@ -204,10 +203,10 @@ const isOverdue = (dueAt: string | null, done: boolean) => !!dueAt && !done && n
                   </p>
                   <p class="text-base font-bold text-highlighted tabular-nums leading-tight">
                     <template v-if="s.value != null">
-                      {{ s.exam === 'IELTS' ? `Band ${fmtBand(s.value)}` : `${s.value} / 75` }}
+                      {{ s.exam === 'IELTS' ? t('tp.band', { band: fmtBand(s.value) }) : `${s.value} / 75` }}
                     </template>
                     <template v-else>
-                      Not yet
+                      {{ t('sdash.notYet') }}
                     </template>
                   </p>
                 </div>
@@ -236,10 +235,10 @@ const isOverdue = (dueAt: string | null, done: boolean) => !!dueAt && !done && n
                   name="i-lucide-list-todo"
                   class="size-4 text-primary"
                 />
-                Group Assignments
+                {{ t('sdash.assignments') }}
               </h2>
               <UBadge
-                :label="`${data.summary.pendingAssignments} pending`"
+                :label="t('sdash.pendingN', { n: data.summary.pendingAssignments })"
                 :color="data.summary.pendingAssignments ? 'warning' : 'success'"
                 variant="subtle"
                 size="xs"
@@ -262,18 +261,18 @@ const isOverdue = (dueAt: string | null, done: boolean) => !!dueAt && !done && n
                 />
                 <div class="min-w-0 flex-1">
                   <p class="text-sm font-medium text-highlighted truncate">
-                    {{ a.test?.title || 'Test' }} · {{ skillLabel(a.skill) }}{{ a.partNumber ? ` (${partName(a.skill, a.partNumber, a.exam)})` : '' }}
+                    {{ a.test?.title || t('sdash.test') }} · {{ skillLabel(a.skill) }}{{ a.partNumber ? ` (${partName(a.skill, a.partNumber, a.exam)})` : '' }}
                   </p>
                   <p class="text-xs text-muted truncate">
                     {{ a.group }}
-                    <span v-if="a.dueAt"> · Due {{ new Date(a.dueAt).toLocaleDateString() }}</span>
+                    <span v-if="a.dueAt"> · {{ t('sdash.due', { date: localeDate(a.dueAt, intlLocale(), { day: 'numeric', month: 'short', year: 'numeric' }) }) }}</span>
                     <span v-if="a.note"> · {{ a.note }}</span>
                   </p>
                 </div>
                 <UButton
                   v-if="a.mine"
                   :to="`/results/${a.mine.attemptId}`"
-                  :label="a.mine.band != null ? `Band ${fmtBand(a.mine.band)}` : a.mine.score != null ? `${a.mine.score}/75` : 'Submitted'"
+                  :label="a.mine.band != null ? t('tp.band', { band: fmtBand(a.mine.band) }) : a.mine.score != null ? `${a.mine.score}/75` : t('tp.submitted')"
                   size="xs"
                   color="success"
                   variant="soft"
@@ -281,7 +280,7 @@ const isOverdue = (dueAt: string | null, done: boolean) => !!dueAt && !done && n
                 <UButton
                   v-else-if="a.to"
                   :to="a.to"
-                  label="Start"
+                  :label="t('courses.taskStart')"
                   trailing-icon="i-lucide-arrow-right"
                   size="xs"
                 />
@@ -291,7 +290,7 @@ const isOverdue = (dueAt: string | null, done: boolean) => !!dueAt && !done && n
               v-else
               class="text-sm text-muted"
             >
-              No assignments from your group yet.
+              {{ t('sdash.noAssignments') }}
             </p>
           </UCard>
 
@@ -305,11 +304,11 @@ const isOverdue = (dueAt: string | null, done: boolean) => !!dueAt && !done && n
                   name="i-lucide-video"
                   class="size-4 text-primary"
                 />
-                Online Classes
+                {{ t('nav.online') }}
               </h2>
               <UButton
                 to="/online"
-                label="All"
+                :label="t('tdash.all')"
                 size="xs"
                 color="neutral"
                 variant="ghost"
@@ -335,11 +334,11 @@ const isOverdue = (dueAt: string | null, done: boolean) => !!dueAt && !done && n
                   name="i-lucide-graduation-cap"
                   class="size-4 text-primary"
                 />
-                Course Progress
+                {{ t('sdash.courseProgress') }}
               </h2>
               <UButton
                 to="/courses"
-                label="Browse Courses"
+                :label="t('courses.browse')"
                 trailing-icon="i-lucide-arrow-right"
                 size="xs"
                 color="neutral"
@@ -365,13 +364,13 @@ const isOverdue = (dueAt: string | null, done: boolean) => !!dueAt && !done && n
                       {{ c.title }}
                     </NuxtLink>
                     <p class="text-xs text-muted mt-0.5">
-                      {{ c.done }}/{{ c.lessons }} lessons
-                      <span v-if="c.exercisesTotal"> · {{ c.exercisesPassed }}/{{ c.exercisesTotal }} exercises</span>
+                      {{ t('courses.learnerDone', { done: c.done, of: c.lessons }) }}
+                      <span v-if="c.exercisesTotal"> · {{ t('sdash.quizzesDone', { done: c.exercisesPassed, of: c.exercisesTotal }) }}</span>
                     </p>
                   </div>
                   <UButton
                     :to="c.nextLessonId ? `/courses/${c.slug}/${c.nextLessonId}` : `/courses/${c.slug}`"
-                    :label="c.done > 0 ? 'Continue' : 'Start'"
+                    :label="c.done > 0 ? t('courses.continue') : t('courses.taskStart')"
                     size="xs"
                     variant="soft"
                     trailing-icon="i-lucide-arrow-right"
@@ -390,9 +389,9 @@ const isOverdue = (dueAt: string | null, done: boolean) => !!dueAt && !done && n
             <UEmpty
               v-else
               icon="i-lucide-graduation-cap"
-              title="No courses started yet"
-              description="Enroll in an IELTS or CEFR course to follow structured units, lessons, and interactive exercises."
-              :actions="[{ label: 'Explore Courses', to: '/courses' }]"
+              :title="t('sdash.noCourses')"
+              :description="t('sdash.noCoursesText')"
+              :actions="[{ label: t('courses.browse'), to: '/courses' }]"
               variant="naked"
             />
           </UCard>
@@ -405,11 +404,11 @@ const isOverdue = (dueAt: string | null, done: boolean) => !!dueAt && !done && n
                   name="i-lucide-history"
                   class="size-4 text-primary"
                 />
-                Tests Last Done
+                {{ t('sdash.lastTests') }}
               </h2>
               <UButton
                 to="/results"
-                label="All Results"
+                :label="t('sdash.allResults')"
                 trailing-icon="i-lucide-arrow-right"
                 size="xs"
                 color="neutral"
@@ -436,7 +435,7 @@ const isOverdue = (dueAt: string | null, done: boolean) => !!dueAt && !done && n
                 </div>
                 <div class="min-w-0 flex-1">
                   <p class="text-sm font-medium text-highlighted truncate">
-                    {{ r.test?.title || 'Mock Test' }}
+                    {{ r.test?.title || t('sdash.test') }}
                   </p>
                   <p class="text-xs text-muted truncate">
                     {{ r.exam === 'IELTS' ? 'IELTS · ' : '' }}{{ skillLabel(r.skill) }}{{ r.partNumber ? ` ${partName(r.skill, r.partNumber, r.exam)}` : '' }} · {{ relativeTime(r.submittedAt) }}
@@ -460,7 +459,7 @@ const isOverdue = (dueAt: string | null, done: boolean) => !!dueAt && !done && n
                 </div>
                 <UBadge
                   v-else
-                  :label="r.held ? 'Held' : 'Pending'"
+                  :label="r.held ? t('sdash.held') : t('sdash.marking')"
                   color="neutral"
                   variant="subtle"
                   size="xs"
@@ -470,9 +469,9 @@ const isOverdue = (dueAt: string | null, done: boolean) => !!dueAt && !done && n
             <UEmpty
               v-else
               icon="i-lucide-clipboard-list"
-              title="No tests completed yet"
-              description="Take your first Listening, Reading, Writing, or Speaking mock test to see your score here."
-              :actions="[{ label: 'Browse Tests', to: '/tests' }]"
+              :title="t('sdash.noTests')"
+              :description="t('sdash.noTestsText')"
+              :actions="[{ label: t('sdash.takeTest'), to: '/tests' }]"
               variant="naked"
             />
           </UCard>

@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, lt, sql } from 'drizzle-orm'
+import { and, count, desc, eq, gte, lt, lte, sql } from 'drizzle-orm'
 import { attempts, courses, liveMocks, packs, tests, users } from '../../database/schema'
 
 const TZ = 'Asia/Tashkent'
@@ -43,7 +43,7 @@ export default defineEventHandler(async (event) => {
     db.select({ n: count() }).from(tests).where(gte(tests.createdAt, d30)),
     db.select({ n: count() }).from(tests).where(and(gte(tests.createdAt, d60), lt(tests.createdAt, d30))),
     db.select({ n: count() }).from(liveMocks),
-    db.select({ n: count() }).from(liveMocks).where(and(sql`${liveMocks.startsAt} <= ${now}`, sql`${liveMocks.endsAt} >= ${now}`)),
+    db.select({ n: count() }).from(liveMocks).where(and(lte(liveMocks.startsAt, now), gte(liveMocks.endsAt, now))),
     db.select({ n: count() }).from(packs).where(eq(packs.active, true)),
     db.select({ n: count() }).from(courses),
     db.select({ n: count() }).from(attempts).where(eq(attempts.status, 'SUBMITTED')),

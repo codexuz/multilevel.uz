@@ -423,7 +423,7 @@ const topicNumber = (g: Group) => props.topics.findIndex(m => m.id === g.id) + 1
                     class="size-3.5"
                   />
                   <span v-if="lessonById.get(id)!.durationMinutes">{{ duration(lessonById.get(id)!.durationMinutes!) }}</span>
-                  <span v-if="lessonById.get(id)!.availableFrom">{{ t('builder.opensOn', { date: new Date(lessonById.get(id)!.availableFrom!).toLocaleDateString() }) }}</span>
+                  <span v-if="lessonById.get(id)!.availableFrom">{{ t('builder.opensOn', { date: localeDate(lessonById.get(id)!.availableFrom!, intlLocale(), { day: 'numeric', month: 'short', year: 'numeric' }) }) }}</span>
                   <span v-if="!contentIcons(lessonById.get(id)!).length && !lessonById.get(id)!.exercises?.length">{{ t('builder.emptyLesson') }}</span>
                 </span>
               </button>
