@@ -70,10 +70,8 @@ export default defineEventHandler(async (event) => {
   if (STAFF_PURPOSES.includes(purpose) && user.role !== 'admin') {
     throw createError({ statusCode: 403, message: 'Forbidden' })
   }
-  // Course assets: teachers and admins only.
-  if (TEACHER_PURPOSES.includes(purpose) && !['teacher', 'center_owner', 'admin'].includes(user.role)) {
-    throw createError({ statusCode: 403, message: 'Forbidden' })
-  }
+  // Course assets: teachers and admins only (checked against the account, as the token's role may lag).
+  if (TEACHER_PURPOSES.includes(purpose)) await requireTeacher(event)
 
   const contentType = filePart.type || 'application/octet-stream'
   if (!ALLOWED[purpose](baseType(contentType))) {

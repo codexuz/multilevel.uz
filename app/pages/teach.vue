@@ -15,8 +15,27 @@ useSeoMeta({
   ogDescription: () => t('teach.seoDescription')
 })
 
-const start = computed(() => (loggedIn.value ? '/classes' : `/login?next=${encodeURIComponent('/classes')}`))
-const startLabel = computed(() => (me.value?.teaches ? t('teach.openClasses') : t('teach.start')))
+// A guest signs in (and, new, is asked in onboarding whether they teach); a teacher opens their panel;
+// a student's account is switched to a teacher's, once they agree.
+const area = computed(() => (loggedIn.value ? areaOf(me.value?.role) : null))
+const start = computed(() => (!loggedIn.value ? `/login?next=${encodeURIComponent('/classes')}` : area.value === 'student' ? undefined : homeOf(me.value?.role)))
+const startLabel = computed(() => (area.value === 'teacher' || area.value === 'admin' ? t('teach.openPanel') : t('teach.start')))
+const switchOpen = ref(false)
+const switching = ref(false)
+const { refresh } = useMe()
+function onStart() {
+  if (area.value === 'student') switchOpen.value = true
+}
+async function becomeTeacher() {
+  switching.value = true
+  try {
+    await $fetch('/api/me/teacher', { method: 'POST' })
+    await refresh()
+    await navigateTo('/teacher')
+  } finally {
+    switching.value = false
+  }
+}
 
 const FEATURES = [
   { icon: 'i-lucide-link', key: 'join' },
@@ -54,6 +73,7 @@ const FEATURES = [
             icon="i-lucide-plus"
             size="xl"
             data-testid="teach-start"
+            @click="onStart"
           />
           <UButton
             to="/tests"
@@ -124,8 +144,31 @@ const FEATURES = [
           :label="startLabel"
           icon="i-lucide-plus"
           size="xl"
+          @click="onStart"
         />
       </section>
+      <UModal
+        v-model:open="switchOpen"
+        :title="t('teach.switchTitle')"
+        :description="t('teach.switchText')"
+      >
+        <template #footer>
+          <div class="flex justify-end gap-2 w-full">
+            <UButton
+              :label="t('common.cancel')"
+              color="neutral"
+              variant="ghost"
+              @click="switchOpen = false"
+            />
+            <UButton
+              :label="t('teach.switchConfirm')"
+              :loading="switching"
+              data-testid="become-teacher"
+              @click="becomeTeacher"
+            />
+          </div>
+        </template>
+      </UModal>
     </div>
   </AppPage>
 </template>

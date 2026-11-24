@@ -107,7 +107,7 @@ async function onExerciseCompleted() {
   <!-- Content Drip Lock Screen -->
   <AppPage
     v-if="dripLocked"
-    title="Lesson Locked"
+    :title="t('lesson.locked')"
     icon="i-lucide-lock"
     :back="`/courses/${slug}`"
   >
@@ -123,17 +123,17 @@ async function onExerciseCompleted() {
       </div>
       <div>
         <h1 class="text-xl font-bold text-highlighted">
-          {{ dripLocked.reason === 'PREVIOUS_INCOMPLETE' ? 'Complete the previous lesson first' : dripLocked.reason === 'DATE_EXPIRED' ? 'This lesson window has ended' : 'This lesson is scheduled to unlock soon' }}
+          {{ dripLocked.reason === 'PREVIOUS_INCOMPLETE' ? t('lesson.previousFirst') : dripLocked.reason === 'DATE_EXPIRED' ? t('lesson.ended') : t('lesson.soon') }}
         </h1>
         <p class="text-sm text-muted mt-1.5">
           <template v-if="dripLocked.reason === 'PREVIOUS_INCOMPLETE'">
-            This course releases lessons sequentially. Finish <strong>{{ dripLocked.previousLessonTitle || 'the previous lesson' }}</strong> to unlock this one automatically.
+            {{ t('lesson.previousText', { title: dripLocked.previousLessonTitle || t('lesson.thePrevious') }) }}
           </template>
           <template v-else-if="dripLocked.reason === 'DATE_NOT_STARTED' && dripLocked.availableFrom">
-            Available starting <strong>{{ new Date(dripLocked.availableFrom).toLocaleString() }}</strong>.
+            {{ t('lesson.opensAt', { date: localeDate(dripLocked.availableFrom, intlLocale(), { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) }) }}
           </template>
           <template v-else-if="dripLocked.reason === 'DATE_EXPIRED' && dripLocked.availableTo">
-            Closed on <strong>{{ new Date(dripLocked.availableTo).toLocaleString() }}</strong>.
+            {{ t('lesson.closedAt', { date: localeDate(dripLocked.availableTo, intlLocale(), { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) }) }}
           </template>
         </p>
       </div>
@@ -141,12 +141,12 @@ async function onExerciseCompleted() {
         <UButton
           v-if="dripLocked.previousLessonId"
           :to="`/courses/${slug}/${dripLocked.previousLessonId}`"
-          label="Go to Previous Lesson"
+          :label="t('lesson.toPrevious')"
           icon="i-lucide-arrow-left"
         />
         <UButton
           :to="`/courses/${slug}`"
-          label="Back to Course Outline"
+          :label="t('lesson.toCourse')"
           color="neutral"
           variant="outline"
         />
@@ -166,7 +166,7 @@ async function onExerciseCompleted() {
       <!-- Curriculum Outline Sidebar -->
       <aside class="hidden lg:flex flex-col gap-3 sticky top-4 rounded-2xl ring ring-default bg-default p-4 max-h-[calc(100vh-7rem)] overflow-y-auto">
         <p class="text-xs font-bold uppercase tracking-wider text-muted">
-          Course Curriculum
+          {{ t('coursePage.curriculum') }}
         </p>
         <div
           v-for="(unit, uIdx) in l.outline"
@@ -204,7 +204,7 @@ async function onExerciseCompleted() {
           <div class="flex flex-wrap items-center gap-2 text-xs text-muted mb-1">
             <UBadge
               v-if="l.module"
-              :label="`Unit ${l.module.position}: ${l.module.title}`"
+              :label="`${t('builder.topicN', { n: l.module.position })}: ${l.module.title}`"
               color="primary"
               variant="subtle"
               size="xs"
@@ -273,7 +273,7 @@ async function onExerciseCompleted() {
                 name="i-lucide-list-checks"
                 class="size-5 text-primary"
               />
-              Interactive Exercises ({{ l.exercises.length }})
+              {{ t('builder.quizzes') }} ({{ l.exercises.length }})
             </h2>
             <div
               v-if="l.exercises.length > 1"
@@ -392,7 +392,7 @@ async function onExerciseCompleted() {
             v-if="l.next"
             :to="l.next.locked ? undefined : `/courses/${l.course.slug}/${l.next.id}`"
             :disabled="l.next.locked"
-            :label="l.next.locked ? 'Next (Locked)' : t('courses.next')"
+            :label="l.next.locked ? t('lesson.nextLocked') : t('courses.next')"
             :trailing-icon="l.next.locked ? 'i-lucide-lock' : 'i-lucide-arrow-right'"
             color="neutral"
             variant="outline"

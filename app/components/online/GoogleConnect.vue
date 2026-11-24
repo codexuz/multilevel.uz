@@ -40,18 +40,18 @@ async function disconnect() {
     <div class="min-w-0 flex-1">
       <template v-if="data.canManage">
         <p class="text-sm font-medium text-highlighted">
-          {{ data.connected ? t('online.connectedAs', { email: data.email ?? 'Admin Google' }) : t('online.connectTitle') }}
+          {{ data.connected ? t('online.connectedAs', { email: data.email ?? 'Google' }) : t('online.connectTitle') }}
         </p>
         <p class="text-xs text-muted">
-          {{ data.connected ? 'All teachers can schedule Google Meet classes using this connected admin account.' : 'Connect one approved admin Google account so all teachers can generate Meet links.' }}
+          {{ data.connected ? t('online.adminConnectedText') : t('online.adminConnectText') }}
         </p>
       </template>
       <template v-else>
         <p class="text-sm font-medium text-highlighted">
-          {{ data.connected ? 'Google Meet is ready' : 'Google Meet is not connected yet' }}
+          {{ data.connected ? t('online.ready') : t('online.notReady') }}
         </p>
         <p class="text-xs text-muted">
-          {{ data.connected ? 'Meet links are created automatically via the platform Google account.' : 'Ask an admin to connect Google Calendar in Admin Panel → Settings.' }}
+          {{ data.connected ? t('online.readyText') : t('online.notReadyText') }}
         </p>
       </template>
     </div>
@@ -78,7 +78,7 @@ async function disconnect() {
     </template>
     <UBadge
       v-else
-      :label="data.connected ? 'Ready' : 'Admin setup required'"
+      :label="data.connected ? t('online.readyBadge') : t('online.adminSetup')"
       :color="data.connected ? 'success' : 'warning'"
       variant="subtle"
       size="sm"

@@ -1,32 +1,34 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
 
+// The Teacher panel: a teacher's classes, online classes, courses, tests, results and students.
 provide(PANEL_LAYOUT, 'teacher')
+const { t } = useI18n()
 
 const navItems = computed<NavigationMenuItem[]>(() => [
-  { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/teacher' },
-  { label: 'Groups', icon: 'i-lucide-users', to: '/classes' },
-  { label: 'Classes', icon: 'i-lucide-calendar-clock', to: '/teacher/classes' },
-  { label: 'Courses', icon: 'i-lucide-book-open', to: '/teacher/courses' },
+  { label: t('panel.dashboard'), icon: 'i-lucide-layout-dashboard', to: '/teacher' },
+  { label: t('panel.myClasses'), icon: 'i-lucide-users', to: '/classes' },
+  { label: t('nav.online'), icon: 'i-lucide-video', to: '/teacher/classes' },
+  { label: t('nav.courses'), icon: 'i-lucide-graduation-cap', to: '/teacher/courses' },
   {
-    label: 'Tests & Exams',
-    icon: 'i-lucide-file-text',
+    label: t('panel.tests'),
+    icon: 'i-lucide-clipboard-list',
     children: [
-      { label: 'Mock Sessions', to: '/mocks' },
-      { label: 'Marking Queue', to: '/marking' },
-      { label: 'Exam Catalogue', to: '/tests' }
+      { label: t('panel.testLibrary'), to: '/tests' },
+      { label: t('panel.mockSessions'), to: '/mocks' },
+      { label: t('panel.marking'), to: '/marking' }
     ]
   },
-  { label: 'Results', icon: 'i-lucide-bar-chart-2', to: '/teacher/results' },
-  { label: 'Students', icon: 'i-lucide-user-round', to: '/teacher/students' },
-  { label: 'Resources', icon: 'i-lucide-folder-open', to: '/teacher/resources' }
+  { label: t('panel.results'), icon: 'i-lucide-chart-column', to: '/teacher/results' },
+  { label: t('panel.students'), icon: 'i-lucide-user-round', to: '/teacher/students' },
+  { label: t('panel.resources'), icon: 'i-lucide-folder-open', to: '/teacher/resources' }
 ])
 </script>
 
 <template>
   <PanelShell
     kind="teacher"
-    panel-label="Teacher"
+    :panel-label="t('panel.teacher')"
     home-to="/teacher"
     :nav-items="navItems"
   >

@@ -52,12 +52,16 @@ export async function startSession(event: H3Event, row: UserRow): Promise<{ user
   return { user: row, sessionId: session!.id }
 }
 
-/** Where to go after signing in: the page it started from (only a path on this site), via onboarding the first time. */
+/**
+ * Where to go after signing in: the page it started from when it is one this account may open,
+ * else its own home (the Admin panel, the Teacher panel or the student's dashboard); a new
+ * student goes through onboarding first.
+ */
 export function afterSignIn(event: H3Event, row: UserRow): string {
   const next = getCookie(event, 'ml_next')
   deleteCookie(event, 'ml_next', { path: '/' })
-  const back = next && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/auth/') ? next : '/tests'
-  return row.onboarded ? back : `/onboarding?next=${encodeURIComponent(back)}`
+  const back = landingFor(row.role, next)
+  return row.onboarded || areaOf(row.role) !== 'student' ? back : `/onboarding${back === '/dashboard' ? '' : `?next=${encodeURIComponent(back)}`}`
 }
 
 /** How a user is named where a name is missing: email, Telegram username, or a plain label. */

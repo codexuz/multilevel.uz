@@ -9,7 +9,7 @@ const props = defineProps<{
 }>()
 
 const route = useRoute()
-const { me, isAdmin } = useMe()
+const { me } = useMe()
 const { t } = useI18n()
 const { locale, languages, choose } = useLanguage()
 const colorMode = useColorMode()
@@ -38,7 +38,7 @@ const markedNav = computed<NavigationMenuItem[]>(() => props.navItems.map((item)
   return { ...item, active: isPathActive(item.to) }
 }))
 
-const displayName = computed(() => me.value?.name || accountHandle(me.value) || (props.kind === 'admin' ? 'Admin' : 'Teacher'))
+const displayName = computed(() => me.value?.name || accountHandle(me.value) || props.panelLabel)
 
 async function logout() {
   await $fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
@@ -48,12 +48,6 @@ async function logout() {
 const userMenu = computed<DropdownMenuItem[][]>(() => [
   [{ type: 'label', label: displayName.value, avatar: { src: me.value?.avatarUrl ?? undefined, alt: displayName.value }, description: accountHandle(me.value) }],
   [
-    ...(props.kind !== 'admin' && isAdmin.value ? [{ label: 'Admin Panel', icon: 'i-lucide-shield-check', to: '/admin' }] : []),
-    ...(props.kind !== 'teacher' ? [{ label: 'Teacher Panel', icon: 'i-lucide-school', to: '/teacher' }] : []),
-    { label: 'Student View', icon: 'i-lucide-compass', to: '/dashboard' }
-  ],
-  [
-    { label: t('nav.profile'), icon: 'i-lucide-user', to: '/profile' },
     { label: t('nav.settings'), icon: 'i-lucide-settings', to: '/settings' },
     {
       label: t('lang.label'),
@@ -96,9 +90,9 @@ const userMenu = computed<DropdownMenuItem[][]>(() => [
           <UBadge
             v-if="!collapsed"
             :label="panelLabel"
-            :color="kind === 'admin' ? 'primary' : 'info'"
-            variant="subtle"
-            size="xs"
+            color="neutral"
+            variant="outline"
+            size="sm"
           />
         </div>
       </template>
@@ -112,50 +106,13 @@ const userMenu = computed<DropdownMenuItem[][]>(() => [
           popover
         />
 
-        <!-- Workspace Switcher -->
-        <div class="mt-auto pt-3 border-t border-default flex flex-col gap-1.5">
-          <p
-            v-if="!collapsed"
-            class="px-2.5 pb-0.5 text-[11px] font-semibold uppercase tracking-wider text-dimmed"
-          >
-            Workspaces
-          </p>
-          <UButton
-            v-if="kind === 'admin'"
-            to="/teacher"
-            icon="i-lucide-school"
-            :label="collapsed ? undefined : 'Teacher Panel'"
-            :square="collapsed"
-            color="primary"
-            variant="soft"
-            size="sm"
-            block
-            class="justify-start"
-          />
-          <UButton
-            v-else-if="isAdmin"
-            to="/admin"
-            icon="i-lucide-shield-check"
-            :label="collapsed ? undefined : 'Admin Panel'"
-            :square="collapsed"
-            color="primary"
-            variant="soft"
-            size="sm"
-            block
-            class="justify-start"
-          />
-          <UButton
-            to="/dashboard"
-            icon="i-lucide-compass"
-            :label="collapsed ? undefined : 'Student View'"
-            :square="collapsed"
-            color="neutral"
-            variant="ghost"
-            size="sm"
-            block
-            class="justify-start"
-          />
-        </div>
+        <UNavigationMenu
+          :collapsed="collapsed"
+          :items="[{ label: t('nav.settings'), icon: 'i-lucide-settings', to: '/settings', active: route.path === '/settings' }]"
+          orientation="vertical"
+          tooltip
+          class="mt-auto"
+        />
       </template>
 
       <template #footer="{ collapsed }">

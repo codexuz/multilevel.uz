@@ -10,6 +10,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{ 'update:modelValue': [value: unknown] }>()
+const { t } = useI18n()
 
 const meta = computed(() => LMS_QUESTION_META[props.question.type] ?? LMS_QUESTION_META.SHORT_ANSWER)
 const cfg = computed(() => props.question.config ?? {})
@@ -165,7 +166,7 @@ function playDictation() {
 const tfChoices = computed(() => [
   { label: 'True', value: 'TRUE' },
   { label: 'False', value: 'FALSE' },
-  ...(cfg.value.allowNotGiven ? [{ label: 'Not Given', value: 'NOT_GIVEN' }] : [])
+  ...(cfg.value.allowNotGiven ? [{ label: t('quiz.notGiven'), value: 'NOT_GIVEN' }] : [])
 ])
 </script>
 
@@ -186,7 +187,7 @@ const tfChoices = computed(() => [
         <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-1.5 mb-1">
             <UBadge
-              :label="meta.shortLabel"
+              :label="t(`lmsq.${question.type}.short`)"
               :icon="meta.icon"
               color="neutral"
               variant="subtle"
@@ -247,7 +248,7 @@ const tfChoices = computed(() => [
           color="neutral"
           variant="ghost"
           class="ms-auto"
-          aria-label="Clear"
+          :aria-label="t('quiz.clear')"
           @click="sbClear"
         />
       </div>
@@ -293,12 +294,12 @@ const tfChoices = computed(() => [
       </div>
       <UFormField
         v-if="cfg.requireCorrection"
-        label="Write the correction"
+        :label="t('quiz.correction')"
       >
         <UInput
           :model-value="errorVal.correction"
           :disabled="disabled"
-          placeholder="Type the corrected word or phrase..."
+          :placeholder="t('quiz.correctionPlaceholder')"
           class="w-full sm:max-w-md"
           @update:model-value="setErrorCorrection(String($event))"
         />
@@ -382,7 +383,7 @@ const tfChoices = computed(() => [
       <UInput
         :model-value="strVal"
         :disabled="disabled"
-        :placeholder="cfg.placeholder || 'Type your answer...'"
+        :placeholder="cfg.placeholder || t('quiz.answerPlaceholder')"
         class="w-full sm:max-w-lg"
         @update:model-value="setStr(String($event))"
       />
@@ -418,7 +419,7 @@ const tfChoices = computed(() => [
             :class="grade?.blanks?.[seg.number]
               ? (grade.blanks[seg.number]!.correct ? 'border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/30' : 'border-rose-500 bg-rose-50/40 dark:bg-rose-950/30')
               : 'border-default'"
-            :placeholder="`Gap ${seg.number}`"
+            :placeholder="t('quiz.gap', { n: seg.number })"
             @input="setGap(seg.number, ($event.target as HTMLInputElement).value)"
           >
           <span
@@ -469,7 +470,7 @@ const tfChoices = computed(() => [
               @dragover.prevent
               @drop.prevent="onDropGap(seg.number, $event)"
             >
-              {{ gapMap[seg.number] ? bankText(gapMap[seg.number]!) : `Gap ${seg.number}` }}
+              {{ gapMap[seg.number] ? bankText(gapMap[seg.number]!) : t('quiz.gap', { n: seg.number }) }}
             </button>
             <span
               v-if="grade?.blanks?.[seg.number] && !grade.blanks[seg.number]!.correct"
@@ -580,7 +581,7 @@ const tfChoices = computed(() => [
       <div class="rounded-xl bg-elevated/50 ring ring-default p-4 flex flex-col gap-2">
         <div class="flex items-center gap-2 text-xs font-semibold text-muted">
           <UBadge
-            :label="cfg.sourceLang || 'Source'"
+            :label="cfg.sourceLang || t('quiz.source')"
             color="neutral"
             variant="subtle"
             size="xs"
@@ -590,14 +591,14 @@ const tfChoices = computed(() => [
             class="size-3.5"
           />
           <UBadge
-            :label="cfg.targetLang || 'Target'"
+            :label="cfg.targetLang || t('quiz.target')"
             color="primary"
             variant="subtle"
             size="xs"
           />
           <UButton
             v-if="cfg.hint"
-            :label="showHint ? 'Hide hint' : 'Show hint'"
+            :label="showHint ? t('quiz.hideHint') : t('quiz.showHint')"
             size="xs"
             color="neutral"
             variant="ghost"
@@ -619,7 +620,7 @@ const tfChoices = computed(() => [
         :model-value="strVal"
         :disabled="disabled"
         :rows="2"
-        placeholder="Write your translation here..."
+        :placeholder="t('quiz.translationPlaceholder')"
         class="w-full"
         @update:model-value="setStr(String($event))"
       />
@@ -638,7 +639,7 @@ const tfChoices = computed(() => [
       />
       <div class="flex flex-wrap items-center gap-2 rounded-xl bg-elevated/50 ring ring-default p-3">
         <UButton
-          :label="speakingTts ? 'Playing...' : 'Play Audio'"
+          :label="speakingTts ? t('quiz.playing') : t('quiz.play')"
           icon="i-lucide-volume-2"
           :disabled="!canPlayMore"
           @click="playDictation"
@@ -663,7 +664,7 @@ const tfChoices = computed(() => [
         :model-value="strVal"
         :disabled="disabled"
         :rows="2"
-        placeholder="Type exactly what you hear..."
+        :placeholder="t('quiz.dictationPlaceholder')"
         class="w-full"
         @update:model-value="setStr(String($event))"
       />
@@ -699,7 +700,7 @@ const tfChoices = computed(() => [
           :name="grade.isCorrect ? 'i-lucide-circle-check' : 'i-lucide-circle-x'"
           class="size-4 shrink-0"
         />
-        <span>{{ grade.isCorrect ? 'Correct!' : 'Review answer' }}</span>
+        <span>{{ grade.isCorrect ? t('quiz.correct') : t('quiz.review') }}</span>
       </div>
       <p
         v-if="!grade.isCorrect && Array.isArray(grade.expected) && question.type !== 'ORDER'"

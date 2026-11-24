@@ -6,7 +6,7 @@ const nameOf = (u: { name: string | null, telegramUsername: string | null, email
 
 // Unified student roster across all of the teacher's active groups.
 export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
+  const user = await requireTeacher(event)
   const db = useDb()
   const groups = await db.select().from(classGroups).where(and(eq(classGroups.teacherId, user.id), eq(classGroups.archived, false)))
   if (!groups.length) return { students: [], groups: [] }

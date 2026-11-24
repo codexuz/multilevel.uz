@@ -1,20 +1,20 @@
 <script setup lang="ts">
 import type { DropdownMenuItem, NavigationMenuItem } from '@nuxt/ui'
 
-// Student View shell: cleanly separated from Admin Panel (/admin) and Teacher Panel (/teacher).
-// Online classes link appears only when the student has joined a group; Test packs is a tab inside /tests.
-const { me, loggedIn, isAdmin, rewardCredits } = useMe()
+// The student app: tests, live mocks, courses, results, words. Teachers and admins have panels of their
+// own (layouts/teacher.vue, layouts/admin.vue) and never see this one. Online classes show once the
+// student is in a class; test packs are a tab of /tests.
+const { me, loggedIn, rewardCredits } = useMe()
 const { live } = useLiveMock()
 const { t } = useI18n()
 const { locale, languages, choose } = useLanguage()
 const colorMode = useColorMode()
 const route = useRoute()
 
-const isTeacher = computed(() => !!me.value && (me.value.role === 'teacher' || me.value.role === 'center_owner' || me.value.role === 'admin' || !!me.value.teaches || !!me.value.runsMocks))
 const hasGroup = computed(() => (me.value?.classes?.length ?? 0) > 0)
 
 const mainNav = computed<NavigationMenuItem[]>(() => [
-  ...(loggedIn.value ? [{ label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/dashboard' }] : []),
+  ...(loggedIn.value ? [{ label: t('nav.dashboard'), icon: 'i-lucide-layout-dashboard', to: '/dashboard' }] : []),
   { label: t('nav.tests'), icon: 'i-lucide-clipboard-list', to: '/tests' },
   { label: t('nav.live'), icon: 'i-lucide-trophy', to: '/live', badge: live.value ? { label: t('nav.liveBadge'), color: 'error' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined },
   { label: t('nav.courses'), icon: 'i-lucide-graduation-cap', to: '/courses' },
@@ -35,7 +35,7 @@ const bottomLinks = computed<NavigationMenuItem[]>(() => loggedIn.value
 
 // Phone bottom tab bar: focused strictly on learner flows.
 const tabBar = computed(() => [
-  ...(loggedIn.value ? [{ label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/dashboard' }] : []),
+  ...(loggedIn.value ? [{ label: t('nav.dashboard'), icon: 'i-lucide-layout-dashboard', to: '/dashboard' }] : []),
   { label: t('nav.tests'), icon: 'i-lucide-clipboard-list', to: '/tests' },
   { label: t('nav.courses'), icon: 'i-lucide-graduation-cap', to: '/courses' },
   ...(loggedIn.value
@@ -53,12 +53,6 @@ async function logout() {
 
 const userMenu = computed<DropdownMenuItem[][]>(() => [
   [{ type: 'label', label: displayName.value, avatar: { src: me.value?.avatarUrl ?? undefined, alt: displayName.value }, description: accountHandle(me.value) }],
-  ...(isAdmin.value || isTeacher.value
-    ? [[
-        ...(isAdmin.value ? [{ label: 'Admin Panel', icon: 'i-lucide-shield-check', to: '/admin' }] : []),
-        ...(isTeacher.value ? [{ label: 'Teacher Panel', icon: 'i-lucide-school', to: '/teacher' }] : [])
-      ]]
-    : []),
   [
     { label: t('nav.profile'), icon: 'i-lucide-user', to: '/profile' },
     { label: t('nav.settings'), icon: 'i-lucide-settings', to: '/settings' },
@@ -109,43 +103,6 @@ const userMenu = computed<DropdownMenuItem[][]>(() => [
           tooltip
           popover
         />
-
-        <!-- Separate Portal Launchers for Teachers & Admins -->
-        <div
-          v-if="isAdmin || isTeacher"
-          class="mt-4 pt-3 border-t border-default flex flex-col gap-1.5"
-        >
-          <p
-            v-if="!collapsed"
-            class="px-2.5 pb-0.5 text-[11px] font-semibold uppercase tracking-wider text-dimmed"
-          >
-            Workspaces
-          </p>
-          <UButton
-            v-if="isTeacher"
-            to="/teacher"
-            icon="i-lucide-school"
-            :label="collapsed ? undefined : 'Teacher Panel'"
-            :square="collapsed"
-            color="primary"
-            variant="soft"
-            size="sm"
-            block
-            class="justify-start"
-          />
-          <UButton
-            v-if="isAdmin"
-            to="/admin"
-            icon="i-lucide-shield-check"
-            :label="collapsed ? undefined : 'Admin Panel'"
-            :square="collapsed"
-            color="neutral"
-            variant="subtle"
-            size="sm"
-            block
-            class="justify-start"
-          />
-        </div>
 
         <UNavigationMenu
           :collapsed="collapsed"

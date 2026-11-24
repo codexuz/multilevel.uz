@@ -7,11 +7,16 @@ definePageMeta({ layout: false })
 
 const route = useRoute()
 const oauthError = computed(() => route.query.error === 'oauth')
-const next = computed(() => (typeof route.query.next === 'string' && route.query.next.startsWith('/') && !route.query.next.startsWith('//') ? route.query.next : '/tests'))
+const next = computed(() => (typeof route.query.next === 'string' && route.query.next.startsWith('/') && !route.query.next.startsWith('//') ? route.query.next : null))
 
-/** Where to come back to after signing in: kept for a few minutes, read once by the sign-in route. */
+/**
+ * Where to come back to after signing in, kept for a few minutes and read once by the sign-in route.
+ * Without one, the account goes to its own home: the dashboard (or the Teacher or Admin panel).
+ */
 function rememberNext() {
-  document.cookie = `ml_next=${encodeURIComponent(next.value)}; path=/; max-age=600; samesite=lax`
+  document.cookie = next.value
+    ? `ml_next=${encodeURIComponent(next.value)}; path=/; max-age=600; samesite=lax`
+    : 'ml_next=; path=/; max-age=0; samesite=lax'
 }
 
 const telegram = useTelegramLogin()

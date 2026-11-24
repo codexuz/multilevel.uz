@@ -114,6 +114,8 @@ export async function findLesson(id: string) {
 // ---------- writing ----------
 
 const text = (v: unknown, max: number) => String(v ?? '').trim().slice(0, max)
+/** A short list for the course's page (what learners will learn, need, are): up to 20 lines. */
+const list = (v: unknown) => (Array.isArray(v) ? v : []).map(x => text(x, 200)).filter(Boolean).slice(0, 20)
 
 function optionalDate(v: unknown, label = 'date'): Date | null {
   if (v === null || v === undefined || v === '') return null
@@ -131,10 +133,12 @@ export function courseValues(body: Record<string, unknown>, partial: boolean) {
     out.title = title
   }
   if (body.summary !== undefined) out.summary = text(body.summary, 400) || null
-  if (body.coverUrl !== undefined) {
-    const cover = text(body.coverUrl, 500)
-    out.coverUrl = cover || null
-  }
+  if (body.coverUrl !== undefined) out.coverUrl = link(body.coverUrl)
+  if (body.description !== undefined) out.description = sanitizeRichText(String(body.description ?? '')).slice(0, 50_000) || null
+  if (body.introVideoUrl !== undefined) out.introVideoUrl = link(body.introVideoUrl)
+  if (body.outcomes !== undefined) out.outcomes = list(body.outcomes)
+  if (body.requirements !== undefined) out.requirements = list(body.requirements)
+  if (body.audience !== undefined) out.audience = list(body.audience)
   if (body.exam !== undefined) out.exam = isExam(body.exam) ? body.exam : null
   if (body.level !== undefined) out.level = LEVELS.includes(String(body.level)) ? String(body.level) : null
   if (body.visibility !== undefined) {
@@ -210,6 +214,32 @@ export async function reorderModules(course: Course, ids: string[]) {
   if (ids.length !== mine.length || ids.some(id => !mine.includes(id))) throw createError({ statusCode: 400, message: 'Give every unit/module of the course, in order' })
   await db.transaction(async (tx) => {
     for (const [i, id] of ids.entries()) await tx.update(courseModules).set({ position: i + 1 }).where(eq(courseModules.id, id))
+  })
+}
+
+/**
+ * The whole curriculum laid out at once, as the course builder's drag and drop leaves it: the topics
+ * (units) in order, and every lesson in order with the topic it is in (null: not in a topic).
+ */
+export async function arrangeCurriculum(course: Course, layout: { modules: string[], lessons: { id: string, moduleId: string | null }[] }) {
+  const db = useDb()
+  const [mods, lessons] = await Promise.all([
+    db.select({ id: courseModules.id }).from(courseModules).where(eq(courseModules.courseId, course.id)),
+    db.select({ id: courseLessons.id }).from(courseLessons).where(eq(courseLessons.courseId, course.id))
+  ])
+  const modIds = new Set(mods.map(m => m.id))
+  const lessonIds = new Set(lessons.map(l => l.id))
+  const same = (given: string[], have: Set<string>) => given.length === have.size && new Set(given).size === given.length && given.every(id => have.has(id))
+  if (!same(layout.modules, modIds) || !same(layout.lessons.map(l => l.id), lessonIds)) throw createError({ statusCode: 400, message: 'Give every topic and lesson of the course' })
+  if (layout.lessons.some(l => l.moduleId !== null && !modIds.has(l.moduleId))) throw createError({ statusCode: 400, message: 'A lesson is in a topic of another course' })
+  await db.transaction(async (tx) => {
+    for (const [i, id] of layout.modules.entries()) await tx.update(courseModules).set({ position: i + 1, updatedAt: new Date() }).where(eq(courseModules.id, id))
+    const nth = new Map<string | null, number>()
+    for (const l of layout.lessons) {
+      const n = (nth.get(l.moduleId) ?? 0) + 1
+      nth.set(l.moduleId, n)
+      await tx.update(courseLessons).set({ moduleId: l.moduleId, position: n, updatedAt: new Date() }).where(eq(courseLessons.id, l.id))
+    }
   })
 }
 
@@ -399,6 +429,11 @@ async function cards(rows: Course[]) {
   })
 }
 
+/** What a course's page says beyond its card. */
+const pageOf = (c: Course) => ({
+  description: c.description, introVideoUrl: c.introVideoUrl, outcomes: c.outcomes ?? [], requirements: c.requirements ?? [], audience: c.audience ?? []
+})
+
 /** The catalogue: published public courses, newest first (?exam=). */
 export async function publicCourses(exam?: string) {
   const rows = await useDb().select().from(courses)
@@ -494,7 +529,10 @@ export async function courseView(viewer: Viewer, course: Course) {
 
   return {
     ...card!,
+    ...pageOf(course),
     access,
+    totalMinutes: lessons.reduce((n, l) => n + (l.durationMinutes ?? 0), 0),
+    exerciseTotal: [...exCountMap.values()].reduce((n, x) => n + x, 0),
     modules: moduleList,
     lessons: lessonItems
   }
@@ -695,6 +733,7 @@ export async function manageView(course: Course) {
 
   return {
     ...card!,
+    ...pageOf(course),
     modules: mods.map(m => ({
       id: m.id,
       position: m.position,

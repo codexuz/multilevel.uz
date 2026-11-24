@@ -1,6 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ middleware: 'admin', layout: 'admin' })
-useSeoMeta({ title: 'Settings · Admin', robots: 'noindex' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('panel.platform'), robots: 'noindex' })
 
 const route = useRoute()
 const toast = useToast()
@@ -9,19 +10,19 @@ const runningTask = ref<string | null>(null)
 
 onMounted(() => {
   const g = route.query.google
-  if (g === 'connected') toast.add({ title: 'Google Calendar connected for all online classes', color: 'success' })
-  else if (g === 'scope') toast.add({ title: 'Calendar permission was not granted', color: 'warning' })
-  else if (g === 'cancelled') toast.add({ title: 'Google sign-in was cancelled or denied (add this admin email to Google Cloud OAuth Test users)', color: 'warning' })
-  else if (g === 'failed') toast.add({ title: 'Google connection failed — verify this admin email is listed in Google Cloud OAuth Test users', color: 'error' })
+  if (g === 'connected') toast.add({ title: t('asettings.gConnected'), color: 'success' })
+  else if (g === 'scope') toast.add({ title: t('asettings.gScope'), color: 'warning' })
+  else if (g === 'cancelled') toast.add({ title: t('asettings.gCancelled'), color: 'warning' })
+  else if (g === 'failed') toast.add({ title: t('asettings.gFailed'), color: 'error' })
 })
 
 async function runTask(name: string) {
   runningTask.value = name
   try {
     await $fetch(`/api/admin/tasks/${encodeURIComponent(name)}`, { method: 'POST' })
-    toast.add({ title: `Task "${name}" executed`, color: 'success' })
+    toast.add({ title: t('asettings.taskDone', { name }), color: 'success' })
   } catch (e) {
-    toast.add({ title: 'Task failed', description: errorMessage(e), color: 'error' })
+    toast.add({ title: t('asettings.taskFailed'), description: errorMessage(e), color: 'error' })
   } finally {
     runningTask.value = null
   }
@@ -31,16 +32,16 @@ async function fixWebhook() {
   try {
     await $fetch('/api/admin/telegram', { query: { fix: '1' } })
     await refreshTg()
-    toast.add({ title: 'Telegram webhook refreshed', color: 'success' })
+    toast.add({ title: t('asettings.webhookDone'), color: 'success' })
   } catch (e) {
-    toast.add({ title: 'Could not refresh webhook', description: errorMessage(e), color: 'error' })
+    toast.add({ title: t('common.notSaved'), description: errorMessage(e), color: 'error' })
   }
 }
 </script>
 
 <template>
   <AppPage
-    title="Platform Settings"
+    :title="t('panel.platform')"
     icon="i-lucide-settings"
   >
     <div class="flex flex-col gap-5">
@@ -52,10 +53,10 @@ async function fixWebhook() {
               name="i-logos-google-meet"
               class="size-5"
             />
-            Google Meet (Shared Admin Account)
+            {{ t('asettings.meetTitle') }}
           </h3>
           <p class="text-xs text-muted mt-1">
-            Only an admin connects Google Calendar here. All teachers automatically create Google Meet links through this account without needing individual Google OAuth approval.
+            {{ t('asettings.meetText') }}
           </p>
         </div>
         <OnlineGoogleConnect next="/admin/settings" />
@@ -69,10 +70,10 @@ async function fixWebhook() {
                 name="i-simple-icons-telegram"
                 class="size-5 text-sky-500"
               />
-              Telegram Bot Webhook
+              {{ t('asettings.webhookTitle') }}
             </h3>
             <UButton
-              label="Sync Webhook"
+              :label="t('asettings.sync')"
               icon="i-lucide-refresh-cw"
               size="xs"
               variant="outline"
@@ -80,9 +81,9 @@ async function fixWebhook() {
             />
           </div>
           <p class="text-xs text-muted">
-            Checks where Telegram delivers bot updates and any recent delivery errors.
+            {{ t('asettings.webhookText') }}
           </p>
-          <pre class="text-xs bg-elevated rounded-xl p-3 overflow-x-auto max-h-60">{{ JSON.stringify(tg ?? { status: 'Loading...' }, null, 2) }}</pre>
+          <pre class="text-xs bg-elevated rounded-xl p-3 overflow-x-auto max-h-60">{{ JSON.stringify(tg ?? { status: '…' }, null, 2) }}</pre>
         </UCard>
 
         <UCard :ui="{ body: 'p-5 flex flex-col gap-3' }">
@@ -91,18 +92,18 @@ async function fixWebhook() {
               name="i-lucide-clock"
               class="size-5 text-primary"
             />
-            Scheduled Background Jobs
+            {{ t('asettings.jobsTitle') }}
           </h3>
           <p class="text-xs text-muted">
-            Trigger Nitro scheduled maintenance &amp; notification tasks on demand.
+            {{ t('asettings.jobsText') }}
           </p>
           <div class="flex flex-col gap-2">
             <div
               v-for="job in [
-                { name: 'live:mocks', label: 'Live Mocks Announcer', desc: 'Opens live mocks and posts results to channels' },
-                { name: 'reminders:plan', label: 'Exam Plan Reminders', desc: 'Daily study-plan countdown nudges' },
-                { name: 'reminders:marking', label: 'Marking Queue Reminders', desc: 'Notifies teachers of pending scripts' },
-                { name: 'lessons:remind', label: 'Online Class Reminders', desc: 'Reminds students about upcoming Google Meet sessions' }
+                { name: 'live:mocks', label: t('asettings.job.liveMocks'), desc: t('asettings.job.liveMocksText') },
+                { name: 'reminders:plan', label: t('asettings.job.plan'), desc: t('asettings.job.planText') },
+                { name: 'reminders:marking', label: t('asettings.job.marking'), desc: t('asettings.job.markingText') },
+                { name: 'lessons:remind', label: t('asettings.job.lessons'), desc: t('asettings.job.lessonsText') }
               ]"
               :key="job.name"
               class="flex items-center justify-between gap-3 rounded-xl ring ring-default px-3.5 py-2.5"
@@ -116,7 +117,7 @@ async function fixWebhook() {
                 </p>
               </div>
               <UButton
-                label="Run"
+                :label="t('asettings.run')"
                 size="xs"
                 variant="soft"
                 :loading="runningTask === job.name"

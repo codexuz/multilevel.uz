@@ -1,6 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ middleware: 'admin', layout: 'admin' })
-useSeoMeta({ title: 'LMS Courses · Admin', robots: 'noindex' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('nav.courses'), robots: 'noindex' })
 
 interface AdminCourseRow {
   id: string
@@ -49,32 +50,32 @@ async function createCourse() {
     creating.value = false
     await router.push(`/courses/manage/${c.id}?panel=admin`)
   } catch (e) {
-    toast.add({ title: 'Could not create course', description: errorMessage(e), color: 'error' })
+    toast.add({ title: t('courses.notCreated'), description: errorMessage(e), color: 'error' })
   } finally {
     saving.value = false
   }
 }
 
 async function removeCourse(c: AdminCourseRow) {
-  if (!confirm(`Delete course "${c.title}" and all its units, lessons, and exercises?`)) return
+  if (!confirm(t('courses.deleteSure', { title: c.title }))) return
   try {
     await $fetch(`/api/courses/${c.id}`, { method: 'DELETE' })
-    toast.add({ title: 'Course deleted', color: 'success' })
+    toast.add({ title: t('acourses.deleted'), color: 'success' })
     await refresh()
   } catch (e) {
-    toast.add({ title: 'Could not delete', description: errorMessage(e), color: 'error' })
+    toast.add({ title: t('common.notSaved'), description: errorMessage(e), color: 'error' })
   }
 }
 </script>
 
 <template>
   <AppPage
-    title="LMS Courses"
+    :title="t('nav.courses')"
     icon="i-lucide-book-open"
   >
     <template #actions>
       <UButton
-        label="New Course"
+        :label="t('courses.new')"
         icon="i-lucide-plus"
         @click="creating = true; form.title = ''"
       />
@@ -85,7 +86,7 @@ async function removeCourse(c: AdminCourseRow) {
         <UInput
           v-model="search"
           icon="i-lucide-search"
-          placeholder="Search courses or teachers..."
+          :placeholder="t('acourses.search')"
           class="w-full sm:w-80"
         />
         <span class="text-xs text-muted">{{ filtered.length }} course(s)</span>
@@ -97,22 +98,22 @@ async function removeCourse(c: AdminCourseRow) {
             <thead>
               <tr class="border-b border-default text-left text-xs font-semibold text-muted">
                 <th class="px-4 py-3">
-                  Course
+                  {{ t('acourses.course') }}
                 </th>
                 <th class="px-4 py-3">
-                  Instructor
+                  {{ t('acourses.teacher') }}
                 </th>
                 <th class="px-4 py-3">
-                  Structure
+                  {{ t('acourses.structure') }}
                 </th>
                 <th class="px-4 py-3">
-                  Content Drip
+                  {{ t('builder.release') }}
                 </th>
                 <th class="px-4 py-3">
-                  Status
+                  {{ t('tp.status') }}
                 </th>
                 <th class="px-4 py-3 text-right">
-                  Actions
+                  {{ t('acourses.actions') }}
                 </th>
               </tr>
             </thead>
@@ -164,10 +165,10 @@ async function removeCourse(c: AdminCourseRow) {
                   <div class="flex items-center gap-2">
                     <UAvatar
                       :src="c.teacher?.avatarUrl ?? undefined"
-                      :alt="c.teacher?.name ?? 'Teacher'"
+                      :alt="c.teacher?.name ?? t('panel.teacher')"
                       size="xs"
                     />
-                    <span class="text-toned">{{ c.teacher?.name ?? 'Teacher' }}</span>
+                    <span class="text-toned">{{ c.teacher?.name ?? t('panel.teacher') }}</span>
                   </div>
                 </td>
                 <td class="px-4 py-3 text-xs text-muted tabular-nums">
@@ -175,7 +176,7 @@ async function removeCourse(c: AdminCourseRow) {
                 </td>
                 <td class="px-4 py-3">
                   <UBadge
-                    :label="DRIP_MODE_META[c.dripMode]?.label ?? c.dripMode"
+                    :label="t(`builder.drip.${c.dripMode}`)"
                     :icon="DRIP_MODE_META[c.dripMode]?.icon"
                     color="info"
                     variant="soft"
@@ -184,7 +185,7 @@ async function removeCourse(c: AdminCourseRow) {
                 </td>
                 <td class="px-4 py-3">
                   <UBadge
-                    :label="c.published ? 'Published' : 'Draft'"
+                    :label="c.published ? t('builder.published') : t('courses.draft')"
                     :color="c.published ? 'success' : 'neutral'"
                     variant="subtle"
                     size="xs"
@@ -194,7 +195,7 @@ async function removeCourse(c: AdminCourseRow) {
                   <div class="inline-flex items-center gap-1">
                     <UButton
                       :to="`/courses/manage/${c.id}?panel=admin`"
-                      label="Builder"
+                      :label="t('acourses.builder')"
                       icon="i-lucide-pencil-ruler"
                       size="xs"
                       variant="soft"
@@ -205,14 +206,14 @@ async function removeCourse(c: AdminCourseRow) {
                       size="xs"
                       color="neutral"
                       variant="ghost"
-                      aria-label="Preview"
+                      :aria-label="t('builder.preview')"
                     />
                     <UButton
                       icon="i-lucide-trash-2"
                       size="xs"
                       color="error"
                       variant="ghost"
-                      aria-label="Delete"
+                      :aria-label="t('builder.delete')"
                       @click="removeCourse(c)"
                     />
                   </div>
@@ -223,7 +224,7 @@ async function removeCourse(c: AdminCourseRow) {
                   colspan="6"
                   class="py-10 text-center text-muted"
                 >
-                  No LMS courses found. Create your first course above.
+                  {{ t('acourses.none') }}
                 </td>
               </tr>
             </tbody>
@@ -234,14 +235,14 @@ async function removeCourse(c: AdminCourseRow) {
 
     <UModal
       v-model:open="creating"
-      title="Create LMS Course"
+      :title="t('courses.new')"
     >
       <template #body>
         <form
           class="grid gap-4"
           @submit.prevent="createCourse"
         >
-          <UFormField label="Course title">
+          <UFormField :label="t('courses.titleLabel')">
             <UInput
               v-model="form.title"
               placeholder="e.g. B2 Multilevel Complete Mastery"
@@ -249,30 +250,30 @@ async function removeCourse(c: AdminCourseRow) {
               autofocus
             />
           </UFormField>
-          <UFormField label="Visibility">
+          <UFormField :label="t('courses.whoSees')">
             <USelect
               v-model="form.visibility"
-              :items="[{ label: 'Public (Catalogue)', value: 'PUBLIC' }, { label: 'Private (Teacher\'s classes only)', value: 'PRIVATE' }]"
+              :items="[{ label: t('courses.public'), value: 'PUBLIC' }, { label: t('courses.private'), value: 'PRIVATE' }]"
               class="w-full"
             />
           </UFormField>
-          <UFormField label="Content Drip Mode">
+          <UFormField :label="t('builder.release')">
             <USelect
               v-model="form.dripMode"
-              :items="DRIP_MODES.map(m => ({ label: DRIP_MODE_META[m].label, value: m }))"
+              :items="DRIP_MODES.map(m => ({ label: t(`builder.drip.${m}`), value: m }))"
               class="w-full"
             />
           </UFormField>
           <div class="flex justify-end gap-2">
             <UButton
-              label="Cancel"
+              :label="t('common.cancel')"
               color="neutral"
               variant="ghost"
               @click="creating = false"
             />
             <UButton
               type="submit"
-              label="Create & Open Builder"
+              :label="t('builder.createCourse')"
               :loading="saving"
               :disabled="!form.title.trim()"
             />

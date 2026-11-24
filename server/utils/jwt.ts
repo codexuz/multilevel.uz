@@ -54,6 +54,11 @@ export function setAuthCookies(event: H3Event, access: string, refresh: string) 
   })
 }
 
+/** A new access token alone, as after the account's role changed. */
+export function setAccessCookie(event: H3Event, access: string) {
+  setCookie(event, ACCESS_COOKIE, access, { httpOnly: true, secure: !import.meta.dev, sameSite: 'lax', path: '/', maxAge: ACCESS_TTL })
+}
+
 export function clearAuthCookies(event: H3Event) {
   deleteCookie(event, ACCESS_COOKIE, { path: '/' })
   deleteCookie(event, REFRESH_COOKIE, { path: '/' })

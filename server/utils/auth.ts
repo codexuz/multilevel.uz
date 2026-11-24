@@ -52,6 +52,18 @@ export async function requireAdmin(event: H3Event): Promise<AuthUser> {
   return user
 }
 
+/**
+ * A teacher (or an admin): the Teacher panel's data. The token's role is checked against the account,
+ * as it may have just become a teacher's (making a first class) while the token still says student.
+ */
+export async function requireTeacher(event: H3Event): Promise<AuthUser> {
+  const user = await requireUser(event)
+  if (areaOf(user.role) !== 'student') return user
+  const [row] = await useDb().select({ role: users.role }).from(users).where(eq(users.id, user.id)).limit(1)
+  if (!row || areaOf(row.role) === 'student') throw createError({ statusCode: 403, message: 'This is for teachers' })
+  return { ...user, role: row.role }
+}
+
 /** The signed-in user, or null for a guest (open pages: a guest's answers are checked, not saved). */
 export async function optionalUser(event: H3Event): Promise<AuthUser | null> {
   if (!readAccessToken(event)) return null

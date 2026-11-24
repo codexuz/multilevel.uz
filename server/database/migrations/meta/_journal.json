@@ -218,6 +218,13 @@
       "when": 1795539761285,
       "tag": "0030_group_exam_type",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1795545402220,
+      "tag": "0031_course_page",
+      "breakpoints": true
     }
   ]
 }

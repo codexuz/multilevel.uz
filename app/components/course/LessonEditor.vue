@@ -65,7 +65,7 @@ const form = reactive({
 const withTask = ref(!!props.lesson?.task)
 
 const moduleOptions = computed(() => [
-  { label: 'No unit (Ungrouped)', value: 'NONE' },
+  { label: t('builder.noTopic'), value: 'NONE' },
   ...(props.modules ?? []).map(m => ({ label: m.title, value: m.id }))
 ])
 
@@ -168,7 +168,7 @@ async function cancelLive() {
     <div class="grid sm:grid-cols-3 gap-3">
       <UFormField
         v-if="modules?.length"
-        label="Unit / Module"
+        :label="t('builder.topic')"
         class="sm:col-span-2"
       >
         <USelect
@@ -177,7 +177,7 @@ async function cancelLive() {
           class="w-full"
         />
       </UFormField>
-      <UFormField label="Est. Duration (min)">
+      <UFormField :label="t('builder.duration')">
         <UInputNumber
           v-model="form.durationMinutes"
           :min="1"
@@ -196,10 +196,10 @@ async function cancelLive() {
       />
     </UFormField>
 
-    <UFormField label="Short Summary (optional)">
+    <UFormField :label="t('builder.lessonSummary')">
       <UInput
         v-model="form.summary"
-        placeholder="Brief description of lesson objectives..."
+        :placeholder="t('builder.lessonSummaryPlaceholder')"
         class="w-full"
       />
     </UFormField>
@@ -228,20 +228,20 @@ async function cancelLive() {
     <div class="flex flex-col gap-3 rounded-lg ring ring-default p-3">
       <p class="text-sm font-medium text-highlighted flex items-center gap-2">
         <UIcon name="i-lucide-calendar-clock" />
-        Lesson Content Drip Window (optional)
+        {{ t('builder.lessonWindow') }}
       </p>
       <p class="text-xs text-muted">
-        Used when the course or unit uses "Specific date (from – to)" drip mode, or to schedule a specific release window.
+        {{ t('builder.lessonWindowText') }}
       </p>
       <div class="grid sm:grid-cols-2 gap-3">
-        <UFormField label="Available From">
+        <UFormField :label="t('builder.availableFrom')">
           <UInput
             v-model="form.availableFrom"
             type="datetime-local"
             class="w-full"
           />
         </UFormField>
-        <UFormField label="Available Until (optional)">
+        <UFormField :label="t('builder.availableTo')">
           <UInput
             v-model="form.availableTo"
             type="datetime-local"
