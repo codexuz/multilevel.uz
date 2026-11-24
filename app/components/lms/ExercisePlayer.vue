@@ -20,6 +20,7 @@ interface ExercisePayload extends LmsExerciseDto {
 
 const props = defineProps<{ exerciseId: string }>()
 const emit = defineEmits<{ completed: [{ passed: boolean, autoCompletedLesson: boolean }] }>()
+const { t } = useI18n()
 
 const toast = useToast()
 const { data: ex, status, refresh } = await useFetch<ExercisePayload>(() => `/api/course-exercises/${props.exerciseId}`)
@@ -85,13 +86,13 @@ async function submit() {
     activeResult.value = res.attempt
     await refresh()
     toast.add({
-      title: res.attempt.passed ? `Passed! ${res.attempt.score}%` : `Scored ${res.attempt.score}%`,
-      description: res.autoCompletedLesson ? 'All required exercises passed — lesson marked complete!' : `${res.attempt.earnedPoints}/${res.attempt.totalPoints} points`,
+      title: res.attempt.passed ? t('quiz.passedToast', { score: res.attempt.score }) : t('quiz.scoredToast', { score: res.attempt.score }),
+      description: res.autoCompletedLesson ? t('quiz.lessonDone') : t('quiz.points', { got: res.attempt.earnedPoints, of: res.attempt.totalPoints }),
       color: res.attempt.passed ? 'success' : 'warning'
     })
     emit('completed', { passed: res.attempt.passed, autoCompletedLesson: res.autoCompletedLesson })
   } catch (e) {
-    toast.add({ title: 'Could not submit exercise', description: errorMessage(e), color: 'error' })
+    toast.add({ title: t('quiz.notSent'), description: errorMessage(e), color: 'error' })
   } finally {
     submitting.value = false
   }
@@ -116,27 +117,27 @@ function viewAttempt(att: ExerciseAttemptDto) {
         <div class="min-w-0">
           <div class="flex flex-wrap items-center gap-2">
             <UBadge
-              :label="ex.exerciseType"
+              :label="t(`builder.exType.${ex.exerciseType}`)"
               color="primary"
               variant="subtle"
               size="xs"
             />
             <UBadge
-              :label="`Pass: ${ex.passingScore}%`"
+              :label="t('quiz.passMark', { n: ex.passingScore })"
               color="neutral"
               variant="outline"
               size="xs"
             />
             <UBadge
               v-if="ex.requiredForCompletion"
-              label="Required"
+              :label="t('builder.required')"
               color="warning"
               variant="soft"
               size="xs"
             />
             <UBadge
               v-if="ex.maxAttempts"
-              :label="`Attempts: ${ex.attempts.length}/${ex.maxAttempts}`"
+              :label="t('quiz.attempts', { n: ex.attempts.length, of: ex.maxAttempts })"
               color="neutral"
               variant="subtle"
               size="xs"
@@ -164,7 +165,7 @@ function viewAttempt(att: ExerciseAttemptDto) {
           />
           <UButton
             v-if="activeResult && canRetry"
-            label="Try Again"
+            :label="t('tp.tryAgain')"
             icon="i-lucide-rotate-cw"
             color="primary"
             variant="soft"
@@ -180,7 +181,7 @@ function viewAttempt(att: ExerciseAttemptDto) {
         :color="activeResult.passed ? 'success' : 'warning'"
         variant="subtle"
         :icon="activeResult.passed ? 'i-lucide-trophy' : 'i-lucide-target'"
-        :title="activeResult.passed ? `Passed with ${activeResult.score}% (${activeResult.earnedPoints}/${activeResult.totalPoints} pts)` : `Scored ${activeResult.score}% (${activeResult.earnedPoints}/${activeResult.totalPoints} pts) — ${ex.passingScore}% needed to pass`"
+        :title="activeResult.passed ? t('quiz.passedWith', { score: activeResult.score, got: activeResult.earnedPoints, of: activeResult.totalPoints }) : t('quiz.scoredNeed', { score: activeResult.score, got: activeResult.earnedPoints, of: activeResult.totalPoints, need: ex.passingScore })"
       />
 
       <!-- Questions -->
@@ -201,7 +202,7 @@ function viewAttempt(att: ExerciseAttemptDto) {
       <UEmpty
         v-else
         icon="i-lucide-help-circle"
-        title="No questions in this exercise yet"
+        :title="t('quiz.noQuestions')"
         variant="naked"
       />
 
@@ -211,7 +212,7 @@ function viewAttempt(att: ExerciseAttemptDto) {
         class="flex items-center justify-end gap-2 pt-2"
       >
         <UButton
-          label="Submit Answers"
+          :label="t('quiz.submit')"
           icon="i-lucide-check-check"
           size="md"
           :loading="submitting"

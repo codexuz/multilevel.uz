@@ -1577,7 +1577,15 @@
     "connectedToast": "Google Calendar connected",
     "scopeToast": "Allow Mockmee to add calendar events, then connect again",
     "failedToast": "Google was not connected. Try again.",
-    "cancelledToast": "Online class cancelled"
+    "cancelledToast": "Online class cancelled",
+    "adminConnectedText": "Every teacher's online classes get Google Meet links through this account.",
+    "adminConnectText": "Connect one Google account: every teacher's online classes get their Meet links through it.",
+    "ready": "Google Meet is ready",
+    "notReady": "Google Meet is not connected yet",
+    "readyText": "Meet links are made for you when you schedule an online class.",
+    "notReadyText": "An admin connects Google Meet in the Admin panel's Platform settings.",
+    "readyBadge": "Ready",
+    "adminSetup": "Admin setup needed"
   },
   "courses": {
     "seoTitle": "English courses by teachers: IELTS and Multilevel",
@@ -1955,5 +1963,47 @@
       "Published": "Published"
     },
     "catalogue": "Tests in the catalogue"
+  },
+  "lesson": {
+    "locked": "Lesson locked",
+    "previousFirst": "Finish the previous lesson first",
+    "ended": "This lesson has closed",
+    "soon": "This lesson opens soon",
+    "previousText": "Lessons in this course open one after another. Finish \"{title}\" and this one opens.",
+    "thePrevious": "the previous lesson",
+    "opensAt": "It opens on {date}.",
+    "closedAt": "It closed on {date}.",
+    "toPrevious": "Go to the previous lesson",
+    "toCourse": "Back to the course",
+    "nextLocked": "Next (locked)"
+  },
+  "quiz": {
+    "passedToast": "Passed: {score}%",
+    "scoredToast": "Scored {score}%",
+    "lessonDone": "All required quizzes passed: the lesson is done.",
+    "points": "{got}/{of} points",
+    "notSent": "Your answers were not sent",
+    "passMark": "Pass mark {n}%",
+    "attempts": "Attempts {n}/{of}",
+    "passedWith": "Passed with {score}% ({got}/{of} points)",
+    "scoredNeed": "Scored {score}% ({got}/{of} points): {need}% needed to pass",
+    "noQuestions": "No questions in this quiz yet",
+    "submit": "Submit answers",
+    "notGiven": "Not given",
+    "clear": "Clear",
+    "correction": "Write the correction",
+    "correctionPlaceholder": "The corrected word or phrase…",
+    "answerPlaceholder": "Your answer…",
+    "gap": "Gap {n}",
+    "source": "Source",
+    "target": "Translation",
+    "hideHint": "Hide hint",
+    "showHint": "Show hint",
+    "translationPlaceholder": "Write your translation…",
+    "playing": "Playing…",
+    "play": "Play audio",
+    "dictationPlaceholder": "Type exactly what you hear…",
+    "correct": "Correct",
+    "review": "Check the answer"
   }
 }

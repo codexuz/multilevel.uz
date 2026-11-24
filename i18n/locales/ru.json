@@ -1577,7 +1577,15 @@
     "connectedToast": "Google Календарь подключён",
     "scopeToast": "Разрешите Mockmee добавлять события в календарь и подключите снова",
     "failedToast": "Google не подключён. Попробуйте ещё раз.",
-    "cancelledToast": "Онлайн-урок отменён"
+    "cancelledToast": "Онлайн-урок отменён",
+    "adminConnectedText": "Онлайн-уроки всех учителей получают ссылки Google Meet через этот аккаунт.",
+    "adminConnectText": "Подключите один аккаунт Google: онлайн-уроки всех учителей будут получать ссылки Meet через него.",
+    "ready": "Google Meet готов",
+    "notReady": "Google Meet пока не подключён",
+    "readyText": "Ссылка Meet создаётся, когда вы планируете онлайн-урок.",
+    "notReadyText": "Администратор подключает Google Meet в настройках платформы панели админа.",
+    "readyBadge": "Готово",
+    "adminSetup": "Нужна настройка админом"
   },
   "courses": {
     "seoTitle": "Курсы английского от учителей: IELTS и Multilevel",
@@ -1955,5 +1963,47 @@
       "Published": "Опубликован"
     },
     "catalogue": "Тестов в каталоге"
+  },
+  "lesson": {
+    "locked": "Урок закрыт",
+    "previousFirst": "Сначала пройдите предыдущий урок",
+    "ended": "Урок закрыт",
+    "soon": "Урок скоро откроется",
+    "previousText": "В этом курсе уроки открываются по порядку. Пройдите «{title}», и этот урок откроется.",
+    "thePrevious": "предыдущий урок",
+    "opensAt": "Откроется {date}.",
+    "closedAt": "Закрылся {date}.",
+    "toPrevious": "К предыдущему уроку",
+    "toCourse": "Назад к курсу",
+    "nextLocked": "Далее (закрыто)"
+  },
+  "quiz": {
+    "passedToast": "Пройден: {score}%",
+    "scoredToast": "Результат: {score}%",
+    "lessonDone": "Все обязательные тесты пройдены: урок завершён.",
+    "points": "{got}/{of} баллов",
+    "notSent": "Ответы не отправлены",
+    "passMark": "Проходной {n}%",
+    "attempts": "Попытки {n}/{of}",
+    "passedWith": "Пройден с {score}% ({got}/{of} баллов)",
+    "scoredNeed": "Результат {score}% ({got}/{of} баллов): нужно {need}%",
+    "noQuestions": "В этом тесте пока нет вопросов",
+    "submit": "Отправить ответы",
+    "notGiven": "Not given",
+    "clear": "Очистить",
+    "correction": "Напишите исправление",
+    "correctionPlaceholder": "Исправленное слово или фраза…",
+    "answerPlaceholder": "Ваш ответ…",
+    "gap": "Пропуск {n}",
+    "source": "Исходный текст",
+    "target": "Перевод",
+    "hideHint": "Скрыть подсказку",
+    "showHint": "Показать подсказку",
+    "translationPlaceholder": "Напишите перевод…",
+    "playing": "Воспроизведение…",
+    "play": "Слушать аудио",
+    "dictationPlaceholder": "Напишите в точности, что слышите…",
+    "correct": "Верно",
+    "review": "Проверьте ответ"
   }
 }

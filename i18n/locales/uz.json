@@ -1577,7 +1577,15 @@
     "connectedToast": "Google Calendar ulandi",
     "scopeToast": "Mockmee’ga taqvim voqealarini qo‘shishga ruxsat bering, so‘ng qayta ulang",
     "failedToast": "Google ulanmadi. Qayta urinib ko‘ring.",
-    "cancelledToast": "Onlayn dars bekor qilindi"
+    "cancelledToast": "Onlayn dars bekor qilindi",
+    "adminConnectedText": "Barcha o‘qituvchilarning onlayn darslari Google Meet havolalarini shu hisob orqali oladi.",
+    "adminConnectText": "Bitta Google hisobini ulang: barcha o‘qituvchilarning onlayn darslari Meet havolalarini u orqali oladi.",
+    "ready": "Google Meet tayyor",
+    "notReady": "Google Meet hali ulanmagan",
+    "readyText": "Onlayn darsni rejalashtirganingizda Meet havolasi avtomatik yaratiladi.",
+    "notReadyText": "Google Meet’ni admin Admin panelining Platforma sozlamalarida ulaydi.",
+    "readyBadge": "Tayyor",
+    "adminSetup": "Admin sozlashi kerak"
   },
   "courses": {
     "seoTitle": "O‘qituvchilardan ingliz tili kurslari: IELTS va Multilevel",
@@ -1955,5 +1963,47 @@
       "Published": "Nashr qilingan"
     },
     "catalogue": "Katalogdagi testlar"
+  },
+  "lesson": {
+    "locked": "Dars yopiq",
+    "previousFirst": "Avval oldingi darsni tugating",
+    "ended": "Bu dars yopilgan",
+    "soon": "Bu dars tez orada ochiladi",
+    "previousText": "Bu kursda darslar ketma-ket ochiladi. «{title}» ni tugating va bu dars ochiladi.",
+    "thePrevious": "oldingi dars",
+    "opensAt": "{date} da ochiladi.",
+    "closedAt": "{date} da yopilgan.",
+    "toPrevious": "Oldingi darsga o‘tish",
+    "toCourse": "Kursga qaytish",
+    "nextLocked": "Keyingi (yopiq)"
+  },
+  "quiz": {
+    "passedToast": "O‘tdingiz: {score}%",
+    "scoredToast": "Natija: {score}%",
+    "lessonDone": "Barcha majburiy testlar o‘tildi: dars bajarildi.",
+    "points": "{got}/{of} ball",
+    "notSent": "Javoblar yuborilmadi",
+    "passMark": "O‘tish bali {n}%",
+    "attempts": "Urinishlar {n}/{of}",
+    "passedWith": "{score}% bilan o‘tdingiz ({got}/{of} ball)",
+    "scoredNeed": "Natija {score}% ({got}/{of} ball): o‘tish uchun {need}% kerak",
+    "noQuestions": "Bu testda hali savol yo‘q",
+    "submit": "Javoblarni yuborish",
+    "notGiven": "Not given",
+    "clear": "Tozalash",
+    "correction": "To‘g‘ri variantini yozing",
+    "correctionPlaceholder": "To‘g‘rilangan so‘z yoki ibora…",
+    "answerPlaceholder": "Javobingiz…",
+    "gap": "{n}-bo‘shliq",
+    "source": "Asl matn",
+    "target": "Tarjima",
+    "hideHint": "Maslahatni yashirish",
+    "showHint": "Maslahatni ko‘rsatish",
+    "translationPlaceholder": "Tarjimangizni yozing…",
+    "playing": "Ijro etilmoqda…",
+    "play": "Audioni tinglash",
+    "dictationPlaceholder": "Eshitganingizni aynan yozing…",
+    "correct": "To‘g‘ri",
+    "review": "Javobni tekshiring"
   }
 }
