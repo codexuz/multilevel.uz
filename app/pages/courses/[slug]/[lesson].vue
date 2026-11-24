@@ -33,6 +33,7 @@ interface LessonView {
   durationMinutes: number | null
   body: string | null
   videoUrl: string | null
+  audioUrl?: string | null
   files: { name: string, url: string, size: number | null }[]
   task: { test: string, skill: string, partNumber: number | null, to: string, done: boolean } | null
   live: LiveLesson | null
@@ -49,10 +50,13 @@ interface LessonView {
   next: { id: string, title: string, locked: boolean } | null
 }
 
+definePageMeta({ layout: 'course' })
 const { t } = useI18n()
 const route = useRoute()
 const toast = useToast()
 const slug = String(route.params.slug)
+// The sidebar's outline (layouts/course.vue): fetched again when a lesson is done.
+const refreshOutline = () => refreshNuxtData(`course-outline-${slug}`)
 
 const { data: l, error, refresh } = await useFetch<LessonView>(() => `/api/course-lessons/${route.params.lesson}`)
 
@@ -64,15 +68,15 @@ const dripLocked = computed(() => {
   return null
 })
 
+// Not in the course: to its page, which asks to enroll and then opens this lesson.
 if (error.value?.statusCode === 403 && !dripLocked.value) {
-  await navigateTo(`/courses/${slug}`)
+  await navigateTo(`/courses/${slug}?enroll=${route.params.lesson}`)
 } else if (error.value && !dripLocked.value) {
   throw createError({ statusCode: 404, statusMessage: t('courses.lessonNotFound'), fatal: true })
 }
 
 useSeoMeta({ title: () => (l.value ? `${l.value.title} · ${l.value.course.title}` : t('nav.courses')), robots: 'noindex' })
 
-const embed = computed(() => videoEmbed(l.value?.videoUrl))
 const sizeText = (n: number | null) => (n == null ? '' : n > 1_048_576 ? `${(n / 1_048_576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`)
 const taskName = computed(() => (l.value?.task ? `${skillLabel(l.value.task.skill)}${l.value.task.partNumber ? ` · ${partName(l.value.task.skill, l.value.task.partNumber)}` : ''}` : ''))
 
@@ -90,7 +94,7 @@ async function toggleDone() {
   busy.value = true
   try {
     await $fetch(`/api/course-lessons/${l.value.id}/done`, { method: l.value.done ? 'DELETE' : 'POST' })
-    await refresh()
+    await Promise.all([refresh(), refreshOutline()])
   } catch (e) {
     toast.add({ title: t('common.notSaved'), description: errorMessage(e), color: 'error' })
   } finally {
@@ -99,7 +103,7 @@ async function toggleDone() {
 }
 
 async function onExerciseCompleted() {
-  await refresh()
+  await Promise.all([refresh(), refreshOutline()])
 }
 </script>
 
@@ -109,7 +113,6 @@ async function onExerciseCompleted() {
     v-if="dripLocked"
     :title="t('lesson.locked')"
     icon="i-lucide-lock"
-    :back="`/courses/${slug}`"
   >
     <UCard
       class="max-w-lg mx-auto"
@@ -159,58 +162,19 @@ async function onExerciseCompleted() {
     v-else-if="l"
     :title="l.course.title"
     icon="i-lucide-graduation-cap"
-    :back="`/courses/${l.course.slug}`"
     wide
   >
-    <div class="mx-auto w-full max-w-6xl grid lg:grid-cols-[270px_minmax(0,1fr)] gap-6 items-start">
-      <!-- Curriculum Outline Sidebar -->
-      <aside class="hidden lg:flex flex-col gap-3 sticky top-4 rounded-2xl ring ring-default bg-default p-4 max-h-[calc(100vh-7rem)] overflow-y-auto">
-        <p class="text-xs font-bold uppercase tracking-wider text-muted">
-          {{ t('coursePage.curriculum') }}
-        </p>
-        <div
-          v-for="(unit, uIdx) in l.outline"
-          :key="unit.id"
-          class="flex flex-col gap-1"
-        >
-          <p class="text-xs font-semibold text-highlighted px-2 pt-1">
-            {{ uIdx + 1 }}. {{ unit.title }}
-          </p>
-          <component
-            :is="item.locked ? 'div' : resolveComponent('NuxtLink')"
-            v-for="item in unit.lessons"
-            :key="item.id"
-            :to="item.locked ? undefined : `/courses/${l.course.slug}/${item.id}`"
-            class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors"
-            :class="item.id === l.id
-              ? 'bg-primary/10 text-primary font-semibold'
-              : item.locked
-                ? 'text-dimmed opacity-65'
-                : 'text-toned hover:bg-elevated'"
-          >
-            <UIcon
-              :name="item.done ? 'i-lucide-circle-check' : item.locked ? 'i-lucide-lock' : 'i-lucide-circle'"
-              class="size-3.5 shrink-0"
-              :class="item.done ? 'text-success' : ''"
-            />
-            <span class="truncate">{{ item.title }}</span>
-          </component>
-        </div>
-      </aside>
-
+    <div class="mx-auto w-full max-w-4xl">
       <!-- Main Lesson Content -->
       <article class="flex flex-col gap-5 min-w-0">
         <div>
           <div class="flex flex-wrap items-center gap-2 text-xs text-muted mb-1">
-            <UBadge
+            <span
               v-if="l.module"
-              :label="`${t('builder.topicN', { n: l.module.position })}: ${l.module.title}`"
-              color="primary"
-              variant="subtle"
-              size="xs"
-            />
+              class="truncate max-w-full"
+            >{{ l.module.title }} ·</span>
             <span>{{ t('courses.lessonOf', { n: l.position, of: l.of }) }}</span>
-            <span v-if="l.durationMinutes">· {{ l.durationMinutes }} min</span>
+            <span v-if="l.durationMinutes">· {{ t('builder.minutes', { n: l.durationMinutes }) }}</span>
           </div>
           <h1 class="text-2xl sm:text-3xl font-bold text-highlighted">
             {{ l.title }}
@@ -223,30 +187,16 @@ async function onExerciseCompleted() {
           </p>
         </div>
 
-        <div
-          v-if="embed"
-          class="aspect-video w-full overflow-hidden rounded-xl ring ring-default bg-black"
-        >
-          <iframe
-            :src="embed"
-            class="size-full"
-            :title="l.title"
-            allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-            allowfullscreen
-            loading="lazy"
-            referrerpolicy="strict-origin-when-cross-origin"
-          />
-        </div>
-        <UButton
-          v-else-if="l.videoUrl"
-          :href="l.videoUrl"
-          target="_blank"
-          rel="noopener"
-          :label="t('courses.watchVideo')"
-          icon="i-lucide-play-circle"
-          color="neutral"
-          variant="outline"
-          class="self-start"
+        <MediaVideoPlayer
+          v-if="l.videoUrl"
+          :src="l.videoUrl"
+          :title="l.title"
+        />
+
+        <MediaWaveAudio
+          v-if="l.audioUrl"
+          :src="l.audioUrl"
+          :title="t('media.listen')"
         />
 
         <UCard

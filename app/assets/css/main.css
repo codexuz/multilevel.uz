@@ -126,6 +126,9 @@ h1, h2, h3 { letter-spacing: -0.01em; }
 .rich-content :where(img) { border-radius: 0.5rem; margin-block: 0.75em; }
 .rich-content :where(table) { border-collapse: collapse; width: 100%; margin-block: 0.75em; }
 .rich-content :where(td, th) { border: 1px solid var(--ui-border); padding: 0.4em 0.6em; }
+.rich-content :where(details) { border: 1px solid var(--ui-border); border-radius: 0.75rem; padding: 0.5em 1em; margin-block: 0.75em; }
+.rich-content :where(summary) { cursor: pointer; font-weight: 600; color: var(--ui-text-highlighted); padding-block: 0.25em; }
+.rich-content :where(details[open] > summary) { margin-bottom: 0.5em; }
 .rich-content :where(a) { color: var(--ui-primary); text-decoration: underline; }
 
 mark.exam-highlight { background: #fef08a; color: inherit; border-radius: 2px; padding: 0 1px; }

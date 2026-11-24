@@ -225,6 +225,13 @@
       "when": 1795545402220,
       "tag": "0031_course_page",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1795549682055,
+      "tag": "0032_lesson_audio",
+      "breakpoints": true
     }
   ]
 }

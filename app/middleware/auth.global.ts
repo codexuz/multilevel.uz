@@ -2,8 +2,8 @@
 // and a course's page, and the other open pages. Everything else needs sign-in.
 const isPublic = (path: string) => path === '/' || path === '/login' || path === '/earn' || path === '/teach' || path === '/courses' || /^\/courses\/(?!manage(\/|$))[^/]+\/?$/.test(path) || path === '/live' || path.startsWith('/join/') || path.startsWith('/share/') || path === '/tests' || path === '/packs' || /^\/packs\/[^/]+\/?$/.test(path) || /^\/tests\/[^/]+\/?$/.test(path) || /^\/(listening|reading|writing)(\/[^/]+)?\/?$/.test(path) || path === '/seat' || path.startsWith('/report/')
 
-// Pages with a frame of their own (sitting a test, signing in, onboarding) keep it.
-const OWN_LAYOUTS = new Set(['exam', 'onboarding', 'public'])
+// Pages with a frame of their own (sitting a test, learning a course, onboarding) keep it.
+const OWN_LAYOUTS = new Set(['exam', 'onboarding', 'public', 'course'])
 
 /**
  * The Admin panel, the Teacher panel and the student app are kept apart by role (shared/utils/areas.ts):

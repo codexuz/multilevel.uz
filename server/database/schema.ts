@@ -762,6 +762,8 @@ export const courseLessons = pgTable('course_lessons', {
   /** Sanitized rich text. */
   body: text('body'),
   videoUrl: text('video_url'),
+  /** A listening: an uploaded file (courses/ key) or an http(s) address, played with the waveform player. */
+  audioUrl: text('audio_url'),
   /** The practice: a section of a test (or one part), done when a student hands it in. */
   taskTestId: uuid('task_test_id').references(() => tests.id, { onDelete: 'set null' }),
   taskSkill: text('task_skill'),

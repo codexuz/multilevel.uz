@@ -53,7 +53,7 @@ const visibilityItems = computed(() => [
   { label: t('courses.private'), description: t('courses.privateText'), value: 'PRIVATE' },
   { label: t('courses.public'), description: t('courses.publicText'), value: 'PUBLIC' }
 ])
-const embed = computed(() => videoEmbed(form.introVideoUrl))
+const embed = computed(() => !!(youtubeId(form.introVideoUrl) || isVideoFile(form.introVideoUrl) || videoEmbed(form.introVideoUrl)))
 
 // ---- the cover ----
 const coverInput = ref<HTMLInputElement | null>(null)
@@ -265,18 +265,14 @@ defineExpose({ dirty })
               class="w-full"
             />
           </UFormField>
-          <div
+          <MediaVideoPlayer
             v-if="embed"
-            class="mt-3 aspect-video rounded-lg overflow-hidden bg-elevated"
-          >
-            <iframe
-              :src="embed"
-              class="size-full"
-              :title="t('builder.introVideo')"
-              allow="encrypted-media; picture-in-picture; fullscreen"
-              loading="lazy"
-            />
-          </div>
+            :key="form.introVideoUrl"
+            :src="form.introVideoUrl"
+            :title="form.title"
+            :poster="form.coverUrl || null"
+            class="mt-3"
+          />
         </UCard>
 
         <UCard>

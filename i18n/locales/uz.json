@@ -1688,7 +1688,9 @@
     "makeLive": "Meet havolasini yaratish",
     "liveAfterSave": "Google Meet’dagi jonli dars qo‘shish uchun avval darsni saqlang.",
     "saveLesson": "Darsni saqlash",
-    "lessonSaved": "Dars saqlandi"
+    "lessonSaved": "Dars saqlandi",
+    "mineEmpty": "Hali kurslaringiz yo‘q",
+    "mineEmptyText": "Yozilgan kurslaringiz va o‘qituvchilaringiz kurslari natijangiz bilan shu yerda ko‘rinadi."
   },
   "panel": {
     "teacher": "O‘qituvchi",
@@ -2162,7 +2164,18 @@
     "teacher": "O‘qituvchi",
     "structure": "Tarkibi",
     "actions": "Amallar",
-    "none": "Hali kurs yo‘q. Birinchisini yarating."
+    "none": "Hali kurs yo‘q. Birinchisini yarating.",
+    "import": "IELTS Max’ni import qilish",
+    "importTitle": "IELTS Max kursini import qilish",
+    "importText": "IELTS Max ma’lumotlaridan 24 kunlik grammatika, podkast, maqola, video, speaking, writing va filmlar (taxminan 166 dars va 54 test) yopiq qoralama sifatida.",
+    "owner": "Kurs egasi o‘qituvchi (ixtiyoriy)",
+    "ownerHelp": "Uning emaili; bo‘sh bo‘lsa — sizning hisobingiz. Yopiq kurs o‘qituvchining sinflari uchun.",
+    "rights": "Maqola, video va audiolar boshqa nashriyotlarga tegishli: kursni hammaga ochishdan oldin ulardan foydalanish huquqini tekshiring.",
+    "importRun": "Import qilish",
+    "imported": "IELTS Max import qilindi",
+    "importedText": "{lessons} ta dars va {quizzes} ta test, yopiq qoralama sifatida.",
+    "notImported": "Import qilinmadi",
+    "count": "{n} ta kurs"
   },
   "asettings": {
     "gConnected": "Google Calendar barcha onlayn darslar uchun ulandi",
@@ -2190,5 +2203,36 @@
       "lessons": "Onlayn dars eslatmalari",
       "lessonsText": "O‘quvchilarga yaqinlashayotgan Google Meet darslarini eslatadi"
     }
+  },
+  "media": {
+    "play": "Ijro etish",
+    "pause": "To‘xtatish",
+    "position": "Joylashuv",
+    "cannotPlay": "Bu faylni ijro etib bo‘lmaydi",
+    "speed": "Tezlik {rate}×",
+    "video": "Video",
+    "videoNamed": "Video: {title}",
+    "back10": "10 soniya orqaga",
+    "forward10": "10 soniya oldinga",
+    "mute": "Ovozni o‘chirish",
+    "unmute": "Ovozni yoqish",
+    "volume": "Ovoz balandligi",
+    "full": "To‘liq ekran",
+    "exitFull": "To‘liq ekrandan chiqish",
+    "audio": "Audio",
+    "audioHelp": "MP3 yoki boshqa audio fayl: yuklang yoki manzilini qo‘ying. To‘lqinli pleyerda ijro etiladi.",
+    "uploadAudio": "Audio yuklash",
+    "audioType": "Audio fayl tanlang (MP3, M4A, WAV, OGG)",
+    "listen": "Tinglash"
+  },
+  "enrollAsk": {
+    "title": "Darsni ochish uchun yoziling",
+    "privateTitle": "O‘qituvchining o‘quvchilari uchun",
+    "text": "«{course}» darslari yozilganingizdan so‘ng ochiladi. Bu bepul, natijangiz saqlanadi.",
+    "privateText": "Bu kurs o‘qituvchining sinflaridagi o‘quvchilar uchun. Qo‘shilish uchun o‘qituvchingizdan sinf havolasini so‘rang.",
+    "enroll": "Yozilish va darsni ochish"
+  },
+  "lessonNav": {
+    "back": "Kurs sahifasi"
   }
 }
