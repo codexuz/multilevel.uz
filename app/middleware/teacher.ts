@@ -4,5 +4,5 @@ export default defineNuxtRouteMiddleware(async () => {
   if (!me.value) await refresh()
   if (!me.value) return navigateTo('/login')
   const ok = me.value.role === 'teacher' || me.value.role === 'center_owner' || me.value.role === 'admin' || !!me.value.teaches || !!me.value.runsMocks
-  if (!ok) return navigateTo('/teach')
+  if (!ok) return navigateTo('/dashboard')
 })

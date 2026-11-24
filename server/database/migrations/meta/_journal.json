@@ -211,6 +211,13 @@
       "when": 1795536787121,
       "tag": "0029_lms_modules_exercises",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1795539761285,
+      "tag": "0030_group_exam_type",
+      "breakpoints": true
     }
   ]
 }

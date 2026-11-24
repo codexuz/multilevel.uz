@@ -32,12 +32,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const next = to.path === '/login'
     ? (typeof to.query.next === 'string' && to.query.next.startsWith('/') && !to.query.next.startsWith('//')
         ? to.query.next
-        : user.role === 'admin' ? '/admin' : (user.role === 'teacher' || user.teaches) ? '/teacher' : '/tests')
+        : user.role === 'admin' ? '/admin' : (user.role === 'teacher' || user.teaches) ? '/teacher' : '/dashboard')
     : to.fullPath
   // Staff and teachers are let be: they work on both exams (and may set theirs in Settings).
   const needsOnboarding = (!user.onboarded || !user.exam) && user.role === 'student'
   const letThrough = to.path === '/onboarding' || to.path === '/account/merge' || to.path.startsWith('/join/') || to.path.startsWith('/billing/') || to.path.startsWith('/share/')
-  if (needsOnboarding && !letThrough) return navigateTo(`/onboarding${next === '/' || next === '/tests' ? '' : `?next=${encodeURIComponent(next)}`}`)
-  if (!needsOnboarding && to.path === '/onboarding') return navigateTo('/tests')
+  if (needsOnboarding && !letThrough) return navigateTo(`/onboarding${next === '/' || next === '/dashboard' || next === '/tests' ? '' : `?next=${encodeURIComponent(next)}`}`)
+  if (!needsOnboarding && to.path === '/onboarding') return navigateTo('/dashboard')
   if (to.path === '/login') return navigateTo(next)
 })

@@ -8,7 +8,7 @@ useSeoMeta({ title: () => t('classes.class'), robots: 'noindex' })
 
 interface Student { id: string, name: string, avatarUrl: string | null, joinedAt: string, attempts: number, lastActive: string | null, level: Record<string, number | null>, bands?: string[] }
 interface AssignmentRow { id: string, skill: string, partNumber: number | null, note: string | null, dueAt: string | null, createdAt: string, test: { slug: string, title: string } | null, to: string | null, exam: string, done: number, of: number, average: number | null }
-interface GroupView { id: string, name: string, joinCode: string, archived: boolean, students: Student[], assignments: AssignmentRow[] }
+interface GroupView { id: string, name: string, exam: 'IELTS' | 'MULTILEVEL', level?: string | null, joinCode: string, archived: boolean, students: Student[], assignments: AssignmentRow[] }
 interface Detail extends AssignmentRow { students: { id: string, name: string, handIn: { attemptId: string, score: number | null, band: number | null, status: string, at: string } | null }[] }
 
 const route = useRoute()
@@ -58,8 +58,14 @@ function rename() {
   const n = prompt(t('centre.groupName'), data.value?.name)
   if (n?.trim()) patch({ name: n }, t('centre.renamed'))
 }
+const groupExam = computed<'IELTS' | 'MULTILEVEL'>(() => (data.value?.exam === 'IELTS' ? 'IELTS' : 'MULTILEVEL'))
 const menu = computed(() => [[
   { label: t('centre.rename'), icon: 'i-lucide-pencil', onSelect: rename },
+  {
+    label: groupExam.value === 'IELTS' ? 'Switch group type to CEFR' : 'Switch group type to IELTS',
+    icon: 'i-lucide-arrow-left-right',
+    onSelect: () => patch({ exam: groupExam.value === 'IELTS' ? 'MULTILEVEL' : 'IELTS' }, 'Group exam type updated')
+  },
   { label: t('centre.newCode'), icon: 'i-lucide-refresh-cw', onSelect: () => patch({ newCode: true }, t('centre.newCodeDone')) },
   { label: data.value?.archived ? t('centre.bringBack') : t('centre.archive'), icon: 'i-lucide-archive', onSelect: () => patch({ archived: !data.value?.archived }, data.value?.archived ? t('centre.backInList') : t('centre.archived')) }
 ]])
@@ -73,8 +79,9 @@ async function removeStudent(s: Student) {
   }
 }
 
-// ---- new assignment ----
-const { data: testList } = await useFetch<{ items: { id: string, title: string, sections: { skill: string, items: number }[] }[] }>('/api/tests', { query: { limit: 60 }, lazy: true })
+// ---- new assignment (fetches ONLY tests matching this group's exam type: IELTS or CEFR) ----
+const testQuery = computed(() => ({ limit: 100, exam: groupExam.value }))
+const { data: testList } = await useFetch<{ items: { id: string, title: string, sections: { skill: string, items: number }[] }[] }>('/api/tests', { query: testQuery, lazy: true })
 const form = ref<{ testId: string | undefined, skill: string, part: number | 0, dueAt: string, note: string } | null>(null)
 const saving = ref(false)
 const testItems = computed(() => (testList.value?.items ?? []).map(t => ({ label: t.title, value: t.id })))
@@ -82,7 +89,7 @@ const skillItems = computed(() => {
   const t = testList.value?.items.find(x => x.id === form.value?.testId)
   return SKILLS.filter(s => !t || t.sections.some(x => x.skill === s && x.items)).map(s => ({ label: skillLabel(s), value: s }))
 })
-const partItems = computed(() => [{ label: t('centre.wholeSection'), value: 0 }, ...(PART_NUMBERS[form.value?.skill ?? ''] ?? []).map(n => ({ label: partName(form.value!.skill, n), value: n }))])
+const partItems = computed(() => [{ label: t('centre.wholeSection'), value: 0 }, ...partNumbers(form.value?.skill ?? 'READING', groupExam.value).map(n => ({ label: partName(form.value!.skill, n, groupExam.value), value: n }))])
 watch(() => form.value?.testId, () => {
   if (form.value && !skillItems.value.some(s => s.value === form.value!.skill)) form.value.skill = skillItems.value[0]?.value ?? 'READING'
 })
@@ -122,7 +129,7 @@ async function removeAssignment(a: AssignmentRow) {
   detail.value = null
   await refresh()
 }
-const what = (a: AssignmentRow) => `${skillLabel(a.skill)}${a.partNumber ? ` ${partName(a.skill, a.partNumber)}` : ''}`
+const what = (a: AssignmentRow) => `${skillLabel(a.skill)}${a.partNumber ? ` ${partName(a.skill, a.partNumber, a.exam)}` : ''}`
 const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date() && a.done < a.of
 </script>
 
@@ -159,10 +166,15 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
       class="flex flex-col gap-4 max-w-5xl w-full"
     >
       <div class="flex flex-col sm:flex-row sm:items-end gap-3">
-        <div class="flex-1 min-w-0">
+        <div class="flex-1 min-w-0 flex flex-wrap items-center gap-2.5">
           <h1 class="text-2xl sm:text-3xl font-bold text-highlighted">
             {{ data.name }}
           </h1>
+          <UBadge
+            :label="groupExam === 'IELTS' ? 'IELTS Group' : 'CEFR Group'"
+            :color="groupExam === 'IELTS' ? 'error' : 'primary'"
+            variant="subtle"
+          />
         </div>
         <UDropdownMenu
           :items="menu"

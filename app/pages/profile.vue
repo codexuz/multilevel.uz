@@ -75,9 +75,6 @@ async function logout() {
   reloadNuxtApp({ path: '/' })
 }
 const accountLinks = computed(() => [
-  me.value?.teaches
-    ? { label: t('nav.classes'), description: t('profile.classesText'), icon: 'i-lucide-school', to: '/classes' }
-    : { label: t('nav.teach'), description: t('profile.teachText'), icon: 'i-lucide-presentation', to: '/teach' },
   { label: t('nav.live'), description: t('profile.liveText'), icon: 'i-lucide-trophy', to: '/live' },
   { label: t('nav.earn'), icon: 'i-lucide-gift', to: '/earn' },
   { label: t('profile.devices'), description: t('profile.devicesText'), icon: 'i-lucide-monitor-smartphone', to: '/settings' }

@@ -3,8 +3,8 @@ import { assignments, classMembers } from '../../../database/schema'
 
 const SKILL_WORD: Record<string, string> = { LISTENING: 'Listening', READING: 'Reading', WRITING: 'Writing', SPEAKING: 'Speaking' }
 
-// Sets the class a section of a published test (or one part of it), with an optional due date and
-// note, and tells each student on Telegram.
+// Sets the class a section of a published test matching the group's exam type (IELTS or CEFR),
+// with an optional due date and note, and tells each student on Telegram.
 export default defineEventHandler(async (event) => {
   const { user, group } = await requireClassTeacher(event, String(getRouterParam(event, 'id')))
   const body = (await readBody<{ testId?: string, skill?: string, partNumber?: number | null, dueAt?: string | null, note?: string }>(event)) ?? {}
@@ -12,6 +12,10 @@ export default defineEventHandler(async (event) => {
   if (!SKILL_WORD[skill]) throw createError({ statusCode: 400, message: 'Pick a skill' })
   const test = await loadTest({ id: String(body.testId ?? '') }, { publishedOnly: true }).catch(() => null)
   if (!test) throw createError({ statusCode: 400, message: 'Pick a published test' })
+  const groupExam = group.exam === 'IELTS' ? 'IELTS' : 'MULTILEVEL'
+  if (examOfTest(test) !== groupExam) {
+    throw createError({ statusCode: 400, message: `This group is for ${groupExam === 'IELTS' ? 'IELTS' : 'CEFR'} tests only` })
+  }
   const section = test.sections.find((s: any) => s.skill === skill && s.items?.length)
   if (!section) throw createError({ statusCode: 400, message: `That test has no ${SKILL_WORD[skill]} section` })
   const partNumber = body.partNumber ? Math.round(Number(body.partNumber)) : null

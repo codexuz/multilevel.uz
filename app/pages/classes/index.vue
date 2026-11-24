@@ -7,7 +7,7 @@
 const { t } = useI18n()
 useSeoMeta({ title: () => t('nav.classes'), robots: 'noindex' })
 
-interface ClassRow { id: string, name: string, joinCode: string, archived: boolean, createdAt: string, students: number, assignments: number }
+interface ClassRow { id: string, name: string, exam?: 'IELTS' | 'MULTILEVEL', level?: string | null, joinCode: string, archived: boolean, createdAt: string, students: number, assignments: number }
 
 const router = useRouter()
 const toast = useToast()
@@ -22,9 +22,18 @@ const archivedCount = computed(() => data.value.classes.filter(c => c.archived).
 
 const creating = ref(false)
 const name = ref('')
+const exam = ref<'MULTILEVEL' | 'IELTS'>('MULTILEVEL')
+const level = ref('B2')
+const examChoices = [
+  { label: 'CEFR (Multilevel)', description: 'Assign CEFR / Multilevel tests to this group', value: 'MULTILEVEL' },
+  { label: 'IELTS', description: 'Assign IELTS Academic & General Training tests to this group', value: 'IELTS' }
+]
+const levelOptions = ['A1', 'A2', 'B1', 'B2', 'C1', 'IELTS']
 const saving = ref(false)
 function startCreate() {
   name.value = ''
+  exam.value = 'MULTILEVEL'
+  level.value = 'B2'
   creating.value = true
 }
 async function create() {
@@ -32,7 +41,7 @@ async function create() {
   saving.value = true
   try {
     const first = !data.value.classes.length
-    const c = await $fetch<{ id: string }>('/api/classes', { method: 'POST', body: { name: name.value } })
+    const c = await $fetch<{ id: string }>('/api/classes', { method: 'POST', body: { name: name.value, exam: exam.value, level: level.value || null } })
     creating.value = false
     // The first class makes them a teacher: the menu changes.
     if (first) await refreshMe()
@@ -146,6 +155,19 @@ const telegramShare = (c: ClassRow) => `https://t.me/share/url?url=${encodeURICo
               <div class="flex items-center gap-2">
                 <span class="font-semibold text-highlighted truncate">{{ c.name }}</span>
                 <UBadge
+                  :label="c.exam === 'IELTS' ? 'IELTS' : 'CEFR'"
+                  :color="c.exam === 'IELTS' ? 'error' : 'primary'"
+                  variant="subtle"
+                  size="xs"
+                />
+                <UBadge
+                  v-if="c.level"
+                  :label="c.level"
+                  color="neutral"
+                  variant="outline"
+                  size="xs"
+                />
+                <UBadge
                   v-if="c.archived"
                   :label="t('centre.archived')"
                   color="neutral"
@@ -202,6 +224,20 @@ const telegramShare = (c: ClassRow) => `https://t.me/share/url?url=${encodeURICo
               class="w-full"
               autofocus
               data-testid="class-name-input"
+            />
+          </UFormField>
+          <UFormField label="Group Exam Type">
+            <URadioGroup
+              v-model="exam"
+              :items="examChoices"
+              variant="card"
+            />
+          </UFormField>
+          <UFormField label="Level (optional)">
+            <USelect
+              v-model="level"
+              :items="levelOptions"
+              class="w-full"
             />
           </UFormField>
           <div class="flex justify-end gap-2">
