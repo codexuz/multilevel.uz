@@ -52,7 +52,7 @@ export const storage = {
 export interface UploadOptions {
   onProgress?: (percent: number) => void
   /** What the file is for; by default a test's audio or picture, decided by its type. */
-  purpose?: 'test-audio' | 'test-asset' | 'recording' | 'avatar' | 'course-file'
+  purpose?: 'test-audio' | 'test-asset' | 'recording' | 'avatar' | 'course-file' | 'course-audio' | 'course-image'
 }
 
 export interface UploadedMedia { ref: string, url: string, name: string, mimeType: string, size: number }

@@ -8,7 +8,7 @@ const noIndex = { robots: false, sitemap: false }
 const privatePaths = [
   '/account/**', '/admin/**', '/billing/**', '/builder/**', '/classes/**', '/feedback/**', '/join/**',
   '/courses/manage/**', '/login', '/marking/**', '/mocks/**', '/online', '/onboarding', '/profile', '/report/**', '/results/**',
-  '/seat', '/settings', '/share/**', '/words/**'
+  '/seat', '/settings', '/share/**', '/teacher/**', '/words/**'
 ]
 
 // https://nuxt.com/docs/api/configuration/nuxt-config

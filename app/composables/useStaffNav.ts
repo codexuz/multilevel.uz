@@ -1,14 +1,11 @@
 import type { NavigationMenuItem } from '@nuxt/ui'
 
-/** The staff pages this user may open: in the sidebar, and on Profile on a phone. */
+/** Separate workspace launchers shown on Profile (mobile) so Student View stays cleanly split from Admin & Teacher panels. */
 export function useStaffNav() {
-  const { isStaff, isAdmin, canMark } = useMe()
-  const { t } = useI18n()
+  const { me, isAdmin } = useMe()
+  const isTeacher = computed(() => !!me.value && (me.value.role === 'teacher' || me.value.role === 'center_owner' || me.value.role === 'admin' || !!me.value.teaches || !!me.value.runsMocks))
   return computed<NavigationMenuItem[]>(() => [
-    ...(isAdmin.value ? [{ label: t('nav.staffBuilder'), icon: 'i-lucide-blocks', to: '/builder' }] : []),
-    ...(canMark.value ? [{ label: t('nav.staffMarking'), icon: 'i-lucide-pen-line', to: '/marking' }] : []),
-    ...(isAdmin.value ? [{ label: t('nav.staffUsers'), icon: 'i-lucide-users', to: '/admin/users' }, { label: t('nav.staffAttempts'), icon: 'i-lucide-clipboard-check', to: '/admin/attempts' }] : []),
-    ...(isAdmin.value ? [{ label: t('nav.staffOrders'), icon: 'i-lucide-receipt', to: '/admin/orders' }, { label: t('nav.staffPacks'), icon: 'i-lucide-package', to: '/admin/packs' }, { label: t('nav.staffPromos'), icon: 'i-lucide-ticket-percent', to: '/admin/promos' }, { label: t('nav.staffLive'), icon: 'i-lucide-trophy', to: '/admin/live' }, { label: t('nav.staffGrowth'), icon: 'i-lucide-trending-up', to: '/admin/growth' }] : []),
-    ...(isStaff.value ? [{ label: t('nav.staffOverview'), icon: 'i-lucide-layout-dashboard', to: '/admin' }] : [])
+    ...(isAdmin.value ? [{ label: 'Admin Panel', icon: 'i-lucide-shield-check', to: '/admin' }] : []),
+    ...(isTeacher.value ? [{ label: 'Teacher Panel', icon: 'i-lucide-school', to: '/teacher' }] : [])
   ])
 }

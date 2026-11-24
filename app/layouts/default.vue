@@ -1,33 +1,28 @@
 <script setup lang="ts">
 import type { DropdownMenuItem, NavigationMenuItem } from '@nuxt/ui'
 
-// The erp-lms IELTS app's shell (layouts/default.vue there), open to guests: anyone can browse and
-// take tests; signing in keeps the results, and staff get the builder and marking.
-const { me, loggedIn, rewardCredits } = useMe()
+// Student View shell: cleanly separated from Admin Panel (/admin) and Teacher Panel (/teacher).
+// Teachers and admins see compact workspace switcher buttons instead of mixed admin menus.
+const { me, loggedIn, isAdmin, rewardCredits } = useMe()
 const { live } = useLiveMock()
 const { t } = useI18n()
 const { locale, languages, choose } = useLanguage()
 const colorMode = useColorMode()
 const route = useRoute()
 
+const isTeacher = computed(() => !!me.value && (me.value.role === 'teacher' || me.value.role === 'center_owner' || me.value.role === 'admin' || !!me.value.teaches || !!me.value.runsMocks))
+
 const mainNav = computed<NavigationMenuItem[]>(() => [
   { label: t('nav.tests'), icon: 'i-lucide-clipboard-list', to: '/tests' },
   { label: t('nav.live'), icon: 'i-lucide-trophy', to: '/live', badge: live.value ? { label: t('nav.liveBadge'), color: 'error' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined },
-  ...(loggedIn.value ? [{ label: t('nav.results'), icon: 'i-lucide-chart-column', to: '/results' }, { label: t('nav.words'), icon: 'i-lucide-book-open-text', to: '/words' }, { label: t('nav.online'), icon: 'i-lucide-video', to: '/online' }] : []),
   { label: t('nav.courses'), icon: 'i-lucide-graduation-cap', to: '/courses' },
-  // A teacher's classes; everyone else is shown what teachers get (free classes).
-  me.value?.teaches
-    ? { label: t('nav.classes'), icon: 'i-lucide-school', to: '/classes' }
-    : { label: t('nav.teach'), icon: 'i-lucide-presentation', to: '/teach' },
-  ...(me.value?.runsMocks ? [{ label: t('nav.mocks'), icon: 'i-lucide-monitor-check', to: '/mocks' }] : []),
-  // Premium tests open with packs (bought) or credits (earned).
+  ...(loggedIn.value ? [{ label: t('nav.results'), icon: 'i-lucide-chart-column', to: '/results' }, { label: t('nav.words'), icon: 'i-lucide-book-open-text', to: '/words' }, { label: t('nav.online'), icon: 'i-lucide-video', to: '/online' }] : []),
   { label: t('nav.packs'), icon: 'i-lucide-package', to: '/tests?view=packs' },
-  { label: t('nav.earn'), icon: 'i-lucide-gift', to: '/earn', badge: rewardCredits.value ? { label: String(rewardCredits.value), color: 'primary' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined }
+  { label: t('nav.earn'), icon: 'i-lucide-gift', to: '/earn', badge: rewardCredits.value ? { label: String(rewardCredits.value), color: 'primary' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined },
+  ...(!isTeacher.value ? [{ label: t('nav.teach'), icon: 'i-lucide-presentation', to: '/teach' }] : [])
 ])
 
-const staffNav = useStaffNav()
-
-const nearestTo = computed(() => [...mainNav.value, ...staffNav.value]
+const nearestTo = computed(() => mainNav.value
   .map(i => String(i.to))
   .filter(to => route.path === to || (to !== '/' && route.path.startsWith(`${to}/`)))
   .sort((a, b) => b.length - a.length)[0])
@@ -37,11 +32,12 @@ const bottomLinks = computed<NavigationMenuItem[]>(() => loggedIn.value
   ? [{ label: t('nav.profile'), icon: 'i-lucide-user', to: '/profile' }, { label: t('nav.settings'), icon: 'i-lucide-settings', to: '/settings' }]
   : [])
 
-// The phone's tab bar: the places a candidate goes most, one tap away (staff pages stay in the menu).
+// Phone bottom tab bar: focused strictly on learner flows.
 const tabBar = computed(() => [
   { label: t('nav.tests'), icon: 'i-lucide-clipboard-list', to: '/tests' },
+  { label: t('nav.courses'), icon: 'i-lucide-graduation-cap', to: '/courses' },
   ...(loggedIn.value
-    ? [{ label: t('nav.resultsShort'), icon: 'i-lucide-chart-column', to: '/results' }, me.value?.teaches ? { label: t('nav.classesShort'), icon: 'i-lucide-school', to: '/classes' } : { label: t('nav.wordsShort'), icon: 'i-lucide-book-open-text', to: '/words' }, { label: t('nav.earnShort'), icon: 'i-lucide-gift', to: '/earn' }, { label: t('nav.profile'), icon: 'i-lucide-circle-user', to: '/profile' }]
+    ? [{ label: t('nav.resultsShort'), icon: 'i-lucide-chart-column', to: '/results' }, { label: t('nav.wordsShort'), icon: 'i-lucide-book-open-text', to: '/words' }, { label: t('nav.profile'), icon: 'i-lucide-circle-user', to: '/profile' }]
     : [{ label: t('nav.signIn'), icon: 'i-lucide-log-in', to: `/login?next=${encodeURIComponent(route.fullPath)}` }])
 ])
 const tabActive = (to: string) => (to === '/' ? route.path === '/' : route.path === to.split('?')[0] || route.path.startsWith(`${to}/`))
@@ -55,6 +51,12 @@ async function logout() {
 
 const userMenu = computed<DropdownMenuItem[][]>(() => [
   [{ type: 'label', label: displayName.value, avatar: { src: me.value?.avatarUrl ?? undefined, alt: displayName.value }, description: accountHandle(me.value) }],
+  ...(isAdmin.value || isTeacher.value
+    ? [[
+        ...(isAdmin.value ? [{ label: 'Admin Panel', icon: 'i-lucide-shield-check', to: '/admin' }] : []),
+        ...(isTeacher.value ? [{ label: 'Teacher Panel', icon: 'i-lucide-school', to: '/teacher' }] : [])
+      ]]
+    : []),
   [
     { label: t('nav.profile'), icon: 'i-lucide-user', to: '/profile' },
     { label: t('nav.settings'), icon: 'i-lucide-settings', to: '/settings' },
@@ -105,21 +107,44 @@ const userMenu = computed<DropdownMenuItem[][]>(() => [
           tooltip
           popover
         />
-        <template v-if="staffNav.length">
+
+        <!-- Separate Portal Launchers for Teachers & Admins (keeps Student View clean) -->
+        <div
+          v-if="isAdmin || isTeacher"
+          class="mt-4 pt-3 border-t border-default flex flex-col gap-1.5"
+        >
           <p
             v-if="!collapsed"
-            class="px-2.5 pt-4 pb-1 text-xs font-medium text-dimmed"
+            class="px-2.5 pb-0.5 text-[11px] font-semibold uppercase tracking-wider text-dimmed"
           >
-            {{ t('nav.staff') }}
+            Workspaces
           </p>
-          <UNavigationMenu
-            :collapsed="collapsed"
-            :items="mark(staffNav)"
-            orientation="vertical"
-            tooltip
-            popover
+          <UButton
+            v-if="isTeacher"
+            to="/teacher"
+            icon="i-lucide-school"
+            :label="collapsed ? undefined : 'Teacher Panel'"
+            :square="collapsed"
+            color="primary"
+            variant="soft"
+            size="sm"
+            block
+            class="justify-start"
           />
-        </template>
+          <UButton
+            v-if="isAdmin"
+            to="/admin"
+            icon="i-lucide-shield-check"
+            :label="collapsed ? undefined : 'Admin Panel'"
+            :square="collapsed"
+            color="neutral"
+            variant="subtle"
+            size="sm"
+            block
+            class="justify-start"
+          />
+        </div>
+
         <UNavigationMenu
           :collapsed="collapsed"
           :items="mark(bottomLinks)"

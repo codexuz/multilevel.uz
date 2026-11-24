@@ -79,18 +79,23 @@ export async function classesOfTeacher(teacherId: string) {
     students: sql<number>`(select count(*)::int from class_members m where m.group_id = ${classGroups.id})`,
     assignments: sql<number>`(select count(*)::int from assignments a where a.group_id = ${classGroups.id})`
   }).from(classGroups).where(eq(classGroups.teacherId, teacherId)).orderBy(classGroups.archived, desc(classGroups.createdAt))
-  return rows.map(r => ({ id: r.g.id, name: r.g.name, joinCode: r.g.joinCode, archived: r.g.archived, createdAt: r.g.createdAt, students: r.students, assignments: r.assignments }))
+  return rows.map(r => ({
+    id: r.g.id, name: r.g.name, level: r.g.level, description: r.g.description, joinCode: r.g.joinCode,
+    archived: r.g.archived, createdAt: r.g.createdAt, students: r.students, assignments: r.assignments
+  }))
 }
 
 /** A new class for this user, who becomes a teacher. Walk-in accounts of mock sessions cannot. */
-export async function createClass(userId: string, name: string) {
+export async function createClass(userId: string, name: string, opts?: { level?: string | null, description?: string | null }) {
   const title = name.trim().slice(0, 80)
   if (!title) throw createError({ statusCode: 400, message: 'Give the class a name' })
+  const level = opts?.level ? String(opts.level).trim().slice(0, 24) || null : null
+  const description = opts?.description ? String(opts.description).trim().slice(0, 300) || null : null
   return useDb().transaction(async (tx) => {
     const [u] = await tx.select({ mockOnly: users.mockOnly }).from(users).where(eq(users.id, userId)).limit(1)
     if (!u || u.mockOnly) throw createError({ statusCode: 403, message: 'This account cannot have classes' })
     await raiseToTeacher(tx, userId)
-    const [g] = await tx.insert(classGroups).values({ name: title, teacherId: userId, joinCode: newCode() }).returning()
+    const [g] = await tx.insert(classGroups).values({ name: title, level, description, teacherId: userId, joinCode: newCode() }).returning()
     return g!
   })
 }
