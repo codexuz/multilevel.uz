@@ -53,7 +53,8 @@
     "earnShort": "Credits",
     "courses": "Courses",
     "online": "Online classes",
-    "dashboard": "Dashboard"
+    "dashboard": "Dashboard",
+    "groups": "My groups"
   },
   "pub": {
     "how": "How it works",
@@ -2410,5 +2411,39 @@
     "waiting": "Waiting for marking",
     "aiChecked": "AI checked",
     "courseLesson": "Quiz and lesson"
+  },
+  "groups": {
+    "title": "My groups",
+    "codePlaceholder": "Class code or link",
+    "members": "{n} member | {n} members",
+    "todo": "{n} to do | {n} to do",
+    "allDone": "All done",
+    "decks": "{n} deck | {n} decks",
+    "noneTitle": "You are not in a group yet",
+    "noneText": "Ask your teacher for the class code or link, then join below. The work they set, online classes and word decks show up here.",
+    "joinTitle": "Join a group",
+    "joinText": "Enter the code or paste the link your teacher gave you.",
+    "notFound": "Group not found",
+    "tabWork": "Assignments",
+    "tabResults": "My results",
+    "tabVocabulary": "Vocabulary",
+    "tabClassmates": "Classmates",
+    "teacher": "Teacher: {name}",
+    "more": "More",
+    "toDo": "To do",
+    "handedIn": "Handed in",
+    "overdue": "was due {date}",
+    "allDoneText": "All done! Nothing waiting for you here.",
+    "waitingMark": "Waiting for marking",
+    "handedInOf": "{n} of {total} assignments handed in",
+    "noResults": "No results in this group yet",
+    "noOnlineText": "When your teacher schedules an online class for this group, it shows here with a Join button.",
+    "leagueText": "Everyone in the group by XP earned this week. Tests, lessons and word games all count.",
+    "you": "you",
+    "leave": "Leave group",
+    "leaveTitle": "Leave {name}?",
+    "leaveText": "Its work, online classes and decks stop coming to you. Your results stay yours. You can join again with the code.",
+    "left": "You left {name}",
+    "open": "Open the group"
   }
 }

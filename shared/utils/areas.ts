@@ -26,7 +26,7 @@ export function areaOfPath(path: string): Area | 'staff' | 'shared' {
   if (under(path, '/teacher') || under(path, '/classes') || under(path, '/mocks') || under(path, '/courses/manage')) return 'teacher'
   // The list of results is the student's; a single result (and its review) is shared, as teachers and admins open their students'.
   if (path === '/dashboard' || path === '/results' || under(path, '/words') || path === '/online' || path === '/earn'
-    || path === '/live' || path === '/seat' || under(path, '/join') || path === '/profile' || under(path, '/packs')
+    || path === '/live' || path === '/seat' || under(path, '/join') || under(path, '/groups') || path === '/profile' || under(path, '/packs')
     || under(path, '/feedback') || under(path, '/billing')) return 'student'
   return 'shared'
 }

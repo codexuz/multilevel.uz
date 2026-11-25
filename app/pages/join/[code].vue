@@ -14,8 +14,9 @@ async function join() {
   joining.value = true
   try {
     await $fetch(`/api/join/${code.value}`, { method: 'POST' })
-    await Promise.all([refresh(), refreshMe()])
+    await Promise.all([refresh(), refreshMe(), refreshNuxtData('my-groups')])
     toast.add({ title: t('join.joined', { name: data.value?.group.name }), description: t('join.joinedText'), color: 'success' })
+    if (data.value) await navigateTo(`/groups/${data.value.group.id}`)
   } catch (e) {
     toast.add({ title: t('join.couldNot'), description: errorMessage(e), color: 'error' })
   } finally {
@@ -67,8 +68,8 @@ async function join() {
             {{ t('join.inClassText') }}
           </p>
           <UButton
-            to="/results"
-            :label="t('join.seeWork')"
+            :to="`/groups/${data.group.id}`"
+            :label="t('groups.open')"
           />
         </template>
         <template v-else-if="data.mine">
