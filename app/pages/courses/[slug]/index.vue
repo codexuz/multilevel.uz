@@ -43,6 +43,7 @@ interface CourseView extends Omit<CourseCard, 'lessons'> {
   audience: string[]
   totalMinutes: number
   exerciseTotal: number
+  speakingCount?: number
   dripMode: DripMode
   dripStartAt: string | null
   dripEndAt: string | null
@@ -75,6 +76,7 @@ const includes = computed(() => [
   { icon: 'i-lucide-book-open', label: t('courses.lessons', { n: c.value!.lessons.length }, c.value!.lessons.length) },
   c.value!.totalMinutes ? { icon: 'i-lucide-clock', label: t('coursePage.totalTime', { time: duration(c.value!.totalMinutes) }) } : null,
   c.value!.exerciseTotal ? { icon: 'i-lucide-list-checks', label: t('builder.quizCount', { n: c.value!.exerciseTotal }, c.value!.exerciseTotal) } : null,
+  c.value!.speakingCount ? { icon: 'i-lucide-mic', label: t('speakingStudio.includesCount', { n: c.value!.speakingCount }) } : null,
   c.value!.lessons.some(l => l.has.live) ? { icon: 'i-lucide-video', label: t('coursePage.liveClasses') } : null,
   c.value!.lessons.some(l => l.has.files) ? { icon: 'i-lucide-paperclip', label: t('coursePage.downloads') } : null,
   { icon: 'i-lucide-calendar-clock', label: t(`builder.drip.${c.value!.dripMode ?? 'ALWAYS_OPEN'}`) },
@@ -466,6 +468,16 @@ function lockLabel(drip: DripState): string {
                 trailing-icon="i-lucide-arrow-right"
                 block
                 size="lg"
+              />
+              <UButton
+                v-if="(c!.speakingCount ?? 0) > 0 || c!.access.teaches"
+                :to="`/courses/${c!.slug}/speaking`"
+                :label="t('speakingStudio.title')"
+                icon="i-lucide-mic"
+                color="neutral"
+                variant="outline"
+                block
+                size="md"
               />
               <UButton
                 v-if="c!.visibility === 'PUBLIC'"

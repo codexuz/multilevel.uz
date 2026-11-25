@@ -260,6 +260,13 @@
       "when": 1795615758209,
       "tag": "0036_live_exam_and_broadcasts",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1795628872171,
+      "tag": "0037_course_speaking_studio",
+      "breakpoints": true
     }
   ]
 }

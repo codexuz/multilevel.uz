@@ -8,6 +8,7 @@ import {
   courseEnrollments,
   courseLessons,
   courseModules,
+  courseSpeakingQuestions,
   courses,
   exerciseAttempts,
   exerciseQuestions,
@@ -476,14 +477,15 @@ export async function courseView(viewer: Viewer, course: Course) {
   const { modules: mods, lessons } = await loadOrderedCurriculum(course.id)
   const [card] = await cards([course])
   const lessonIds = lessons.map(l => l.id)
-  const [doneRows, exerciseCounts, handedIn] = await Promise.all([
+  const [doneRows, exerciseCounts, handedIn, [speakingRow]] = await Promise.all([
     viewer && access.learn && lessonIds.length
       ? db.select({ id: lessonProgress.lessonId }).from(lessonProgress).where(and(eq(lessonProgress.userId, viewer.id), inArray(lessonProgress.lessonId, lessonIds)))
       : [],
     lessonIds.length
       ? db.select({ lessonId: lessonExercises.lessonId, n: count() }).from(lessonExercises).where(inArray(lessonExercises.lessonId, lessonIds)).groupBy(lessonExercises.lessonId)
       : [],
-    viewer && access.learn ? tasksDone(viewer.id, lessons) : Promise.resolve(new Set<string>())
+    viewer && access.learn ? tasksDone(viewer.id, lessons) : Promise.resolve(new Set<string>()),
+    db.select({ n: count() }).from(courseSpeakingQuestions).where(eq(courseSpeakingQuestions.courseId, course.id))
   ])
   const doneIds = new Set(doneRows.map(r => r.id))
   const exCountMap = new Map(exerciseCounts.map(r => [r.lessonId, r.n]))
@@ -536,6 +538,7 @@ export async function courseView(viewer: Viewer, course: Course) {
     access,
     totalMinutes: lessons.reduce((n, l) => n + (l.durationMinutes ?? 0), 0),
     exerciseTotal: [...exCountMap.values()].reduce((n, x) => n + x, 0),
+    speakingCount: Number(speakingRow?.n ?? 0),
     modules: moduleList,
     lessons: lessonItems
   }
@@ -686,11 +689,12 @@ export async function manageView(course: Course) {
   const testIds = [...new Set(lessons.map(l => l.taskTestId).filter((x): x is string => !!x))]
   const liveIds = lessons.map(l => l.liveLessonId).filter((x): x is string => !!x)
 
-  const [testRows, liveRows, exRows, learnerIds] = await Promise.all([
+  const [testRows, liveRows, exRows, learnerIds, [speakingRow]] = await Promise.all([
     testIds.length ? db.select({ id: tests.id, slug: tests.slug, title: tests.title }).from(tests).where(inArray(tests.id, testIds)) : [],
     liveIds.length ? db.select().from(liveLessons).where(inArray(liveLessons.id, liveIds)) : [],
     lessonIds.length ? db.select().from(lessonExercises).where(inArray(lessonExercises.lessonId, lessonIds)).orderBy(asc(lessonExercises.position), asc(lessonExercises.createdAt)) : [],
-    courseAudience(course)
+    courseAudience(course),
+    db.select({ n: count() }).from(courseSpeakingQuestions).where(eq(courseSpeakingQuestions.courseId, course.id))
   ])
 
   const exIds = exRows.map(e => e.id)
@@ -763,6 +767,7 @@ export async function manageView(course: Course) {
     lessons: lessonList,
     tasks,
     exerciseTotal: exRows.length,
+    speakingCount: Number(speakingRow?.n ?? 0),
     learners: learners.map((u) => {
       const mineEx = exAttempts.filter(a => a.userId === u.id)
       const passedExercises = new Set(mineEx.filter(a => a.passed).map(a => a.exerciseId)).size

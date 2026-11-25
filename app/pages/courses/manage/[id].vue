@@ -29,9 +29,10 @@ interface ManageCourse extends Omit<CourseCard, 'lessons' | 'learners'> {
   lessons: EditableLesson[]
   tasks: number
   exerciseTotal: number
+  speakingCount?: number
   learners: Learner[]
 }
-type Tab = 'info' | 'curriculum' | 'settings' | 'learners'
+type Tab = 'info' | 'curriculum' | 'speaking' | 'settings' | 'learners'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -46,7 +47,7 @@ if (error.value || !c.value) throw createError({ statusCode: 404, statusMessage:
 useSeoMeta({ title: () => c.value?.title ?? t('nav.courses'), robots: 'noindex' })
 
 // ---- the steps, kept in the address (?tab=) so a reload or a link comes back to the same one ----
-const TABS: Tab[] = ['info', 'curriculum', 'settings', 'learners']
+const TABS: Tab[] = ['info', 'curriculum', 'speaking', 'settings', 'learners']
 const tab = computed<Tab>({
   get: () => (TABS.includes(route.query.tab as Tab) ? route.query.tab as Tab : c.value?.lessons.length ? 'curriculum' : 'info'),
   set: v => router.replace({ query: { ...route.query, tab: v } })
@@ -54,6 +55,7 @@ const tab = computed<Tab>({
 const tabs = computed(() => [
   { label: t('builder.tabInfo'), value: 'info', icon: 'i-lucide-file-pen' },
   { label: t('builder.tabCurriculum'), value: 'curriculum', icon: 'i-lucide-list-tree', badge: c.value?.lessons.length || undefined },
+  { label: t('speakingStudio.tabSpeaking'), value: 'speaking', icon: 'i-lucide-mic', badge: c.value?.speakingCount || undefined },
   { label: t('builder.tabSettings'), value: 'settings', icon: 'i-lucide-sliders-horizontal' },
   { label: t('builder.tabLearners'), value: 'learners', icon: 'i-lucide-users', badge: c.value?.learners.length || undefined }
 ])
@@ -238,6 +240,12 @@ async function createQuiz() {
         @edit-topic="editTopic"
         @add-exercise="addQuiz"
         @open-exercise="x => (studio = { id: x.id, title: x.title })"
+      />
+      <CourseBuilderSpeaking
+        v-else-if="tab === 'speaking'"
+        :course-id="id"
+        :course-slug="c.slug"
+        @changed="refresh"
       />
       <CourseBuilderSettings
         v-else-if="tab === 'settings'"
