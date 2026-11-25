@@ -1021,7 +1021,9 @@
     "average": "в среднем {n}/75",
     "averageBand": "в среднем band {n}",
     "removeAssignment": "Удалить задание",
-    "openTest": "Открыть тест"
+    "openTest": "Открыть тест",
+    "takeOut": "Исключить",
+    "removeAssignmentTitle": "Удалить это задание?"
   },
   "merge": {
     "title": "Объединить аккаунты",
@@ -1596,7 +1598,33 @@
     "readyText": "Ссылка Meet создаётся, когда вы планируете онлайн-урок.",
     "notReadyText": "Администратор подключает Google Meet в настройках платформы панели админа.",
     "readyBadge": "Готово",
-    "adminSetup": "Нужна настройка админом"
+    "adminSetup": "Нужна настройка админом",
+    "cancelTitle": "Отменить это онлайн-занятие?",
+    "cancelClass": "Отменить занятие",
+    "keepClass": "Оставить",
+    "disconnectTitle": "Отключить Google Calendar?",
+    "edit": "Изменить",
+    "saved": "Онлайн-занятие сохранено",
+    "lessonTitle": "Название",
+    "notes": "Заметки для учеников",
+    "notesPlaceholder": "Что подготовить, тема, страницы для чтения…",
+    "day": "День",
+    "time": "Время",
+    "inPast": "Выберите время, которое ещё не прошло.",
+    "movedNote": "Новое время попадёт в ваш Google Calendar, а ученики получат сообщение в Telegram.",
+    "earlier": "Прошедшие и отменённые ({n})",
+    "tabUpcoming": "Предстоящие",
+    "tabPast": "Прошедшие",
+    "tabCancelled": "Отменённые",
+    "today": "Сегодня",
+    "tomorrow": "Завтра",
+    "nonePast": "За последние два месяца прошедших занятий нет",
+    "noneCancelled": "Отменённых занятий нет",
+    "nextClass": "Следующее занятие",
+    "inMinutes": "через {n} мин",
+    "inHours": "через {h} ч {m} мин",
+    "inDays": "через {n} день | через {n} дня | через {n} дней",
+    "siteTime": "Время Ташкента"
   },
   "courses": {
     "seoTitle": "Курсы английского от учителей: IELTS и Multilevel",
@@ -2369,5 +2397,18 @@
     "weekXp": "XP за неделю",
     "lastPlayed": "Последняя игра",
     "cellTitle": "Выучено {known}, видел {seen} из {total}"
+  },
+  "res": {
+    "tab": "Результаты",
+    "inResults": "Открыть в «Результатах»",
+    "allClasses": "Все группы",
+    "allSkills": "Все навыки",
+    "allStudents": "Все ученики",
+    "openClass": "Открыть группу",
+    "attempts": "{n} результат | {n} результата | {n} результатов",
+    "graded": "Проверено",
+    "waiting": "Ждёт проверки",
+    "aiChecked": "Проверено ИИ",
+    "courseLesson": "Тест и урок"
   }
 }

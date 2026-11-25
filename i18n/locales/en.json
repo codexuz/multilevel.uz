@@ -1021,7 +1021,9 @@
     "average": "average {n}/75",
     "averageBand": "average band {n}",
     "removeAssignment": "Remove assignment",
-    "openTest": "Open the test"
+    "openTest": "Open the test",
+    "takeOut": "Take out",
+    "removeAssignmentTitle": "Remove this assignment?"
   },
   "merge": {
     "title": "Combine accounts",
@@ -1596,7 +1598,33 @@
     "readyText": "Meet links are made for you when you schedule an online class.",
     "notReadyText": "An admin connects Google Meet in the Admin panel's Platform settings.",
     "readyBadge": "Ready",
-    "adminSetup": "Admin setup needed"
+    "adminSetup": "Admin setup needed",
+    "cancelTitle": "Cancel this online class?",
+    "cancelClass": "Cancel class",
+    "keepClass": "Keep it",
+    "disconnectTitle": "Disconnect Google Calendar?",
+    "edit": "Edit",
+    "saved": "Online class saved",
+    "lessonTitle": "Title",
+    "notes": "Notes for students",
+    "notesPlaceholder": "What to prepare, the topic, pages to read…",
+    "day": "Day",
+    "time": "Time",
+    "inPast": "Pick a time that has not passed.",
+    "movedNote": "The new time goes to your Google Calendar, and your students are told on Telegram.",
+    "earlier": "Past and cancelled ({n})",
+    "tabUpcoming": "Upcoming",
+    "tabPast": "Past",
+    "tabCancelled": "Cancelled",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "nonePast": "No past online classes in the last two months",
+    "noneCancelled": "No cancelled online classes",
+    "nextClass": "Next class",
+    "inMinutes": "in {n} min",
+    "inHours": "in {h} h {m} min",
+    "inDays": "in {n} day | in {n} days",
+    "siteTime": "Tashkent time"
   },
   "courses": {
     "seoTitle": "English courses by teachers: IELTS and Multilevel",
@@ -2369,5 +2397,18 @@
     "weekXp": "XP this week",
     "lastPlayed": "Last played",
     "cellTitle": "{known} known, {seen} seen of {total}"
+  },
+  "res": {
+    "tab": "Results",
+    "inResults": "Open in Results",
+    "allClasses": "All classes",
+    "allSkills": "All skills",
+    "allStudents": "All students",
+    "openClass": "Open the class",
+    "attempts": "{n} result | {n} results",
+    "graded": "Marked",
+    "waiting": "Waiting for marking",
+    "aiChecked": "AI checked",
+    "courseLesson": "Quiz and lesson"
   }
 }

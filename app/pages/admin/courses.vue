@@ -1,6 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ middleware: 'admin', layout: 'admin' })
 const { t } = useI18n()
+const { confirm } = useDialogs()
 useSeoMeta({ title: () => t('nav.courses'), robots: 'noindex' })
 
 interface AdminCourseRow {
@@ -75,7 +76,7 @@ async function createCourse() {
 }
 
 async function removeCourse(c: AdminCourseRow) {
-  if (!confirm(t('courses.deleteSure', { title: c.title }))) return
+  if (!await confirm({ title: t('courses.deleteSure', { title: c.title }), confirmLabel: t('courses.delete'), color: 'error' })) return
   try {
     await $fetch(`/api/courses/${c.id}`, { method: 'DELETE' })
     toast.add({ title: t('acourses.deleted'), color: 'success' })

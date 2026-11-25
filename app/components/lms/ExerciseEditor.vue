@@ -11,6 +11,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{ updated: [], close: [] }>()
 const { t } = useI18n()
+const { confirm } = useDialogs()
 const toast = useToast()
 
 const { data: ex, refresh } = await useFetch<ExerciseFull>(() => `/api/course-exercises/${props.exerciseId}`)
@@ -111,7 +112,7 @@ async function moveQuestion(idx: number, delta: -1 | 1) {
 }
 
 async function deleteQuestion(q: LmsQuestionDto) {
-  if (!confirm(t('xe.deleteQuestion'))) return
+  if (!await confirm({ title: t('xe.deleteQuestion'), confirmLabel: t('builder.delete'), color: 'error' })) return
   await $fetch(`/api/course-questions/${q.id}`, { method: 'DELETE' })
   await refresh()
   emit('updated')

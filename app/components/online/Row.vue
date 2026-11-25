@@ -15,33 +15,46 @@ export interface LiveLesson {
   teacher: string | null
 }
 const props = defineProps<{ lesson: LiveLesson, manage?: boolean }>()
-const emit = defineEmits<{ move: [], cancel: [] }>()
+const emit = defineEmits<{ edit: [], cancel: [] }>()
 const { t } = useI18n()
-const when = computed(() => localeDate(props.lesson.startsAt, intlLocale(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))
+const at = computed(() => new Date(props.lesson.startsAt))
+const month = computed(() => localeDate(at.value, intlLocale(), { month: 'short' }))
+const time = (d: Date) => localeDate(d, intlLocale(), { hour: '2-digit', minute: '2-digit' })
+const span = computed(() => `${localeDate(at.value, intlLocale(), { weekday: 'short' })}, ${time(at.value)}–${time(new Date(at.value.getTime() + props.lesson.durationMinutes * 60_000))}`)
 const badge = computed(() => ({
-  UPCOMING: { label: t('online.upcoming'), color: 'neutral' as const },
+  UPCOMING: null,
   LIVE: { label: t('online.live'), color: 'error' as const },
   ENDED: { label: t('online.ended'), color: 'neutral' as const },
   CANCELLED: { label: t('online.cancelled'), color: 'warning' as const }
 })[props.lesson.state])
+const editable = computed(() => props.manage && props.lesson.status === 'SCHEDULED' && props.lesson.state !== 'ENDED')
 </script>
 
 <template>
   <div
-    class="flex flex-wrap items-center gap-3 px-4 py-3"
+    class="flex flex-wrap sm:flex-nowrap items-center gap-3 px-4 py-3"
     :class="lesson.state === 'CANCELLED' || lesson.state === 'ENDED' ? 'opacity-60' : ''"
     data-testid="live-row"
   >
-    <div class="size-10 shrink-0 rounded-lg bg-primary/10 text-primary grid place-items-center">
-      <UIcon
-        name="i-lucide-video"
-        class="size-5"
-      />
+    <div
+      class="w-12 shrink-0 rounded-lg text-center py-1 leading-tight"
+      :class="lesson.state === 'LIVE' ? 'bg-error/10 text-error' : 'bg-primary/10 text-primary'"
+    >
+      <p class="text-[11px] font-extrabold uppercase">
+        {{ month }}
+      </p>
+      <p class="text-lg font-extrabold tabular-nums">
+        {{ localeDate(at, intlLocale(), { day: 'numeric' }) }}
+      </p>
     </div>
     <div class="min-w-0 flex-1">
-      <p class="font-medium text-highlighted flex flex-wrap items-center gap-2">
+      <p
+        class="font-bold text-highlighted flex flex-wrap items-center gap-2"
+        :class="lesson.state === 'CANCELLED' ? 'line-through decoration-1' : ''"
+      >
         {{ lesson.title }}
         <UBadge
+          v-if="badge"
           :label="badge.label"
           :color="badge.color"
           variant="subtle"
@@ -49,16 +62,22 @@ const badge = computed(() => ({
         />
       </p>
       <p class="text-xs text-muted">
-        {{ when }} · {{ t('online.minutes', { n: lesson.durationMinutes }) }}<template v-if="lesson.place">
+        {{ span }} · {{ t('online.minutes', { n: lesson.durationMinutes }) }}<template v-if="lesson.place">
           · {{ lesson.place }}
         </template><template v-if="lesson.teacher && !manage">
           · {{ lesson.teacher }}
         </template>
       </p>
+      <p
+        v-if="lesson.description"
+        class="text-xs text-toned mt-0.5 line-clamp-2"
+      >
+        {{ lesson.description }}
+      </p>
     </div>
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="flex flex-wrap items-center gap-1.5 ms-auto">
       <UButton
-        v-if="lesson.meetUrl && (lesson.joinable || manage)"
+        v-if="lesson.meetUrl && (lesson.joinable || manage) && lesson.state !== 'ENDED'"
         :href="lesson.meetUrl"
         target="_blank"
         rel="noopener"
@@ -70,26 +89,30 @@ const badge = computed(() => ({
         data-testid="live-join"
       />
       <span
-        v-else-if="lesson.state === 'UPCOMING'"
+        v-else-if="lesson.state === 'UPCOMING' && !manage"
         class="text-xs text-muted"
       >{{ t('online.joinOpens') }}</span>
-      <template v-if="manage && lesson.status === 'SCHEDULED' && lesson.state !== 'ENDED'">
+      <template v-if="editable">
         <UButton
-          :label="t('online.move')"
-          icon="i-lucide-calendar-clock"
+          icon="i-lucide-pencil"
+          :label="t('online.edit')"
           size="sm"
           color="neutral"
           variant="ghost"
-          @click="emit('move')"
+          data-testid="live-edit"
+          @click="emit('edit')"
         />
-        <UButton
-          :label="t('online.cancel')"
-          icon="i-lucide-x"
-          size="sm"
-          color="neutral"
-          variant="ghost"
-          @click="emit('cancel')"
-        />
+        <UTooltip :text="t('online.cancelClass')">
+          <UButton
+            icon="i-lucide-calendar-x"
+            :aria-label="t('online.cancelClass')"
+            size="sm"
+            color="error"
+            variant="ghost"
+            data-testid="live-cancel"
+            @click="emit('cancel')"
+          />
+        </UTooltip>
       </template>
     </div>
   </div>

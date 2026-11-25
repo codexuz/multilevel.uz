@@ -160,14 +160,15 @@ async function save() {
 
 // ---- the online class (a saved lesson) ----
 const connected = ref(false)
-const local = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
-const live = reactive({ startsAt: local(new Date(Math.ceil(Date.now() / 3_600_000) * 3_600_000 + 864e5)), durationMinutes: 60 })
+// The site's time (Tashkent), as shown everywhere.
+const siteLocal = (d: Date) => `${siteDay(d)}T${siteClock(d)}`
+const live = reactive({ startsAt: siteLocal(new Date(Math.ceil(Date.now() / 3_600_000) * 3_600_000 + 864e5)), durationMinutes: 60 })
 const liveBusy = ref(false)
 async function makeLive() {
   if (!props.lesson) return
   liveBusy.value = true
   try {
-    await $fetch(`/api/course-lessons/${props.lesson.id}/live`, { method: 'POST', body: { startsAt: new Date(live.startsAt).toISOString(), durationMinutes: live.durationMinutes } })
+    await $fetch(`/api/course-lessons/${props.lesson.id}/live`, { method: 'POST', body: { startsAt: fromSiteTime(live.startsAt.slice(0, 10), live.startsAt.slice(11, 16))?.toISOString(), durationMinutes: live.durationMinutes } })
     toast.add({ title: t('online.scheduled'), description: t('online.toldText'), color: 'success' })
     emit('saved', props.lesson.id)
   } catch (e) {
@@ -176,11 +177,11 @@ async function makeLive() {
     liveBusy.value = false
   }
 }
+const { cancelClass } = useOnlineClasses()
 async function cancelLive() {
-  if (!props.lesson?.live || !confirm(t('online.cancelSure', { title: props.lesson.live.title }))) return
-  await $fetch(`/api/live-lessons/${props.lesson.live.id}`, { method: 'DELETE' }).catch(e => toast.add({ title: t('common.notSaved'), description: errorMessage(e), color: 'error' }))
-  emit('saved', props.lesson.id)
+  if (props.lesson?.live && await cancelClass(props.lesson.live)) emit('saved', props.lesson.id)
 }
+const liveEditOpen = ref(false)
 </script>
 
 <template>
@@ -411,7 +412,13 @@ async function cancelLive() {
         <OnlineRow
           :lesson="lesson.live"
           manage
+          @edit="liveEditOpen = true"
           @cancel="cancelLive"
+        />
+        <OnlineLessonModal
+          v-model:open="liveEditOpen"
+          :lesson="lesson.live"
+          @saved="emit('saved', lesson.id)"
         />
       </template>
       <template v-else>
@@ -422,7 +429,7 @@ async function cancelLive() {
         <div class="grid grid-cols-2 gap-3">
           <UFormField
             :label="t('online.startsAt')"
-            :help="t('online.yourTime')"
+            :help="t('online.siteTime')"
           >
             <UInput
               v-model="live.startsAt"

@@ -7,6 +7,7 @@
 const props = defineProps<{ next: string }>()
 const emit = defineEmits<{ change: [connected: boolean] }>()
 const { t } = useI18n()
+const { confirm } = useDialogs()
 const toast = useToast()
 const { data, refresh } = await useFetch<{ available: boolean, connected: boolean, email: string | null, canManage: boolean }>('/api/google', { key: 'google-connection' })
 watch(() => data.value?.connected, c => emit('change', !!c), { immediate: true })
@@ -14,7 +15,7 @@ watch(() => data.value?.connected, c => emit('change', !!c), { immediate: true }
 const connectTo = computed(() => `/auth/google-calendar?next=${encodeURIComponent(props.next)}`)
 const busy = ref(false)
 async function disconnect() {
-  if (!confirm(t('online.disconnectSure'))) return
+  if (!await confirm({ title: t('online.disconnectTitle'), description: t('online.disconnectSure'), confirmLabel: t('online.disconnect'), color: 'warning' })) return
   busy.value = true
   try {
     await $fetch('/api/google', { method: 'DELETE' })

@@ -1,69 +1,64 @@
 <script setup lang="ts">
 import type { LiveLesson } from '~/components/online/Row.vue'
 
+/**
+ * A teacher's online classes across their classes and courses: the coming ones by day, each to edit
+ * (title, notes, day, time, length) or cancel, and the past and cancelled ones. New ones are made
+ * for a class here or on its page.
+ */
 definePageMeta({ middleware: 'teacher', layout: 'teacher' })
 const { t } = useI18n()
+const route = useRoute()
+const router = useRouter()
 useSeoMeta({ title: () => t('nav.online'), robots: 'noindex' })
+const { cancelClass } = useOnlineClasses()
 
-const toast = useToast()
-const { data, refresh } = await useFetch<{ teaching: LiveLesson[], learning: LiveLesson[] }>('/api/me/live-lessons', {
-  default: () => ({ teaching: [], learning: [] })
-})
-const { data: classesData } = await useFetch<{ classes: Array<{ id: string, name: string, archived: boolean }> }>('/api/classes', {
-  default: () => ({ classes: [] })
-})
-
+const { data, refresh } = await useFetch<{ teaching: LiveLesson[] }>('/api/me/live-lessons', { default: () => ({ teaching: [] }) })
+const { data: classesData } = await useFetch<{ classes: Array<{ id: string, name: string, archived: boolean }> }>('/api/classes', { default: () => ({ classes: [] }) })
 const activeGroups = computed(() => classesData.value.classes.filter(c => !c.archived))
-const scheduling = ref(false)
 const connected = ref(false)
-const saving = ref(false)
-const localIso = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
-const form = reactive({
-  groupId: '',
-  title: '',
-  description: '',
-  startsAt: localIso(new Date(Math.ceil(Date.now() / 3_600_000) * 3_600_000 + 3_600_000)),
-  durationMinutes: 60
+// Join opens on time.
+let timer: ReturnType<typeof setInterval> | undefined
+onMounted(() => (timer = setInterval(() => refresh(), 60_000)))
+onBeforeUnmount(() => clearInterval(timer))
+
+const upcoming = computed(() => data.value.teaching.filter(l => l.state === 'UPCOMING' || l.state === 'LIVE').sort((a, b) => a.startsAt.localeCompare(b.startsAt)))
+const past = computed(() => data.value.teaching.filter(l => l.state === 'ENDED'))
+const cancelled = computed(() => data.value.teaching.filter(l => l.state === 'CANCELLED'))
+const view = computed<'upcoming' | 'past' | 'cancelled'>({
+  get: () => (route.query.view === 'past' || route.query.view === 'cancelled' ? route.query.view : 'upcoming'),
+  set: v => router.replace({ query: { ...route.query, view: v === 'upcoming' ? undefined : v } })
 })
+const tabs = computed(() => [
+  { label: t('online.tabUpcoming'), value: 'upcoming', badge: upcoming.value.length || undefined },
+  { label: t('online.tabPast'), value: 'past' },
+  { label: t('online.tabCancelled'), value: 'cancelled' }
+])
 
-watch(activeGroups, (list) => {
-  if (!form.groupId && list[0]) form.groupId = list[0].id
-}, { immediate: true })
-
-async function schedule() {
-  if (!form.groupId || !form.title.trim()) return
-  saving.value = true
-  try {
-    await $fetch(`/api/groups/${form.groupId}/lessons`, {
-      method: 'POST',
-      body: {
-        title: form.title,
-        description: form.description || null,
-        startsAt: new Date(form.startsAt).toISOString(),
-        durationMinutes: form.durationMinutes
-      }
-    })
-    scheduling.value = false
-    form.title = ''
-    form.description = ''
-    toast.add({ title: t('online.scheduled'), color: 'success' })
-    await refresh()
-  } catch (e) {
-    toast.add({ title: t('online.notScheduled'), description: errorMessage(e), color: 'error' })
-  } finally {
-    saving.value = false
+/** The coming classes under their day: Today, Tomorrow, then the date. */
+const byDay = computed(() => {
+  const today = siteDay(Date.now())
+  const tomorrow = siteDay(Date.now() + 864e5)
+  const out: { label: string, lessons: LiveLesson[] }[] = []
+  for (const l of upcoming.value) {
+    const d = siteDay(l.startsAt)
+    const label = d <= today ? t('online.today') : d === tomorrow ? t('online.tomorrow') : localeDate(l.startsAt, intlLocale(), { weekday: 'long', day: 'numeric', month: 'long' })
+    const g = out.at(-1)
+    if (g?.label === label) g.lessons.push(l)
+    else out.push({ label, lessons: [l] })
   }
+  return out
+})
+const list = computed(() => (view.value === 'past' ? past.value : cancelled.value))
+
+const modalOpen = ref(false)
+const editing = ref<LiveLesson | null>(null)
+function openModal(l: LiveLesson | null) {
+  editing.value = l
+  modalOpen.value = true
 }
-
-async function cancelLesson(lesson: LiveLesson) {
-  if (!confirm(t('online.cancelSure', { title: lesson.title }))) return
-  try {
-    await $fetch(`/api/live-lessons/${lesson.id}`, { method: 'DELETE' })
-    toast.add({ title: t('online.cancelledToast'), color: 'success' })
-    await refresh()
-  } catch (e) {
-    toast.add({ title: t('common.notSaved'), description: errorMessage(e), color: 'error' })
-  }
+async function cancel(l: LiveLesson) {
+  if (await cancelClass(l)) await refresh()
 }
 </script>
 
@@ -76,8 +71,9 @@ async function cancelLesson(lesson: LiveLesson) {
       <UButton
         :label="t('online.schedule')"
         icon="i-lucide-plus"
-        :disabled="!activeGroups.length"
-        @click="scheduling = true"
+        :disabled="!activeGroups.length || !connected"
+        data-testid="schedule-live"
+        @click="openModal(null)"
       />
     </template>
 
@@ -87,92 +83,69 @@ async function cancelLesson(lesson: LiveLesson) {
         @change="c => connected = c"
       />
 
-      <UCard
-        v-if="data.teaching.length"
-        :ui="{ body: 'p-0 divide-y divide-default' }"
-      >
-        <OnlineRow
-          v-for="l in data.teaching"
-          :key="l.id"
-          :lesson="l"
-          manage
-          @cancel="cancelLesson(l)"
-        />
-      </UCard>
-
-      <UEmpty
-        v-else
-        icon="i-lucide-video"
-        :title="t('online.none')"
-        :description="t('online.noneText')"
-        :actions="activeGroups.length ? [{ label: t('online.schedule'), icon: 'i-lucide-plus', onClick: () => { scheduling = true } }] : [{ label: t('tdash.newClass'), to: '/classes?new=1' }]"
+      <UTabs
+        v-model="view"
+        :items="tabs"
+        :content="false"
+        class="w-full sm:w-fit"
+        data-testid="online-view"
       />
+
+      <template v-if="view === 'upcoming'">
+        <section
+          v-for="g in byDay"
+          :key="g.label"
+          class="flex flex-col gap-2"
+        >
+          <h2 class="text-sm font-extrabold text-muted uppercase tracking-wide">
+            {{ g.label }}
+          </h2>
+          <div class="rounded-[var(--card-radius)] ring-2 ring-default divide-y divide-default overflow-hidden bg-default">
+            <OnlineRow
+              v-for="l in g.lessons"
+              :key="l.id"
+              :lesson="l"
+              manage
+              @edit="openModal(l)"
+              @cancel="cancel(l)"
+            />
+          </div>
+        </section>
+        <UEmpty
+          v-if="!upcoming.length"
+          icon="i-lucide-video"
+          :title="t('online.none')"
+          :description="t('online.noneText')"
+          :actions="activeGroups.length ? [{ label: t('online.schedule'), icon: 'i-lucide-plus', disabled: !connected, onClick: () => openModal(null) }] : [{ label: t('tdash.newClass'), to: '/classes?new=1' }]"
+        />
+      </template>
+
+      <template v-else>
+        <div
+          v-if="list.length"
+          class="rounded-[var(--card-radius)] ring-2 ring-default divide-y divide-default overflow-hidden bg-default"
+        >
+          <OnlineRow
+            v-for="l in list"
+            :key="l.id"
+            :lesson="l"
+            manage
+          />
+        </div>
+        <UEmpty
+          v-else
+          icon="i-lucide-calendar"
+          :title="view === 'past' ? t('online.nonePast') : t('online.noneCancelled')"
+          variant="naked"
+        />
+      </template>
     </div>
 
-    <UModal
-      v-model:open="scheduling"
-      :title="t('online.schedule')"
-    >
-      <template #body>
-        <form
-          class="grid gap-4"
-          @submit.prevent="schedule"
-        >
-          <UFormField :label="t('tp.class')">
-            <USelect
-              v-model="form.groupId"
-              :items="activeGroups.map(g => ({ label: g.name, value: g.id }))"
-              class="w-full"
-            />
-          </UFormField>
-          <UFormField :label="t('tp.lessonTitle')">
-            <UInput
-              v-model="form.title"
-              placeholder="e.g. Unit 4: Reading Matching Headings"
-              class="w-full"
-            />
-          </UFormField>
-          <UFormField :label="t('tp.notes')">
-            <UTextarea
-              v-model="form.description"
-              :rows="2"
-              class="w-full"
-            />
-          </UFormField>
-          <div class="grid grid-cols-2 gap-3">
-            <UFormField :label="t('online.startsAt')">
-              <UInput
-                v-model="form.startsAt"
-                type="datetime-local"
-                class="w-full"
-              />
-            </UFormField>
-            <UFormField :label="t('online.duration')">
-              <UInputNumber
-                v-model="form.durationMinutes"
-                :min="15"
-                :max="240"
-                :step="15"
-                class="w-full"
-              />
-            </UFormField>
-          </div>
-          <div class="flex justify-end gap-2">
-            <UButton
-              :label="t('common.cancel')"
-              color="neutral"
-              variant="ghost"
-              @click="scheduling = false"
-            />
-            <UButton
-              type="submit"
-              :label="t('online.create')"
-              :loading="saving"
-              :disabled="!connected || !form.title.trim() || !form.groupId"
-            />
-          </div>
-        </form>
-      </template>
-    </UModal>
+    <OnlineLessonModal
+      v-model:open="modalOpen"
+      :lesson="editing"
+      :groups="activeGroups"
+      @saved="refresh()"
+    />
   </AppPage>
 </template>

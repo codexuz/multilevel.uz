@@ -6,7 +6,7 @@ export function useDialogs() {
   const confirmModal = overlay.create(ConfirmModal)
   const promptModal = overlay.create(PromptModal)
 
-  async function confirm(opts: { title: string, description?: string, confirmLabel?: string, color?: 'error' | 'primary' | 'warning' }) {
+  async function confirm(opts: { title: string, description?: string, confirmLabel?: string, cancelLabel?: string, color?: 'error' | 'primary' | 'warning' }) {
     return (await confirmModal.open(opts).result) === true
   }
 

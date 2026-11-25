@@ -4,6 +4,7 @@
  * their results), and assignments with who has done them.
  */
 const { t } = useI18n()
+const { confirm, prompt } = useDialogs()
 useSeoMeta({ title: () => t('classes.class'), robots: 'noindex' })
 
 interface Student { id: string, name: string, avatarUrl: string | null, joinedAt: string, attempts: number, lastActive: string | null, level: Record<string, number | null>, bands?: string[] }
@@ -23,9 +24,11 @@ useSeoMeta({ title: () => data.value?.name ?? t('classes.class') })
 
 const SKILLS = ['LISTENING', 'READING', 'WRITING', 'SPEAKING']
 // ?tab=online (back from connecting Google) opens the online classes.
-const tab = ref<'students' | 'assignments' | 'vocabulary' | 'online'>(route.query.tab === 'online' || route.query.google ? 'online' : route.query.tab === 'vocabulary' ? 'vocabulary' : 'students')
+const TABS = ['students', 'results', 'assignments', 'vocabulary', 'online'] as const
+const tab = ref<typeof TABS[number]>(route.query.google ? 'online' : TABS.find(x => x === route.query.tab) ?? 'students')
 const tabs = computed(() => [
   { label: t('centre.studentsTab', { n: data.value?.students.length ?? 0 }), value: 'students', icon: 'i-lucide-users' },
+  { label: t('res.tab'), value: 'results', icon: 'i-lucide-chart-column' },
   { label: t('centre.assignmentsTab', { n: data.value?.assignments.length ?? 0 }), value: 'assignments', icon: 'i-lucide-list-checks' },
   { label: t('vocab.classTab'), value: 'vocabulary', icon: 'i-lucide-layers' },
   { label: t('online.tab'), value: 'online', icon: 'i-lucide-video' }
@@ -55,8 +58,8 @@ async function patch(body: Record<string, unknown>, done: string) {
     toast.add({ title: t('centre.notChanged'), description: errorMessage(e), color: 'error' })
   }
 }
-function rename() {
-  const n = prompt(t('centre.groupName'), data.value?.name)
+async function rename() {
+  const n = await prompt({ title: t('centre.rename'), label: t('centre.groupName'), initialValue: data.value?.name, confirmLabel: t('common.save') })
   if (n?.trim()) patch({ name: n }, t('centre.renamed'))
 }
 const groupExam = computed<'IELTS' | 'MULTILEVEL'>(() => (data.value?.exam === 'IELTS' ? 'IELTS' : 'MULTILEVEL'))
@@ -71,7 +74,7 @@ const menu = computed(() => [[
   { label: data.value?.archived ? t('centre.bringBack') : t('centre.archive'), icon: 'i-lucide-archive', onSelect: () => patch({ archived: !data.value?.archived }, data.value?.archived ? t('centre.backInList') : t('centre.archived')) }
 ]])
 async function removeStudent(s: Student) {
-  if (!confirm(t('centre.removeStudentSure', { name: s.name }))) return
+  if (!await confirm({ title: t('centre.removeStudentSure', { name: s.name }), confirmLabel: t('centre.takeOut'), color: 'error' })) return
   try {
     await $fetch(`/api/groups/${id.value}/students/${s.id}`, { method: 'DELETE' })
     await refresh()
@@ -125,7 +128,7 @@ async function openAssignment(a: AssignmentRow) {
   }
 }
 async function removeAssignment(a: AssignmentRow) {
-  if (!confirm(t('centre.removeAssignmentSure'))) return
+  if (!await confirm({ title: t('centre.removeAssignmentTitle'), description: t('centre.removeAssignmentSure'), confirmLabel: t('centre.removeAssignment'), color: 'error' })) return
   await $fetch(`/api/assignments/${a.id}`, { method: 'DELETE' }).catch(e => toast.add({ title: t('centre.notRemoved'), description: errorMessage(e), color: 'error' }))
   detail.value = null
   await refresh()
@@ -246,6 +249,21 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
         :group-id="data.id"
         :next="`/classes/${data.id}?tab=online`"
       />
+
+      <!-- Results: this class's test results and course quiz answers -->
+      <template v-if="tab === 'results'">
+        <div class="flex justify-end -mb-2">
+          <UButton
+            :to="`/teacher/results?class=${data.id}`"
+            :label="t('res.inResults')"
+            trailing-icon="i-lucide-arrow-up-right"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+          />
+        </div>
+        <TeacherResultsBoard :group-id="data.id" />
+      </template>
 
       <!-- Vocabulary: each student's progress in the class's decks -->
       <VocabClassTable
