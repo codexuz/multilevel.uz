@@ -806,7 +806,7 @@ export const lessonExercises = pgTable('lesson_exercises', {
 /**
  * A question inside an LMS exercise. Supported types:
  * SENTENCE_BUILD | ERROR_SPOT | MCQ | SINGLE_CHOICE | SHORT_ANSWER | NOTE_COMPLETION |
- * SUMMARY_COMPLETION | SUMMARY_DRAG_DROP | TRUE_FALSE | ORDER | TRANSLATION | DICTATION
+ * SUMMARY_COMPLETION | SUMMARY_DRAG_DROP | TRUE_FALSE | ORDER | TRANSLATION | DICTATION | WRITTEN_RESPONSE
  */
 export const exerciseQuestions = pgTable('exercise_questions', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -837,6 +837,11 @@ export const exerciseAttempts = pgTable('exercise_attempts', {
   results: jsonb('results').notNull().default({}),
   /** Percentage 0..100 */
   score: integer('score').notNull().default(0),
+  /**
+   * Written responses in it: AI (marked by the AI, the teacher may look again), PENDING (waiting for
+   * the teacher: the AI could not mark), TEACHER (the teacher marked them); null when it has none.
+   */
+  reviewStatus: text('review_status'),
   earnedPoints: integer('earned_points').notNull().default(0),
   totalPoints: integer('total_points').notNull().default(0),
   passed: boolean('passed').notNull().default(false),

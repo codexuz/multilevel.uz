@@ -28,6 +28,14 @@ export async function requireExerciseTeacher(event: H3Event, exerciseId: string)
   return { user, course, lesson, exercise }
 }
 
+/** An exercise attempt, or 404. */
+export async function findExerciseAttempt(id: string) {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) throw createError({ statusCode: 404, message: 'Attempt not found' })
+  const [row] = await useDb().select().from(exerciseAttempts).where(eq(exerciseAttempts.id, id)).limit(1)
+  if (!row) throw createError({ statusCode: 404, message: 'Attempt not found' })
+  return row
+}
+
 export async function findQuestion(id: string) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) throw createError({ statusCode: 404, message: 'Question not found' })
   const [q] = await useDb().select().from(exerciseQuestions).where(eq(exerciseQuestions.id, id)).limit(1)
@@ -194,11 +202,12 @@ export async function submitExercise(viewer: Viewer, exercise: Exercise, body: R
   let earnedPoints = 0
   let totalPoints = 0
 
-  for (const q of qRows) {
-    const grade = gradeLmsQuestion(q, submittedMap[q.id])
-    results[q.id] = grade
-    earnedPoints += grade.earned
-    totalPoints += grade.max
+  for (const q of qRows) results[q.id] = gradeLmsQuestion(q, submittedMap[q.id])
+  // Written responses: marked by the AI now (the teacher may look again).
+  const reviewStatus = await markWrittenResponses(qRows, submittedMap, results, viewer.id)
+  for (const g of Object.values(results)) {
+    earnedPoints += g.earned
+    totalPoints += g.max
   }
 
   const score = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 100
@@ -213,7 +222,8 @@ export async function submitExercise(viewer: Viewer, exercise: Exercise, body: R
     earnedPoints,
     totalPoints,
     passed,
-    durationSeconds
+    durationSeconds,
+    reviewStatus
   }).returning()
 
   // If this lesson has required exercises and all are now passed by the student, mark the lesson done automatically.

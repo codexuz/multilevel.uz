@@ -192,3 +192,17 @@ export function transcribePart(partId: string, opts: { overwrite?: boolean } = {
   running.set(cacheKey, job)
   return job
 }
+
+/**
+ * A dictation's recording (an uploaded audio or video file) cut into sentence-sized timed segments,
+ * in seconds, with the words heard: a draft the teacher corrects.
+ */
+export async function transcribeToSegments(ref: string) {
+  if (!transcribeEnabled()) throw createError({ statusCode: 503, message: 'Transcription is not set up on this site' })
+  const audio = await resolveAudioInput(ref.trim())
+  const transcript = await assemblyClient().transcripts.transcribe({ audio, language_code: 'en' })
+  if (transcript.status === 'error' || !transcript.words?.length) {
+    throw createError({ statusCode: 502, message: transcript.error || 'The recording could not be transcribed. Please try again.' })
+  }
+  return wordsToCues(transcript.words).map(c => ({ start: Math.round(c.start / 100) / 10, end: Math.round(c.end / 100) / 10, text: c.text }))
+}

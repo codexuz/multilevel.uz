@@ -211,6 +211,29 @@ export function gradeLmsQuestion(question: GradableQuestion, submitted: unknown)
     }
 
     case 'DICTATION': {
+      // Timed segments of a recording: each segment typed in its own box, marked on its own.
+      if (cfg.segments?.length) {
+        const keys = asMap(accepted)
+        const typed = (submitted && typeof submitted === 'object' && !Array.isArray(submitted)) ? submitted as Record<string, unknown> : {}
+        const segments: NonNullable<LmsQuestionGrade['segments']> = {}
+        let sum = 0
+        for (const seg of cfg.segments) {
+          const expectedList = keys[seg.id] ?? []
+          const expected = expectedList[0] ?? ''
+          const given = String(typed[seg.id] ?? '').trim()
+          const exact = !!given && matchTextAnswer(given, expectedList)
+          const diff = diffDictationWords(expected, given)
+          const total = diff.filter(d => d.status !== 'extra').length
+          const matched = diff.filter(d => d.status === 'match').length
+          const extra = diff.filter(d => d.status === 'extra').length
+          const accuracy = exact ? 1 : total > 0 ? Math.max(0, (matched - extra * 0.5) / total) : 0
+          segments[seg.id] = { given, expected, diff, accuracy, exact }
+          sum += accuracy
+        }
+        const n = cfg.segments.length
+        const earned = Math.round((sum / n) * max)
+        return { earned, max, isCorrect: Object.values(segments).every(x => x.exact), segments, expected: keys, explanation }
+      }
       const given = String(submitted ?? '').trim()
       const expected = asList(accepted)
       if (!expected.length && cfg.ttsText) expected.push(cfg.ttsText)
@@ -223,6 +246,12 @@ export function gradeLmsQuestion(question: GradableQuestion, submitted: unknown)
       const accuracy = totalWords > 0 ? Math.max(0, (matchedWords - extraWords * 0.5) / totalWords) : 0
       const earned = exact ? max : Math.round(accuracy * max)
       return { earned, max, isCorrect: exact, diff, expected, explanation }
+    }
+
+    case 'WRITTEN_RESPONSE': {
+      // Marked afterwards by the AI (and the teacher): see markWrittenResponses (ai-response.ts).
+      const given = String(submitted ?? '').trim()
+      return { earned: 0, max, isCorrect: false, review: { status: 'PENDING', words: countWords(given) }, explanation }
     }
 
     default:
@@ -256,8 +285,13 @@ export function sanitizeQuestionForStudent(q: GradableQuestion) {
   }
   // For DICTATION: keep ttsText only when there is no uploaded audioRef (so browser TTS can speak it),
   // otherwise strip ttsText so students cannot inspect the transcript in DevTools.
-  if (q.type === 'DICTATION' && q.audioRef) {
+  if (q.type === 'DICTATION' && (q.audioRef || cfg.youtubeUrl || cfg.segments?.length)) {
     delete cfg.ttsText
+  }
+  // A written response's key points and model answer are the teacher's.
+  if (q.type === 'WRITTEN_RESPONSE') {
+    delete cfg.keyPoints
+    delete cfg.modelAnswer
   }
   return {
     id: q.id,
