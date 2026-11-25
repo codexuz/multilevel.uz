@@ -378,6 +378,8 @@ export const assignments = pgTable('assignments', {
   partNumber: integer('part_number'),
   note: text('note'),
   dueAt: timestamp('due_at', { withTimezone: true }),
+  /** When the students who had not handed it in were reminded that it is due soon (once). */
+  dueRemindedAt: timestamp('due_reminded_at', { withTimezone: true }),
   createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: created()
 }, t => [index('assignments_group_idx').on(t.groupId, t.createdAt)])

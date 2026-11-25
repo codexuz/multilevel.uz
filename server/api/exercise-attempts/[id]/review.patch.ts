@@ -5,7 +5,7 @@ import { exerciseAttempts, exerciseQuestions } from '../../../database/schema'
 // The attempt's score and pass are worked out again.
 export default defineEventHandler(async (event) => {
   const attempt = await findExerciseAttempt(String(getRouterParam(event, 'id')))
-  const { exercise } = await requireExerciseTeacher(event, attempt.exerciseId)
+  const { exercise, course, lesson } = await requireExerciseTeacher(event, attempt.exerciseId)
   const b = (await readBody<{ questionId?: string, score?: number, comment?: string }>(event)) ?? {}
   const db = useDb()
   const questions = await db.select().from(exerciseQuestions).where(eq(exerciseQuestions.exerciseId, exercise.id))
@@ -15,6 +15,8 @@ export default defineEventHandler(async (event) => {
   if (!Number.isFinite(score) || score < 0 || score > 100) throw createError({ statusCode: 400, message: 'A mark is 0 to 100' })
   const results = structuredClone(attempt.results as Record<string, any>)
   const grade = results[q.id] ?? { earned: 0, max: q.points, isCorrect: false }
+  // The student hears of the teacher's mark the first time, and again if it changes.
+  const tell = grade.review?.status !== 'TEACHER' || grade.review?.score !== score
   grade.review = { words: 0, ...grade.review, status: 'TEACHER', score, teacherComment: String(b.comment ?? '').trim().slice(0, 2000) || undefined }
   grade.earned = Math.round(score / 100 * grade.max)
   grade.isCorrect = score >= 70
@@ -29,5 +31,8 @@ export default defineEventHandler(async (event) => {
     results, earnedPoints, totalPoints, score: pct, passed: pct >= exercise.passingScore,
     reviewStatus: allTeacher ? 'TEACHER' : (writtenIds.some(id => results[id]?.review?.status === 'PENDING') ? 'PENDING' : 'AI')
   }).where(eq(exerciseAttempts.id, attempt.id)).returning()
+  if (tell) {
+    await notifyTelegram(attempt.userId, l => ({ text: MSG.writtenMarked(l, exercise.title, score), path: `/courses/${course.slug}/${lesson.id}`, button: MSG.markedButton[l] })).catch(() => false)
+  }
   return { score: updated!.score, passed: updated!.passed, reviewStatus: updated!.reviewStatus, grade }
 })

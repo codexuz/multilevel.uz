@@ -1,0 +1,1 @@
+ALTER TABLE "assignments" ADD COLUMN "due_reminded_at" timestamp with time zone;
