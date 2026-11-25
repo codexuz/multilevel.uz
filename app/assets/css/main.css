@@ -2,7 +2,15 @@
 @import "@nuxt/ui";
 
 @theme static {
-  --font-sans: 'Roboto', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /* Rounded and friendly for the app; the exam screens keep Roboto (.classic). */
+  --font-sans: 'Nunito', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-classic: 'Roboto', ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* Game colours: XP (gold), streak (flame), correct (green), wrong (red). */
+  --color-xp: #f5b400;
+  --color-flame: #ff8a00;
+  --color-correct: #2fb344;
+  --color-wrong: #e5484d;
 
   /* SmallTalk2Me's indigo (#636EEE) as the brand scale. */
   --color-brand-50: #eff0fe;
@@ -16,6 +24,31 @@
   --color-brand-800: #363a9c;
   --color-brand-900: #30347b;
   --color-brand-950: #1e1f48;
+}
+
+/*
+ * The playful layer: chunky buttons that sit on a coloured edge and press down, thick rounded cards
+ * and fields, bold rounded type. Its sizes are variables, so the exam screens (layouts/exam.vue and
+ * anything marked .classic) set them back to the plain look of the real exam.
+ */
+:root {
+  --press: 4px;
+  --press-sm: 3px;
+  --btn-radius: 0.875rem;
+  --btn-weight: 800;
+  --card-bw: 2px;
+  --card-radius: 1.25rem;
+  --field-bw: 2px;
+}
+.classic {
+  --press: 0px;
+  --press-sm: 0px;
+  --btn-radius: 0.5rem;
+  --btn-weight: 500;
+  --card-bw: 1px;
+  --card-radius: 0.75rem;
+  --field-bw: 1px;
+  font-family: var(--font-classic);
 }
 
 /*
@@ -97,6 +130,23 @@ body {
 }
 
 h1, h2, h3 { letter-spacing: -0.01em; }
+
+/* A pressable tile (answer options, game cards): a 2px edge and a deeper bottom, pressed in on tap. */
+.tile {
+  border: var(--card-bw) solid var(--ui-border-accented);
+  border-bottom-width: calc(var(--card-bw) + var(--press));
+  border-radius: var(--card-radius);
+  background: var(--ui-bg);
+  transition: transform 120ms ease-out, border-color 150ms, background-color 150ms;
+}
+.tile:where(:not(:disabled)):active { transform: translateY(var(--press-sm)); border-bottom-width: calc(var(--card-bw) + var(--press) - var(--press-sm)); }
+.tile:where(:not(:disabled)):hover { background: var(--ui-bg-elevated); }
+.tile[data-state=selected] { border-color: var(--ui-color-primary-400); background: color-mix(in oklab, var(--ui-primary) 10%, var(--ui-bg)); color: var(--ui-color-primary-700); }
+.tile[data-state=correct] { border-color: var(--color-correct); background: color-mix(in oklab, var(--color-correct) 12%, var(--ui-bg)); color: color-mix(in oklab, var(--color-correct) 70%, black); }
+.tile[data-state=wrong] { border-color: var(--color-wrong); background: color-mix(in oklab, var(--color-wrong) 10%, var(--ui-bg)); color: color-mix(in oklab, var(--color-wrong) 75%, black); }
+.dark .tile[data-state=selected] { color: var(--ui-color-primary-300); }
+.dark .tile[data-state=correct] { color: color-mix(in oklab, var(--color-correct) 70%, white); }
+.dark .tile[data-state=wrong] { color: color-mix(in oklab, var(--color-wrong) 70%, white); }
 
 /* A word in a heading set in the accent, as SmallTalk2Me does ("Over 3 million people use …"). */
 .text-accent { color: var(--ui-primary); }

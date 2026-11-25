@@ -2234,5 +2234,20 @@
   },
   "lessonNav": {
     "back": "Kurs sahifasi"
+  },
+  "xp": {
+    "chipsLabel": "Ketma-ket {streak} kun, bugun {today} XP",
+    "streakDays": "{n} kunlik seriya",
+    "streakKept": "Bugun hisoblandi: barakalla.",
+    "streakAtRisk": "Seriyani saqlash uchun bugun XP to‘plang.",
+    "streakStart": "Seriyani boshlash uchun bugun XP to‘plang.",
+    "dayXp": "{n} XP",
+    "dailyGoal": "Kunlik maqsad",
+    "goalMet": "Bugungi maqsad bajarildi!",
+    "goalLeft": "Bugun yana {n} XP",
+    "level": "{n}-daraja",
+    "toNext": "Keyingi darajagacha {n} XP",
+    "changeGoal": "Kunlik maqsad (XP)",
+    "earned": "+{n} XP"
   }
 }

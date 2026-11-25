@@ -24,5 +24,6 @@ export default defineEventHandler(async (event) => {
     lastReviewedAt: now
   }).where(and(eq(userWords.id, id), eq(userWords.userId, user.id))).returning()
   if (!updated) throw createError({ statusCode: 404, message: 'No such word' })
-  return { word: wordView(updated) }
+  const xpGained = grade === 'again' ? 0 : await awardXpQuietly(user.id, 'words', XP.word)
+  return { word: wordView(updated), xpGained }
 })

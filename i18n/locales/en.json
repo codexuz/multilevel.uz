@@ -2234,5 +2234,20 @@
   },
   "lessonNav": {
     "back": "Course page"
+  },
+  "xp": {
+    "chipsLabel": "Streak {streak} days, {today} XP today",
+    "streakDays": "{n} day streak | {n} day streak",
+    "streakKept": "Today counts: well done.",
+    "streakAtRisk": "Earn some XP today to keep your streak.",
+    "streakStart": "Earn XP today to start a streak.",
+    "dayXp": "{n} XP",
+    "dailyGoal": "Daily goal",
+    "goalMet": "Goal reached today!",
+    "goalLeft": "{n} XP to go today",
+    "level": "Level {n}",
+    "toNext": "{n} XP to the next level",
+    "changeGoal": "Daily goal (XP)",
+    "earned": "+{n} XP"
   }
 }

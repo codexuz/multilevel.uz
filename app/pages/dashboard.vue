@@ -65,6 +65,7 @@ const { me } = useMe()
 const { t } = useI18n()
 useSeoMeta({ title: () => t('nav.dashboard'), robots: 'noindex' })
 const { data, status } = await useFetch<DashboardPayload>('/api/me/dashboard')
+const { xp } = useXp()
 
 const firstName = computed(() => me.value?.name?.split(' ')[0] || '')
 const courseOverallPct = computed(() => {
@@ -138,6 +139,13 @@ const isOverdue = (dueAt: string | null, done: boolean) => !!dueAt && !done && n
       </div>
 
       <template v-else-if="data">
+        <UCard
+          v-if="xp"
+          :ui="{ body: 'p-4 sm:p-5' }"
+        >
+          <XpGoalCard :xp="xp" />
+        </UCard>
+
         <!-- 4 Summary Progress Tiles -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatTile

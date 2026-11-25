@@ -94,7 +94,7 @@ async function toggleDone() {
   busy.value = true
   try {
     await $fetch(`/api/course-lessons/${l.value.id}/done`, { method: l.value.done ? 'DELETE' : 'POST' })
-    await Promise.all([refresh(), refreshOutline()])
+    await Promise.all([refresh(), refreshOutline(), refreshXp()])
   } catch (e) {
     toast.add({ title: t('common.notSaved'), description: errorMessage(e), color: 'error' })
   } finally {
@@ -103,7 +103,7 @@ async function toggleDone() {
 }
 
 async function onExerciseCompleted() {
-  await Promise.all([refresh(), refreshOutline()])
+  await Promise.all([refresh(), refreshOutline(), refreshXp()])
 }
 </script>
 

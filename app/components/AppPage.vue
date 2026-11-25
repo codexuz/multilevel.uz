@@ -74,6 +74,7 @@ const { t } = useI18n()
         </template>
         <template #right>
           <slot name="actions" />
+          <XpChips />
         </template>
       </UDashboardNavbar>
       <slot name="toolbar" />

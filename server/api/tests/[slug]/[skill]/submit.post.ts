@@ -99,6 +99,8 @@ export default defineEventHandler(async (event) => {
   })
   // A friend's invite pays off once they finish a test.
   if (!seat) await rewardInviter(user.id).catch(e => console.error('[rewards] inviter reward failed:', e))
+  // XP for a section handed in (once for each attempt): a whole section, or one part.
+  const xpGained = attemptId && !seat ? await awardXpQuietly(user.id, 'test', partNumber ? XP.testPart : XP.test, `attempt:${attemptId}`) : 0
   // Writing and Speaking: the AI check now (while today's last), which is also the teacher's draft.
   if (byTeacher) await tellTeachersToMark({ id: attemptId, userId: user.id, skill }).catch(e => console.error('[marking] teachers not told:', e))
   if (skill === 'WRITING') await reviewHandedInWriting({ id: attemptId, userId: user.id, testId: test.id }, getCookie(event, 'lang')).catch(e => console.error('[ai-writing] auto review failed:', e))
@@ -111,6 +113,7 @@ export default defineEventHandler(async (event) => {
     skill,
     partNumber,
     status,
+    xpGained,
     test: { id: test.id, slug: test.slug, title: test.title },
     submittedAt: new Date(),
     correct: objective ? marked.correct : null,
