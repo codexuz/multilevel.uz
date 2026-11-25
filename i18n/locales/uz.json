@@ -2346,9 +2346,6 @@
     "reviewHint": "Saqlashdan oldin tekshirib, tahrirlang.",
     "deckTitle": "To‘plam nomi",
     "addToDeck": "{n} ta kartani qo‘shish",
-    "saveDeck": "{n} ta karta bilan saqlash",
-    "importedTitle": "Import qilingan so‘zlar",
-    "untitled": "Yangi to‘plam",
     "aiFailed": "AI kartalarni yarata olmadi",
     "cardsAdded": "{n} ta karta qo‘shildi | {n} ta karta qo‘shildi",
     "editCard": "Kartani tahrirlash",
@@ -2378,11 +2375,8 @@
     "notRemoved": "O‘chirilmadi",
     "deleteDeck": "To‘plamni o‘chirish",
     "deleteDeckText": "To‘plam, uning kartalari va o‘quvchilaringizning undagi natijalari butunlay o‘chiriladi.",
-    "addWithAi": "AI bilan qo‘shish",
     "searchCards": "Kartalarni qidirish",
     "removeCard": "Kartani o‘chirish",
-    "noCards": "Hali kartalar yo‘q",
-    "noCardsText": "AI to‘plam mavzusida kartalar tayyorlasin yoki ularni birma-bir qo‘shing.",
     "setToClasses": "Guruhlar",
     "pickClasses": "Guruhlarni tanlang",
     "classesHint": "Bu guruhlardagi o‘quvchilar to‘plamni «So‘zlarim» bo‘limida ko‘radi.",
@@ -2397,7 +2391,10 @@
     "student": "O‘quvchi",
     "weekXp": "Shu haftadagi XP",
     "lastPlayed": "Oxirgi o‘yin",
-    "cellTitle": "{total} tadan {known} tasi o‘zlashtirilgan, {seen} tasi ko‘rilgan"
+    "cellTitle": "{total} tadan {known} tasi o‘zlashtirilgan, {seen} tasi ko‘rilgan",
+    "startTitle": "Birinchi kartalarni qo‘shing",
+    "startText": "Kartalarni AI bilan yarating, matndan import qiling yoki qo‘lda qo‘shing.",
+    "startAiTopic": "«{topic}» mavzusida kartalarni AI bilan yarating, matndan import qiling yoki qo‘lda qo‘shing."
   },
   "res": {
     "tab": "Natijalar",

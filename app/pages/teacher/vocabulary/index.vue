@@ -2,8 +2,8 @@
 import type { VocabDeck } from '~/utils/vocab'
 
 /**
- * A teacher's vocabulary decks, filed by category and then topic. A deck is started by hand, made by
- * the AI from a topic, or filled by the AI from a pasted text; each opens in its editor.
+ * A teacher's vocabulary decks, filed by category and then topic. A new deck opens in its editor,
+ * where its cards are made by the AI from its topic, found by the AI in a pasted text, or written by hand.
  */
 definePageMeta({ middleware: 'teacher', layout: 'teacher' })
 const { t } = useI18n()
@@ -44,14 +44,6 @@ const grouped = computed(() => {
   return out.sort((a, b) => Number(a.category === other) - Number(b.category === other))
 })
 
-const aiOpen = ref(false)
-const aiMode = ref<'generate' | 'import'>('generate')
-function openAi(mode: 'generate' | 'import') {
-  aiMode.value = mode
-  aiOpen.value = true
-}
-const onAiDone = (id: string) => navigateTo(`/teacher/vocabulary/${id}`)
-
 const newOpen = ref(false)
 const creating = ref(false)
 const form = reactive({ title: '', category: '', topic: '', level: 'B1' })
@@ -78,24 +70,8 @@ const levelItems = VOCAB_LEVELS.map(l => ({ label: l, value: l as string }))
   >
     <template #actions>
       <UButton
-        :label="t('vocab.aiCreate')"
-        icon="i-lucide-sparkles"
-        data-testid="open-ai-create"
-        @click="openAi('generate')"
-      />
-      <UButton
-        :label="t('vocab.aiImport')"
-        icon="i-lucide-file-input"
-        color="neutral"
-        variant="outline"
-        data-testid="open-ai-import"
-        @click="openAi('import')"
-      />
-      <UButton
         :label="t('vocab.newDeck')"
         icon="i-lucide-plus"
-        color="neutral"
-        variant="outline"
         data-testid="new-deck"
         @click="newOpen = true"
       />
@@ -200,21 +176,10 @@ const levelItems = VOCAB_LEVELS.map(l => ({ label: l, value: l as string }))
         icon="i-lucide-layers"
         :title="t('vocab.emptyTitle')"
         :description="t('vocab.emptyText')"
-        :actions="[
-          { label: t('vocab.aiCreate'), icon: 'i-lucide-sparkles', onClick: () => openAi('generate') },
-          { label: t('vocab.aiImport'), icon: 'i-lucide-file-input', color: 'neutral', variant: 'outline', onClick: () => openAi('import') }
-        ]"
+        :actions="[{ label: t('vocab.newDeck'), icon: 'i-lucide-plus', onClick: () => { newOpen = true } }]"
         data-testid="decks-empty"
       />
     </div>
-
-    <VocabAiModal
-      v-model:open="aiOpen"
-      :mode="aiMode"
-      :categories="categories"
-      :defaults="{ category: category === 'all' ? null : category }"
-      @done="onAiDone"
-    />
 
     <UModal
       v-model:open="newOpen"

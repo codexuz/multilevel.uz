@@ -2,14 +2,13 @@
 import type { VocabCardInput } from '~/utils/vocab'
 
 /**
- * The AI writes cards, the teacher keeps the ones they want. "generate": cards on a topic at a level;
- * "import": the words of a pasted text (a word list, an article, notes). With a deck the kept cards go
- * into it (skipping words it has); without one a new deck is made for them. Emits the deck's id.
+ * The AI writes cards for a deck, the teacher keeps the ones they want. "generate": cards on a topic
+ * at a level (the deck's, to start with); "import": the words of a pasted text (a word list, an
+ * article, notes). The kept cards go into the deck, skipping words it has. Emits the deck's id.
  */
 const props = defineProps<{
   mode: 'generate' | 'import'
-  deckId?: string
-  categories: string[]
+  deckId: string
   defaults?: { topic?: string | null, category?: string | null, level?: string | null }
 }>()
 const emit = defineEmits<{ done: [deckId: string, added: number] }>()
@@ -17,7 +16,7 @@ const open = defineModel<boolean>('open', { default: false })
 const { t } = useI18n()
 const toast = useToast()
 
-const form = reactive({ topic: '', category: '', level: 'B1', count: 15, text: '', max: 30, title: '' })
+const form = reactive({ topic: '', level: 'B1', count: 15, text: '', max: 30 })
 const drafts = ref<(VocabCardInput & { keep: boolean })[]>([])
 const busy = ref(false)
 const saving = ref(false)
@@ -25,14 +24,11 @@ watch(open, (o) => {
   if (!o) return
   drafts.value = []
   form.topic = props.defaults?.topic ?? ''
-  form.category = props.defaults?.category ?? ''
   form.level = props.defaults?.level ?? 'B1'
   form.text = ''
-  form.title = ''
 })
 
 const levelItems = VOCAB_LEVELS.map(l => ({ label: l, value: l as string }))
-const categoryItems = computed(() => props.categories)
 const kept = computed(() => drafts.value.filter(d => d.keep))
 const canAsk = computed(() => (props.mode === 'generate' ? form.topic.trim().length > 1 : form.text.trim().length > 2))
 
@@ -41,12 +37,11 @@ async function ask() {
   busy.value = true
   try {
     const r = props.mode === 'generate'
-      ? await $fetch<{ cards: VocabCardInput[] }>('/api/vocab/ai/generate', { method: 'POST', body: { topic: form.topic, category: form.category || null, level: form.level, count: form.count, deckId: props.deckId } })
+      ? await $fetch<{ cards: VocabCardInput[] }>('/api/vocab/ai/generate', { method: 'POST', body: { topic: form.topic, category: props.defaults?.category ?? null, level: form.level, count: form.count, deckId: props.deckId } })
       : await $fetch<{ cards: VocabCardInput[] }>('/api/vocab/ai/import', { method: 'POST', body: { text: form.text, level: form.level, max: form.max } })
     // A second ask adds what is new under the cards already drafted.
     const have = new Set(drafts.value.map(d => d.term.toLowerCase()))
     drafts.value.push(...r.cards.filter(c => !have.has(c.term.toLowerCase())).map(c => ({ ...c, keep: true })))
-    if (!form.title) form.title = props.mode === 'generate' ? form.topic.trim() : t('vocab.importedTitle')
   } catch (e) {
     toast.add({ title: t('vocab.aiFailed'), description: errorMessage(e), color: 'error' })
   } finally {
@@ -58,14 +53,7 @@ async function save() {
   if (!kept.value.length) return
   saving.value = true
   try {
-    let id = props.deckId
-    if (!id) {
-      const deck = await $fetch<{ id: string }>('/api/vocab/decks', {
-        method: 'POST',
-        body: { title: form.title.trim() || form.topic.trim() || t('vocab.untitled'), category: form.category || null, topic: props.mode === 'generate' ? form.topic.trim() : null, level: form.level }
-      })
-      id = deck.id
-    }
+    const id = props.deckId
     const r = await $fetch<{ added: number }>(`/api/vocab/decks/${id}/cards`, { method: 'POST', body: { cards: kept.value.map(({ keep: _k, ...c }) => c) } })
     toast.add({ title: t('vocab.cardsAdded', { n: r.added }, r.added), color: 'success', icon: 'i-lucide-check' })
     open.value = false
@@ -98,7 +86,7 @@ const allKept = computed({
           <UFormField
             :label="t('vocab.topic')"
             required
-            class="col-span-2 sm:col-span-3"
+            class="col-span-2 sm:col-span-1"
           >
             <UInput
               v-model="form.topic"
@@ -107,19 +95,6 @@ const allKept = computed({
               autofocus
               data-testid="ai-topic"
               @keydown.enter.prevent="ask"
-            />
-          </UFormField>
-          <UFormField
-            :label="t('vocab.category')"
-            class="col-span-2 sm:col-span-1"
-          >
-            <UInputMenu
-              v-model="form.category"
-              :items="categoryItems"
-              create-item
-              :placeholder="t('vocab.categoryPlaceholder')"
-              class="w-full"
-              @create="(v: string) => (form.category = v)"
             />
           </UFormField>
           <div class="contents">
@@ -159,7 +134,7 @@ const allKept = computed({
               data-testid="ai-text"
             />
           </UFormField>
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div class="grid grid-cols-2 gap-3 sm:w-2/3">
             <UFormField :label="t('vocab.level')">
               <USelect
                 v-model="form.level"
@@ -173,19 +148,6 @@ const allKept = computed({
                 :min="5"
                 :max="60"
                 class="w-full"
-              />
-            </UFormField>
-            <UFormField
-              v-if="!deckId"
-              :label="t('vocab.category')"
-              class="col-span-2 sm:col-span-1"
-            >
-              <UInputMenu
-                v-model="form.category"
-                :items="categoryItems"
-                create-item
-                class="w-full"
-                @create="(v: string) => (form.category = v)"
               />
             </UFormField>
           </div>
@@ -272,16 +234,6 @@ const allKept = computed({
               </div>
             </li>
           </ul>
-          <UFormField
-            v-if="!deckId"
-            :label="t('vocab.deckTitle')"
-          >
-            <UInput
-              v-model="form.title"
-              class="w-full"
-              data-testid="ai-title"
-            />
-          </UFormField>
         </template>
       </div>
     </template>
@@ -294,7 +246,8 @@ const allKept = computed({
           @click="open = false"
         />
         <UButton
-          :label="deckId ? t('vocab.addToDeck', { n: kept.length }) : t('vocab.saveDeck', { n: kept.length })"
+          v-if="drafts.length"
+          :label="t('vocab.addToDeck', { n: kept.length })"
           icon="i-lucide-check"
           :loading="saving"
           :disabled="!kept.length"

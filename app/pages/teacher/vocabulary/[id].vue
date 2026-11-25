@@ -127,12 +127,15 @@ const say = (text: string) => {
 
     <div class="grid lg:grid-cols-[1fr_20rem] gap-5 items-start">
       <div class="flex flex-col gap-4 min-w-0 order-2 lg:order-1">
-        <div class="flex flex-wrap items-center gap-2">
+        <div
+          v-if="deck.cards.length"
+          class="flex flex-wrap items-center gap-2"
+        >
           <h2 class="text-lg font-extrabold text-highlighted me-auto">
             {{ t('vocab.cardCount', { n: deck.cards.length }, deck.cards.length) }}
           </h2>
           <UButton
-            :label="t('vocab.addWithAi')"
+            :label="t('vocab.aiCreate')"
             icon="i-lucide-sparkles"
             data-testid="deck-ai-generate"
             @click="openAi('generate')"
@@ -229,12 +232,18 @@ const say = (text: string) => {
             </div>
           </li>
         </ul>
+        <!-- A new deck: the three ways to fill it -->
         <UEmpty
           v-else-if="!deck.cards.length"
-          icon="i-lucide-sparkles"
-          :title="t('vocab.noCards')"
-          :description="t('vocab.noCardsText')"
-          :actions="[{ label: t('vocab.addWithAi'), icon: 'i-lucide-sparkles', onClick: () => openAi('generate') }]"
+          icon="i-lucide-layers"
+          :title="t('vocab.startTitle')"
+          :description="deck.topic ? t('vocab.startAiTopic', { topic: deck.topic }) : t('vocab.startText')"
+          :actions="[
+            { label: t('vocab.aiCreate'), icon: 'i-lucide-sparkles', onClick: () => openAi('generate') },
+            { label: t('vocab.aiImport'), icon: 'i-lucide-file-input', color: 'neutral', variant: 'outline', onClick: () => openAi('import') },
+            { label: t('vocab.newCard'), icon: 'i-lucide-plus', color: 'neutral', variant: 'outline', onClick: () => editCard(null) }
+          ]"
+          data-testid="deck-start"
         />
         <UEmpty
           v-else
@@ -341,7 +350,6 @@ const say = (text: string) => {
       v-model:open="aiOpen"
       :mode="aiMode"
       :deck-id="deck.id"
-      :categories="categories"
       :defaults="{ topic: deck.topic, category: deck.category, level: deck.level }"
       @done="refresh()"
     />

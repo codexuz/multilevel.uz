@@ -2346,9 +2346,6 @@
     "reviewHint": "Check and edit before saving.",
     "deckTitle": "Deck title",
     "addToDeck": "Add {n} cards",
-    "saveDeck": "Save deck with {n} cards",
-    "importedTitle": "Imported words",
-    "untitled": "New deck",
     "aiFailed": "The AI could not make the cards",
     "cardsAdded": "{n} card added | {n} cards added",
     "editCard": "Edit card",
@@ -2378,11 +2375,8 @@
     "notRemoved": "Not removed",
     "deleteDeck": "Delete deck",
     "deleteDeckText": "The deck, its cards and your students’ progress in it are removed for good.",
-    "addWithAi": "Add with AI",
     "searchCards": "Search cards",
     "removeCard": "Remove card",
-    "noCards": "No cards yet",
-    "noCardsText": "Let the AI draft cards on the deck’s topic, or add them one by one.",
     "setToClasses": "Classes",
     "pickClasses": "Choose classes",
     "classesHint": "Students in these classes see the deck under My words.",
@@ -2397,7 +2391,10 @@
     "student": "Student",
     "weekXp": "XP this week",
     "lastPlayed": "Last played",
-    "cellTitle": "{known} known, {seen} seen of {total}"
+    "cellTitle": "{known} known, {seen} seen of {total}",
+    "startTitle": "Add the first cards",
+    "startText": "Create cards with AI, import them from a text, or add them by hand.",
+    "startAiTopic": "Create cards on “{topic}” with AI, import them from a text, or add them by hand."
   },
   "res": {
     "tab": "Results",
