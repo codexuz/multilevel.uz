@@ -74,7 +74,7 @@ const courseOverallPct = computed(() => {
   return tot > 0 ? Math.round((done / tot) * 100) : 0
 })
 const hasGroups = computed(() => (data.value?.groups?.length ?? 0) > 0)
-const isOverdue = (dueAt: string | null, done: boolean) => !!dueAt && !done && new Date(dueAt) < new Date()
+const { data: myGroups } = await useMyGroups()
 </script>
 
 <template>
@@ -114,14 +114,15 @@ const isOverdue = (dueAt: string | null, done: boolean) => !!dueAt && !done && n
           v-if="hasGroups"
           class="flex flex-wrap items-center gap-1.5"
         >
-          <UBadge
+          <UButton
             v-for="g in data!.groups"
             :key="g.id"
+            :to="`/groups/${g.id}`"
             :label="`${g.name} · ${g.exam === 'IELTS' ? 'IELTS' : 'Multilevel'}`"
             icon="i-lucide-users"
             color="primary"
-            variant="subtle"
-            size="sm"
+            variant="soft"
+            size="xs"
           />
         </div>
       </div>
@@ -228,78 +229,41 @@ const isOverdue = (dueAt: string | null, done: boolean) => !!dueAt && !done && n
           </div>
         </UCard>
 
-        <!-- Group Assignments & Online Classes (ONLY shown if student joined a group) -->
+        <!-- My groups & online classes (only for a student in a group) -->
         <div
           v-if="hasGroups"
           class="grid lg:grid-cols-3 gap-5"
         >
+          <!-- My groups: what is waiting in each (the work itself is on each group's page) -->
           <UCard
             :class="data.upcomingClasses.length ? 'lg:col-span-2' : 'lg:col-span-3'"
             :ui="{ body: 'p-4 sm:p-5 flex flex-col gap-3' }"
+            data-testid="dash-groups"
           >
             <div class="flex items-center justify-between gap-2">
               <h2 class="font-semibold text-highlighted flex items-center gap-2">
                 <UIcon
-                  name="i-lucide-list-todo"
+                  name="i-lucide-users"
                   class="size-4 text-primary"
                 />
-                {{ t('sdash.assignments') }}
+                {{ t('groups.title') }}
               </h2>
-              <UBadge
-                :label="t('sdash.pendingN', { n: data.summary.pendingAssignments })"
-                :color="data.summary.pendingAssignments ? 'warning' : 'success'"
-                variant="subtle"
+              <UButton
+                to="/groups"
+                :label="t('tdash.all')"
                 size="xs"
+                color="neutral"
+                variant="ghost"
               />
             </div>
-
-            <div
-              v-if="data.assignments.length"
-              class="rounded-xl ring ring-default divide-y divide-default overflow-hidden"
-            >
-              <div
-                v-for="a in data.assignments.slice(0, 6)"
-                :key="a.id"
-                class="flex flex-wrap items-center gap-3 px-4 py-3"
-              >
-                <UIcon
-                  :name="a.mine ? 'i-lucide-circle-check' : 'i-lucide-circle-dot'"
-                  class="size-5 shrink-0"
-                  :class="a.mine ? 'text-success' : isOverdue(a.dueAt, !!a.mine) ? 'text-error' : 'text-primary'"
-                />
-                <div class="min-w-0 flex-1">
-                  <p class="text-sm font-medium text-highlighted truncate">
-                    {{ a.test?.title || t('sdash.test') }} · {{ skillLabel(a.skill) }}{{ a.partNumber ? ` (${partName(a.skill, a.partNumber, a.exam)})` : '' }}
-                  </p>
-                  <p class="text-xs text-muted truncate">
-                    {{ a.group }}
-                    <span v-if="a.dueAt"> · {{ t('sdash.due', { date: localeDate(a.dueAt, intlLocale(), { day: 'numeric', month: 'short', year: 'numeric' }) }) }}</span>
-                    <span v-if="a.note"> · {{ a.note }}</span>
-                  </p>
-                </div>
-                <UButton
-                  v-if="a.mine"
-                  :to="`/results/${a.mine.attemptId}`"
-                  :label="a.mine.band != null ? t('tp.band', { band: fmtBand(a.mine.band) }) : a.mine.score != null ? `${a.mine.score}/75` : t('tp.submitted')"
-                  size="xs"
-                  color="success"
-                  variant="soft"
-                />
-                <UButton
-                  v-else-if="a.to"
-                  :to="a.to"
-                  :label="t('courses.taskStart')"
-                  trailing-icon="i-lucide-arrow-right"
-                  size="xs"
-                />
-              </div>
+            <div class="grid sm:grid-cols-2 gap-3">
+              <GroupCard
+                v-for="g in myGroups.groups"
+                :key="g.id"
+                :group="g"
+                compact
+              />
             </div>
-            <p
-              v-else
-              class="text-sm text-muted"
-            >
-              {{ t('sdash.noAssignments') }}
-            </p>
           </UCard>
 
           <UCard

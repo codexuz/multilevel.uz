@@ -53,7 +53,8 @@
     "earnShort": "Kreditlar",
     "courses": "Kurslar",
     "online": "Onlayn darslar",
-    "dashboard": "Bosh sahifa"
+    "dashboard": "Bosh sahifa",
+    "groups": "Guruhlarim"
   },
   "pub": {
     "how": "Qanday ishlaydi",
@@ -2410,5 +2411,39 @@
     "waiting": "Baholash kutilmoqda",
     "aiChecked": "AI tekshirgan",
     "courseLesson": "Test va dars"
+  },
+  "groups": {
+    "title": "Guruhlarim",
+    "codePlaceholder": "Guruh kodi yoki havolasi",
+    "members": "{n} a’zo | {n} a’zo",
+    "todo": "{n} ta bajarish kerak | {n} ta bajarish kerak",
+    "allDone": "Hammasi bajarildi",
+    "decks": "{n} to‘plam | {n} to‘plam",
+    "noneTitle": "Hali guruhda emassiz",
+    "noneText": "O‘qituvchingizdan guruh kodi yoki havolasini so‘rang va «Guruhga qo‘shilish» tugmasini bosing. Topshiriqlar, onlayn darslar va so‘z to‘plamlari shu yerda chiqadi.",
+    "joinTitle": "Guruhga qo‘shilish",
+    "joinText": "O‘qituvchingiz bergan kodni kiriting yoki havolani joylang.",
+    "notFound": "Guruh topilmadi",
+    "tabWork": "Topshiriqlar",
+    "tabResults": "Natijalarim",
+    "tabVocabulary": "Lug‘at",
+    "tabClassmates": "Guruhdoshlar",
+    "teacher": "O‘qituvchi: {name}",
+    "more": "Yana",
+    "toDo": "Bajarish kerak",
+    "handedIn": "Topshirilgan",
+    "overdue": "muddati {date} edi",
+    "allDoneText": "Hammasi bajarildi! Bu yerda sizni kutayotgan narsa yo‘q.",
+    "waitingMark": "Baholash kutilmoqda",
+    "handedInOf": "{total} ta topshiriqdan {n} tasi topshirildi",
+    "noResults": "Bu guruhda hali natijalar yo‘q",
+    "noOnlineText": "O‘qituvchingiz bu guruhga onlayn dars belgilaganda, u shu yerda «Qo‘shilish» tugmasi bilan chiqadi.",
+    "leagueText": "Guruhdagilar shu haftada to‘plagan XP bo‘yicha. Testlar, darslar va so‘z o‘yinlari hisobga olinadi.",
+    "you": "siz",
+    "leave": "Guruhdan chiqish",
+    "leaveTitle": "{name} guruhidan chiqasizmi?",
+    "leaveText": "Uning topshiriqlari, onlayn darslari va to‘plamlari endi sizga kelmaydi. Natijalaringiz o‘zingizda qoladi. Kod bilan qayta qo‘shilishingiz mumkin.",
+    "left": "Siz {name} guruhidan chiqdingiz",
+    "open": "Guruhni ochish"
   }
 }

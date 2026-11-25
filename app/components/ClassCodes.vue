@@ -38,7 +38,10 @@ function joinClass() {
             name="i-lucide-users"
             class="size-4 text-muted"
           />
-          <span class="font-medium text-highlighted">{{ c.name }}</span>
+          <NuxtLink
+            :to="`/groups/${c.id}`"
+            class="font-medium text-highlighted hover:text-primary"
+          >{{ c.name }}</NuxtLink>
           <span class="text-muted">· {{ c.teacher }}</span>
         </li>
       </ul>
