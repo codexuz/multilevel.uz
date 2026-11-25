@@ -264,7 +264,12 @@
     "allCategories": "Barcha toifalar",
     "category": "Toifa",
     "filters": "Filtrlar",
-    "showResults": "Natijalarni ko‘rsatish"
+    "showResults": "Natijalarni ko‘rsatish",
+    "noAudioHint": "Bu qismning alohida audiosi yo‘q: Listening testini to‘liq ishlang.",
+    "wholeTestOnly": "Faqat to‘liq test",
+    "wholeTest": "To‘liq test",
+    "noAudioShort": "audio yo‘q, faqat to‘liq test",
+    "noAudioPick": "Alohida audiosi bo‘lmagan Listening qismlarini faqat to‘liq test sifatida berish mumkin."
   },
   "qtype": {
     "TRUE_FALSE_NOT_GIVEN": "True / False / Not Given",
@@ -423,7 +428,10 @@
     "speakingFinished": "Gapirish tugadi",
     "speakingFinishedText": "Javoblaringizni tinglang va yuklab oling.",
     "download": "Yuklab olish",
-    "practiceNoteIelts": "Quyida darhol AI tahlilini oling. Kirgan va sinfda bo‘lsangiz, o‘qituvchingiz band beradi. Ishingiz shu yerda saqlanadi."
+    "practiceNoteIelts": "Quyida darhol AI tahlilini oling. Kirgan va sinfda bo‘lsangiz, o‘qituvchingiz band beradi. Ishingiz shu yerda saqlanadi.",
+    "noAudioTitle": "Bu qismning alohida audiosi yo‘q",
+    "noAudioText": "Uning audiosi butun Listening yozuvining bir qismi, shuning uchun u to‘liq Listening testida ishlanadi.",
+    "wholeListening": "Listening testini to‘liq ishlash"
   },
   "criterion": {
     "taskAchievement": "Topshiriqni bajarish",
@@ -1027,7 +1035,8 @@
     "removeAssignment": "Vazifani o‘chirish",
     "openTest": "Testni ochish",
     "takeOut": "Chiqarish",
-    "removeAssignmentTitle": "Bu topshiriq o‘chirilsinmi?"
+    "removeAssignmentTitle": "Bu topshiriq o‘chirilsinmi?",
+    "noAudioParts": "{parts}: alohida audiosi yo‘q, shuning uchun faqat to‘liq Listening testi sifatida berish mumkin."
   },
   "merge": {
     "title": "Hisoblarni birlashtirish",

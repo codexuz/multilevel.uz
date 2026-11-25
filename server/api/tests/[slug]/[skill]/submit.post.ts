@@ -27,6 +27,7 @@ export default defineEventHandler(async (event) => {
   const partNumber = getQuery(event).part ? Number(getQuery(event).part) : null
   const section = partNumber ? pickPart(whole, partNumber) : whole
   if (!section) throw createError({ statusCode: 404, message: 'Part not found' })
+  if (partNumber) requireStandalonePart(whole, partNumber, test.slug)
 
   const body = (await readBody<SubmitBody>(event)) ?? {}
   // Only a signed-in candidate sits a test (guests may look at tests, not take them).

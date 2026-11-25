@@ -264,7 +264,12 @@
     "allCategories": "All categories",
     "category": "Category",
     "filters": "Filters",
-    "showResults": "Show results"
+    "showResults": "Show results",
+    "noAudioHint": "This part has no recording of its own: take the whole Listening test.",
+    "wholeTestOnly": "Whole test only",
+    "wholeTest": "Whole test",
+    "noAudioShort": "no audio, whole test only",
+    "noAudioPick": "Listening parts without a recording of their own can only be set as the whole test."
   },
   "qtype": {
     "TRUE_FALSE_NOT_GIVEN": "True / False / Not Given",
@@ -423,7 +428,10 @@
     "speakingFinished": "Speaking finished",
     "speakingFinishedText": "Listen to your answers and download them.",
     "download": "Download",
-    "practiceNoteIelts": "Get instant AI feedback below. Signed in and in a class, your teacher gives it a band. Your work stays here meanwhile."
+    "practiceNoteIelts": "Get instant AI feedback below. Signed in and in a class, your teacher gives it a band. Your work stays here meanwhile.",
+    "noAudioTitle": "This part has no recording of its own",
+    "noAudioText": "Its audio is part of the whole Listening recording, so it is taken in the full Listening test.",
+    "wholeListening": "Take the whole Listening test"
   },
   "criterion": {
     "taskAchievement": "Task achievement",
@@ -1027,7 +1035,8 @@
     "removeAssignment": "Remove assignment",
     "openTest": "Open the test",
     "takeOut": "Take out",
-    "removeAssignmentTitle": "Remove this assignment?"
+    "removeAssignmentTitle": "Remove this assignment?",
+    "noAudioParts": "{parts}: no recording of their own, so they can only be set as the whole Listening test."
   },
   "merge": {
     "title": "Combine accounts",

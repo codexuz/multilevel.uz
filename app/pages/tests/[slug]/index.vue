@@ -247,8 +247,22 @@ useHead({
               class="flex items-center justify-between gap-3"
             >
               <span class="min-w-0">{{ partLine(p) }}</span>
+              <UTooltip
+                v-if="p.noAudio"
+                :text="tr('tests.noAudioHint')"
+              >
+                <span
+                  class="shrink-0 inline-flex items-center gap-1 text-xs font-semibold text-dimmed"
+                  data-testid="part-no-audio-note"
+                >
+                  <UIcon
+                    name="i-lucide-headphone-off"
+                    class="size-3.5"
+                  />{{ tr('tests.wholeTestOnly') }}
+                </span>
+              </UTooltip>
               <NuxtLink
-                v-if="(!locked || canOpen(t, p.itemId)) && (p.partNumber || p.taskNumber)"
+                v-else-if="(!locked || canOpen(t, p.itemId)) && (p.partNumber || p.taskNumber)"
                 :to="sitTo(`/tests/${t.slug}/${String(s.skill).toLowerCase()}?part=${p.partNumber ?? p.taskNumber}`)"
                 class="shrink-0 text-xs font-semibold text-primary hover:underline"
                 :aria-label="tr('test.practiseAlone', { part: partLine(p) })"

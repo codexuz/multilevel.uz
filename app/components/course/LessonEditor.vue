@@ -71,13 +71,22 @@ const moduleOptions = computed(() => [
   ...(props.modules ?? []).map(m => ({ label: m.title, value: m.id }))
 ])
 
-const { data: testList } = await useFetch<{ items: { id: string, title: string, sections: { skill: string, items: number }[] }[] }>('/api/tests', { query: { limit: 60 }, lazy: true })
+const { data: testList } = await useFetch<{ items: { id: string, title: string, sections: { skill: string, items: number, silentParts?: number[] }[] }[] }>('/api/tests', { query: { limit: 60 }, lazy: true })
 const testItems = computed(() => (testList.value?.items ?? []).map(x => ({ label: x.title, value: x.id })))
 const skillItems = computed(() => {
   const test = testList.value?.items.find(x => x.id === form.testId)
   return SKILLS.filter(s => !test || test.sections.some(x => x.skill === s && x.items)).map(s => ({ label: skillLabel(s), value: s }))
 })
-const partItems = computed(() => [{ label: t('centre.wholeSection'), value: 0 }, ...(PART_NUMBERS[form.skill] ?? []).map(n => ({ label: partName(form.skill, n), value: n }))])
+// Listening parts with no recording of their own are heard only in the whole test: not set alone.
+const silent = computed(() => testList.value?.items.find(x => x.id === form.testId)?.sections.find(x => x.skill === form.skill)?.silentParts ?? [])
+const partItems = computed(() => [{ label: t('centre.wholeSection'), value: 0 }, ...(PART_NUMBERS[form.skill] ?? []).map(n => ({
+  label: silent.value.includes(n) ? `${partName(form.skill, n)} · ${t('tests.noAudioShort')}` : partName(form.skill, n),
+  value: n,
+  disabled: silent.value.includes(n)
+}))])
+watch(silent, (s) => {
+  if (form.part && s.includes(form.part)) form.part = 0
+})
 watch(() => form.testId, () => {
   if (!skillItems.value.some(s => s.value === form.skill)) form.skill = skillItems.value[0]?.value ?? 'READING'
 })
@@ -343,6 +352,7 @@ const liveEditOpen = ref(false)
         <UFormField
           :label="t('courses.part')"
           class="sm:col-span-2"
+          :help="silent.length ? t('tests.noAudioPick') : undefined"
         >
           <USelect
             v-model="form.part"

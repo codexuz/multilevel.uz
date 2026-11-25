@@ -535,6 +535,8 @@ export async function listPracticeParts(query: Body) {
       types: [...new Set(own.map(g => g.type))],
       exam: examOfModule(r.tests.module),
       minWords: r.writing_tasks ? minimumWordsFor(r.writing_tasks) : null,
+      /** A Listening part with no recording of its own: sat only in the whole Listening test. */
+      noAudio: r.sections.skill === 'LISTENING' && !!r.parts && !r.parts.audioRef,
       test: { id: r.tests.id, slug: r.tests.slug, title: r.tests.title, access: r.tests.access, module: r.tests.module }
     }
   })

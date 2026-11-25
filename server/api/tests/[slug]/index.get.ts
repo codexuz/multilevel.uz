@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
     sections: summary.sections.map((s: any, i: number) => ({
       ...s,
       parts: (test.sections[i].items ?? []).map((item: any) => item.part
-        ? { kind: 'part', itemId: item.id, partNumber: item.part.partNumber, title: item.part.title, questions: (item.part.groups ?? []).reduce((n: number, g: any) => n + (g.items?.length ?? 0), 0) }
+        ? { kind: 'part', itemId: item.id, partNumber: item.part.partNumber, title: item.part.title, questions: (item.part.groups ?? []).reduce((n: number, g: any) => n + (g.items?.length ?? 0), 0), noAudio: s.skill === 'LISTENING' && !item.part.audioRef }
         : item.writingTask
           ? { kind: 'task', itemId: item.id, taskNumber: item.writingTask.taskNumber, title: item.writingTask.title, minWords: minimumWordsFor(item.writingTask) }
           : { kind: 'speaking', itemId: item.id, partNumber: item.speakingPart?.partNumber, title: item.speakingPart?.title })

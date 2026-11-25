@@ -303,6 +303,7 @@ export async function lessonValues(body: Record<string, unknown>, partial: boole
       if (!section) throw createError({ statusCode: 400, message: 'That test has no such section' })
       const part = task.partNumber ? Math.round(Number(task.partNumber)) : null
       if (part && !pickPart(section, part)) throw createError({ statusCode: 400, message: 'That part is not in the test' })
+      if (part && silentParts(section).includes(part)) throw createError({ statusCode: 400, message: 'That Listening part has no recording of its own: use the whole Listening test instead' })
       Object.assign(out, { taskTestId: test.id, taskSkill: skill, taskPartNumber: part })
     }
   }

@@ -20,6 +20,8 @@ export default defineEventHandler(async (event) => {
   if (!section) throw createError({ statusCode: 400, message: `That test has no ${SKILL_WORD[skill]} section` })
   const partNumber = body.partNumber ? Math.round(Number(body.partNumber)) : null
   if (partNumber && !pickPart(section, partNumber)) throw createError({ statusCode: 400, message: 'That part is not in the test' })
+  // A Listening part with no recording of its own is heard only in the whole section: set the whole test.
+  if (partNumber && silentParts(section).includes(partNumber)) throw createError({ statusCode: 400, message: 'That Listening part has no recording of its own: set the whole Listening test instead' })
   const dueAt = body.dueAt ? new Date(body.dueAt) : null
   if (dueAt && Number.isNaN(dueAt.getTime())) throw createError({ statusCode: 400, message: 'Pick a due date' })
   const note = String(body.note ?? '').trim().slice(0, 500) || null

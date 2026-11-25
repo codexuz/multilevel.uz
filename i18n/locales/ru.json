@@ -264,7 +264,12 @@
     "allCategories": "Все категории",
     "category": "Категория",
     "filters": "Фильтры",
-    "showResults": "Показать результаты"
+    "showResults": "Показать результаты",
+    "noAudioHint": "У этой части нет отдельной записи: пройдите весь Listening целиком.",
+    "wholeTestOnly": "Только весь тест",
+    "wholeTest": "Весь тест",
+    "noAudioShort": "нет аудио, только весь тест",
+    "noAudioPick": "Части Listening без отдельной записи можно задать только всем тестом."
   },
   "qtype": {
     "TRUE_FALSE_NOT_GIVEN": "True / False / Not Given",
@@ -423,7 +428,10 @@
     "speakingFinished": "Говорение завершено",
     "speakingFinishedText": "Прослушайте и скачайте свои ответы.",
     "download": "Скачать",
-    "practiceNoteIelts": "Получите мгновенный разбор от AI ниже. Если вы вошли и состоите в классе, учитель поставит балл. Ваша работа сохранится здесь."
+    "practiceNoteIelts": "Получите мгновенный разбор от AI ниже. Если вы вошли и состоите в классе, учитель поставит балл. Ваша работа сохранится здесь.",
+    "noAudioTitle": "У этой части нет отдельной записи",
+    "noAudioText": "Её аудио входит в общую запись Listening, поэтому её проходят в полном тесте Listening.",
+    "wholeListening": "Пройти весь Listening"
   },
   "criterion": {
     "taskAchievement": "Выполнение задачи",
@@ -1027,7 +1035,8 @@
     "removeAssignment": "Удалить задание",
     "openTest": "Открыть тест",
     "takeOut": "Исключить",
-    "removeAssignmentTitle": "Удалить это задание?"
+    "removeAssignmentTitle": "Удалить это задание?",
+    "noAudioParts": "{parts}: нет отдельной записи, поэтому их можно задать только всем тестом Listening."
   },
   "merge": {
     "title": "Объединить аккаунты",
