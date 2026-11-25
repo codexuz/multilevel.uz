@@ -22,17 +22,19 @@ export default defineEventHandler(async (event) => {
   if (body.channelIds !== undefined) set.channelIds = await pickChannels(body.channelIds)
   if (body.testId !== undefined && body.testId !== m.testId) {
     if (state !== 'UPCOMING') throw createError({ statusCode: 409, message: 'It has started, so its test stays' })
-    const [test] = await db.select({ id: tests.id, status: tests.status }).from(tests).where(eq(tests.id, String(body.testId))).limit(1)
+    const [test] = await db.select({ id: tests.id, status: tests.status, module: tests.module }).from(tests).where(eq(tests.id, String(body.testId))).limit(1)
     if (!test || test.status === 'ARCHIVED') throw createError({ statusCode: 400, message: 'Pick a test' })
     set.testId = test.id
+    set.exam = examOfModule(test.module)
   }
   const startsAt = body.startsAt !== undefined ? new Date(String(body.startsAt)) : m.startsAt
   const endsAt = body.endsAt !== undefined ? new Date(String(body.endsAt)) : m.endsAt
   const moved = startsAt.getTime() !== m.startsAt.getTime() || endsAt.getTime() !== m.endsAt.getTime()
-  if (moved) {
+  const exam = (set.exam ?? m.exam) as Exam
+  if (moved || exam !== m.exam) {
     if (state === 'ENDED') throw createError({ statusCode: 409, message: 'It has ended, so its window stays' })
     if (state === 'LIVE' && startsAt.getTime() !== m.startsAt.getTime()) throw createError({ statusCode: 409, message: 'It has started: only when it closes can change' })
-    await checkWindow(startsAt, endsAt, m.id)
+    await checkWindow(startsAt, endsAt, exam, m.id)
     set.startsAt = startsAt
     set.endsAt = endsAt
   }

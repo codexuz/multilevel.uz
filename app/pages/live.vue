@@ -16,10 +16,17 @@ interface Row { rank: number, name: string, total: number, scores: Record<string
 interface Board { participants: number, top: Row[], me: Row | null, done: { skill: string, attemptId: string, score: number | null, band?: number | null }[] }
 
 const route = useRoute()
+const router = useRouter()
 const { loggedIn } = useMe()
-const { data, refresh } = await useFetch<{ live: LiveMock | null, next: LiveMock | null, shown: LiveMock | null, board: Board | null }>('/api/live', {
-  query: computed(() => ({ mock: route.query.mock || undefined }))
+// One exam at a time: IELTS and Multilevel each have their own mock and leaderboard.
+const { data, refresh } = await useFetch<{ exam: 'IELTS' | 'MULTILEVEL', live: LiveMock | null, next: LiveMock | null, shown: LiveMock | null, board: Board | null }>('/api/live', {
+  query: computed(() => ({ mock: route.query.mock || undefined, exam: route.query.exam || undefined }))
 })
+const exam = computed<'IELTS' | 'MULTILEVEL'>({
+  get: () => data.value?.exam ?? 'MULTILEVEL',
+  set: v => router.replace({ query: { exam: v } })
+})
+const examTabs = [{ label: 'Multilevel (CEFR)', value: 'MULTILEVEL' }, { label: 'IELTS', value: 'IELTS' }]
 
 const RANKED = ['LISTENING', 'READING']
 const now = ref(Date.now())
@@ -58,6 +65,13 @@ const rankedSkills = computed(() => (data.value?.shown?.skills ?? []).filter(s =
       <h1 class="text-2xl sm:text-3xl font-bold text-highlighted">
         Live <span class="text-accent">mock</span>
       </h1>
+      <UTabs
+        v-model="exam"
+        :items="examTabs"
+        :content="false"
+        class="w-full sm:w-fit"
+        data-testid="live-exam"
+      />
 
       <!-- Open now -->
       <div
@@ -195,7 +209,9 @@ const rankedSkills = computed(() => (data.value?.shown?.skills ?? []).filter(s =
               </h2>
               <p class="text-xs text-muted truncate">
                 {{ data.shown.title }} · {{ t('live.people', { n: data.board.participants }, data.board.participants) }}
-                · {{ t('live.outOf', { skills: rankedSkills.map(s => skillLabel(s)).join(' + '), max: rankedSkills.length * (data.shown.exam === 'IELTS' ? 9 : 75) }) }}
+                <template v-if="rankedSkills.length">
+                  · {{ t('live.outOf', { skills: rankedSkills.map(s => skillLabel(s)).join(' + '), max: rankedSkills.length * (data.shown.exam === 'IELTS' ? 9 : 75) }) }}
+                </template>
               </p>
             </div>
             <UBadge

@@ -237,6 +237,8 @@ export const liveMocks = pgTable('live_mocks', {
   resultsSentAt: timestamp('results_sent_at', { withTimezone: true }),
   /** The Telegram channels it is posted to (telegram_channels ids, or 'default' for TELEGRAM_CHANNEL); null: those of its exam. */
   channelIds: text('channel_ids').array(),
+  /** IELTS | MULTILEVEL: its test's exam. Mocks of one exam never overlap; the two exams run side by side. */
+  exam: text('exam').notNull().default('MULTILEVEL'),
   createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: created()
 }, t => [index('live_mocks_window_idx').on(t.startsAt, t.endsAt)])
@@ -254,6 +256,28 @@ export const telegramChannels = pgTable('telegram_channels', {
   locale: text('locale').notNull().default('uz'),
   createdAt: created()
 })
+
+// ---------- broadcasts: news and updates the bot sends users (admins) ----------
+export const broadcasts = pgTable('broadcasts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  /** The message in each language written ({ uz, ru, en }); each user gets theirs, else the first written. */
+  texts: jsonb('texts').notNull().default({}),
+  imageUrl: text('image_url'),
+  buttonText: text('button_text'),
+  buttonUrl: text('button_url'),
+  /** Who it goes to: { role: ALL | STUDENTS | TEACHERS, exam: ANY | IELTS | MULTILEVEL, locale: ANY | uz | ru | en }. */
+  audience: jsonb('audience').notNull().default({}),
+  /** Telegram channels it was also posted to (telegram_channels ids, or 'default'). */
+  channelIds: text('channel_ids').array(),
+  /** SENDING | DONE */
+  status: text('status').notNull().default('SENDING'),
+  total: integer('total').notNull().default(0),
+  sent: integer('sent').notNull().default(0),
+  failed: integer('failed').notNull().default(0),
+  createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: created(),
+  finishedAt: timestamp('finished_at', { withTimezone: true })
+}, t => [index('broadcasts_created_idx').on(t.createdAt)])
 
 // ---------- attempts (signed-in users only; a guest's answers are checked and never stored) ----------
 export const attempts = pgTable('attempts', {

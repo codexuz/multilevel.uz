@@ -192,7 +192,7 @@ useSeoMeta({
 
       <ExamSwitch v-if="!loggedIn" />
 
-      <LiveMockBanner />
+      <LiveMockBanner :exam="exam" />
 
       <UTabs
         v-model="view"

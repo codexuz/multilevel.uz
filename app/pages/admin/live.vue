@@ -30,11 +30,18 @@ interface Channel { id: string, chat: string, title: string, url: string | null,
 
 const toast = useToast()
 const { data, refresh } = await useFetch<{ channels: Channel[], mocks: Mock[] }>('/api/admin/live', { default: () => ({ channels: [], mocks: [] }) })
-const mocks = computed(() => data.value.mocks)
+// IELTS and Multilevel mocks are kept apart: each exam runs its own, side by side.
+const examTab = ref<Exam>('MULTILEVEL')
+const mocks = computed(() => data.value.mocks.filter(m => m.exam === examTab.value))
+const examTabs = computed(() => (['MULTILEVEL', 'IELTS'] as const).map((e) => {
+  const live = data.value.mocks.some(m => m.exam === e && m.state === 'LIVE')
+  return { label: examLabel(e), value: e, badge: live ? 'Live' : undefined }
+}))
 const channels = computed(() => data.value.channels)
 const channelTitle = (id: string) => channels.value.find(c => c.id === id)?.title ?? id
 const { data: testData } = await useFetch<{ items: { id: string, title: string, status: string, module?: string | null }[] }>('/api/admin/tests', { query: { limit: 100 } })
-const testItems = computed(() => (testData.value?.items ?? []).map(t => ({ label: `${examLabel(examOfModule(t.module))} · ${t.title}${t.status === 'DRAFT' ? ' (draft: hidden until it opens)' : ''}`, value: t.id })))
+// A new mock is of the exam on show: its tests only.
+const testItems = computed(() => (testData.value?.items ?? []).filter(t => examOfModule(t.module) === examTab.value || t.id === form.value?.testId).map(t => ({ label: `${t.title}${t.status === 'DRAFT' ? ' (draft: hidden until it opens)' : ''}`, value: t.id })))
 const examOfTestId = (id?: string) => examOfModule(testData.value?.items.find(t => t.id === id)?.module)
 /** The channels a mock of this exam goes to unless others are picked. */
 const channelsFor = (exam: Exam) => channels.value.filter(c => !c.exam || c.exam === exam).map(c => c.id)
@@ -324,10 +331,17 @@ const when = (d: string) => localeDate(d, 'en-GB', { weekday: 'short', day: 'num
           </div>
         </form>
       </UCard>
+      <UTabs
+        v-model="examTab"
+        :items="examTabs"
+        :content="false"
+        class="w-full sm:w-fit"
+        data-testid="admin-live-exam"
+      />
       <UEmpty
         v-if="!mocks.length"
         icon="i-lucide-trophy"
-        title="No live mocks yet"
+        :title="`No ${examLabel(examTab)} live mocks yet`"
         description="Pick a test and a weekend: everyone sits it in the same window and is ranked on one leaderboard."
         :actions="[{ label: 'Schedule one', icon: 'i-lucide-plus', onClick: startCreate }]"
       />
@@ -424,7 +438,7 @@ const when = (d: string) => localeDate(d, 'en-GB', { weekday: 'short', day: 'num
 
     <UModal
       :open="!!form"
-      :title="form?.id ? 'Edit live mock' : 'Schedule a live mock'"
+      :title="form?.id ? 'Edit live mock' : `Schedule a${examTab === 'IELTS' ? 'n IELTS' : ' Multilevel'} live mock`"
       @update:open="v => !v && (form = null)"
     >
       <template #body>

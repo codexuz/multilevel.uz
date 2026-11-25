@@ -1765,7 +1765,8 @@
     "growth": "Рост",
     "attempts": "Попытки",
     "orders": "Заказы",
-    "platform": "Настройки платформы"
+    "platform": "Настройки платформы",
+    "broadcasts": "Рассылки"
   },
   "builder": {
     "addLine": "Добавить",
