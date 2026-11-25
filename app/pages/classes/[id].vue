@@ -85,7 +85,7 @@ async function removeStudent(s: Student) {
 
 // ---- new assignment (fetches ONLY tests matching this group's exam type: IELTS or CEFR) ----
 const testQuery = computed(() => ({ limit: 100, exam: groupExam.value }))
-const { data: testList } = await useFetch<{ items: { id: string, title: string, sections: { skill: string, items: number }[] }[] }>('/api/tests', { query: testQuery, lazy: true })
+const { data: testList } = await useFetch<{ items: { id: string, title: string, sections: { skill: string, items: number, silentParts?: number[] }[] }[] }>('/api/tests', { query: testQuery, lazy: true })
 const form = ref<{ testId: string | undefined, skill: string, part: number | 0, dueAt: string, note: string } | null>(null)
 const saving = ref(false)
 const testItems = computed(() => (testList.value?.items ?? []).map(t => ({ label: t.title, value: t.id })))
@@ -93,7 +93,16 @@ const skillItems = computed(() => {
   const t = testList.value?.items.find(x => x.id === form.value?.testId)
   return SKILLS.filter(s => !t || t.sections.some(x => x.skill === s && x.items)).map(s => ({ label: skillLabel(s), value: s }))
 })
-const partItems = computed(() => [{ label: t('centre.wholeSection'), value: 0 }, ...partNumbers(form.value?.skill ?? 'READING', groupExam.value).map(n => ({ label: partName(form.value!.skill, n, groupExam.value), value: n }))])
+// Listening parts with no recording of their own are heard only in the whole test: not set alone.
+const silent = computed(() => testList.value?.items.find(x => x.id === form.value?.testId)?.sections.find(x => x.skill === form.value?.skill)?.silentParts ?? [])
+const partItems = computed(() => [{ label: t('centre.wholeSection'), value: 0 }, ...partNumbers(form.value?.skill ?? 'READING', groupExam.value).map(n => ({
+  label: silent.value.includes(n) ? `${partName(form.value!.skill, n, groupExam.value)} · ${t('tests.noAudioShort')}` : partName(form.value!.skill, n, groupExam.value),
+  value: n,
+  disabled: silent.value.includes(n)
+}))])
+watch(silent, (s) => {
+  if (form.value?.part && s.includes(form.value.part)) form.value.part = 0
+})
 watch(() => form.value?.testId, () => {
   if (form.value && !skillItems.value.some(s => s.value === form.value!.skill)) form.value.skill = skillItems.value[0]?.value ?? 'READING'
 })
@@ -437,9 +446,18 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
                 v-model="form.part"
                 :items="partItems"
                 class="w-full"
+                data-testid="assign-part"
               />
             </UFormField>
           </div>
+          <UAlert
+            v-if="silent.length"
+            icon="i-lucide-headphone-off"
+            color="warning"
+            variant="subtle"
+            :description="t('centre.noAudioParts', { parts: silent.map(n => partName(form!.skill, n, groupExam)).join(', ') })"
+            data-testid="assign-no-audio"
+          />
           <UFormField
             :label="t('centre.dueLabel')"
             :help="t('centre.optional')"

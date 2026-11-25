@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // One part to practise on its own: its skill and number, title, what it asks, the test it comes
 // from, and the way in. Premium parts are marked; their test's page offers Premium or opening it with credits.
-const props = defineProps<{ part: { id: string, skill: string, exam?: string, number: number | null, title: string | null, questions: number, types: string[], minWords: number | null, test: { id?: string, slug: string, title: string, access: string } } }>()
+const props = defineProps<{ part: { id: string, skill: string, exam?: string, number: number | null, title: string | null, questions: number, types: string[], minWords: number | null, noAudio?: boolean, test: { id?: string, slug: string, title: string, access: string } } }>()
 const { canOpen } = useMe()
 const { t } = useI18n()
 
@@ -17,7 +17,49 @@ const asks = computed(() => props.part.questions
 </script>
 
 <template>
+  <!-- A Listening part with no recording of its own: not sat alone, the whole test instead -->
+  <div
+    v-if="part.noAudio"
+    class="flex gap-4 rounded-xl ring ring-default bg-elevated/40 p-4"
+    data-testid="part-card-no-audio"
+  >
+    <div class="size-12 shrink-0 rounded-xl bg-elevated grid place-items-center opacity-60">
+      <img
+        :src="SKILL_ART[part.skill]"
+        alt=""
+        class="size-7"
+      >
+    </div>
+    <div class="min-w-0 flex-1 flex flex-col gap-1">
+      <p class="text-xs font-semibold text-muted">
+        {{ label }}
+      </p>
+      <p class="font-semibold text-toned leading-snug line-clamp-2">
+        {{ title }}
+      </p>
+      <p class="text-xs text-warning flex items-start gap-1">
+        <UIcon
+          name="i-lucide-headphone-off"
+          class="size-3.5 mt-px shrink-0"
+        />{{ t('tests.noAudioHint') }}
+      </p>
+      <div class="mt-1.5 flex items-center justify-between gap-2">
+        <p class="text-xs text-dimmed truncate">
+          {{ t('tests.from', { title: part.test.title }) }}
+        </p>
+        <UButton
+          :to="locked ? `/tests/${part.test.slug}` : `/tests/${part.test.slug}/listening`"
+          :label="t('tests.wholeTest')"
+          trailing-icon="i-lucide-arrow-right"
+          size="xs"
+          color="neutral"
+          variant="outline"
+        />
+      </div>
+    </div>
+  </div>
   <NuxtLink
+    v-else
     :to="to"
     class="group flex gap-4 rounded-xl ring ring-default bg-default p-4 transition-colors hover:ring-primary/40 hover:bg-primary/[0.02] focus-visible:outline-3 focus-visible:outline-primary/40"
   >

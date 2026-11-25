@@ -167,6 +167,8 @@ export function testSummary(test: any) {
       skill: s.skill,
       items: s.items?.length ?? 0,
       questions: (s.items ?? []).reduce((sum: number, item: any) => sum + (item.part?.groups ?? []).reduce((n: number, g: any) => n + (g.items?.length ?? 0), 0), 0),
+      /** Listening parts with no recording of their own (sat only in the whole section). */
+      silentParts: silentParts(s),
       durationSeconds: s.durationSeconds ?? officialSeconds(examOfTest(test), s.skill)
     }))
   }
@@ -255,6 +257,25 @@ export function readiness(test: any): Readiness {
 
 /** A section item's number as candidates know it: Listening or Reading part, Writing task, Speaking part. */
 export const itemNumber = (item: any): number | null => item.part?.partNumber ?? item.writingTask?.taskNumber ?? item.speakingPart?.partNumber ?? null
+
+/**
+ * The Listening parts of a section with no recording of their own: they are heard only in the
+ * section's whole recording, so they are sat in the whole test, not on their own. Empty for other skills.
+ */
+export function silentParts(section: any): number[] {
+  if (section?.skill !== 'LISTENING') return []
+  return (section.items ?? []).filter((i: any) => i.part && !i.part.audioRef).map((i: any) => i.part.partNumber)
+}
+
+/** Refuses part `n` of a section when it cannot be sat on its own (a Listening part with no recording of its own). */
+export function requireStandalonePart(section: any, n: number, slug: string) {
+  if (!silentParts(section).includes(n)) return
+  throw createError({
+    statusCode: 409,
+    message: 'This Listening part has no recording of its own: take the whole Listening test instead',
+    data: { code: 'PART_NO_AUDIO', to: `/tests/${slug}/listening` }
+  })
+}
 
 /** The section with only part `n` in it, to sit and mark on its own; null when it has no such part. */
 export function pickPart(section: any, n: number) {

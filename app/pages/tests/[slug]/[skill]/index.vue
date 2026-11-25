@@ -230,8 +230,10 @@ const practiceNote = computed(() => (loggedIn.value
   ? t(ielts.value ? 'sit.practiceNoteIelts' : 'sit.practiceNote')
   : t('sit.practiceNoteGuest')))
 
+// A Listening part with no recording of its own: it is sat in the whole Listening test.
+const noAudio = computed(() => (error.value?.data as any)?.data?.code === 'PART_NO_AUDIO' ? String((error.value?.data as any).data.to) : null)
 const pageError = computed(() => {
-  if (premiumNeeded.value) return null
+  if (premiumNeeded.value || noAudio.value) return null
   if (error.value) return error.value.statusCode === 404 ? t('sit.notAvailable') : error.value.statusCode === 403 || error.value.statusCode === 409 ? (error.value.data?.message || t('sit.couldNotOpen')) : t('sit.couldNotOpen')
   return null
 })
@@ -250,6 +252,21 @@ const pageError = computed(() => {
         variant="outline"
       />
     </BillingPaywall>
+  </div>
+  <div
+    v-else-if="noAudio"
+    class="h-dvh grid place-items-center bg-muted p-4"
+    data-testid="part-no-audio"
+  >
+    <UEmpty
+      icon="i-lucide-headphone-off"
+      :title="t('sit.noAudioTitle')"
+      :description="t('sit.noAudioText')"
+      :actions="[
+        { label: t('sit.wholeListening'), icon: 'i-lucide-headphones', to: noAudio },
+        { label: t('sit.backToTest'), icon: 'i-lucide-arrow-left', color: 'neutral', variant: 'outline', to: leaveTo }
+      ]"
+    />
   </div>
   <ExamLoadState
     v-else

@@ -11,6 +11,7 @@ export default defineEventHandler(async (event) => {
   const partNumber = getQuery(event).part ? Number(getQuery(event).part) : null
   const section = partNumber ? pickPart(whole, partNumber) : whole
   if (!section) throw createError({ statusCode: 404, message: 'Part not found' })
+  if (partNumber) requireStandalonePart(whole, partNumber, test.slug)
   // At a mock session's seat: only the sections the invigilator opened, and the board sees it begin.
   const seat = await seatGate(user.id, test.id, skill, partNumber)
   if (seat) await ping(user.id, { skill })
