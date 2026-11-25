@@ -54,7 +54,8 @@
     "courses": "Courses",
     "online": "Online classes",
     "dashboard": "Dashboard",
-    "groups": "My groups"
+    "groups": "My groups",
+    "more": "More"
   },
   "pub": {
     "how": "How it works",
@@ -261,7 +262,9 @@
     "premiumTests": "Premium",
     "access": "Free or Premium",
     "allCategories": "All categories",
-    "category": "Category"
+    "category": "Category",
+    "filters": "Filters",
+    "showResults": "Show results"
   },
   "qtype": {
     "TRUE_FALSE_NOT_GIVEN": "True / False / Not Given",

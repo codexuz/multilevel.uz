@@ -238,3 +238,30 @@ mark.exam-highlight.has-note { background: #bfdbfe; }
 @media (prefers-reduced-motion: reduce) {
   [class*="animate-[game-"] { animation: none !important; }
 }
+
+/*
+ * Phones: the buttons in a page's header bar (AppPage's actions), and in anything marked .icons-sm,
+ * show their icon only. The label stays for screen readers; a button without an icon keeps its words.
+ */
+@media (max-width: 639.98px) {
+  .page-actions [data-slot='base']:has(> [data-slot='leadingIcon']),
+  .icons-sm [data-slot='base']:has(> [data-slot='leadingIcon']) {
+    padding-inline: 0.5rem;
+  }
+  .page-actions [data-slot='base']:has(> [data-slot='leadingIcon']) > [data-slot='label'],
+  .icons-sm [data-slot='base']:has(> [data-slot='leadingIcon']) > [data-slot='label'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .page-actions [data-slot='base']:has(> [data-slot='leadingIcon']) > [data-slot='trailingIcon'],
+  .icons-sm [data-slot='base']:has(> [data-slot='leadingIcon']) > [data-slot='trailingIcon'] {
+    display: none;
+  }
+}

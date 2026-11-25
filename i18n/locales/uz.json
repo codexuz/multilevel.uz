@@ -54,7 +54,8 @@
     "courses": "Kurslar",
     "online": "Onlayn darslar",
     "dashboard": "Bosh sahifa",
-    "groups": "Guruhlarim"
+    "groups": "Guruhlarim",
+    "more": "Yana"
   },
   "pub": {
     "how": "Qanday ishlaydi",
@@ -261,7 +262,9 @@
     "premiumTests": "Premium",
     "access": "Bepul yoki Premium",
     "allCategories": "Barcha toifalar",
-    "category": "Toifa"
+    "category": "Toifa",
+    "filters": "Filtrlar",
+    "showResults": "Natijalarni ko‘rsatish"
   },
   "qtype": {
     "TRUE_FALSE_NOT_GIVEN": "True / False / Not Given",

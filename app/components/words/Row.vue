@@ -16,7 +16,7 @@ onMounted(() => (canSpeak.value = 'speechSynthesis' in window))
 
 <template>
   <div
-    class="px-4 py-3"
+    class="px-3 sm:px-4 py-2.5 sm:py-3"
     data-testid="word-row"
   >
     <div class="flex items-start gap-3">
@@ -30,7 +30,7 @@ onMounted(() => (canSpeak.value = 'speechSynthesis' in window))
           <span class="font-semibold text-highlighted">{{ head }}</span>
           <span
             v-if="word.partOfSpeech"
-            class="text-xs italic text-muted"
+            class="text-xs italic text-muted max-sm:hidden"
           >{{ word.partOfSpeech }}</span>
           <UBadge
             v-if="word.cefr"
@@ -38,6 +38,7 @@ onMounted(() => (canSpeak.value = 'speechSynthesis' in window))
             color="neutral"
             variant="subtle"
             size="sm"
+            class="max-sm:hidden"
           />
           <span
             v-if="word.translation"
@@ -54,7 +55,7 @@ onMounted(() => (canSpeak.value = 'speechSynthesis' in window))
       <div class="flex flex-col items-end gap-1 shrink-0">
         <WordsProgress :box="word.box" />
         <span
-          class="text-xs"
+          class="text-xs max-sm:hidden"
           :class="due.now ? 'text-warning font-medium' : 'text-muted'"
         >{{ due.label }}</span>
       </div>
@@ -69,7 +70,7 @@ onMounted(() => (canSpeak.value = 'speechSynthesis' in window))
       >
         {{ parts[0] }}<strong class="text-highlighted">{{ parts[1] }}</strong>{{ parts[2] }}
       </p>
-      <div class="flex items-center gap-1">
+      <div class="icons-sm flex items-center gap-1">
         <UButton
           v-if="canSpeak"
           :label="t('words.listen')"

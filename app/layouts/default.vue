@@ -40,10 +40,13 @@ const tabBar = computed(() => [
   { label: t('nav.tests'), icon: 'i-lucide-clipboard-list', to: '/tests' },
   { label: t('nav.courses'), icon: 'i-lucide-graduation-cap', to: '/courses' },
   ...(loggedIn.value
-    ? [{ label: t('nav.resultsShort'), icon: 'i-lucide-chart-column', to: '/results' }, { label: t('nav.profile'), icon: 'i-lucide-circle-user', to: '/profile' }]
+    ? [{ label: t('nav.resultsShort'), icon: 'i-lucide-chart-column', to: '/results' }]
     : [{ label: t('nav.signIn'), icon: 'i-lucide-log-in', to: `/login?next=${encodeURIComponent(route.fullPath)}` }])
 ])
 const tabActive = (to: string) => (to === '/' ? route.path === '/' : route.path === to.split('?')[0] || route.path.startsWith(`${to}/`))
+// Phones: "More" (a bottom sheet) holds the other pages; it is lit on any page the tabs do not cover.
+const moreOpen = ref(false)
+const moreActive = computed(() => moreOpen.value || !tabBar.value.some(tab => tabActive(tab.to)))
 
 const displayName = computed(() => me.value?.name || accountHandle(me.value) || t('nav.account'))
 
@@ -183,7 +186,37 @@ const userMenu = computed<DropdownMenuItem[][]>(() => [
             :class="tabActive(tab.to) ? 'bg-inverted' : 'bg-transparent'"
           />
         </NuxtLink>
+        <button
+          v-if="loggedIn"
+          type="button"
+          :aria-label="t('nav.more')"
+          :title="t('nav.more')"
+          :aria-expanded="moreOpen"
+          class="relative flex flex-col items-center justify-center gap-1 h-14 transition-colors cursor-pointer"
+          :class="moreActive ? 'text-highlighted' : 'text-dimmed hover:text-toned'"
+          data-testid="tab-more"
+          @click="moreOpen = true"
+        >
+          <UChip
+            :show="!!rewardCredits || !!live"
+            color="error"
+            size="sm"
+          >
+            <UIcon
+              name="i-lucide-layout-grid"
+              class="size-6"
+            />
+          </UChip>
+          <span
+            class="h-0.5 w-5 rounded-full transition-colors"
+            :class="moreActive ? 'bg-inverted' : 'bg-transparent'"
+          />
+        </button>
       </div>
     </nav>
+    <MoreSheet
+      v-if="loggedIn"
+      v-model:open="moreOpen"
+    />
   </UDashboardGroup>
 </template>

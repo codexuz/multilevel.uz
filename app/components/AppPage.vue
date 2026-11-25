@@ -34,7 +34,7 @@ const { t } = useI18n()
         variant="ghost"
         class="-ms-2"
       />
-      <div class="ms-auto flex items-center gap-2">
+      <div class="page-actions ms-auto flex items-center gap-1.5 sm:gap-2">
         <slot name="actions" />
       </div>
     </div>
@@ -73,7 +73,13 @@ const { t } = useI18n()
           <UDashboardSidebarCollapse />
         </template>
         <template #right>
-          <slot name="actions" />
+          <!-- On a phone the buttons here show their icon only (main.css, .page-actions). -->
+          <div
+            v-if="$slots.actions"
+            class="page-actions flex items-center gap-1.5 sm:gap-2"
+          >
+            <slot name="actions" />
+          </div>
           <XpChips />
         </template>
       </UDashboardNavbar>
