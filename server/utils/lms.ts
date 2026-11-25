@@ -1,6 +1,7 @@
 import type { H3Event } from 'h3'
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
 import {
+  courseLessons,
   courses,
   exerciseAttempts,
   exerciseQuestions,
@@ -101,6 +102,30 @@ export async function reorderExercises(lessonId: string, ids: string[]) {
   await db.transaction(async (tx) => {
     for (const [i, id] of ids.entries()) await tx.update(lessonExercises).set({ position: i + 1 }).where(eq(lessonExercises.id, id))
   })
+}
+
+/**
+ * Moves an exercise (quiz) to another lesson of the same course, or to another place in its own,
+ * at `index` (0-based; past the end puts it last). Its questions and attempts go with it; both
+ * lessons' exercises are numbered again.
+ */
+export async function moveExercise(exercise: Exercise, courseId: string, toLessonId: string, index: number) {
+  const db = useDb()
+  if (!/^[0-9a-f-]{36}$/i.test(toLessonId)) throw createError({ statusCode: 400, message: 'Pick a lesson' })
+  const [target] = await db.select({ id: courseLessons.id, courseId: courseLessons.courseId }).from(courseLessons).where(eq(courseLessons.id, toLessonId)).limit(1)
+  if (!target || target.courseId !== courseId) throw createError({ statusCode: 400, message: 'Pick a lesson of this course' })
+  await db.transaction(async (tx) => {
+    const order = async (lessonId: string) => (await tx.select({ id: lessonExercises.id }).from(lessonExercises)
+      .where(eq(lessonExercises.lessonId, lessonId)).orderBy(asc(lessonExercises.position), asc(lessonExercises.createdAt))).map(r => r.id)
+    const into = (await order(target.id)).filter(id => id !== exercise.id)
+    into.splice(Math.max(0, Math.min(Math.round(index) || 0, into.length)), 0, exercise.id)
+    await tx.update(lessonExercises).set({ lessonId: target.id, updatedAt: new Date() }).where(eq(lessonExercises.id, exercise.id))
+    for (const [i, id] of into.entries()) await tx.update(lessonExercises).set({ position: i + 1 }).where(eq(lessonExercises.id, id))
+    if (exercise.lessonId !== target.id) {
+      for (const [i, id] of (await order(exercise.lessonId)).entries()) await tx.update(lessonExercises).set({ position: i + 1 }).where(eq(lessonExercises.id, id))
+    }
+  })
+  await db.update(courses).set({ updatedAt: new Date() }).where(eq(courses.id, courseId))
 }
 
 export function questionValues(body: Record<string, unknown>, partial: boolean) {
