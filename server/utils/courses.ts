@@ -650,7 +650,8 @@ export async function lessonView(viewer: Viewer, lesson: Lesson) {
     audioUrl: lesson.audioUrl,
     files: lesson.files,
     task: test && lesson.taskSkill ? { test: test.title, skill: lesson.taskSkill, partNumber: lesson.taskPartNumber, to: taskPath(test.slug, lesson), done: taskDoneSet.has(lesson.id) } : null,
-    live: live ? liveView(live, true) : null,
+    // A cancelled online class is not shown to learners.
+    live: live && live.status !== 'CANCELLED' ? liveView(live, true) : null,
     exercises,
     canMarkDone: requiredPending === 0,
     requiredPending,

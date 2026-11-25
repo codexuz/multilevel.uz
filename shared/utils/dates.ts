@@ -97,3 +97,29 @@ export function localeDate(date: Date | string | number, locale: string, options
   if (o.weekday === 'long' && !o.year && lang !== 'uz') return `${text} ${lang === 'ru' ? 'в' : 'at'} ${time}`
   return `${text}, ${time}`
 }
+
+/** How far the site's clock (Tashkent) is ahead of UTC at a moment, in ms. */
+function siteOffsetMs(at: Date) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: SITE_TIME_ZONE, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    .formatToParts(at).map(x => [x.type, x.value]))
+  return Date.UTC(+p.year!, +p.month! - 1, +p.day!, +p.hour!, +p.minute!, +p.second!) - Math.floor(at.getTime() / 1000) * 1000
+}
+const pad2 = (n: number) => String(n).padStart(2, '0')
+/** The site-time day of a moment, as a date input takes it ("2026-11-25"). */
+export function siteDay(date: Date | string | number) {
+  const d = new Date(date)
+  const s = new Date(d.getTime() + siteOffsetMs(d))
+  return `${s.getUTCFullYear()}-${pad2(s.getUTCMonth() + 1)}-${pad2(s.getUTCDate())}`
+}
+/** The site-time clock of a moment, as a time input takes it ("18:30"). */
+export function siteClock(date: Date | string | number) {
+  const d = new Date(date)
+  const s = new Date(d.getTime() + siteOffsetMs(d))
+  return `${pad2(s.getUTCHours())}:${pad2(s.getUTCMinutes())}`
+}
+/** The moment a site-time day and clock ("2026-11-25", "18:30") stand for, or null. */
+export function fromSiteTime(day: string, clock: string) {
+  const guess = new Date(`${day}T${clock}:00Z`)
+  if (Number.isNaN(guess.getTime())) return null
+  return new Date(guess.getTime() - siteOffsetMs(guess))
+}

@@ -149,7 +149,8 @@ export default defineEventHandler(async (event) => {
     }))
     // Pending assignments first, then completed
     groupAssignments.sort((a, b) => Number(!!a.mine) - Number(!!b.mine))
-    upcomingClasses = liveRows.map(l => liveView(l, false))
+    // Only those to come or on now (a short class that ended within the hour is gone).
+    upcomingClasses = liveRows.map(l => liveView(l, false)).filter(l => l.state === 'UPCOMING' || l.state === 'LIVE')
   }
 
   // Enrich LMS course progress with next lesson id and passed exercises count

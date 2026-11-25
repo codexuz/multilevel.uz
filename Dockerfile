@@ -14,6 +14,8 @@ RUN npm ci
 # `~/types/question-props`. Prepare again with the sources in place, then build.
 COPY . .
 ENV NODE_ENV=production
+# A fixed heap for the build (it fits in 3 GB with the icon and sourcemap settings in nuxt.config.ts).
+ENV NODE_OPTIONS=--max-old-space-size=4096
 RUN npx nuxt prepare && npm run build
 
 # ---------- Runtime stage ----------

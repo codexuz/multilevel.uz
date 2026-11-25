@@ -109,6 +109,21 @@ export default defineNuxtConfig({
     ...Object.fromEntries(privatePaths.map(path => [path, noIndex]))
   },
 
+  // Only the Lucide set goes into the server bundle: bundling every installed collection (Logos,
+  // Simple Icons, and Carbon, Remix and Tabler that other packages pull in) took the production build
+  // past 8 GB of memory. The few brand icons the app shows are in the client bundle.
+  icon: {
+    serverBundle: { collections: ['lucide'] },
+    clientBundle: {
+      scan: true,
+      icons: ['logos:google-meet', 'logos:google-icon', 'logos:telegram', 'simple-icons:google', 'simple-icons:telegram', 'simple-icons:youtube']
+    }
+  },
+
+  // No sourcemaps in the production build: making them for the server bundle (with its large
+  // dependencies) ran the build out of memory on the deploy server.
+  sourcemap: { server: false, client: false },
+
   compatibilityDate: '2026-06-30',
   // Background jobs on a timer (server/tasks): exam plan, marking and online class reminders, and live mocks.
   // Times are UTC (Tashkent is UTC+5).

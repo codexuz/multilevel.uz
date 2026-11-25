@@ -2,51 +2,28 @@
 import type { LiveLesson } from './Row.vue'
 
 /**
- * A class's online classes for its teacher: the Google connection (which makes the Meet links),
- * scheduling one, and the list with moving and cancelling. Students are told on Telegram.
+ * A class's online classes for its teacher: the Google Meet status, scheduling one, and the coming
+ * ones to edit (title, notes, day, time, length) or cancel; the past and cancelled ones below.
+ * Students are told on Telegram.
  */
 const props = defineProps<{ groupId: string, next: string }>()
 const { t } = useI18n()
-const toast = useToast()
+const { cancelClass } = useOnlineClasses()
 const { data, refresh } = await useFetch<{ lessons: LiveLesson[] }>(() => `/api/groups/${props.groupId}/lessons`, { default: () => ({ lessons: [] }) })
 const connected = ref(false)
 
-const local = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
-const form = ref<{ id?: string, title: string, startsAt: string, durationMinutes: number } | null>(null)
-const saving = ref(false)
-function startNew() {
-  const at = new Date(Date.now() + 864e5)
-  at.setMinutes(0, 0, 0)
-  form.value = { title: t('online.defaultTitle'), startsAt: local(at), durationMinutes: 60 }
-}
-function startMove(l: LiveLesson) {
-  form.value = { id: l.id, title: l.title, startsAt: local(new Date(l.startsAt)), durationMinutes: l.durationMinutes }
-}
-async function save() {
-  const f = form.value
-  if (!f) return
-  saving.value = true
-  try {
-    const body = { title: f.title, startsAt: new Date(f.startsAt).toISOString(), durationMinutes: f.durationMinutes }
-    if (f.id) await $fetch(`/api/live-lessons/${f.id}`, { method: 'PATCH', body })
-    else await $fetch(`/api/groups/${props.groupId}/lessons`, { method: 'POST', body })
-    toast.add({ title: f.id ? t('online.moved') : t('online.scheduled'), description: t('online.toldText'), color: 'success' })
-    form.value = null
-    await refresh()
-  } catch (e) {
-    toast.add({ title: t('online.notScheduled'), description: errorMessage(e), color: 'error' })
-  } finally {
-    saving.value = false
-  }
+const coming = computed(() => data.value.lessons.filter(l => l.state === 'UPCOMING' || l.state === 'LIVE').sort((a, b) => a.startsAt.localeCompare(b.startsAt)))
+const earlier = computed(() => data.value.lessons.filter(l => l.state === 'ENDED' || l.state === 'CANCELLED'))
+const showEarlier = ref(false)
+
+const modalOpen = ref(false)
+const editing = ref<LiveLesson | null>(null)
+function openModal(l: LiveLesson | null) {
+  editing.value = l
+  modalOpen.value = true
 }
 async function cancel(l: LiveLesson) {
-  if (!confirm(t('online.cancelSure', { title: l.title }))) return
-  try {
-    await $fetch(`/api/live-lessons/${l.id}`, { method: 'DELETE' })
-    await refresh()
-  } catch (e) {
-    toast.add({ title: t('common.notSaved'), description: errorMessage(e), color: 'error' })
-  }
+  if (await cancelClass(l)) await refresh()
 }
 </script>
 
@@ -65,19 +42,19 @@ async function cancel(l: LiveLesson) {
         icon="i-lucide-plus"
         :disabled="!connected"
         data-testid="schedule-live"
-        @click="startNew"
+        @click="openModal(null)"
       />
     </div>
     <div
-      v-if="data.lessons.length"
-      class="rounded-xl ring ring-default divide-y divide-default overflow-hidden"
+      v-if="coming.length"
+      class="rounded-[var(--card-radius)] ring-2 ring-default divide-y divide-default overflow-hidden bg-default"
     >
       <OnlineRow
-        v-for="l in data.lessons"
+        v-for="l in coming"
         :key="l.id"
         :lesson="l"
         manage
-        @move="startMove(l)"
+        @edit="openModal(l)"
         @cancel="cancel(l)"
       />
     </div>
@@ -88,65 +65,34 @@ async function cancel(l: LiveLesson) {
       :description="t('online.noneText')"
       variant="naked"
     />
+    <template v-if="earlier.length">
+      <UButton
+        :label="t('online.earlier', { n: earlier.length })"
+        :trailing-icon="showEarlier ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+        color="neutral"
+        variant="ghost"
+        size="sm"
+        class="self-start"
+        @click="showEarlier = !showEarlier"
+      />
+      <div
+        v-if="showEarlier"
+        class="rounded-[var(--card-radius)] ring-2 ring-default divide-y divide-default overflow-hidden bg-default"
+      >
+        <OnlineRow
+          v-for="l in earlier"
+          :key="l.id"
+          :lesson="l"
+          manage
+        />
+      </div>
+    </template>
 
-    <UModal
-      :open="!!form"
-      :title="form?.id ? t('online.move') : t('online.schedule')"
-      @update:open="v => !v && (form = null)"
-    >
-      <template #body>
-        <form
-          v-if="form"
-          class="grid gap-4"
-          @submit.prevent="save"
-        >
-          <UFormField :label="t('online.title')">
-            <UInput
-              v-model="form.title"
-              class="w-full"
-            />
-          </UFormField>
-          <div class="grid grid-cols-2 gap-3">
-            <UFormField
-              :label="t('online.startsAt')"
-              :help="t('online.yourTime')"
-            >
-              <UInput
-                v-model="form.startsAt"
-                type="datetime-local"
-                class="w-full"
-                data-testid="live-starts"
-              />
-            </UFormField>
-            <UFormField :label="t('online.duration')">
-              <UInputNumber
-                v-model="form.durationMinutes"
-                :min="10"
-                :max="240"
-                :step="5"
-                class="w-full"
-              />
-            </UFormField>
-          </div>
-          <p class="text-xs text-muted">
-            {{ t('online.meetNote') }}
-          </p>
-          <div class="flex justify-end gap-2">
-            <UButton
-              :label="t('common.cancel')"
-              color="neutral"
-              variant="ghost"
-              @click="form = null"
-            />
-            <UButton
-              type="submit"
-              :label="form.id ? t('online.save') : t('online.create')"
-              :loading="saving"
-              data-testid="live-save"
-            />
-          </div>
-        </form>
-      </template>
-    </UModal>
+    <OnlineLessonModal
+      v-model:open="modalOpen"
+      :lesson="editing"
+      :group-id="groupId"
+      @saved="refresh()"
+    />
   </div>
 </template>

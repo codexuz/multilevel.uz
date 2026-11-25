@@ -150,7 +150,10 @@ export async function teacherLiveLessons(teacherId: string, where: { groupId?: s
   return rows.map(x => liveView({ ...x.r, place: x.place, teacher: x.teacher }, true))
 }
 
-/** The online classes a student has: of their classes, and of courses they take (or a private one of their teacher). */
+/**
+ * The online classes a student has: of their classes, and of courses they take (or a private one of
+ * their teacher). Only those still to come or on now: a cancelled or finished class is not shown.
+ */
 export async function studentLiveLessons(userId: string) {
   const db = useDb()
   const myGroups = (await db.select({ id: classMembers.groupId }).from(classMembers).where(eq(classMembers.userId, userId))).map(r => r.id)
@@ -166,7 +169,7 @@ export async function studentLiveLessons(userId: string) {
   const rows = await db.select({ r: liveLessons, ...withPlace }).from(liveLessons)
     .leftJoin(classGroups, eq(classGroups.id, liveLessons.groupId)).leftJoin(courses, eq(courses.id, liveLessons.courseId))
     .innerJoin(users, eq(users.id, liveLessons.teacherId))
-    .where(and(or(...reach), sql`${liveLessons.startsAt} + make_interval(mins => ${liveLessons.durationMinutes}) > now() - interval '7 days'`))
+    .where(and(or(...reach), eq(liveLessons.status, 'SCHEDULED'), sql`${liveLessons.startsAt} + make_interval(mins => ${liveLessons.durationMinutes}) > now()`))
     .orderBy(asc(liveLessons.startsAt)).limit(100)
   return rows.map(x => liveView({ ...x.r, place: x.place, teacher: x.teacher }, true))
 }

@@ -10,6 +10,7 @@
  */
 definePageMeta({ middleware: 'admin' })
 useSeoMeta({ title: 'Live mocks', robots: 'noindex' })
+const { confirm } = useDialogs()
 
 interface Mock {
   id: string
@@ -165,7 +166,7 @@ async function changeChannel(c: Channel, body: { exam?: string | null, locale?: 
   }
 }
 async function removeChannel(c: Channel) {
-  if (!confirm(`Stop posting live mocks to ${c.title}?`)) return
+  if (!await confirm({ title: `Stop posting live mocks to ${c.title}?`, confirmLabel: 'Stop posting', color: 'warning' })) return
   try {
     await $fetch(`/api/admin/channels/${c.id}`, { method: 'DELETE' })
     await refresh()

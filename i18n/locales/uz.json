@@ -1021,7 +1021,9 @@
     "average": "o‘rtacha {n}/75",
     "averageBand": "o‘rtacha band {n}",
     "removeAssignment": "Vazifani o‘chirish",
-    "openTest": "Testni ochish"
+    "openTest": "Testni ochish",
+    "takeOut": "Chiqarish",
+    "removeAssignmentTitle": "Bu topshiriq o‘chirilsinmi?"
   },
   "merge": {
     "title": "Hisoblarni birlashtirish",
@@ -1596,7 +1598,33 @@
     "readyText": "Onlayn darsni rejalashtirganingizda Meet havolasi avtomatik yaratiladi.",
     "notReadyText": "Google Meet’ni admin Admin panelining Platforma sozlamalarida ulaydi.",
     "readyBadge": "Tayyor",
-    "adminSetup": "Admin sozlashi kerak"
+    "adminSetup": "Admin sozlashi kerak",
+    "cancelTitle": "Bu onlayn darsni bekor qilasizmi?",
+    "cancelClass": "Darsni bekor qilish",
+    "keepClass": "Qoldirish",
+    "disconnectTitle": "Google Calendar uzilsinmi?",
+    "edit": "Tahrirlash",
+    "saved": "Onlayn dars saqlandi",
+    "lessonTitle": "Nomi",
+    "notes": "O‘quvchilar uchun izoh",
+    "notesPlaceholder": "Nimaga tayyorlanish, mavzu, o‘qiladigan sahifalar…",
+    "day": "Kun",
+    "time": "Vaqt",
+    "inPast": "O‘tib ketmagan vaqtni tanlang.",
+    "movedNote": "Yangi vaqt Google Calendar’ga yoziladi, o‘quvchilaringizga Telegram orqali xabar boradi.",
+    "earlier": "O‘tgan va bekor qilinganlar ({n})",
+    "tabUpcoming": "Kelgusi",
+    "tabPast": "O‘tgan",
+    "tabCancelled": "Bekor qilingan",
+    "today": "Bugun",
+    "tomorrow": "Ertaga",
+    "nonePast": "So‘nggi ikki oyda o‘tgan onlayn darslar yo‘q",
+    "noneCancelled": "Bekor qilingan onlayn darslar yo‘q",
+    "nextClass": "Keyingi dars",
+    "inMinutes": "{n} daqiqadan so‘ng",
+    "inHours": "{h} soat {m} daqiqadan so‘ng",
+    "inDays": "{n} kundan so‘ng | {n} kundan so‘ng",
+    "siteTime": "Toshkent vaqti"
   },
   "courses": {
     "seoTitle": "O‘qituvchilardan ingliz tili kurslari: IELTS va Multilevel",
@@ -2369,5 +2397,18 @@
     "weekXp": "Shu haftadagi XP",
     "lastPlayed": "Oxirgi o‘yin",
     "cellTitle": "{total} tadan {known} tasi o‘zlashtirilgan, {seen} tasi ko‘rilgan"
+  },
+  "res": {
+    "tab": "Natijalar",
+    "inResults": "Natijalar bo‘limida ochish",
+    "allClasses": "Barcha guruhlar",
+    "allSkills": "Barcha ko‘nikmalar",
+    "allStudents": "Barcha o‘quvchilar",
+    "openClass": "Guruhni ochish",
+    "attempts": "{n} ta natija | {n} ta natija",
+    "graded": "Baholangan",
+    "waiting": "Baholash kutilmoqda",
+    "aiChecked": "AI tekshirgan",
+    "courseLesson": "Test va dars"
   }
 }

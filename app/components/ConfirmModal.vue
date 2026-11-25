@@ -3,9 +3,10 @@ withDefaults(defineProps<{
   title: string
   description?: string
   confirmLabel?: string
+  cancelLabel?: string
   color?: 'error' | 'primary' | 'warning'
   icon?: string
-}>(), { confirmLabel: undefined, color: 'error', icon: 'i-lucide-triangle-alert' })
+}>(), { confirmLabel: undefined, cancelLabel: undefined, color: 'error', icon: 'i-lucide-triangle-alert' })
 const { t } = useI18n()
 
 const emit = defineEmits<{ close: [value: boolean] }>()
@@ -32,7 +33,7 @@ const emit = defineEmits<{ close: [value: boolean] }>()
     </template>
     <template #footer>
       <UButton
-        :label="t('common.cancel')"
+        :label="cancelLabel ?? t('common.cancel')"
         color="neutral"
         variant="outline"
         @click="emit('close', false)"
