@@ -336,4 +336,3 @@ export async function classVocabulary(groupId: string) {
   }).sort((a, b) => b.weekXp - a.weekXp || b.known - a.known || a.name.localeCompare(b.name))
   return { decks: decks.map(d => ({ ...d, cards: cardsIn.get(d.id) ?? 0 })), students }
 }
-
