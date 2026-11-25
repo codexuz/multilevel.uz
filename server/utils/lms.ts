@@ -173,25 +173,44 @@ async function checkExerciseAccess(viewer: Viewer, exercise: Exercise) {
   const access = await accessTo(viewer, course)
   if (!access.see || !access.learn) throw createError({ statusCode: 403, message: 'Enroll in the course to access this exercise' })
 
-  if (!access.teaches) {
-    const { modules, lessons } = await loadOrderedCurriculum(course.id)
-    const doneRows = lessons.length
-      ? await useDb().select({ id: lessonProgress.lessonId }).from(lessonProgress).where(and(eq(lessonProgress.userId, viewer.id), inArray(lessonProgress.lessonId, lessons.map(l => l.id))))
-      : []
-    const dripMap = evaluateCourseDrip(course, modules, lessons, new Set(doneRows.map(r => r.id)), false)
-    const drip = dripMap.get(lesson.id)
-    if (drip?.locked) throw createError({ statusCode: 403, message: 'This lesson is currently locked by content drip', data: { code: 'DRIP_LOCKED', drip } })
+  const { modules, lessons } = await loadOrderedCurriculum(course.id)
+  const doneRows = lessons.length
+    ? await useDb().select({ id: lessonProgress.lessonId }).from(lessonProgress).where(and(eq(lessonProgress.userId, viewer.id), inArray(lessonProgress.lessonId, lessons.map(l => l.id))))
+    : []
+  const dripMap = evaluateCourseDrip(course, modules, lessons, new Set(doneRows.map(r => r.id)), access.teaches)
+  const drip = dripMap.get(lesson.id)
+  if (!access.teaches && drip?.locked) {
+    throw createError({ statusCode: 403, message: 'This lesson is currently locked by content drip', data: { code: 'DRIP_LOCKED', drip } })
   }
-  return { course, lesson, access }
+  const idx = lessons.findIndex(l => l.id === lesson.id)
+  const nextL = idx >= 0 && idx < lessons.length - 1 ? lessons[idx + 1]! : null
+  const nextLesson = nextL ? { id: nextL.id, title: nextL.title, locked: !access.teaches && (dripMap.get(nextL.id)?.locked ?? false) } : null
+  return { course, lesson, access, nextLesson }
 }
 
 export async function getExerciseView(viewer: Viewer, exercise: Exercise) {
-  const { access } = await checkExerciseAccess(viewer, exercise)
+  const { course, lesson, access, nextLesson } = await checkExerciseAccess(viewer, exercise)
   const db = useDb()
-  const [qRows, attemptsRows] = await Promise.all([
+  const [qRows, attemptsRows, siblingRows] = await Promise.all([
     db.select().from(exerciseQuestions).where(eq(exerciseQuestions.exerciseId, exercise.id)).orderBy(asc(exerciseQuestions.position), asc(exerciseQuestions.createdAt)),
-    db.select().from(exerciseAttempts).where(and(eq(exerciseAttempts.exerciseId, exercise.id), eq(exerciseAttempts.userId, viewer.id))).orderBy(desc(exerciseAttempts.submittedAt)).limit(20)
+    db.select().from(exerciseAttempts).where(and(eq(exerciseAttempts.exerciseId, exercise.id), eq(exerciseAttempts.userId, viewer.id))).orderBy(desc(exerciseAttempts.submittedAt)).limit(20),
+    db.select({ id: lessonExercises.id, position: lessonExercises.position, title: lessonExercises.title })
+      .from(lessonExercises)
+      .where(eq(lessonExercises.lessonId, exercise.lessonId))
+      .orderBy(asc(lessonExercises.position), asc(lessonExercises.createdAt))
   ])
+
+  const siblingIds = siblingRows.map(s => s.id)
+  const passedSiblingRows = siblingIds.length
+    ? await db.selectDistinct({ exerciseId: exerciseAttempts.exerciseId })
+        .from(exerciseAttempts)
+        .where(and(
+          eq(exerciseAttempts.userId, viewer.id),
+          eq(exerciseAttempts.passed, true),
+          inArray(exerciseAttempts.exerciseId, siblingIds)
+        ))
+    : []
+  const passedSet = new Set(passedSiblingRows.map(r => r.exerciseId))
 
   const questions = access.teaches
     ? qRows
@@ -200,6 +219,9 @@ export async function getExerciseView(viewer: Viewer, exercise: Exercise) {
   return {
     ...exercise,
     teaches: access.teaches,
+    course: { id: course.id, slug: course.slug, title: course.title },
+    lesson: { id: lesson.id, title: lesson.title, next: nextLesson },
+    siblings: siblingRows.map(s => ({ ...s, passed: passedSet.has(s.id) })),
     questions,
     attempts: attemptsRows
   }

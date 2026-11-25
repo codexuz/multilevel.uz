@@ -105,17 +105,23 @@ function viewAttempt(att: ExerciseAttemptDto) {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4">
+  <UPageList class="gap-4">
     <USkeleton
       v-if="status === 'pending' && !ex"
       class="h-48 w-full rounded-2xl"
     />
 
     <template v-else-if="ex">
-      <!-- Exercise Header Bar -->
-      <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-elevated/60 ring ring-default p-4">
-        <div class="min-w-0">
-          <div class="flex flex-wrap items-center gap-2">
+      <!-- Exercise Header Card -->
+      <UCard
+        variant="subtle"
+        :ui="{
+          header: 'flex flex-wrap items-center justify-between gap-2',
+          body: 'flex flex-col gap-1.5'
+        }"
+      >
+        <template #header>
+          <UPageList class="flex-row flex-wrap gap-2">
             <UBadge
               :label="t(`builder.exType.${ex.exerciseType}`)"
               color="primary"
@@ -142,38 +148,35 @@ function viewAttempt(att: ExerciseAttemptDto) {
               variant="subtle"
               size="xs"
             />
-          </div>
-          <h3 class="text-base sm:text-lg font-bold text-highlighted mt-1">
-            {{ ex.title }}
-          </h3>
-          <p
-            v-if="ex.instructions"
-            class="text-xs sm:text-sm text-muted mt-0.5"
-          >
-            {{ ex.instructions }}
-          </p>
-        </div>
+          </UPageList>
 
-        <div class="flex items-center gap-2 shrink-0">
-          <UBadge
-            v-if="secondsLeft !== null && !activeResult"
-            :label="fmtClock(secondsLeft)"
-            icon="i-lucide-timer"
-            :color="secondsLeft < 60 ? 'error' : 'info'"
-            variant="soft"
-            size="md"
-          />
-          <UButton
-            v-if="activeResult && canRetry"
-            :label="t('tp.tryAgain')"
-            icon="i-lucide-rotate-cw"
-            color="primary"
-            variant="soft"
-            size="sm"
-            @click="initRun"
-          />
-        </div>
-      </div>
+          <UPageList class="flex-row items-center gap-2">
+            <UBadge
+              v-if="secondsLeft !== null && !activeResult"
+              :label="fmtClock(secondsLeft)"
+              icon="i-lucide-timer"
+              :color="secondsLeft < 60 ? 'error' : 'info'"
+              variant="soft"
+              size="md"
+            />
+            <UButton
+              v-if="activeResult && canRetry"
+              :label="t('tp.tryAgain')"
+              icon="i-lucide-rotate-cw"
+              color="primary"
+              variant="soft"
+              size="sm"
+              @click="initRun"
+            />
+          </UPageList>
+        </template>
+
+        <UPageHeader
+          :title="ex.title"
+          :description="ex.instructions || undefined"
+          :ui="{ root: 'border-0 py-0', title: 'text-base sm:text-lg', description: 'text-xs sm:text-sm mt-0.5' }"
+        />
+      </UCard>
 
       <!-- Result Banner -->
       <UAlert
@@ -185,9 +188,9 @@ function viewAttempt(att: ExerciseAttemptDto) {
       />
 
       <!-- Questions -->
-      <div
+      <UPageList
         v-if="ex.questions.length"
-        class="flex flex-col gap-3.5"
+        class="gap-3.5"
       >
         <LmsQuestionPlayer
           v-for="(q, idx) in ex.questions"
@@ -198,7 +201,7 @@ function viewAttempt(att: ExerciseAttemptDto) {
           :grade="activeResult?.results?.[q.id] ?? null"
           :disabled="!!activeResult"
         />
-      </div>
+      </UPageList>
       <UEmpty
         v-else
         icon="i-lucide-help-circle"
@@ -207,9 +210,9 @@ function viewAttempt(att: ExerciseAttemptDto) {
       />
 
       <!-- Submit Footer -->
-      <div
+      <UPageList
         v-if="ex.questions.length && !activeResult"
-        class="flex items-center justify-end gap-2 pt-2"
+        class="flex-row items-center justify-end gap-2"
       >
         <UButton
           :label="t('quiz.submit')"
@@ -219,25 +222,30 @@ function viewAttempt(att: ExerciseAttemptDto) {
           :disabled="!ex.teaches && !!ex.maxAttempts && ex.attempts.length >= ex.maxAttempts"
           @click="submit"
         />
-      </div>
+      </UPageList>
 
       <!-- Previous Attempts History -->
-      <div
-        v-if="ex.attempts.length"
-        class="flex flex-wrap items-center gap-2 pt-2 border-t border-default text-xs text-muted"
-      >
-        <span class="font-medium">History:</span>
-        <button
-          v-for="(att, ai) in ex.attempts.slice(0, 6)"
-          :key="att.id"
-          type="button"
-          class="px-2.5 py-1 rounded-full border text-xs font-medium transition-colors cursor-pointer"
-          :class="activeResult?.id === att.id ? 'border-primary bg-primary/10 text-primary' : 'border-default hover:bg-elevated'"
-          @click="viewAttempt(att)"
-        >
-          #{{ ex.attempts.length - ai }} · {{ att.score }}% {{ att.passed ? '✓' : '' }}
-        </button>
-      </div>
+      <template v-if="ex.attempts.length">
+        <USeparator />
+        <UPageList class="flex-row flex-wrap items-center gap-2">
+          <UBadge
+            :label="t('quiz.tabHistory')"
+            icon="i-lucide-history"
+            color="neutral"
+            variant="subtle"
+            size="sm"
+          />
+          <UButton
+            v-for="(att, ai) in ex.attempts.slice(0, 6)"
+            :key="att.id"
+            :label="`#${ex.attempts.length - ai} · ${att.score}%${att.passed ? ' ✓' : ''}`"
+            :color="activeResult?.id === att.id ? 'primary' : att.passed ? 'success' : 'neutral'"
+            :variant="activeResult?.id === att.id ? 'soft' : 'outline'"
+            size="xs"
+            @click="viewAttempt(att)"
+          />
+        </UPageList>
+      </template>
     </template>
-  </div>
+  </UPageList>
 </template>

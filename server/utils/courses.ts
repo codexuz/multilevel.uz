@@ -582,8 +582,14 @@ export async function lessonView(viewer: Viewer, lesson: Lesson) {
   const live = liveRow[0]
 
   const exIds = exRows.map(e => e.id)
-  const [qCounts, myExAttempts] = await Promise.all([
-    exIds.length ? db.select({ exerciseId: exerciseQuestions.exerciseId, n: count() }).from(exerciseQuestions).where(inArray(exerciseQuestions.exerciseId, exIds)).groupBy(exerciseQuestions.exerciseId) : [],
+  const [qStats, myExAttempts] = await Promise.all([
+    exIds.length
+      ? db.select({
+          exerciseId: exerciseQuestions.exerciseId,
+          n: count(),
+          points: sql<number>`coalesce(sum(${exerciseQuestions.points}), 0)::int`
+        }).from(exerciseQuestions).where(inArray(exerciseQuestions.exerciseId, exIds)).groupBy(exerciseQuestions.exerciseId)
+      : [],
     viewer && exIds.length ? db.select().from(exerciseAttempts).where(and(eq(exerciseAttempts.userId, viewer.id), inArray(exerciseAttempts.exerciseId, exIds))).orderBy(desc(exerciseAttempts.submittedAt)) : []
   ])
 
@@ -591,6 +597,7 @@ export async function lessonView(viewer: Viewer, lesson: Lesson) {
     const mine = myExAttempts.filter(a => a.exerciseId === e.id)
     const best = mine.reduce<number | null>((acc, a) => (acc == null ? a.score : Math.max(acc, a.score)), null)
     const passed = mine.some(a => a.passed)
+    const stats = qStats.find(q => q.exerciseId === e.id)
     return {
       id: e.id,
       position: e.position,
@@ -603,11 +610,15 @@ export async function lessonView(viewer: Viewer, lesson: Lesson) {
       shuffleQuestions: e.shuffleQuestions,
       showFeedback: e.showFeedback,
       requiredForCompletion: e.requiredForCompletion,
-      questionCount: qCounts.find(q => q.exerciseId === e.id)?.n ?? 0,
+      questionCount: stats?.n ?? 0,
+      totalPoints: stats?.points ?? 0,
       attemptsUsed: mine.length,
       bestScore: best,
       passed,
-      lastAttemptId: mine[0]?.id ?? null
+      lastAttemptId: mine[0]?.id ?? null,
+      lastScore: mine[0]?.score ?? null,
+      lastSubmittedAt: mine[0]?.submittedAt ?? null,
+      reviewStatus: mine[0]?.reviewStatus ?? null
     }
   })
 
