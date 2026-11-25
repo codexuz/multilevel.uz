@@ -1887,7 +1887,12 @@
     "unsaved": "Saqlanmagan o‘zgarishlar",
     "topicCount": "{n} ta mavzu",
     "quizCount": "{n} ta test",
-    "createCourse": "Yaratish va tuzuvchini ochish"
+    "createCourse": "Yaratish va tuzuvchini ochish",
+    "quizMoved": "Test «{lesson}» darsiga ko‘chirildi",
+    "dragQuiz": "Testni boshqa joyga yoki darsga sudrab o‘tkazing",
+    "moveQuizTo": "Darsga ko‘chirish",
+    "quizActions": "Test amallari",
+    "editQuiz": "Testni tahrirlash"
   },
   "coursePage": {
     "totalTime": "Jami {time}",

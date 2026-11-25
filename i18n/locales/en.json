@@ -1887,7 +1887,12 @@
     "unsaved": "Unsaved changes",
     "topicCount": "{n} topic | {n} topics",
     "quizCount": "{n} quiz | {n} quizzes",
-    "createCourse": "Create and open the builder"
+    "createCourse": "Create and open the builder",
+    "quizMoved": "Quiz moved to {lesson}",
+    "dragQuiz": "Drag to move the quiz to another place or lesson",
+    "moveQuizTo": "Move to lesson",
+    "quizActions": "Quiz actions",
+    "editQuiz": "Edit quiz"
   },
   "coursePage": {
     "totalTime": "{time} in total",
