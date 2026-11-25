@@ -1089,3 +1089,67 @@ export const vocabProgress = pgTable('vocab_progress', {
   wrong: integer('wrong').notNull().default(0),
   lastAt: timestamp('last_at', { withTimezone: true }).notNull().defaultNow()
 }, t => [primaryKey({ columns: [t.userId, t.cardId] }), index('vocab_progress_user_idx').on(t.userId, t.dueAt)])
+
+// ---------- course speaking studio: prompts, voice answers, peer assessments & comments ----------
+/** A speaking prompt added by a course teacher for enrolled students to record voice answers. */
+export const courseSpeakingQuestions = pgTable('course_speaking_questions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  courseId: uuid('course_id').notNull().references(() => courses.id, { onDelete: 'cascade' }),
+  position: integer('position').notNull().default(1),
+  title: text('title').notNull(),
+  prompt: text('prompt').notNull(),
+  tips: text('tips'),
+  /** Optional part / category label (e.g. Part 1, Part 2, Part 3, Discussion). */
+  partLabel: text('part_label'),
+  /** Suggested speaking duration in seconds (optional). */
+  suggestedSeconds: integer('suggested_seconds'),
+  createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [index('course_speaking_questions_course_idx').on(t.courseId, t.position)])
+
+/** A voice recording submitted by an enrolled student (or teacher) answering a speaking studio question. */
+export const courseSpeakingRecordings = pgTable('course_speaking_recordings', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  questionId: uuid('question_id').notNull().references(() => courseSpeakingQuestions.id, { onDelete: 'cascade' }),
+  courseId: uuid('course_id').notNull().references(() => courses.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  audioUrl: text('audio_url').notNull(),
+  durationSeconds: integer('duration_seconds'),
+  note: text('note'),
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [
+  index('course_speaking_rec_question_idx').on(t.questionId, t.createdAt),
+  index('course_speaking_rec_course_idx').on(t.courseId, t.createdAt),
+  index('course_speaking_rec_user_idx').on(t.userId, t.createdAt)
+])
+
+/** Peer/teacher structured assessment (1–5) on a speaking studio recording; one per reviewer per recording. */
+export const courseSpeakingAssessments = pgTable('course_speaking_assessments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  recordingId: uuid('recording_id').notNull().references(() => courseSpeakingRecordings.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  /** Overall rating 1..5 */
+  overall: integer('overall').notNull(),
+  /** Optional IELTS/CEFR speaking criteria 1..5 */
+  fluency: integer('fluency'),
+  vocabulary: integer('vocabulary'),
+  grammar: integer('grammar'),
+  pronunciation: integer('pronunciation'),
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [
+  uniqueIndex('course_speaking_assess_rec_user_uq').on(t.recordingId, t.userId),
+  index('course_speaking_assess_rec_idx').on(t.recordingId)
+])
+
+/** Comments / peer feedback left on a speaking studio recording. */
+export const courseSpeakingComments = pgTable('course_speaking_comments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  recordingId: uuid('recording_id').notNull().references(() => courseSpeakingRecordings.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  body: text('body').notNull(),
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [index('course_speaking_comments_rec_idx').on(t.recordingId, t.createdAt)])
