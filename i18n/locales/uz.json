@@ -2393,12 +2393,8 @@
     "lastPlayed": "Oxirgi o‘yin",
     "cellTitle": "{total} tadan {known} tasi o‘zlashtirilgan, {seen} tasi ko‘rilgan",
     "startTitle": "Birinchi kartalarni qo‘shing",
-    "startText": "To‘plamni qanday to‘ldirishni tanlang. Keyinroq uchalasini aralashtirish mumkin.",
-    "startAi": "AI mavzu bo‘yicha darajangizga mos kartalarni tayyorlaydi, siz keraklisini qoldirasiz.",
-    "startAiTopic": "AI «{topic}» mavzusida darajangizga mos kartalarni tayyorlaydi, siz keraklisini qoldirasiz.",
-    "startImport": "So‘zlar ro‘yxati, maqola yoki qaydlarni joylang: AI so‘zlarni tanlab, kartalarni yozadi.",
-    "startHand": "Qo‘lda yozish",
-    "startHandText": "Kartalarni birma-bir qo‘shing: so‘z, ma’nosi, misol va tarjimalar."
+    "startText": "Kartalarni AI bilan yarating, matndan import qiling yoki qo‘lda qo‘shing.",
+    "startAiTopic": "«{topic}» mavzusida kartalarni AI bilan yarating, matndan import qiling yoki qo‘lda qo‘shing."
   },
   "res": {
     "tab": "Natijalar",

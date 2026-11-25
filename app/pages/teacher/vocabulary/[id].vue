@@ -89,13 +89,6 @@ function openAi(mode: 'generate' | 'import') {
   aiOpen.value = true
 }
 
-/** How an empty deck gets its cards: the AI from its topic, the AI from a text, or by hand. */
-const startWays = computed(() => [
-  { key: 'ai', icon: 'i-lucide-sparkles', title: t('vocab.aiCreate'), text: deck.value?.topic ? t('vocab.startAiTopic', { topic: deck.value.topic }) : t('vocab.startAi'), go: () => openAi('generate') },
-  { key: 'import', icon: 'i-lucide-file-input', title: t('vocab.aiImport'), text: t('vocab.startImport'), go: () => openAi('import') },
-  { key: 'hand', icon: 'i-lucide-pencil', title: t('vocab.startHand'), text: t('vocab.startHandText'), go: () => editCard(null) }
-])
-
 async function removeDeck() {
   if (!await confirm({ title: t('vocab.deleteDeck'), description: t('vocab.deleteDeckText'), confirmLabel: t('vocab.deleteDeck') })) return
   try {
@@ -240,42 +233,18 @@ const say = (text: string) => {
           </li>
         </ul>
         <!-- A new deck: the three ways to fill it -->
-        <div
+        <UEmpty
           v-else-if="!deck.cards.length"
-          class="flex flex-col gap-3"
+          icon="i-lucide-layers"
+          :title="t('vocab.startTitle')"
+          :description="deck.topic ? t('vocab.startAiTopic', { topic: deck.topic }) : t('vocab.startText')"
+          :actions="[
+            { label: t('vocab.aiCreate'), icon: 'i-lucide-sparkles', onClick: () => openAi('generate') },
+            { label: t('vocab.aiImport'), icon: 'i-lucide-file-input', color: 'neutral', variant: 'outline', onClick: () => openAi('import') },
+            { label: t('vocab.newCard'), icon: 'i-lucide-plus', color: 'neutral', variant: 'outline', onClick: () => editCard(null) }
+          ]"
           data-testid="deck-start"
-        >
-          <div>
-            <h2 class="text-lg font-extrabold text-highlighted">
-              {{ t('vocab.startTitle') }}
-            </h2>
-            <p class="text-sm text-muted">
-              {{ t('vocab.startText') }}
-            </p>
-          </div>
-          <div class="grid sm:grid-cols-3 gap-3">
-            <button
-              v-for="w in startWays"
-              :key="w.key"
-              type="button"
-              class="tile p-4 flex flex-col gap-2 text-start cursor-pointer hover:bg-elevated/50 focus-visible:outline-2 focus-visible:outline-primary"
-              :data-testid="`start-${w.key}`"
-              @click="w.go"
-            >
-              <span
-                class="grid place-items-center size-11 rounded-lg"
-                :class="w.key === 'ai' ? 'bg-primary text-inverted' : 'bg-primary/10 text-primary'"
-              >
-                <UIcon
-                  :name="w.icon"
-                  class="size-6"
-                />
-              </span>
-              <span class="font-extrabold text-highlighted">{{ w.title }}</span>
-              <span class="text-sm text-muted">{{ w.text }}</span>
-            </button>
-          </div>
-        </div>
+        />
         <UEmpty
           v-else
           icon="i-lucide-search-x"

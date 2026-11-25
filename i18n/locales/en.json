@@ -2393,12 +2393,8 @@
     "lastPlayed": "Last played",
     "cellTitle": "{known} known, {seen} seen of {total}",
     "startTitle": "Add the first cards",
-    "startText": "Pick how to fill this deck. You can mix all three later.",
-    "startAi": "The AI drafts cards on a topic at your level; you keep the ones you want.",
-    "startAiTopic": "The AI drafts cards on “{topic}” at your level; you keep the ones you want.",
-    "startImport": "Paste a word list, an article or your notes: the AI picks the words and writes the cards.",
-    "startHand": "Write by hand",
-    "startHandText": "Add cards one at a time: the word, its meaning, an example and translations."
+    "startText": "Create cards with AI, import them from a text, or add them by hand.",
+    "startAiTopic": "Create cards on “{topic}” with AI, import them from a text, or add them by hand."
   },
   "res": {
     "tab": "Results",
