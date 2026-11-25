@@ -49,6 +49,7 @@ export default defineEventHandler(async (event) => {
           earnedPoints: exerciseAttempts.earnedPoints,
           totalPoints: exerciseAttempts.totalPoints,
           passed: exerciseAttempts.passed,
+          reviewStatus: exerciseAttempts.reviewStatus,
           submittedAt: exerciseAttempts.submittedAt,
           exerciseTitle: lessonExercises.title,
           lessonTitle: courseLessons.title,
@@ -107,6 +108,7 @@ export default defineEventHandler(async (event) => {
         earnedPoints: e.earnedPoints,
         totalPoints: e.totalPoints,
         passed: e.passed,
+        reviewStatus: e.reviewStatus,
         submittedAt: e.submittedAt
       }
     })

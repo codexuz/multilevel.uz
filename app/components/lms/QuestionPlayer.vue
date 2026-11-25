@@ -163,6 +163,31 @@ function playDictation() {
   }
 }
 
+// ---- DICTATION in timed segments (a recording or a YouTube video) ----
+const segs = computed(() => cfg.value.segments ?? [])
+const segMedia = ref<{ play: (a: number, b: number, r?: number) => Promise<void>, stop: () => void } | null>(null)
+const segPlays = ref<Record<string, number>>({})
+const segPlaying = ref<string | null>(null)
+const segVal = computed<Record<string, string>>(() => (props.modelValue && typeof props.modelValue === 'object' && !Array.isArray(props.modelValue) ? props.modelValue as Record<string, string> : {}))
+const segLeft = (id: string) => (cfg.value.maxPlays ? Math.max(0, cfg.value.maxPlays - (segPlays.value[id] ?? 0)) : null)
+function playSeg(seg: { id: string, start: number, end: number }, review = false) {
+  if (!review && segLeft(seg.id) === 0) return
+  if (!review) segPlays.value = { ...segPlays.value, [seg.id]: (segPlays.value[seg.id] ?? 0) + 1 }
+  segPlaying.value = seg.id
+  segMedia.value?.play(seg.start, seg.end, playbackRate.value)
+}
+function setSeg(id: string, v: string) {
+  if (props.disabled) return
+  emit('update:modelValue', { ...segVal.value, [id]: v })
+}
+const fmtSeg = (sec: number) => clockTime(sec)
+
+// ---- WRITTEN_RESPONSE ----
+const wrWords = computed(() => (strVal.value.trim().match(/\S+/g) ?? []).length)
+const wrTab = ref<'source' | 'answer'>('source')
+const wrReview = computed(() => props.grade?.review ?? null)
+const CRITERIA_LABEL: Record<string, string> = { content: 'quiz.critContent', ownWords: 'quiz.critOwnWords', language: 'quiz.critLanguage', organisation: 'quiz.critOrganisation' }
+
 const tfChoices = computed(() => [
   { label: 'True', value: 'TRUE' },
   { label: 'False', value: 'FALSE' },
@@ -626,6 +651,248 @@ const tfChoices = computed(() => [
       />
     </div>
 
+    <!-- 12b. DICTATION in timed segments -->
+    <div
+      v-else-if="question.type === 'DICTATION' && segs.length"
+      class="flex flex-col gap-3"
+      data-testid="dict-segments"
+    >
+      <LmsSegmentMedia
+        ref="segMedia"
+        :src="question.audioRef"
+        :youtube-url="cfg.youtubeUrl"
+        :audio-only="cfg.audioOnly"
+        @ended="segPlaying = null"
+      />
+      <div class="flex items-center gap-1">
+        <span class="text-xs text-muted me-1">{{ t('quiz.speed') }}</span>
+        <UButton
+          v-for="r in [0.75, 1]"
+          :key="r"
+          :label="`${r}×`"
+          size="xs"
+          :color="playbackRate === r ? 'primary' : 'neutral'"
+          :variant="playbackRate === r ? 'soft' : 'ghost'"
+          @click="playbackRate = r"
+        />
+        <span
+          v-if="cfg.maxPlays"
+          class="ms-auto text-xs text-muted"
+        >{{ t('quiz.playsEach', { n: cfg.maxPlays }) }}</span>
+      </div>
+      <div
+        v-for="(seg, si) in segs"
+        :key="seg.id"
+        class="rounded-lg ring ring-default p-2.5 flex flex-col gap-2"
+        :class="grade?.segments?.[seg.id] ? (grade.segments[seg.id]!.exact ? 'ring-success/50' : 'ring-warning/50') : ''"
+      >
+        <div class="flex items-center gap-2">
+          <UButton
+            :icon="segPlaying === seg.id ? 'i-lucide-volume-2' : (grade ? 'i-lucide-rotate-ccw' : 'i-lucide-play')"
+            size="sm"
+            :color="segPlaying === seg.id ? 'primary' : 'neutral'"
+            :variant="segPlaying === seg.id ? 'solid' : 'outline'"
+            :disabled="!grade && segLeft(seg.id) === 0"
+            :aria-label="t('quiz.play')"
+            :data-testid="`seg-play-${si}`"
+            @click="playSeg(seg, !!grade)"
+          />
+          <span class="text-sm font-bold text-highlighted">{{ t('quiz.segment', { n: si + 1 }) }}</span>
+          <span class="text-xs text-muted tabular-nums">{{ fmtSeg(seg.start) }}–{{ fmtSeg(seg.end) }}</span>
+          <span
+            v-if="!grade && segLeft(seg.id) != null"
+            class="ms-auto text-xs tabular-nums"
+            :class="segLeft(seg.id) ? 'text-muted' : 'text-error'"
+          >{{ t('quiz.playsLeft', { n: segLeft(seg.id) }) }}</span>
+          <span
+            v-else-if="grade?.segments?.[seg.id]"
+            class="ms-auto text-xs font-bold tabular-nums"
+            :class="grade.segments[seg.id]!.exact ? 'text-success' : 'text-warning'"
+          >{{ Math.round(grade.segments[seg.id]!.accuracy * 100) }}%</span>
+        </div>
+        <UTextarea
+          :model-value="segVal[seg.id] ?? ''"
+          :disabled="disabled"
+          :rows="1"
+          autoresize
+          :placeholder="t('quiz.dictationPlaceholder')"
+          class="w-full"
+          :data-testid="`seg-input-${si}`"
+          @update:model-value="setSeg(seg.id, String($event))"
+        />
+        <div
+          v-if="grade?.segments?.[seg.id]?.diff?.length"
+          class="flex flex-wrap gap-1 text-sm"
+        >
+          <span
+            v-for="(d, di) in grade.segments[seg.id]!.diff"
+            :key="di"
+            class="px-1.5 py-0.5 rounded font-medium"
+            :class="d.status === 'match'
+              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
+              : d.status === 'missing'
+                ? 'bg-amber-100 text-amber-900 underline decoration-dotted dark:bg-amber-950/50 dark:text-amber-200'
+                : 'bg-rose-100 text-rose-800 line-through dark:bg-rose-950/50 dark:text-rose-300'"
+          >{{ d.word }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 13. WRITTEN_RESPONSE: the article or picture, and the answer -->
+    <div
+      v-else-if="question.type === 'WRITTEN_RESPONSE'"
+      class="flex flex-col gap-3"
+      data-testid="written-response"
+    >
+      <UTabs
+        v-if="question.context || question.imageRef"
+        v-model="wrTab"
+        :items="[{ label: cfg.mode === 'DESCRIBE_IMAGE' ? t('quiz.picture') : t('quiz.article'), value: 'source' }, { label: t('quiz.myAnswer'), value: 'answer' }]"
+        :content="false"
+        size="sm"
+        class="lg:hidden"
+      />
+      <div class="grid lg:grid-cols-2 gap-3">
+        <div
+          v-if="question.context || question.imageRef"
+          :class="wrTab === 'source' ? '' : 'max-lg:hidden'"
+        >
+          <img
+            v-if="cfg.mode === 'DESCRIBE_IMAGE' && question.imageRef"
+            :src="mediaUrl(question.imageRef)"
+            :alt="t('quiz.picture')"
+            class="w-full rounded-lg ring ring-default"
+          >
+          <div
+            v-else-if="question.context"
+            class="rounded-lg ring ring-default bg-elevated/30 p-3 text-sm leading-relaxed text-toned whitespace-pre-line max-h-[28rem] overflow-y-auto"
+          >
+            {{ question.context }}
+          </div>
+        </div>
+        <div
+          class="flex flex-col gap-1.5"
+          :class="[wrTab === 'answer' || !(question.context || question.imageRef) ? '' : 'max-lg:hidden', !(question.context || question.imageRef) ? 'lg:col-span-2' : '']"
+        >
+          <UTextarea
+            :model-value="strVal"
+            :disabled="disabled"
+            :rows="10"
+            autoresize
+            :maxrows="24"
+            :placeholder="t('quiz.writeHere')"
+            class="w-full"
+            data-testid="wr-answer"
+            @update:model-value="setStr(String($event))"
+          />
+          <p
+            class="text-xs tabular-nums"
+            :class="(cfg.minWords && wrWords < cfg.minWords) || (cfg.maxWords && wrWords > cfg.maxWords) ? 'text-warning' : 'text-muted'"
+          >
+            {{ t('quiz.wordCount', { n: wrWords }) }}<template v-if="cfg.minWords || cfg.maxWords">
+              · {{ cfg.minWords && cfg.maxWords ? t('quiz.wordRange', { min: cfg.minWords, max: cfg.maxWords }) : cfg.minWords ? t('quiz.wordMin', { n: cfg.minWords }) : t('quiz.wordMax', { n: cfg.maxWords }) }}
+            </template>
+          </p>
+        </div>
+      </div>
+
+      <!-- The marking -->
+      <div
+        v-if="wrReview"
+        class="rounded-xl ring ring-default p-3 flex flex-col gap-3"
+        data-testid="wr-review"
+      >
+        <div
+          v-if="wrReview.status === 'PENDING'"
+          class="flex items-center gap-2 text-sm text-warning font-bold"
+        >
+          <UIcon
+            name="i-lucide-hourglass"
+            class="size-4"
+          />{{ t('quiz.waitingTeacher') }}
+        </div>
+        <template v-else>
+          <div class="flex items-center gap-3">
+            <span class="text-2xl font-extrabold tabular-nums text-highlighted">{{ wrReview.score ?? 0 }}<span class="text-sm text-muted">/100</span></span>
+            <UBadge
+              :label="wrReview.status === 'TEACHER' ? t('quiz.markedTeacher') : t('quiz.markedAi')"
+              :icon="wrReview.status === 'TEACHER' ? 'i-lucide-user-check' : 'i-lucide-sparkles'"
+              :color="wrReview.status === 'TEACHER' ? 'success' : 'primary'"
+              variant="subtle"
+            />
+          </div>
+          <p
+            v-if="wrReview.teacherComment"
+            class="text-sm rounded-lg bg-success/10 text-toned p-2.5"
+          >
+            <strong>{{ t('quiz.teacherSays') }}</strong> {{ wrReview.teacherComment }}
+          </p>
+          <div
+            v-if="wrReview.criteria?.length"
+            class="grid sm:grid-cols-2 gap-2"
+          >
+            <div
+              v-for="c in wrReview.criteria"
+              :key="c.key"
+              class="rounded-lg bg-elevated/40 p-2.5"
+            >
+              <div class="flex items-center justify-between text-xs font-bold">
+                <span>{{ t(CRITERIA_LABEL[c.key] ?? c.key) }}</span>
+                <span class="tabular-nums">{{ c.score }}/10</span>
+              </div>
+              <div class="h-1.5 rounded-full bg-accented/70 overflow-hidden mt-1.5">
+                <div
+                  class="h-full rounded-full"
+                  :class="c.score >= 7 ? 'bg-success' : c.score >= 5 ? 'bg-warning' : 'bg-error'"
+                  :style="{ width: `${c.score * 10}%` }"
+                />
+              </div>
+              <p class="text-xs text-muted mt-1.5">
+                {{ c.comment }}
+              </p>
+            </div>
+          </div>
+          <ul
+            v-if="wrReview.keyPoints?.length"
+            class="flex flex-col gap-1 text-sm"
+          >
+            <li
+              v-for="(k, ki) in wrReview.keyPoints"
+              :key="ki"
+              class="flex items-start gap-2"
+            >
+              <UIcon
+                :name="k.covered === 'YES' ? 'i-lucide-circle-check' : k.covered === 'PARTLY' ? 'i-lucide-circle-dot' : 'i-lucide-circle-x'"
+                class="size-4 mt-0.5 shrink-0"
+                :class="k.covered === 'YES' ? 'text-success' : k.covered === 'PARTLY' ? 'text-warning' : 'text-error'"
+              />{{ k.point }}
+            </li>
+          </ul>
+          <div
+            v-if="wrReview.copied?.phrases?.length"
+            class="rounded-lg bg-warning/10 p-2.5 text-xs flex flex-col gap-1"
+          >
+            <p class="font-bold text-warning">
+              {{ t('quiz.copied', { n: wrReview.copied.percent }) }}
+            </p>
+            <p
+              v-for="(ph, pi) in wrReview.copied.phrases"
+              :key="pi"
+              class="text-toned italic"
+            >
+              “{{ ph }}”
+            </p>
+          </div>
+          <p
+            v-if="wrReview.feedback"
+            class="text-sm text-toned"
+          >
+            {{ wrReview.feedback }}
+          </p>
+        </template>
+      </div>
+    </div>
+
     <!-- 12. DICTATION -->
     <div
       v-else-if="question.type === 'DICTATION'"
@@ -689,7 +956,7 @@ const tfChoices = computed(() => [
       </div>
     </div>
 
-    <!-- Graded Feedback & Explanation -->
+    <!-- Graded Feedback & Explanation (a written response has its own marking above) -->
     <div
       v-if="grade"
       class="rounded-xl p-3 text-xs sm:text-sm flex flex-col gap-1"

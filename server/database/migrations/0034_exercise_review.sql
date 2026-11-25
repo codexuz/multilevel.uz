@@ -1,0 +1,1 @@
+ALTER TABLE "exercise_attempts" ADD COLUMN "review_status" text;

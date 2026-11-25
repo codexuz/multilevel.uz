@@ -21,7 +21,8 @@ export const LMS_QUESTION_TYPE_LIST = [
   'TRUE_FALSE',
   'ORDER',
   'TRANSLATION',
-  'DICTATION'
+  'DICTATION',
+  'WRITTEN_RESPONSE'
 ] as const
 
 export type LmsQuestionType = (typeof LMS_QUESTION_TYPE_LIST)[number]
@@ -130,7 +131,15 @@ export const LMS_QUESTION_META: Record<LmsQuestionType, LmsQuestionTypeMeta> = {
     shortLabel: 'Dictation',
     icon: 'i-lucide-headphones',
     category: 'Language',
-    description: 'Listen to an audio clip or built-in voice playback and transcribe accurately.'
+    description: 'Listen to a clip, or to timed segments of a recording, video or YouTube video, and write down what you hear.'
+  },
+  WRITTEN_RESPONSE: {
+    type: 'WRITTEN_RESPONSE',
+    label: 'Written Response',
+    shortLabel: 'Written',
+    icon: 'i-lucide-pen-line',
+    category: 'Language',
+    description: 'Summarise an article, describe a picture or answer a prompt in writing; marked by AI against key points, then by the teacher.'
   }
 }
 
@@ -187,10 +196,47 @@ export interface LmsQuestionConfig {
   sourceLang?: string
   targetLang?: string
   hint?: string
-  /** DICTATION: text for built-in Web Speech TTS fallback + max replays */
+  /** DICTATION: text for built-in Web Speech TTS fallback + max replays (per segment with segments) */
   ttsText?: string
   ttsLang?: string
   maxPlays?: number | null
+  /**
+   * DICTATION from a recording: a YouTube address (otherwise the uploaded `audioRef`, audio or video),
+   * cut into timed segments; each segment's text is its accepted answer (acceptedAnswers[segment.id]).
+   */
+  youtubeUrl?: string | null
+  segments?: LmsDictationSegment[]
+  /** DICTATION from a video file: play the sound only. */
+  audioOnly?: boolean
+  /** WRITTEN_RESPONSE: what is asked; the article is the question's context, the picture its imageRef. */
+  mode?: WrittenMode
+  minWords?: number | null
+  maxWords?: number | null
+  /** WRITTEN_RESPONSE (teacher only): the ideas a good answer covers, and a model answer. */
+  keyPoints?: string[]
+  modelAnswer?: string
+}
+
+/** One timed piece of a dictation recording, in seconds. */
+export interface LmsDictationSegment { id: string, start: number, end: number }
+
+export const WRITTEN_MODES = ['SUMMARY', 'DESCRIBE_IMAGE', 'RESPONSE'] as const
+export type WrittenMode = (typeof WRITTEN_MODES)[number]
+
+/** The marking of a written response: the AI's, then (if they look at it) the teacher's. */
+export interface WrittenReview {
+  /** AI: marked by the AI; PENDING: waiting for the teacher (the AI could not mark it); TEACHER: the teacher's mark. */
+  status: 'AI' | 'PENDING' | 'TEACHER'
+  /** 0..100 */
+  score?: number
+  words: number
+  feedback?: string
+  criteria?: Array<{ key: 'content' | 'ownWords' | 'language' | 'organisation', score: number, comment: string }>
+  keyPoints?: Array<{ point: string, covered: 'YES' | 'PARTLY' | 'NO' }>
+  /** Phrases taken word for word from the article, and how much of the answer they make. */
+  copied?: { percent: number, phrases: string[] }
+  teacherComment?: string
+  aiScore?: number
 }
 
 /**
@@ -240,6 +286,10 @@ export interface LmsQuestionGrade {
   /** Per-gap results for completion/drag-drop, or per-item for ORDER, or word diff for DICTATION. */
   blanks?: Record<string, { given: string, correct: boolean, expected: string[] }>
   diff?: Array<{ word: string, status: 'match' | 'missing' | 'extra' }>
+  /** DICTATION with segments: each segment's word diff and accuracy (0..1). */
+  segments?: Record<string, { given: string, expected: string, diff: Array<{ word: string, status: 'match' | 'missing' | 'extra' }>, accuracy: number, exact: boolean }>
+  /** WRITTEN_RESPONSE */
+  review?: WrittenReview
   errorSpot?: { selectedIndex: number | null, expectedIndex: number, indexCorrect: boolean, correctionCorrect?: boolean }
   expected?: unknown
   explanation?: string | null
@@ -517,6 +567,13 @@ export function defaultQuestionTemplate(type: LmsQuestionType): {
         context: null,
         config: { ttsText: 'Effective communication requires both clear speaking and active listening.', ttsLang: 'en-GB', maxPlays: null },
         acceptedAnswers: ['Effective communication requires both clear speaking and active listening.']
+      }
+    case 'WRITTEN_RESPONSE':
+      return {
+        prompt: 'Read the article and write a summary of its main ideas in your own words.',
+        context: null,
+        config: { mode: 'SUMMARY', minWords: 60, maxWords: 120, keyPoints: [], modelAnswer: '' },
+        acceptedAnswers: []
       }
   }
 }

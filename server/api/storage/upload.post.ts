@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
 
-type Purpose = 'test-audio' | 'test-asset' | 'recording' | 'avatar' | 'course-file' | 'course-audio' | 'course-image'
+type Purpose = 'test-audio' | 'test-asset' | 'recording' | 'avatar' | 'course-file' | 'course-audio' | 'course-media' | 'course-image'
 const STAFF_PURPOSES: Purpose[] = ['test-audio', 'test-asset']
-const TEACHER_PURPOSES: Purpose[] = ['course-file', 'course-audio', 'course-image']
+const TEACHER_PURPOSES: Purpose[] = ['course-file', 'course-audio', 'course-media', 'course-image']
 
 const PREFIX: Record<Purpose, string> = {
   'test-audio': 'tests/audio',
@@ -12,6 +12,7 @@ const PREFIX: Record<Purpose, string> = {
   'avatar': 'avatars',
   'course-file': 'courses/files',
   'course-audio': 'courses/audio',
+  'course-media': 'courses/media',
   'course-image': 'courses/images'
 }
 
@@ -26,6 +27,8 @@ const ALLOWED: Record<Purpose, (mime: string) => boolean> = {
   'course-file': mime => mime === 'application/pdf',
   // Dictation / listening audio in LMS exercises.
   'course-audio': mime => mime.startsWith('audio/'),
+  // A dictation's recording: a sound or a video file.
+  'course-media': mime => mime.startsWith('audio/') || ['video/mp4', 'video/webm', 'video/quicktime'].includes(mime),
   // Course covers and LMS question illustrations.
   'course-image': mime => mime.startsWith('image/') && mime !== 'image/svg+xml'
 }
@@ -35,7 +38,7 @@ const EXT_BY_TYPE: Record<string, string> = {
   'audio/wav': 'wav', 'audio/x-wav': 'wav', 'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a',
   'audio/aac': 'aac', 'audio/flac': 'flac',
   'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif',
-  'image/avif': 'avif', 'image/heic': 'heic', 'text/vtt': 'vtt', 'application/pdf': 'pdf'
+  'image/avif': 'avif', 'image/heic': 'heic', 'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov', 'text/vtt': 'vtt', 'application/pdf': 'pdf'
 }
 
 /**

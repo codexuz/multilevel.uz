@@ -10,14 +10,14 @@ const route = useRoute()
 const router = useRouter()
 
 interface ExamRow { id: string, userId: string, studentName: string, avatarUrl: string | null, classes: string[], testTitle: string, skill: string, exam: string, score: number | null, band: number | null, cefrLevel: string | null, status: string, submittedAt: string, to: string }
-interface QuizRow { id: string, userId: string, studentName: string, avatarUrl: string | null, classes: string[], courseTitle: string, lessonTitle: string, exerciseTitle: string, score: number, earnedPoints: number, totalPoints: number, passed: boolean, submittedAt: string }
+interface QuizRow { id: string, userId: string, studentName: string, avatarUrl: string | null, classes: string[], courseTitle: string, lessonTitle: string, exerciseTitle: string, score: number, earnedPoints: number, totalPoints: number, passed: boolean, reviewStatus: string | null, submittedAt: string }
 
 // On the Results page the class is in the address, so a class's "All results" link opens it.
 const picked = computed<string>({
   get: () => props.groupId ?? (typeof route.query.class === 'string' ? route.query.class : 'all'),
   set: v => router.replace({ query: { ...route.query, class: v === 'all' ? undefined : v } })
 })
-const { data, status } = await useFetch<{ groups: { id: string, name: string }[], examResults: ExamRow[], exerciseResults: QuizRow[] }>('/api/teacher/results', {
+const { data, status, refresh } = await useFetch<{ groups: { id: string, name: string }[], examResults: ExamRow[], exerciseResults: QuizRow[] }>('/api/teacher/results', {
   query: { groupId: computed(() => (picked.value === 'all' ? undefined : picked.value)) },
   default: () => ({ groups: [], examResults: [], exerciseResults: [] })
 })
@@ -41,10 +41,20 @@ const studentItems = computed(() => {
 })
 
 const q = computed(() => search.value.trim().toLowerCase())
+// Written responses to look at: the AI marked them, or could not.
+const toReviewOnly = ref(false)
+const toReview = computed(() => data.value.exerciseResults.filter(r => r.reviewStatus === 'AI' || r.reviewStatus === 'PENDING').length)
+const reviewing = ref<string | null>(null)
+const reviewOpen = ref(false)
+function review(id: string) {
+  reviewing.value = id
+  reviewOpen.value = true
+}
 const exams = computed(() => data.value.examResults.filter(r => (skill.value === 'all' || r.skill === skill.value)
   && (student.value === 'all' || r.userId === student.value)
   && (!q.value || r.studentName.toLowerCase().includes(q.value) || r.testTitle.toLowerCase().includes(q.value))))
 const quizzes = computed(() => data.value.exerciseResults.filter(r => (student.value === 'all' || r.userId === student.value)
+  && (!toReviewOnly.value || r.reviewStatus === 'AI' || r.reviewStatus === 'PENDING')
   && (!q.value || r.studentName.toLowerCase().includes(q.value) || r.courseTitle.toLowerCase().includes(q.value) || r.exerciseTitle.toLowerCase().includes(q.value))))
 const rows = computed(() => (tab.value === 'exams' ? exams.value : quizzes.value))
 function pageOf<T>(list: T[]) {
@@ -133,6 +143,16 @@ const day = (d: string) => localeDate(d, intlLocale(), { day: 'numeric', month: 
           v-model="skill"
           :items="skillItems"
           class="w-36"
+        />
+        <UButton
+          v-if="tab === 'quizzes' && toReview"
+          :label="t('res.toReview', { n: toReview })"
+          icon="i-lucide-pen-line"
+          size="sm"
+          :color="toReviewOnly ? 'primary' : 'neutral'"
+          :variant="toReviewOnly ? 'solid' : 'outline'"
+          data-testid="filter-review"
+          @click="toReviewOnly = !toReviewOnly"
         />
         <USelect
           v-model="student"
@@ -304,12 +324,24 @@ const day = (d: string) => localeDate(d, intlLocale(), { day: 'numeric', month: 
               {{ e.score }}% <span class="text-xs font-normal text-muted">({{ e.earnedPoints }}/{{ e.totalPoints }})</span>
             </td>
             <td class="px-4 py-3">
-              <UBadge
-                :label="e.passed ? t('tdash.passed') : t('tp.tryAgain')"
-                :color="e.passed ? 'success' : 'warning'"
-                variant="soft"
-                size="sm"
-              />
+              <div class="flex flex-wrap items-center gap-1.5">
+                <UBadge
+                  :label="e.passed ? t('tdash.passed') : t('tp.tryAgain')"
+                  :color="e.passed ? 'success' : 'warning'"
+                  variant="soft"
+                  size="sm"
+                />
+                <UButton
+                  v-if="e.reviewStatus"
+                  :label="e.reviewStatus === 'TEACHER' ? t('res.marked') : e.reviewStatus === 'PENDING' ? t('res.needsMark') : t('res.review')"
+                  :icon="e.reviewStatus === 'TEACHER' ? 'i-lucide-user-check' : 'i-lucide-pen-line'"
+                  size="xs"
+                  :color="e.reviewStatus === 'PENDING' ? 'warning' : e.reviewStatus === 'TEACHER' ? 'neutral' : 'primary'"
+                  :variant="e.reviewStatus === 'TEACHER' ? 'ghost' : 'soft'"
+                  data-testid="open-review"
+                  @click="review(e.id)"
+                />
+              </div>
             </td>
             <td class="px-4 py-3 text-xs text-muted whitespace-nowrap">
               {{ day(e.submittedAt) }}
@@ -326,6 +358,11 @@ const day = (d: string) => localeDate(d, intlLocale(), { day: 'numeric', month: 
         </tbody>
       </table>
     </div>
+    <TeacherWrittenReview
+      v-model:open="reviewOpen"
+      :attempt-id="reviewing"
+      @saved="refresh()"
+    />
     <UPagination
       v-if="rows.length > PAGE"
       v-model:page="page"

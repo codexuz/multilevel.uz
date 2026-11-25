@@ -239,6 +239,13 @@
       "when": 1795579931695,
       "tag": "0033_xp_and_vocab",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1795598995464,
+      "tag": "0034_exercise_review",
+      "breakpoints": true
     }
   ]
 }

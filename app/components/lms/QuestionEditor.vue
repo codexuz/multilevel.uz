@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { LmsAcceptedAnswers, LmsOptionItem, LmsOrderItem, LmsQuestionConfig, LmsQuestionDto, LmsQuestionType } from '#shared/utils/lms'
+import type { LmsAcceptedAnswers, LmsOptionItem, LmsOrderItem, LmsQuestionConfig, LmsQuestionDto, LmsQuestionType, WrittenMode } from '#shared/utils/lms'
 import { uploadFile } from '~/services/http'
 
 const props = defineProps<{
@@ -83,6 +83,115 @@ const orderItems = ref<LmsOrderItem[]>(
 const ttsText = ref(initCfg.ttsText ?? (Array.isArray(initAcc) ? initAcc[0] ?? '' : ''))
 const ttsLang = ref(initCfg.ttsLang ?? 'en-GB')
 const maxPlays = ref<number | undefined>(initCfg.maxPlays ?? undefined)
+
+// DICTATION from a recording or YouTube, in timed segments (each segment's text is its accepted answer)
+interface EditSegment { id: string, start: number, end: number, text: string }
+const dictSource = ref<'TTS' | 'FILE' | 'YOUTUBE'>(initCfg.youtubeUrl ? 'YOUTUBE' : (initCfg.segments?.length || (props.question?.type === 'DICTATION' && props.question.audioRef && isVideoFile(props.question.audioRef))) ? 'FILE' : 'TTS')
+const youtubeUrl = ref(initCfg.youtubeUrl ?? '')
+const audioOnly = ref(!!initCfg.audioOnly)
+const segMap = initAcc && !Array.isArray(initAcc) ? initAcc : {}
+const segments = ref<EditSegment[]>((initCfg.segments ?? []).map(sg => ({ ...sg, text: (segMap[sg.id] ?? [])[0] ?? '' })))
+const media = ref<{ play: (a: number, b: number, r?: number) => Promise<void>, stop: () => void, currentTime: () => number } | null>(null)
+const newSegId = () => `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`
+/** Seconds as m:ss.s */
+const fmtTime = (sec: number) => {
+  const m = Math.floor(sec / 60)
+  const rest = sec - m * 60
+  return `${m}:${rest < 10 ? '0' : ''}${rest.toFixed(1)}`
+}
+/** "1:10", "01:10.5", "0:01:10" or "70" as seconds; null if not a time. */
+function parseTime(v: string): number | null {
+  const parts = v.trim().split(':').map(x => x.trim())
+  if (!parts.length || parts.some(x => !/^\d+(\.\d+)?$/.test(x))) return null
+  return Math.round(parts.reduce((acc, x) => acc * 60 + Number(x), 0) * 10) / 10
+}
+function setTime(seg: EditSegment, which: 'start' | 'end', v: string) {
+  const t2 = parseTime(v)
+  if (t2 != null) seg[which] = t2
+}
+function markNow(seg: EditSegment, which: 'start' | 'end') {
+  if (media.value) seg[which] = Math.round(media.value.currentTime() * 10) / 10
+}
+function addSegment() {
+  const last = segments.value.at(-1)
+  const start = last ? last.end : 0
+  segments.value.push({ id: newSegId(), start, end: start + 5, text: '' })
+}
+const previewing = ref<string | null>(null)
+function preview(seg: EditSegment) {
+  previewing.value = seg.id
+  media.value?.play(seg.start, seg.end)
+}
+const pasteOpen = ref(false)
+const pasteText = ref('')
+/** Lines like "00:01-01:10 The text" (or "00:01 - 01:10 | The text") become segments. */
+const pasted = computed(() => pasteText.value.split('\n').map((line) => {
+  const m = /^\s*([\d:.]+)\s*[-–—]\s*([\d:.]+)\s*[|:\-–—]?\s*(.*)$/.exec(line)
+  if (!m) return null
+  const start = parseTime(m[1]!)
+  const end = parseTime(m[2]!)
+  return start != null && end != null && end > start ? { id: newSegId(), start, end, text: m[3]!.trim() } : null
+}).filter((x): x is EditSegment => !!x))
+function applyPaste() {
+  if (!pasted.value.length) return
+  segments.value = pasted.value
+  pasteOpen.value = false
+  pasteText.value = ''
+}
+const splitting = ref(false)
+const { confirm } = useDialogs()
+async function autoSplit() {
+  if (!audioRef.value) return
+  if (segments.value.length && !await confirm({ title: t('qe.splitReplace'), confirmLabel: t('qe.autoSplit'), color: 'warning' })) return
+  splitting.value = true
+  try {
+    const r = await $fetch<{ segments: { start: number, end: number, text: string }[] }>('/api/course-questions/dictation-segments', { method: 'POST', body: { ref: audioRef.value } })
+    segments.value = r.segments.map(sg => ({ ...sg, id: newSegId() }))
+    toast.add({ title: t('qe.splitDone', { n: r.segments.length }), color: 'success' })
+  } catch (e) {
+    toast.add({ title: t('qe.splitFailed'), description: errorMessage(e), color: 'error' })
+  } finally {
+    splitting.value = false
+  }
+}
+const uploadingMedia = ref(false)
+async function onUploadMedia(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  uploadingMedia.value = true
+  try {
+    const up = await uploadFile(file, { purpose: 'course-media' })
+    audioRef.value = up.url
+    toast.add({ title: t('qe.audioUploaded'), color: 'success' })
+  } catch (err) {
+    toast.add({ title: t('courses.notUploaded'), description: errorMessage(err), color: 'error' })
+  } finally {
+    uploadingMedia.value = false
+  }
+}
+
+// WRITTEN_RESPONSE
+const wrMode = ref<WrittenMode>(initCfg.mode ?? 'SUMMARY')
+const wrMin = ref<number | undefined>(initCfg.minWords ?? undefined)
+const wrMax = ref<number | undefined>(initCfg.maxWords ?? undefined)
+const wrKeyPoints = ref((initCfg.keyPoints ?? []).join('\n'))
+const wrModel = ref(initCfg.modelAnswer ?? '')
+const drafting = ref(false)
+async function draftKeys() {
+  drafting.value = true
+  try {
+    const r = await $fetch<{ keyPoints: string[], modelAnswer: string }>('/api/course-questions/written-draft', {
+      method: 'POST',
+      body: { mode: wrMode.value, prompt: prompt.value, context: context.value || null, imageRef: imageRef.value || null, minWords: wrMin.value ?? null, maxWords: wrMax.value ?? null }
+    })
+    wrKeyPoints.value = r.keyPoints.join('\n')
+    wrModel.value = r.modelAnswer
+  } catch (e) {
+    toast.add({ title: t('qe.draftFailed'), description: errorMessage(e), color: 'error' })
+  } finally {
+    drafting.value = false
+  }
+}
 
 function switchType(nextType: LmsQuestionType) {
   type.value = nextType
@@ -243,6 +352,21 @@ async function save() {
     } else if (type.value === 'TRANSLATION') {
       config = { sourceLang: sourceLang.value, targetLang: targetLang.value, hint: hint.value.trim() || undefined }
       acceptedAnswers = textAnswers.value.split('\n').map(s => s.trim()).filter(Boolean)
+    } else if (type.value === 'DICTATION' && dictSource.value !== 'TTS') {
+      const segs = [...segments.value].sort((a, b) => a.start - b.start)
+      if (dictSource.value === 'YOUTUBE' && !youtubeId(youtubeUrl.value)) throw new Error(t('qe.needYoutube'))
+      if (dictSource.value === 'FILE' && !audioRef.value) throw new Error(t('qe.needRecording'))
+      if (!segs.length) throw new Error(t('qe.needSegments'))
+      const bad = segs.findIndex(sg => !(sg.end > sg.start) || !sg.text.trim())
+      if (bad >= 0) throw new Error(t('qe.badSegment', { n: bad + 1 }))
+      config = { youtubeUrl: dictSource.value === 'YOUTUBE' ? youtubeUrl.value.trim() : null, segments: segs.map(({ id, start, end }) => ({ id, start, end })), maxPlays: maxPlays.value || null, audioOnly: audioOnly.value }
+      acceptedAnswers = Object.fromEntries(segs.map(sg => [sg.id, [sg.text.trim()]]))
+      ctx = null
+    } else if (type.value === 'WRITTEN_RESPONSE') {
+      if (wrMode.value === 'SUMMARY' && !context.value.trim()) throw new Error(t('qe.needArticle'))
+      if (wrMode.value === 'DESCRIBE_IMAGE' && !imageRef.value) throw new Error(t('qe.needPicture'))
+      config = { mode: wrMode.value, minWords: wrMin.value || null, maxWords: wrMax.value || null, keyPoints: wrKeyPoints.value.split('\n').map(x => x.trim()).filter(Boolean), modelAnswer: wrModel.value.trim() || undefined }
+      acceptedAnswers = []
     } else if (type.value === 'DICTATION') {
       const alts = textAnswers.value.split('\n').map(s => s.trim()).filter(Boolean)
       config = { ttsText: ttsText.value.trim() || alts[0] || '', ttsLang: ttsLang.value, maxPlays: maxPlays.value || null }
@@ -254,7 +378,7 @@ async function save() {
       type: type.value,
       prompt: prompt.value.trim(),
       context: ctx,
-      audioRef: audioRef.value.trim() || null,
+      audioRef: type.value === 'DICTATION' && dictSource.value === 'YOUTUBE' ? null : (audioRef.value.trim() || null),
       imageRef: imageRef.value.trim() || null,
       config,
       acceptedAnswers,
@@ -742,46 +866,247 @@ async function save() {
 
     <!-- TYPE 12: DICTATION -->
     <template v-else-if="type === 'DICTATION'">
-      <div class="rounded-xl bg-elevated/40 ring ring-default p-3 flex flex-col gap-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <p class="text-xs font-semibold text-highlighted">
-            {{ t('qe.audioSource') }}
-          </p>
-          <label class="cursor-pointer">
-            <UButton
-              as="span"
-              :label="uploadingAudio ? t('qe.uploading') : t('qe.uploadAudio')"
-              icon="i-lucide-upload"
-              size="xs"
-              variant="outline"
-              :loading="uploadingAudio"
-            />
-            <input
-              type="file"
-              accept="audio/*"
-              class="hidden"
-              @change="onUploadAudio"
-            >
-          </label>
-        </div>
-        <audio
-          v-if="audioRef"
-          :src="mediaUrl(audioRef)"
-          controls
-          class="w-full h-9"
+      <UFormField :label="t('qe.dictSource')">
+        <UTabs
+          v-model="dictSource"
+          :items="[
+            { label: t('qe.srcTts'), value: 'TTS', icon: 'i-lucide-audio-lines' },
+            { label: t('qe.srcFile'), value: 'FILE', icon: 'i-lucide-file-audio' },
+            { label: t('qe.srcYoutube'), value: 'YOUTUBE', icon: 'i-simple-icons-youtube' }
+          ]"
+          :content="false"
+          size="sm"
+          data-testid="dict-source"
         />
-        <div class="grid sm:grid-cols-3 gap-2">
+      </UFormField>
+
+      <!-- One clip, or text read aloud by the browser -->
+      <template v-if="dictSource === 'TTS'">
+        <div class="rounded-xl bg-elevated/40 ring ring-default p-3 flex flex-col gap-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <p class="text-xs font-semibold text-highlighted">
+              {{ t('qe.audioSource') }}
+            </p>
+            <label class="cursor-pointer">
+              <UButton
+                as="span"
+                :label="uploadingAudio ? t('qe.uploading') : t('qe.uploadAudio')"
+                icon="i-lucide-upload"
+                size="xs"
+                variant="outline"
+                :loading="uploadingAudio"
+              />
+              <input
+                type="file"
+                accept="audio/*"
+                class="hidden"
+                @change="onUploadAudio"
+              >
+            </label>
+          </div>
+          <audio
+            v-if="audioRef"
+            :src="mediaUrl(audioRef)"
+            controls
+            class="w-full h-9"
+          />
+          <div class="grid sm:grid-cols-3 gap-2">
+            <UFormField
+              :label="t('qe.tts')"
+              class="sm:col-span-2"
+            >
+              <UInput
+                v-model="ttsText"
+                :placeholder="t('qe.ttsPlaceholder')"
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField :label="t('qe.replays')">
+              <UInputNumber
+                v-model="maxPlays"
+                :min="1"
+                :max="20"
+                class="w-full"
+              />
+            </UFormField>
+          </div>
+        </div>
+        <UFormField
+          :label="t('qe.transcripts')"
+          :help="t('qe.transcriptsHelp')"
+        >
+          <UTextarea
+            v-model="textAnswers"
+            :rows="2"
+            class="w-full"
+          />
+        </UFormField>
+      </template>
+
+      <!-- A recording or a YouTube video, in timed segments -->
+      <template v-else>
+        <div class="rounded-xl bg-elevated/40 ring ring-default p-3 flex flex-col gap-3">
+          <div
+            v-if="dictSource === 'FILE'"
+            class="flex flex-wrap items-center gap-2"
+          >
+            <label class="cursor-pointer">
+              <UButton
+                as="span"
+                :label="uploadingMedia ? t('qe.uploading') : (audioRef ? t('qe.replaceRecording') : t('qe.uploadRecording'))"
+                icon="i-lucide-upload"
+                size="sm"
+                variant="outline"
+                :loading="uploadingMedia"
+              />
+              <input
+                type="file"
+                accept="audio/*,video/mp4,video/webm,video/quicktime"
+                class="hidden"
+                data-testid="dict-upload"
+                @change="onUploadMedia"
+              >
+            </label>
+            <span class="text-xs text-muted">{{ t('qe.recordingHelp') }}</span>
+          </div>
           <UFormField
-            :label="t('qe.tts')"
-            class="sm:col-span-2"
+            v-else
+            :label="t('qe.youtubeLink')"
           >
             <UInput
-              v-model="ttsText"
-              :placeholder="t('qe.ttsPlaceholder')"
+              v-model="youtubeUrl"
+              placeholder="https://www.youtube.com/watch?v=…"
+              icon="i-simple-icons-youtube"
               class="w-full"
+              data-testid="dict-youtube"
             />
           </UFormField>
-          <UFormField :label="t('qe.replays')">
+          <LmsSegmentMedia
+            v-if="(dictSource === 'FILE' && audioRef) || (dictSource === 'YOUTUBE' && youtubeId(youtubeUrl))"
+            ref="media"
+            :src="dictSource === 'FILE' ? audioRef : null"
+            :youtube-url="dictSource === 'YOUTUBE' ? youtubeUrl : null"
+            controls
+            @ended="previewing = null"
+          />
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <p class="text-sm font-bold text-highlighted me-auto">
+              {{ t('qe.segments', { n: segments.length }) }}
+            </p>
+            <UButton
+              v-if="dictSource === 'FILE'"
+              :label="t('qe.autoSplit')"
+              icon="i-lucide-sparkles"
+              size="xs"
+              :loading="splitting"
+              :disabled="!audioRef"
+              data-testid="dict-autosplit"
+              @click="autoSplit"
+            />
+            <UButton
+              :label="t('qe.pasteTimes')"
+              icon="i-lucide-clipboard-paste"
+              size="xs"
+              color="neutral"
+              variant="outline"
+              data-testid="dict-paste"
+              @click="pasteOpen = true"
+            />
+            <UButton
+              :label="t('qe.addSegment')"
+              icon="i-lucide-plus"
+              size="xs"
+              color="neutral"
+              variant="outline"
+              data-testid="dict-add"
+              @click="addSegment"
+            />
+          </div>
+          <p
+            v-if="!segments.length"
+            class="text-xs text-muted"
+          >
+            {{ t('qe.segmentsHelp') }}
+          </p>
+          <div
+            v-for="(seg, i) in segments"
+            :key="seg.id"
+            class="rounded-lg ring ring-default p-2.5 flex flex-col gap-2"
+            data-testid="dict-segment"
+          >
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="text-xs font-extrabold text-dimmed w-5 tabular-nums">{{ i + 1 }}</span>
+              <UInput
+                :model-value="fmtTime(seg.start)"
+                size="xs"
+                class="w-20 font-mono"
+                :aria-label="t('qe.start')"
+                @change="(e: Event) => setTime(seg, 'start', (e.target as HTMLInputElement).value)"
+              />
+              <UTooltip :text="t('qe.setFromPlayer')">
+                <UButton
+                  icon="i-lucide-map-pin"
+                  size="xs"
+                  color="neutral"
+                  variant="ghost"
+                  :aria-label="t('qe.setFromPlayer')"
+                  @click="markNow(seg, 'start')"
+                />
+              </UTooltip>
+              <span class="text-dimmed">–</span>
+              <UInput
+                :model-value="fmtTime(seg.end)"
+                size="xs"
+                class="w-20 font-mono"
+                :aria-label="t('qe.end')"
+                @change="(e: Event) => setTime(seg, 'end', (e.target as HTMLInputElement).value)"
+              />
+              <UTooltip :text="t('qe.setFromPlayer')">
+                <UButton
+                  icon="i-lucide-map-pin"
+                  size="xs"
+                  color="neutral"
+                  variant="ghost"
+                  :aria-label="t('qe.setFromPlayer')"
+                  @click="markNow(seg, 'end')"
+                />
+              </UTooltip>
+              <UButton
+                :icon="previewing === seg.id ? 'i-lucide-volume-2' : 'i-lucide-play'"
+                size="xs"
+                color="neutral"
+                variant="outline"
+                class="ms-auto"
+                :aria-label="t('quiz.play')"
+                @click="preview(seg)"
+              />
+              <UButton
+                icon="i-lucide-trash-2"
+                size="xs"
+                color="error"
+                variant="ghost"
+                :aria-label="t('common.delete')"
+                @click="segments.splice(i, 1)"
+              />
+            </div>
+            <UTextarea
+              v-model="seg.text"
+              :rows="1"
+              autoresize
+              :placeholder="t('qe.segmentText')"
+              class="w-full"
+            />
+          </div>
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-3">
+          <UFormField
+            :label="t('qe.playsPerSegment')"
+            :help="t('qe.unlimitedHelp')"
+          >
             <UInputNumber
               v-model="maxPlays"
               :min="1"
@@ -789,18 +1114,150 @@ async function save() {
               class="w-full"
             />
           </UFormField>
+          <UFormField
+            v-if="dictSource === 'FILE' && isVideoFile(audioRef)"
+            :label="t('qe.audioOnly')"
+          >
+            <USwitch
+              v-model="audioOnly"
+              :label="t('qe.audioOnlyHelp')"
+            />
+          </UFormField>
         </div>
-      </div>
-      <UFormField
-        :label="t('qe.transcripts')"
-        :help="t('qe.transcriptsHelp')"
-      >
-        <UTextarea
-          v-model="textAnswers"
-          :rows="2"
-          class="w-full"
+
+        <UModal
+          v-model:open="pasteOpen"
+          :title="t('qe.pasteTimes')"
+          :description="t('qe.pasteHelp')"
+        >
+          <template #body>
+            <UTextarea
+              v-model="pasteText"
+              :rows="8"
+              autofocus
+              placeholder="00:01-00:09 The museum opens at nine.&#10;00:09-00:15 Tickets cost five pounds."
+              class="w-full font-mono"
+              data-testid="dict-paste-text"
+            />
+            <p class="text-xs text-muted mt-2">
+              {{ t('qe.pasteFound', { n: pasted.length }) }}
+            </p>
+          </template>
+          <template #footer>
+            <div class="flex justify-end gap-2 w-full">
+              <UButton
+                :label="t('common.cancel')"
+                color="neutral"
+                variant="ghost"
+                @click="pasteOpen = false"
+              />
+              <UButton
+                :label="t('qe.useSegments', { n: pasted.length })"
+                :disabled="!pasted.length"
+                data-testid="dict-paste-apply"
+                @click="applyPaste"
+              />
+            </div>
+          </template>
+        </UModal>
+      </template>
+    </template>
+
+    <!-- TYPE 13: WRITTEN_RESPONSE -->
+    <template v-else-if="type === 'WRITTEN_RESPONSE'">
+      <UFormField :label="t('qe.wrMode')">
+        <UTabs
+          v-model="wrMode"
+          :items="[
+            { label: t('qe.wrSummary'), value: 'SUMMARY', icon: 'i-lucide-newspaper' },
+            { label: t('qe.wrImage'), value: 'DESCRIBE_IMAGE', icon: 'i-lucide-image' },
+            { label: t('qe.wrResponse'), value: 'RESPONSE', icon: 'i-lucide-message-square-text' }
+          ]"
+          :content="false"
+          size="sm"
+          data-testid="wr-mode"
         />
       </UFormField>
+      <UFormField
+        v-if="wrMode !== 'DESCRIBE_IMAGE'"
+        :label="wrMode === 'SUMMARY' ? t('qe.article') : t('qe.material')"
+        :help="wrMode === 'SUMMARY' ? t('qe.articleHelp') : t('qe.materialHelp')"
+        :required="wrMode === 'SUMMARY'"
+      >
+        <UTextarea
+          v-model="context"
+          :rows="8"
+          autoresize
+          :maxrows="18"
+          class="w-full"
+          data-testid="wr-article"
+        />
+      </UFormField>
+      <p
+        v-else
+        class="text-sm text-muted flex items-center gap-1.5"
+      >
+        <UIcon
+          name="i-lucide-image"
+          class="size-4"
+        />{{ imageRef ? t('qe.pictureSet') : t('qe.pictureBelow') }}
+      </p>
+      <div class="grid grid-cols-2 gap-3">
+        <UFormField :label="t('qe.minWords')">
+          <UInputNumber
+            v-model="wrMin"
+            :min="0"
+            :max="2000"
+            class="w-full"
+          />
+        </UFormField>
+        <UFormField :label="t('qe.maxWords')">
+          <UInputNumber
+            v-model="wrMax"
+            :min="0"
+            :max="3000"
+            class="w-full"
+          />
+        </UFormField>
+      </div>
+      <div class="rounded-xl bg-elevated/40 ring ring-default p-3 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <p class="text-sm font-bold text-highlighted me-auto">
+            {{ t('qe.forMarking') }}
+          </p>
+          <UButton
+            :label="t('qe.draftWithAi')"
+            icon="i-lucide-sparkles"
+            size="xs"
+            :loading="drafting"
+            data-testid="wr-draft"
+            @click="draftKeys"
+          />
+        </div>
+        <UFormField
+          :label="t('qe.keyPoints')"
+          :help="t('qe.keyPointsHelp')"
+        >
+          <UTextarea
+            v-model="wrKeyPoints"
+            :rows="4"
+            autoresize
+            class="w-full"
+            data-testid="wr-keypoints"
+          />
+        </UFormField>
+        <UFormField
+          :label="t('qe.modelAnswer')"
+          :help="t('qe.modelAnswerHelp')"
+        >
+          <UTextarea
+            v-model="wrModel"
+            :rows="3"
+            autoresize
+            class="w-full"
+          />
+        </UFormField>
+      </div>
     </template>
 
     <!-- Optional Illustration & Explanation -->
