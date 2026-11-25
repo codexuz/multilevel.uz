@@ -89,6 +89,13 @@ function openAi(mode: 'generate' | 'import') {
   aiOpen.value = true
 }
 
+/** How an empty deck gets its cards: the AI from its topic, the AI from a text, or by hand. */
+const startWays = computed(() => [
+  { key: 'ai', icon: 'i-lucide-sparkles', title: t('vocab.aiCreate'), text: deck.value?.topic ? t('vocab.startAiTopic', { topic: deck.value.topic }) : t('vocab.startAi'), go: () => openAi('generate') },
+  { key: 'import', icon: 'i-lucide-file-input', title: t('vocab.aiImport'), text: t('vocab.startImport'), go: () => openAi('import') },
+  { key: 'hand', icon: 'i-lucide-pencil', title: t('vocab.startHand'), text: t('vocab.startHandText'), go: () => editCard(null) }
+])
+
 async function removeDeck() {
   if (!await confirm({ title: t('vocab.deleteDeck'), description: t('vocab.deleteDeckText'), confirmLabel: t('vocab.deleteDeck') })) return
   try {
@@ -127,12 +134,15 @@ const say = (text: string) => {
 
     <div class="grid lg:grid-cols-[1fr_20rem] gap-5 items-start">
       <div class="flex flex-col gap-4 min-w-0 order-2 lg:order-1">
-        <div class="flex flex-wrap items-center gap-2">
+        <div
+          v-if="deck.cards.length"
+          class="flex flex-wrap items-center gap-2"
+        >
           <h2 class="text-lg font-extrabold text-highlighted me-auto">
             {{ t('vocab.cardCount', { n: deck.cards.length }, deck.cards.length) }}
           </h2>
           <UButton
-            :label="t('vocab.addWithAi')"
+            :label="t('vocab.aiCreate')"
             icon="i-lucide-sparkles"
             data-testid="deck-ai-generate"
             @click="openAi('generate')"
@@ -229,13 +239,43 @@ const say = (text: string) => {
             </div>
           </li>
         </ul>
-        <UEmpty
+        <!-- A new deck: the three ways to fill it -->
+        <div
           v-else-if="!deck.cards.length"
-          icon="i-lucide-sparkles"
-          :title="t('vocab.noCards')"
-          :description="t('vocab.noCardsText')"
-          :actions="[{ label: t('vocab.addWithAi'), icon: 'i-lucide-sparkles', onClick: () => openAi('generate') }]"
-        />
+          class="flex flex-col gap-3"
+          data-testid="deck-start"
+        >
+          <div>
+            <h2 class="text-lg font-extrabold text-highlighted">
+              {{ t('vocab.startTitle') }}
+            </h2>
+            <p class="text-sm text-muted">
+              {{ t('vocab.startText') }}
+            </p>
+          </div>
+          <div class="grid sm:grid-cols-3 gap-3">
+            <button
+              v-for="w in startWays"
+              :key="w.key"
+              type="button"
+              class="tile p-4 flex flex-col gap-2 text-start cursor-pointer hover:bg-elevated/50 focus-visible:outline-2 focus-visible:outline-primary"
+              :data-testid="`start-${w.key}`"
+              @click="w.go"
+            >
+              <span
+                class="grid place-items-center size-11 rounded-lg"
+                :class="w.key === 'ai' ? 'bg-primary text-inverted' : 'bg-primary/10 text-primary'"
+              >
+                <UIcon
+                  :name="w.icon"
+                  class="size-6"
+                />
+              </span>
+              <span class="font-extrabold text-highlighted">{{ w.title }}</span>
+              <span class="text-sm text-muted">{{ w.text }}</span>
+            </button>
+          </div>
+        </div>
         <UEmpty
           v-else
           icon="i-lucide-search-x"
@@ -341,7 +381,6 @@ const say = (text: string) => {
       v-model:open="aiOpen"
       :mode="aiMode"
       :deck-id="deck.id"
-      :categories="categories"
       :defaults="{ topic: deck.topic, category: deck.category, level: deck.level }"
       @done="refresh()"
     />
