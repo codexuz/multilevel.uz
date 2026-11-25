@@ -28,5 +28,6 @@ export default defineEventHandler(async (event) => {
   }
 
   await db.insert(lessonProgress).values({ lessonId: lesson.id, userId: user.id }).onConflictDoNothing()
-  return { done: true }
+  const xpGained = await awardXpQuietly(user.id, 'lesson', XP.lesson, `lesson:${lesson.id}`)
+  return { done: true, xpGained }
 })

@@ -44,6 +44,8 @@ export const users = pgTable('users', {
   /** The last day the bot sent a study plan reminder, so it writes at most once a day. */
   planRemindedOn: date('plan_reminded_on', { mode: 'string' }),
   onboarded: boolean('onboarded').notNull().default(false),
+  /** XP a day the student aims for (10 casual, 30 regular, 50 serious, 100 intense). */
+  dailyGoal: integer('daily_goal').notNull().default(30),
   /** Made for a walk-in candidate of a mock session: it signs in only at their seat (mock-sessions.ts). */
   mockOnly: boolean('mock_only').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -988,3 +990,71 @@ export const ordersRelations = relations(orders, ({ one }) => ({
   user: one(users, { fields: [orders.userId], references: [users.id] }),
   plan: one(plans, { fields: [orders.planId], references: [plans.id] })
 }))
+
+// ---------- XP: what a learner earns (tests, lessons, quizzes, words), for streaks and goals ----------
+/**
+ * One award of XP. `refKey` names what it was for when it may be earned once only ("lesson:{id}",
+ * "attempt:{id}", "quiz:{id}"); practice that may be repeated has none. A day of a streak is a day
+ * (in Tashkent) with any XP.
+ */
+export const xpEvents = pgTable('xp_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  /** test | lesson | quiz | words | deck */
+  source: text('source').notNull(),
+  amount: integer('amount').notNull(),
+  refKey: text('ref_key'),
+  createdAt: created()
+}, t => [
+  uniqueIndex('xp_events_user_ref_uq').on(t.userId, t.refKey).where(sql`ref_key is not null`),
+  index('xp_events_user_time_idx').on(t.userId, t.createdAt)
+])
+
+// ---------- vocabulary decks: a teacher's word sets, by category and topic, studied by classes ----------
+/** A teacher's deck of words (e.g. category "IELTS", topic "Environment", level B2). */
+export const vocabDecks = pgTable('vocab_decks', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  teacherId: uuid('teacher_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  description: text('description'),
+  category: text('category'),
+  topic: text('topic'),
+  /** A1..C2 */
+  level: text('level'),
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [index('vocab_decks_teacher_idx').on(t.teacherId)])
+
+/** A card of a deck: the word, what it means, an example, and its Uzbek and Russian. */
+export const vocabCards = pgTable('vocab_cards', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  deckId: uuid('deck_id').notNull().references(() => vocabDecks.id, { onDelete: 'cascade' }),
+  position: integer('position').notNull().default(1),
+  term: text('term').notNull(),
+  partOfSpeech: text('part_of_speech'),
+  ipa: text('ipa'),
+  definition: text('definition').notNull(),
+  example: text('example'),
+  translationUz: text('translation_uz'),
+  translationRu: text('translation_ru'),
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [index('vocab_cards_deck_idx').on(t.deckId, t.position)])
+
+/** A deck set to a class: its students study it. */
+export const vocabDeckGroups = pgTable('vocab_deck_groups', {
+  deckId: uuid('deck_id').notNull().references(() => vocabDecks.id, { onDelete: 'cascade' }),
+  groupId: uuid('group_id').notNull().references(() => classGroups.id, { onDelete: 'cascade' }),
+  assignedAt: created()
+}, t => [primaryKey({ columns: [t.deckId, t.groupId] }), index('vocab_deck_groups_group_idx').on(t.groupId)])
+
+/** How a student is doing with a card: its box (0 new … 5 known), when it is due, and the tally. */
+export const vocabProgress = pgTable('vocab_progress', {
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  cardId: uuid('card_id').notNull().references(() => vocabCards.id, { onDelete: 'cascade' }),
+  box: integer('box').notNull().default(0),
+  dueAt: timestamp('due_at', { withTimezone: true }).notNull().defaultNow(),
+  correct: integer('correct').notNull().default(0),
+  wrong: integer('wrong').notNull().default(0),
+  lastAt: timestamp('last_at', { withTimezone: true }).notNull().defaultNow()
+}, t => [primaryKey({ columns: [t.userId, t.cardId] }), index('vocab_progress_user_idx').on(t.userId, t.dueAt)])

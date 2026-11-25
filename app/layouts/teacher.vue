@@ -10,6 +10,7 @@ const navItems = computed<NavigationMenuItem[]>(() => [
   { label: t('panel.myClasses'), icon: 'i-lucide-users', to: '/classes' },
   { label: t('nav.online'), icon: 'i-lucide-video', to: '/teacher/classes' },
   { label: t('nav.courses'), icon: 'i-lucide-graduation-cap', to: '/teacher/courses' },
+  { label: t('vocab.title'), icon: 'i-lucide-layers', to: '/teacher/vocabulary' },
   {
     label: t('panel.tests'),
     icon: 'i-lucide-clipboard-list',

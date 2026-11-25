@@ -7,6 +7,20 @@ import type { SavedWord, WordStats } from '~/utils/words'
  */
 const { t } = useI18n()
 const toast = useToast()
+const route = useRoute()
+const router = useRouter()
+
+// My saved words, or the decks my teachers set (?tab=decks).
+const area = computed<'saved' | 'decks'>({
+  get: () => (route.query.tab === 'decks' ? 'decks' : 'saved'),
+  set: v => router.replace({ query: { ...route.query, tab: v === 'decks' ? 'decks' : undefined } })
+})
+interface MyDeck { id: string, title: string, description: string | null, category: string | null, topic: string | null, level: string | null, teacher: string, cards: number, known: number, seen: number, toPlay: number }
+const { data: decks, status: decksStatus } = await useFetch('/api/me/decks', { lazy: true, transform: (r: { decks: MyDeck[] }) => r.decks, default: (): MyDeck[] => [] })
+const areaTabs = computed(() => [
+  { label: t('words.tabSaved'), value: 'saved', icon: 'i-lucide-bookmark' },
+  { label: t('words.tabDecks'), value: 'decks', icon: 'i-lucide-layers', badge: decks.value.reduce((n, d) => n + (d.toPlay ? 1 : 0), 0) || undefined }
+])
 useSeoMeta({ title: () => t('words.myWords'), robots: 'noindex' })
 
 const { data: stats, refresh: refreshStats } = await useFetch<WordStats>('/api/me/words/stats', { lazy: true })
@@ -21,21 +35,22 @@ watch(search, (v) => {
   typing = setTimeout(() => (q.value = v.trim()), 300)
 })
 const page = ref(1)
+const PAGE_SIZE = 30
 const items = ref<SavedWord[]>([])
 const total = ref(0)
 
 const { data, status } = await useFetch<{ items: SavedWord[], total: number, totalPages: number }>('/api/me/words', {
-  query: { q, show: computed(() => (show.value === 'all' ? undefined : show.value)), page, pageSize: 30 },
+  query: { q, show: computed(() => (show.value === 'all' ? undefined : show.value)), page, pageSize: PAGE_SIZE },
   lazy: true
 })
-// A new search or filter starts the list again; Load more adds the next page under it.
+// A new search or filter starts at the first page.
 watch([q, show], () => (page.value = 1))
 watch(data, (d) => {
   if (!d) return
-  items.value = page.value === 1 ? d.items : [...items.value, ...d.items.filter(w => !items.value.some(x => x.id === w.id))]
+  items.value = d.items
   total.value = d.total
 }, { immediate: true })
-const more = computed(() => items.value.length < total.value)
+watch(page, () => import.meta.client && window.scrollTo({ top: 0, behavior: 'smooth' }))
 
 const tabs = computed(() => [
   { label: t('words.showAll'), value: 'all' },
@@ -57,6 +72,8 @@ async function remove(word: SavedWord) {
     items.value = items.value.filter(w => w.id !== word.id)
     total.value--
     refreshStats()
+    // The last word of a page: step back a page.
+    if (!items.value.length && page.value > 1) page.value--
   } catch (e: any) {
     toast.add({ title: t('words.notRemoved'), description: e?.data?.message, color: 'error' })
   }
@@ -69,175 +86,275 @@ async function remove(word: SavedWord) {
     icon="i-lucide-book-open-text"
   >
     <div class="flex flex-col gap-4 max-w-3xl w-full">
-      <UCard
-        v-if="stats?.total"
-        :ui="{ body: 'p-4 sm:p-5' }"
-        data-testid="review-cta"
-      >
-        <div class="flex flex-wrap items-center gap-4">
-          <UAvatar
-            :icon="stats.due ? 'i-lucide-layers' : 'i-lucide-circle-check'"
-            size="lg"
-            class="rounded-lg"
-            :ui="{ root: stats.due ? 'bg-primary/10' : 'bg-success/10', icon: stats.due ? 'text-primary' : 'text-success' }"
-          />
+      <UTabs
+        v-model="area"
+        :items="areaTabs"
+        :content="false"
+        class="w-full sm:w-fit"
+        data-testid="words-area"
+      />
+
+      <template v-if="area === 'saved'">
+        <UCard
+          v-if="stats?.total"
+          :ui="{ body: 'p-4 sm:p-5' }"
+          data-testid="review-cta"
+        >
+          <div class="flex flex-wrap items-center gap-4">
+            <UAvatar
+              :icon="stats.due ? 'i-lucide-layers' : 'i-lucide-circle-check'"
+              size="lg"
+              class="rounded-lg"
+              :ui="{ root: stats.due ? 'bg-primary/10' : 'bg-success/10', icon: stats.due ? 'text-primary' : 'text-success' }"
+            />
+            <div class="min-w-0 flex-1">
+              <p class="font-semibold text-highlighted">
+                {{ stats.due ? t('words.dueCount', { n: stats.due }, stats.due) : t('words.caughtUp') }}
+              </p>
+              <p class="text-sm text-muted">
+                {{ stats.due ? t('words.dueText') : (next ?? t('words.caughtUpText')) }}
+              </p>
+            </div>
+            <UButton
+              v-if="stats.due"
+              to="/words/review"
+              :label="t('words.startReview')"
+              icon="i-lucide-play"
+              size="lg"
+            />
+            <UButton
+              v-else
+              to="/words/review?ahead=1"
+              :label="t('words.practiseAhead')"
+              icon="i-lucide-fast-forward"
+              color="neutral"
+              variant="outline"
+            />
+          </div>
+        </UCard>
+
+        <div
+          v-if="stats?.total"
+          class="rounded-[var(--card-radius)] bg-primary text-inverted p-5 flex flex-wrap items-center gap-4 shadow-[0_var(--press)_0_0_var(--ui-color-primary-700)]"
+          data-testid="quiz-cta"
+        >
+          <span class="grid place-items-center size-14 rounded-xl bg-white/15 shrink-0">
+            <UIcon
+              name="i-lucide-gamepad-2"
+              class="size-8"
+            />
+          </span>
           <div class="min-w-0 flex-1">
-            <p class="font-semibold text-highlighted">
-              {{ stats.due ? t('words.dueCount', { n: stats.due }, stats.due) : t('words.caughtUp') }}
+            <p class="text-lg font-extrabold">
+              {{ t('words.playCta') }}
             </p>
-            <p class="text-sm text-muted">
-              {{ stats.due ? t('words.dueText') : (next ?? t('words.caughtUpText')) }}
+            <p class="text-sm opacity-85">
+              {{ t('words.playCtaText') }}
             </p>
           </div>
           <UButton
-            v-if="stats.due"
-            to="/words/review"
-            :label="t('words.startReview')"
+            to="/words/play"
+            :label="t('words.play')"
             icon="i-lucide-play"
-            size="lg"
-          />
-          <UButton
-            v-else
-            to="/words/review?ahead=1"
-            :label="t('words.practiseAhead')"
-            icon="i-lucide-fast-forward"
             color="neutral"
-            variant="outline"
-          />
-        </div>
-      </UCard>
-
-      <UCard
-        v-if="stats?.total"
-        :ui="{ body: 'p-4 sm:p-5' }"
-        data-testid="quiz-cta"
-      >
-        <div class="flex flex-wrap items-center gap-4">
-          <UAvatar
-            icon="i-lucide-puzzle"
+            variant="solid"
             size="lg"
-            class="rounded-lg"
-            :ui="{ root: 'bg-secondary/10', icon: 'text-secondary' }"
+            class="bg-white text-primary hover:bg-white/90"
+            data-testid="play-saved"
           />
-          <div class="min-w-0 flex-1">
-            <p class="font-semibold text-highlighted">
-              {{ t('words.quizCta') }}
-            </p>
-            <p class="text-sm text-muted">
-              {{ t('words.quizCtaText') }}
-            </p>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <UButton
+          <div class="w-full flex flex-wrap gap-x-4 gap-y-1 text-sm font-bold">
+            <ULink
               to="/words/practice?mode=gap"
-              :label="t('words.modeGap')"
-              icon="i-lucide-text-cursor-input"
-              color="neutral"
-              variant="outline"
-            />
-            <UButton
+              class="text-inverted/85 hover:text-inverted underline-offset-4 hover:underline"
+            >
+              {{ t('words.modeGap') }}
+            </ULink>
+            <ULink
               to="/words/practice?mode=meaning"
-              :label="t('words.modeMeaning')"
-              icon="i-lucide-list-checks"
-              color="neutral"
-              variant="outline"
-            />
+              class="text-inverted/85 hover:text-inverted underline-offset-4 hover:underline"
+            >
+              {{ t('words.modeMeaning') }}
+            </ULink>
           </div>
         </div>
-      </UCard>
-
-      <div
-        v-if="stats?.total"
-        class="grid grid-cols-2 sm:grid-cols-4 gap-3"
-      >
-        <StatTile
-          :label="t('words.statTotal')"
-          :value="stats.total"
-          icon="i-lucide-book-open-text"
-        />
-        <StatTile
-          :label="t('words.showNew')"
-          :value="stats.new"
-          icon="i-lucide-sparkle"
-          color="info"
-        />
-        <StatTile
-          :label="t('words.showLearning')"
-          :value="stats.learning"
-          icon="i-lucide-trending-up"
-          color="warning"
-        />
-        <StatTile
-          :label="t('words.showKnown')"
-          :value="stats.known"
-          icon="i-lucide-badge-check"
-          color="success"
-        />
-      </div>
-
-      <template v-if="stats?.total">
-        <div class="flex flex-wrap items-center gap-2">
-          <UTabs
-            v-model="show"
-            :items="tabs"
-            :content="false"
-            size="sm"
-            class="min-w-0 overflow-x-auto"
-          />
-          <UInput
-            v-model="search"
-            icon="i-lucide-search"
-            :placeholder="t('words.search')"
-            class="w-full sm:w-56 sm:ms-auto"
-          />
-        </div>
 
         <div
-          v-if="status === 'pending' && !items.length"
-          class="grid gap-2"
+          v-if="stats?.total"
+          class="grid grid-cols-2 sm:grid-cols-4 gap-3"
         >
-          <USkeleton
-            v-for="i in 5"
-            :key="i"
-            class="h-16 rounded-xl"
+          <StatTile
+            :label="t('words.statTotal')"
+            :value="stats.total"
+            icon="i-lucide-book-open-text"
+          />
+          <StatTile
+            :label="t('words.showNew')"
+            :value="stats.new"
+            icon="i-lucide-sparkle"
+            color="info"
+          />
+          <StatTile
+            :label="t('words.showLearning')"
+            :value="stats.learning"
+            icon="i-lucide-trending-up"
+            color="warning"
+          />
+          <StatTile
+            :label="t('words.showKnown')"
+            :value="stats.known"
+            icon="i-lucide-badge-check"
+            color="success"
           />
         </div>
-        <div
-          v-else-if="items.length"
-          class="rounded-xl ring ring-default divide-y divide-default overflow-hidden"
-        >
-          <WordsRow
-            v-for="w in items"
-            :key="w.id"
-            :word="w"
-            @remove="remove(w)"
+
+        <template v-if="stats?.total">
+          <div class="flex flex-wrap items-center gap-2">
+            <UTabs
+              v-model="show"
+              :items="tabs"
+              :content="false"
+              size="sm"
+              class="min-w-0 overflow-x-auto"
+            />
+            <UInput
+              v-model="search"
+              icon="i-lucide-search"
+              :placeholder="t('words.search')"
+              class="w-full sm:w-56 sm:ms-auto"
+            />
+          </div>
+
+          <div
+            v-if="status === 'pending' && !items.length"
+            class="grid gap-2"
+          >
+            <USkeleton
+              v-for="i in 5"
+              :key="i"
+              class="h-16 rounded-lg"
+            />
+          </div>
+          <div
+            v-else-if="items.length"
+            class="rounded-lg ring ring-default divide-y divide-default overflow-hidden"
+          >
+            <WordsRow
+              v-for="w in items"
+              :key="w.id"
+              :word="w"
+              @remove="remove(w)"
+            />
+          </div>
+          <UEmpty
+            v-else
+            icon="i-lucide-search-x"
+            :title="t('words.noneHere')"
+            variant="naked"
           />
-        </div>
+          <div
+            v-if="total > PAGE_SIZE"
+            class="flex flex-col sm:flex-row items-center justify-between gap-2"
+          >
+            <p class="text-sm text-muted tabular-nums">
+              {{ t('words.pageRange', { from: (page - 1) * PAGE_SIZE + 1, to: Math.min(page * PAGE_SIZE, total), total }) }}
+            </p>
+            <UPagination
+              v-model:page="page"
+              :total="total"
+              :items-per-page="PAGE_SIZE"
+              :sibling-count="1"
+              show-edges
+              data-testid="words-pages"
+            />
+          </div>
+        </template>
+
         <UEmpty
-          v-else
-          icon="i-lucide-search-x"
-          :title="t('words.noneHere')"
-          variant="naked"
-        />
-        <UButton
-          v-if="more"
-          :label="t('words.loadMore')"
-          color="neutral"
-          variant="outline"
-          class="self-center"
-          :loading="status === 'pending'"
-          @click="page++"
+          v-else-if="stats"
+          icon="i-lucide-book-plus"
+          :title="t('words.emptyTitle')"
+          :description="t('words.emptyText')"
+          :actions="[{ label: t('words.emptyAction'), to: '/tests', icon: 'i-lucide-book-open' }]"
+          data-testid="words-empty"
         />
       </template>
 
-      <UEmpty
-        v-else-if="stats"
-        icon="i-lucide-book-plus"
-        :title="t('words.emptyTitle')"
-        :description="t('words.emptyText')"
-        :actions="[{ label: t('words.emptyAction'), to: '/tests', icon: 'i-lucide-book-open' }]"
-        data-testid="words-empty"
-      />
+      <template v-else>
+        <div
+          v-if="decksStatus === 'pending' && !decks.length"
+          class="grid sm:grid-cols-2 gap-3"
+        >
+          <USkeleton
+            v-for="i in 4"
+            :key="i"
+            class="h-40 rounded-[var(--card-radius)]"
+          />
+        </div>
+        <div
+          v-else-if="decks.length"
+          class="grid sm:grid-cols-2 gap-3"
+          data-testid="my-decks"
+        >
+          <UCard
+            v-for="d in decks"
+            :key="d.id"
+            :ui="{ body: 'p-4 sm:p-5 flex flex-col gap-3 h-full' }"
+          >
+            <div class="flex items-start gap-3">
+              <span class="grid place-items-center size-11 rounded-lg bg-primary/10 text-primary shrink-0">
+                <UIcon
+                  name="i-lucide-layers"
+                  class="size-6"
+                />
+              </span>
+              <div class="min-w-0 flex-1">
+                <p class="font-extrabold text-highlighted truncate">
+                  {{ d.title }}
+                </p>
+                <p class="text-xs text-muted truncate">
+                  {{ [d.topic, d.teacher].filter(Boolean).join(' · ') }}
+                </p>
+              </div>
+              <UBadge
+                v-if="d.level"
+                :label="d.level"
+                color="neutral"
+                variant="subtle"
+                size="sm"
+              />
+            </div>
+            <div>
+              <div class="flex justify-between text-xs font-bold text-muted mb-1 tabular-nums">
+                <span>{{ t('words.deckKnown', { n: d.known, total: d.cards }) }}</span>
+                <span v-if="d.toPlay">{{ t('words.deckToPlay', { n: d.toPlay }, d.toPlay) }}</span>
+              </div>
+              <div class="h-3 rounded-full bg-accented/70 overflow-hidden">
+                <div
+                  class="h-full rounded-full bg-correct transition-[width] duration-500"
+                  :style="{ width: `${d.cards ? Math.round(d.known / d.cards * 100) : 0}%` }"
+                />
+              </div>
+            </div>
+            <UButton
+              :to="`/words/play?deck=${d.id}`"
+              :label="d.toPlay ? t('words.play') : t('words.playAgain')"
+              :icon="d.toPlay ? 'i-lucide-play' : 'i-lucide-rotate-ccw'"
+              :color="d.toPlay ? 'primary' : 'neutral'"
+              :variant="d.toPlay ? 'solid' : 'outline'"
+              :disabled="!d.cards"
+              block
+              class="mt-auto"
+            />
+          </UCard>
+        </div>
+        <UEmpty
+          v-else
+          icon="i-lucide-layers"
+          :title="t('words.decksEmpty')"
+          :description="t('words.decksEmptyText')"
+          data-testid="decks-empty"
+        />
+      </template>
     </div>
   </AppPage>
 </template>

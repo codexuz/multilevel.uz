@@ -18,5 +18,6 @@ export default defineEventHandler(async (event) => {
     .where(and(eq(userWords.id, id), eq(userWords.userId, user.id)))
     .returning({ id: userWords.id, dueAt: userWords.dueAt })
   if (!word) throw createError({ statusCode: 404, message: 'No such word' })
-  return { id: word.id, dueAt: word.dueAt }
+  const xpGained = correct ? await awardXpQuietly(user.id, 'words', XP.word) : 0
+  return { id: word.id, dueAt: word.dueAt, xpGained }
 })

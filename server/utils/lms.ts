@@ -230,10 +230,13 @@ export async function submitExercise(viewer: Viewer, exercise: Exercise, body: R
         ))
       if (passedRows.length >= requiredExercises.length) {
         await db.insert(lessonProgress).values({ lessonId: lesson.id, userId: viewer.id }).onConflictDoNothing()
+        await awardXpQuietly(viewer.id, 'lesson', XP.lesson, `lesson:${lesson.id}`)
         autoCompletedLesson = true
       }
     }
   }
 
-  return { attempt: attempt!, autoCompletedLesson }
+  // XP the first time a quiz is passed.
+  const xpGained = passed && !access.teaches ? await awardXpQuietly(viewer.id, 'quiz', XP.quiz, `quiz:${exercise.id}`) : 0
+  return { attempt: attempt!, autoCompletedLesson, xpGained }
 }
