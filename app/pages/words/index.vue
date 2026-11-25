@@ -97,58 +97,62 @@ async function remove(word: SavedWord) {
       <template v-if="area === 'saved'">
         <UCard
           v-if="stats?.total"
-          :ui="{ body: 'p-4 sm:p-5' }"
+          :ui="{ body: 'p-3 sm:p-5' }"
           data-testid="review-cta"
         >
-          <div class="flex flex-wrap items-center gap-4">
+          <div class="flex items-center gap-3 sm:gap-4">
             <UAvatar
               :icon="stats.due ? 'i-lucide-layers' : 'i-lucide-circle-check'"
               size="lg"
-              class="rounded-lg"
+              class="rounded-lg max-sm:hidden"
               :ui="{ root: stats.due ? 'bg-primary/10' : 'bg-success/10', icon: stats.due ? 'text-primary' : 'text-success' }"
             />
             <div class="min-w-0 flex-1">
               <p class="font-semibold text-highlighted">
                 {{ stats.due ? t('words.dueCount', { n: stats.due }, stats.due) : t('words.caughtUp') }}
               </p>
-              <p class="text-sm text-muted">
+              <p class="text-sm text-muted max-sm:hidden">
                 {{ stats.due ? t('words.dueText') : (next ?? t('words.caughtUpText')) }}
               </p>
             </div>
             <UButton
               v-if="stats.due"
               to="/words/review"
-              :label="t('words.startReview')"
               icon="i-lucide-play"
               size="lg"
-            />
+              class="shrink-0"
+            >
+              <span class="max-sm:hidden">{{ t('words.startReview') }}</span><span class="sm:hidden">{{ t('words.review') }}</span>
+            </UButton>
             <UButton
               v-else
               to="/words/review?ahead=1"
-              :label="t('words.practiseAhead')"
               icon="i-lucide-fast-forward"
               color="neutral"
               variant="outline"
-            />
+              class="shrink-0"
+            >
+              <span class="max-sm:hidden">{{ t('words.practiseAhead') }}</span><span class="sm:hidden">{{ t('words.review') }}</span>
+            </UButton>
           </div>
         </UCard>
 
         <div
           v-if="stats?.total"
-          class="rounded-[var(--card-radius)] bg-primary text-inverted p-5 flex flex-wrap items-center gap-4 shadow-[0_var(--press)_0_0_var(--ui-color-primary-700)]"
+          class="rounded-[var(--card-radius)] bg-primary text-inverted p-3 sm:p-5 flex flex-wrap items-center gap-3 sm:gap-4 shadow-[0_var(--press)_0_0_var(--ui-color-primary-700)]"
           data-testid="quiz-cta"
         >
-          <span class="grid place-items-center size-14 rounded-xl bg-white/15 shrink-0">
+          <span class="grid place-items-center size-10 sm:size-14 rounded-xl bg-white/15 shrink-0">
             <UIcon
               name="i-lucide-gamepad-2"
-              class="size-8"
+              class="size-6 sm:size-8"
             />
           </span>
           <div class="min-w-0 flex-1">
-            <p class="text-lg font-extrabold">
+            <p class="sm:text-lg font-extrabold">
               {{ t('words.playCta') }}
             </p>
-            <p class="text-sm opacity-85">
+            <p class="text-sm opacity-85 max-sm:hidden">
               {{ t('words.playCtaText') }}
             </p>
           </div>
@@ -162,7 +166,7 @@ async function remove(word: SavedWord) {
             class="bg-white text-primary hover:bg-white/90"
             data-testid="play-saved"
           />
-          <div class="w-full flex flex-wrap gap-x-4 gap-y-1 text-sm font-bold">
+          <div class="w-full flex flex-wrap gap-x-4 gap-y-1 text-sm font-bold max-sm:hidden">
             <ULink
               to="/words/practice?mode=gap"
               class="text-inverted/85 hover:text-inverted underline-offset-4 hover:underline"
@@ -178,9 +182,36 @@ async function remove(word: SavedWord) {
           </div>
         </div>
 
+        <!-- Phones: the counts in one strip -->
         <div
           v-if="stats?.total"
-          class="grid grid-cols-2 sm:grid-cols-4 gap-3"
+          class="sm:hidden grid grid-cols-4 rounded-[var(--card-radius)] ring-2 ring-default bg-default divide-x-2 divide-default"
+          data-testid="words-stats-strip"
+        >
+          <div
+            v-for="s in [
+              { label: t('words.statTotal'), value: stats.total, tone: 'text-highlighted' },
+              { label: t('words.showNew'), value: stats.new, tone: 'text-info' },
+              { label: t('words.showLearning'), value: stats.learning, tone: 'text-warning' },
+              { label: t('words.showKnown'), value: stats.known, tone: 'text-success' }
+            ]"
+            :key="s.label"
+            class="py-2 text-center min-w-0"
+          >
+            <p
+              class="text-lg font-extrabold tabular-nums leading-tight"
+              :class="s.tone"
+            >
+              {{ s.value }}
+            </p>
+            <p class="text-[11px] font-bold text-muted truncate px-1">
+              {{ s.label }}
+            </p>
+          </div>
+        </div>
+        <div
+          v-if="stats?.total"
+          class="max-sm:hidden grid grid-cols-4 gap-3"
         >
           <StatTile
             :label="t('words.statTotal')"
@@ -208,19 +239,25 @@ async function remove(word: SavedWord) {
         </div>
 
         <template v-if="stats?.total">
-          <div class="flex flex-wrap items-center gap-2">
+          <div class="flex sm:flex-wrap items-center gap-2">
             <UTabs
               v-model="show"
               :items="tabs"
               :content="false"
               size="sm"
-              class="min-w-0 overflow-x-auto"
+              class="min-w-0 overflow-x-auto max-sm:hidden"
+            />
+            <USelect
+              v-model="show"
+              :items="tabs.map(x => ({ label: x.badge ? `${x.label} (${x.badge})` : x.label, value: x.value }))"
+              class="sm:hidden w-32 shrink-0"
+              :aria-label="t('tests.filters')"
             />
             <UInput
               v-model="search"
               icon="i-lucide-search"
               :placeholder="t('words.search')"
-              class="w-full sm:w-56 sm:ms-auto"
+              class="flex-1 min-w-0 sm:flex-none sm:w-56 sm:ms-auto"
             />
           </div>
 
@@ -255,7 +292,7 @@ async function remove(word: SavedWord) {
             v-if="total > PAGE_SIZE"
             class="flex flex-col sm:flex-row items-center justify-between gap-2"
           >
-            <p class="text-sm text-muted tabular-nums">
+            <p class="text-sm text-muted tabular-nums max-sm:hidden">
               {{ t('words.pageRange', { from: (page - 1) * PAGE_SIZE + 1, to: Math.min(page * PAGE_SIZE, total), total }) }}
             </p>
             <UPagination
@@ -263,7 +300,7 @@ async function remove(word: SavedWord) {
               :total="total"
               :items-per-page="PAGE_SIZE"
               :sibling-count="1"
-              show-edges
+              :show-edges="false"
               data-testid="words-pages"
             />
           </div>

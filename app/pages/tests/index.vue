@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { createReusableTemplate } from '@vueuse/core'
+
 import type { Paged } from '~/types/ielts'
 import type { Pack } from '~/utils/billing'
 
@@ -135,6 +137,15 @@ watch(data, d => d && view.value === 'tests' && d.fullTests != null && (fullTest
 const typeItems = computed(() => [{ label: t('tests.allTypes'), value: ALL }, ...QUESTION_TYPES.map(q => ({ label: questionTypeLabel(q.value), value: q.value, icon: q.icon }))])
 const typesApply = computed(() => skill.value !== 'WRITING' && skill.value !== 'SPEAKING')
 const filtered = computed(() => !!q.value || skill.value !== ALL || type.value !== ALL || ieltsModule.value !== ALL || (view.value === 'parts' && part.value !== ALL) || (view.value === 'tests' && (full.value || access.value !== ALL || category.value !== ALL)))
+// The filters are drawn once and shown in a row (wide screens) or in a bottom sheet (phones).
+const [DefineFilters, ReuseFilters] = createReusableTemplate()
+const filtersOpen = ref(false)
+/** How many filters are set (the search aside): the count on the phone's Filter button. */
+const activeFilters = computed(() => [
+  ieltsModule.value !== ALL, skill.value !== ALL, typesApply.value && type.value !== ALL,
+  view.value === 'parts' && part.value !== ALL,
+  view.value === 'tests' && full.value, view.value === 'tests' && access.value !== ALL, view.value === 'tests' && category.value !== ALL
+].filter(Boolean).length)
 function clear() {
   ieltsModule.value = ALL
   search.value = ''
@@ -233,77 +244,129 @@ useSeoMeta({
         v-else
         class="flex flex-col gap-3"
       >
-        <div class="grid gap-2 grid-cols-2 lg:flex lg:flex-wrap lg:items-center">
+        <!-- The filters, drawn once: in a row on wide screens, in a bottom sheet on phones -->
+        <DefineFilters>
+          <div class="grid gap-2 grid-cols-1 lg:flex lg:flex-wrap lg:items-center">
+            <USelect
+              v-if="isAdmin"
+              :model-value="exam"
+              :items="examItems"
+              :aria-label="t('exam.exam')"
+              class="lg:w-36"
+              data-testid="catalogue-exam"
+              @update:model-value="v => (adminExam = v as Exam)"
+            />
+            <USelect
+              v-if="exam === 'IELTS'"
+              v-model="ieltsModule"
+              :items="moduleItems"
+              :aria-label="t('exam.module')"
+              class="lg:w-52"
+            />
+            <USelect
+              v-model="skill"
+              :items="skillItems"
+              :aria-label="t('tests.skill')"
+              class="lg:w-44"
+            />
+            <USelect
+              v-if="view === 'parts'"
+              v-model="part"
+              :items="partItems"
+              :aria-label="t('part.partWord')"
+              class="lg:w-36"
+            />
+            <USelectMenu
+              v-if="typesApply"
+              v-model="type"
+              :items="typeItems"
+              value-key="value"
+              :search-input="{ placeholder: t('tests.findType') }"
+              :aria-label="t('tests.type')"
+              class="lg:w-64"
+            />
+            <USelect
+              v-if="view === 'tests'"
+              v-model="access"
+              :items="accessItems"
+              :aria-label="t('tests.access')"
+              class="lg:w-44"
+              data-testid="filter-access"
+            />
+            <USelect
+              v-if="view === 'tests' && categories.length > 1"
+              v-model="category"
+              :items="categoryItems"
+              :aria-label="t('tests.category')"
+              class="lg:w-48"
+              data-testid="filter-category"
+            />
+            <USwitch
+              v-if="view === 'tests'"
+              v-model="full"
+              :label="t('tests.fullOnly')"
+              :description="`${t('tests.allFour')}${fullTests != null ? ` · ${t('tests.countTests', { n: fullTests }, fullTests)}` : ''}`"
+              class="lg:ms-2 max-lg:py-1"
+            />
+          </div>
+        </DefineFilters>
+
+        <div class="flex items-center gap-2">
           <UInput
             v-model="search"
             icon="i-lucide-search"
             :placeholder="view === 'parts' ? t('tests.searchParts') : t('tests.searchTests')"
             :aria-label="t('tests.search')"
-            class="col-span-2 lg:w-72"
+            class="flex-1 lg:flex-none lg:w-72"
           />
-          <USelect
-            v-if="isAdmin"
-            :model-value="exam"
-            :items="examItems"
-            :aria-label="t('exam.exam')"
-            class="lg:w-36"
-            data-testid="catalogue-exam"
-            @update:model-value="v => (adminExam = v as Exam)"
-          />
-          <USelect
-            v-if="exam === 'IELTS'"
-            v-model="ieltsModule"
-            :items="moduleItems"
-            :aria-label="t('exam.module')"
-            class="col-span-2 lg:col-span-1 lg:w-52"
-          />
-          <USelect
-            v-model="skill"
-            :items="skillItems"
-            :aria-label="t('tests.skill')"
-            class="lg:w-44"
-            :class="view === 'tests' ? 'col-span-2 lg:col-span-1' : ''"
-          />
-          <USelect
-            v-if="view === 'parts'"
-            v-model="part"
-            :items="partItems"
-            :aria-label="t('part.partWord')"
-            class="lg:w-36"
-          />
-          <USelectMenu
-            v-if="typesApply"
-            v-model="type"
-            :items="typeItems"
-            value-key="value"
-            :search-input="{ placeholder: t('tests.findType') }"
-            :aria-label="t('tests.type')"
-            class="col-span-2 lg:w-64"
-          />
-          <USelect
-            v-if="view === 'tests'"
-            v-model="access"
-            :items="accessItems"
-            :aria-label="t('tests.access')"
-            class="lg:w-44"
-            data-testid="filter-access"
-          />
-          <USelect
-            v-if="view === 'tests' && categories.length > 1"
-            v-model="category"
-            :items="categoryItems"
-            :aria-label="t('tests.category')"
-            class="lg:w-48"
-            data-testid="filter-category"
-          />
-          <USwitch
-            v-if="view === 'tests'"
-            v-model="full"
-            :label="t('tests.fullOnly')"
-            :description="`${t('tests.allFour')}${fullTests != null ? ` · ${t('tests.countTests', { n: fullTests }, fullTests)}` : ''}`"
-            class="col-span-2 sm:col-span-1 lg:ms-2"
-          />
+          <!-- Phones: the filters open in a bottom sheet -->
+          <UChip
+            :show="activeFilters > 0"
+            :text="activeFilters"
+            size="3xl"
+            class="lg:hidden"
+          >
+            <UButton
+              icon="i-lucide-sliders-horizontal"
+              color="neutral"
+              variant="outline"
+              square
+              :aria-label="t('tests.filters')"
+              data-testid="open-filters"
+              @click="filtersOpen = true"
+            />
+          </UChip>
+          <div class="max-lg:hidden flex-1">
+            <ReuseFilters />
+          </div>
         </div>
+
+        <UDrawer
+          v-model:open="filtersOpen"
+          :title="t('tests.filters')"
+          :ui="{ content: 'lg:hidden', body: 'flex flex-col gap-3', footer: 'flex-row' }"
+        >
+          <template #body>
+            <ReuseFilters />
+          </template>
+          <template #footer>
+            <UButton
+              v-if="filtered"
+              :label="t('tests.clear')"
+              icon="i-lucide-x"
+              color="neutral"
+              variant="outline"
+              class="flex-1 justify-center"
+              @click="clear"
+            />
+            <UButton
+              :label="t('tests.showResults')"
+              class="flex-1 justify-center"
+              data-testid="apply-filters"
+              @click="filtersOpen = false"
+            />
+          </template>
+        </UDrawer>
         <div class="flex items-center justify-between gap-3 min-h-8">
           <p class="text-sm text-muted">
             {{ status === 'pending' && !data ? t('common.loading') : countText }}

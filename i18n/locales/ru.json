@@ -54,7 +54,8 @@
     "courses": "Курсы",
     "online": "Онлайн-уроки",
     "dashboard": "Главная",
-    "groups": "Мои группы"
+    "groups": "Мои группы",
+    "more": "Ещё"
   },
   "pub": {
     "how": "Как это работает",
@@ -261,7 +262,9 @@
     "premiumTests": "Premium",
     "access": "Бесплатные или Premium",
     "allCategories": "Все категории",
-    "category": "Категория"
+    "category": "Категория",
+    "filters": "Фильтры",
+    "showResults": "Показать результаты"
   },
   "qtype": {
     "TRUE_FALSE_NOT_GIVEN": "True / False / Not Given",
