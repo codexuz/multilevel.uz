@@ -253,6 +253,13 @@
       "when": 1795606867225,
       "tag": "0035_assignment_due_reminder",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1795615758209,
+      "tag": "0036_live_exam_and_broadcasts",
+      "breakpoints": true
     }
   ]
 }

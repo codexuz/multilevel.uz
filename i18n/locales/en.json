@@ -1765,7 +1765,8 @@
     "growth": "Growth",
     "attempts": "Attempts",
     "orders": "Orders",
-    "platform": "Platform settings"
+    "platform": "Platform settings",
+    "broadcasts": "Broadcasts"
   },
   "builder": {
     "addLine": "Add",

@@ -4,7 +4,7 @@ import type { NavigationMenuItem } from '@nuxt/ui'
 provide(PANEL_LAYOUT, 'admin')
 const { t } = useI18n()
 
-const { live } = useLiveMock()
+const { live } = useLiveMock('ANY')
 
 const navItems = computed<NavigationMenuItem[]>(() => [
   { label: t('panel.dashboard'), icon: 'i-lucide-layout-dashboard', to: '/admin' },
@@ -25,6 +25,7 @@ const navItems = computed<NavigationMenuItem[]>(() => [
     to: '/admin/live',
     badge: live.value ? { label: t('nav.liveBadge'), color: 'error' as const, variant: 'subtle' as const, size: 'sm' as const } : undefined
   },
+  { label: t('panel.broadcasts'), icon: 'i-lucide-megaphone', to: '/admin/broadcasts' },
   { label: t('panel.packs'), icon: 'i-lucide-layers', to: '/admin/packs' },
   { label: t('panel.promos'), icon: 'i-lucide-ticket-percent', to: '/admin/promos' },
   { label: t('nav.courses'), icon: 'i-lucide-graduation-cap', to: '/admin/courses' },

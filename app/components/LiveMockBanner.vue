@@ -1,14 +1,15 @@
 <script setup lang="ts">
-/** A strip on the Tests page while a live mock is open, or before the next one. */
+/** A strip on the Tests page while a live mock of its exam is open, or before the next one. */
+const props = defineProps<{ exam?: 'IELTS' | 'MULTILEVEL' }>()
 const { t } = useI18n()
-const { live, next } = useLiveMock()
+const { live, next } = useLiveMock(() => props.exam)
 const when = (d: string) => localeDate(d, intlLocale(), { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
 </script>
 
 <template>
   <NuxtLink
     v-if="live || next"
-    to="/live"
+    :to="exam ? `/live?exam=${exam}` : '/live'"
     class="flex items-center gap-3 rounded-xl px-4 py-3 ring transition-colors"
     :class="live ? 'bg-primary/10 ring-primary/30 hover:bg-primary/15' : 'bg-elevated/50 ring-default hover:bg-elevated'"
   >

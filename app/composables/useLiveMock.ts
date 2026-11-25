@@ -10,8 +10,17 @@ export interface LiveMock {
   exam?: 'IELTS' | 'MULTILEVEL'
 }
 
-/** The live mock open now and the next one, shared by the menu and the Tests page. */
-export function useLiveMock() {
-  const { data } = useFetch<{ live: LiveMock | null, next: LiveMock | null }>('/api/live', { key: 'live-brief', query: { brief: 1 }, lazy: true, dedupe: 'defer' })
+/**
+ * The live mock open now and the next one, shared by the menu and the Tests page: of one exam (the
+ * user's own when not given), or of either ('ANY').
+ */
+export function useLiveMock(exam?: MaybeRefOrGetter<'IELTS' | 'MULTILEVEL' | 'ANY' | null | undefined>) {
+  const e = computed(() => toValue(exam) ?? undefined)
+  const { data } = useFetch<{ live: LiveMock | null, next: LiveMock | null }>('/api/live', {
+    key: computed(() => `live-brief-${e.value ?? 'own'}`),
+    query: computed(() => ({ brief: 1, exam: e.value })),
+    lazy: true,
+    dedupe: 'defer'
+  })
   return { live: computed(() => data.value?.live ?? null), next: computed(() => data.value?.next ?? null) }
 }

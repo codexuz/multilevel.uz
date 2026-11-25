@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, lte, ne, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from 'drizzle-orm'
 import { attempts, liveMocks, sections, tests, users } from '../database/schema'
 import { telegramApi, telegramBotToken } from './telegram'
 import { MSG, asLocale } from './messages'
@@ -18,16 +18,17 @@ export const mockState = (m: Pick<Mock, 'startsAt' | 'endsAt'>, now = new Date()
 
 /**
  * A window an admin sets: it ends after it starts, in the future, within two weeks, and overlaps no
- * other mock (`except`, the one being edited), so there is one leaderboard at a time.
+ * other mock of the same exam (`except`, the one being edited): one leaderboard an exam at a time,
+ * while an IELTS and a Multilevel mock may run side by side.
  */
-export async function checkWindow(startsAt: Date, endsAt: Date, except?: string) {
+export async function checkWindow(startsAt: Date, endsAt: Date, exam: Exam, except?: string) {
   if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) throw createError({ statusCode: 400, message: 'Pick when it starts and ends' })
   if (endsAt <= startsAt) throw createError({ statusCode: 400, message: 'It must end after it starts' })
   if (endsAt <= new Date()) throw createError({ statusCode: 400, message: 'That time has passed' })
   if (endsAt.getTime() - startsAt.getTime() > 14 * 864e5) throw createError({ statusCode: 400, message: 'Keep it to two weeks at most' })
   const [clash] = await useDb().select({ title: liveMocks.title }).from(liveMocks)
-    .where(and(lt(liveMocks.startsAt, endsAt), gt(liveMocks.endsAt, startsAt), except ? ne(liveMocks.id, except) : undefined)).limit(1)
-  if (clash) throw createError({ statusCode: 409, message: `It overlaps "${clash.title}"` })
+    .where(and(eq(liveMocks.exam, exam), lt(liveMocks.startsAt, endsAt), gt(liveMocks.endsAt, startsAt), except ? ne(liveMocks.id, except) : undefined)).limit(1)
+  if (clash) throw createError({ statusCode: 409, message: `It overlaps the ${exam === 'IELTS' ? 'IELTS' : 'Multilevel'} mock "${clash.title}"` })
 }
 
 /** The live mock of this test that is open now, if any. */
@@ -173,8 +174,10 @@ export async function runLiveMocks(now = new Date()) {
     await db.update(liveMocks).set({ announcedAt: now }).where(eq(liveMocks.id, m.id))
     if (!telegramBotToken()) continue
     await postMockToChannel(m, now)
+    // Those preparing for this mock's exam (and those who have not said which).
     const audience = await db.select({ chatId: users.telegramId, locale: users.locale }).from(users)
-      .where(and(isNotNull(users.telegramId), eq(users.telegramNotify, true), eq(users.telegramBotJoined, true), eq(users.banned, false)))
+      .where(and(isNotNull(users.telegramId), eq(users.telegramNotify, true), eq(users.telegramBotJoined, true), eq(users.banned, false),
+        or(eq(users.exam, m.exam), isNull(users.exam))))
     for (const u of audience) {
       const l = asLocale(u.locale)
       if (await send(u.chatId!, MSG.liveOpen(l, m.title, m.endsAt), '/live', MSG.liveOpenButton[l])) announced++

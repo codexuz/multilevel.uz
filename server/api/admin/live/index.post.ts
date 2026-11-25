@@ -9,12 +9,14 @@ export default defineEventHandler(async (event) => {
   const startsAt = new Date(String(body.startsAt))
   const endsAt = new Date(String(body.endsAt))
   if (!title) throw createError({ statusCode: 400, message: 'Give it a title' })
-  await checkWindow(startsAt, endsAt)
   const db = useDb()
-  const [test] = await db.select({ id: tests.id, status: tests.status }).from(tests).where(eq(tests.id, String(body.testId ?? ''))).limit(1)
+  const [test] = await db.select({ id: tests.id, status: tests.status, module: tests.module }).from(tests).where(eq(tests.id, String(body.testId ?? ''))).limit(1)
   if (!test || test.status === 'ARCHIVED') throw createError({ statusCode: 400, message: 'Pick a test' })
+  // The test's exam is the mock's: it runs beside the other exam's mocks, never over its own.
+  const exam = examOfModule(test.module)
+  await checkWindow(startsAt, endsAt, exam)
   const channelIds = body.channelIds === undefined ? null : await pickChannels(body.channelIds)
-  const [row] = await db.insert(liveMocks).values({ testId: test.id, title, startsAt, endsAt, channelIds, createdById: admin.id }).returning()
+  const [row] = await db.insert(liveMocks).values({ testId: test.id, title, startsAt, endsAt, channelIds, exam, createdById: admin.id }).returning()
   // One that opens at once is announced by the hourly job, with everyone's messages.
   const posted = mockState(row!) === 'UPCOMING' ? await postMockToChannel(row!) : null
   const channel = posted && (posted.ok || posted.posts.length) ? posted : null

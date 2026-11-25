@@ -1765,7 +1765,8 @@
     "growth": "O‘sish",
     "attempts": "Urinishlar",
     "orders": "Buyurtmalar",
-    "platform": "Platforma sozlamalari"
+    "platform": "Platforma sozlamalari",
+    "broadcasts": "Xabarnomalar"
   },
   "builder": {
     "addLine": "Qo‘shish",
