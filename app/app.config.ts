@@ -66,30 +66,30 @@ export default defineAppConfig({
       ]
     },
     input: {
-      slots: { base: 'rounded-xl' },
+      slots: { base: 'rounded-lg' },
       variants: { variant: { outline: field } }
     },
     textarea: {
-      slots: { base: 'rounded-xl' },
+      slots: { base: 'rounded-lg' },
       variants: { variant: { outline: field } }
     },
     inputNumber: {
-      slots: { base: 'rounded-xl' },
+      slots: { base: 'rounded-lg' },
       variants: { variant: { outline: field } }
     },
     select: {
-      slots: { base: 'rounded-xl', content: `rounded-xl p-1 ${overlay}`, item: 'rounded-lg' },
+      slots: { base: 'rounded-lg', content: `rounded-lg p-1 ${overlay}`, item: 'rounded-md' },
       variants: { variant: { outline: field } }
     },
     selectMenu: {
-      slots: { base: 'rounded-xl', content: `rounded-xl ${overlay}`, item: 'rounded-lg' },
+      slots: { base: 'rounded-lg', content: `rounded-lg ${overlay}`, item: 'rounded-md' },
       variants: { variant: { outline: field } }
     },
     tabs: {
-      slots: { trigger: 'rounded-lg font-bold' },
+      slots: { trigger: 'rounded-md font-bold' },
       variants: {
         variant: {
-          pill: { list: 'bg-elevated rounded-xl', indicator: 'rounded-lg shadow-[0_2px_0_rgb(10_8_18/0.08),0_0_0_1px_rgb(10_8_18/0.06)]' }
+          pill: { list: 'bg-elevated rounded-lg', indicator: 'rounded-md shadow-[0_2px_0_rgb(10_8_18/0.08),0_0_0_1px_rgb(10_8_18/0.06)]' }
         }
       },
       compoundVariants: [
@@ -98,7 +98,7 @@ export default defineAppConfig({
       ]
     },
     navigationMenu: {
-      slots: { link: 'before:rounded-xl py-2.5 font-bold' },
+      slots: { link: 'before:rounded-lg py-2.5 font-bold' },
       compoundVariants: [
         // The current page: a light tile with a coloured edge.
         { variant: 'pill', active: true, highlight: false, class: { link: 'text-primary before:bg-primary/10 before:ring-[length:var(--field-bw)] before:ring-primary/35', linkLeadingIcon: 'text-primary' } }

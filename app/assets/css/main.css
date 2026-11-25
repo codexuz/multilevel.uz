@@ -34,10 +34,10 @@
 :root {
   --press: 4px;
   --press-sm: 3px;
-  --btn-radius: 0.875rem;
+  --btn-radius: 0.625rem;
   --btn-weight: 800;
   --card-bw: 2px;
-  --card-radius: 1.25rem;
+  --card-radius: 0.875rem;
   --field-bw: 2px;
 }
 .classic {
@@ -223,4 +223,18 @@ mark.exam-highlight.has-note { background: #bfdbfe; }
   color: var(--viz-ink);
   background: var(--ui-bg);
   box-shadow: 0 4px 16px rgb(0 0 0 / 0.12), 0 0 0 1px var(--ui-border);
+}
+
+/* Word games (components/game): a wrong pick shakes; a question slides in. */
+@keyframes game-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+@keyframes game-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [class*="animate-[game-"] { animation: none !important; }
 }

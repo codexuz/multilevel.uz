@@ -23,10 +23,11 @@ useSeoMeta({ title: () => data.value?.name ?? t('classes.class') })
 
 const SKILLS = ['LISTENING', 'READING', 'WRITING', 'SPEAKING']
 // ?tab=online (back from connecting Google) opens the online classes.
-const tab = ref<'students' | 'assignments' | 'online'>(route.query.tab === 'online' || route.query.google ? 'online' : 'students')
+const tab = ref<'students' | 'assignments' | 'vocabulary' | 'online'>(route.query.tab === 'online' || route.query.google ? 'online' : route.query.tab === 'vocabulary' ? 'vocabulary' : 'students')
 const tabs = computed(() => [
   { label: t('centre.studentsTab', { n: data.value?.students.length ?? 0 }), value: 'students', icon: 'i-lucide-users' },
   { label: t('centre.assignmentsTab', { n: data.value?.assignments.length ?? 0 }), value: 'assignments', icon: 'i-lucide-list-checks' },
+  { label: t('vocab.classTab'), value: 'vocabulary', icon: 'i-lucide-layers' },
   { label: t('online.tab'), value: 'online', icon: 'i-lucide-video' }
 ])
 // Back from connecting Google: say how it went.
@@ -246,6 +247,12 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
         :next="`/classes/${data.id}?tab=online`"
       />
 
+      <!-- Vocabulary: each student's progress in the class's decks -->
+      <VocabClassTable
+        v-if="tab === 'vocabulary'"
+        :group-id="data.id"
+      />
+
       <!-- Students -->
       <template v-if="tab === 'students'">
         <UEmpty
@@ -329,7 +336,7 @@ const overdue = (a: AssignmentRow) => !!a.dueAt && new Date(a.dueAt) < new Date(
       </template>
 
       <!-- Assignments -->
-      <template v-else>
+      <template v-else-if="tab === 'assignments'">
         <UEmpty
           v-if="!data.assignments.length"
           icon="i-lucide-list-checks"

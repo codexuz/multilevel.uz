@@ -32,7 +32,7 @@ async function choose(g: number) {
   >
     <div class="flex items-center gap-3">
       <span
-        class="grid place-items-center size-12 rounded-2xl shrink-0"
+        class="grid place-items-center size-12 rounded-xl shrink-0"
         :class="xp.extendedToday ? 'bg-flame/15 text-flame' : 'bg-elevated text-dimmed'"
       >
         <UIcon

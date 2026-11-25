@@ -19,7 +19,7 @@ watch(() => route.path, () => {
   >
     <button
       type="button"
-      class="flex items-center gap-1 rounded-xl px-2 py-1 hover:bg-elevated font-extrabold tabular-nums cursor-pointer focus-visible:outline-2 focus-visible:outline-primary"
+      class="flex items-center gap-1 rounded-lg px-2 py-1 hover:bg-elevated font-extrabold tabular-nums cursor-pointer focus-visible:outline-2 focus-visible:outline-primary"
       :aria-label="t('xp.chipsLabel', { streak: xp.streak, today: xp.today })"
       data-testid="xp-chips"
     >
