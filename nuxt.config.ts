@@ -109,17 +109,6 @@ export default defineNuxtConfig({
     ...Object.fromEntries(privatePaths.map(path => [path, noIndex]))
   },
 
-  // Only the Lucide set goes into the server bundle: bundling every installed collection (Logos,
-  // Simple Icons, and Carbon, Remix and Tabler that other packages pull in) took the production build
-  // past 8 GB of memory. The few brand icons the app shows are in the client bundle.
-  icon: {
-    serverBundle: { collections: ['lucide'] },
-    clientBundle: {
-      scan: true,
-      icons: ['logos:google-meet', 'logos:google-icon', 'logos:telegram', 'simple-icons:google', 'simple-icons:telegram', 'simple-icons:youtube']
-    }
-  },
-
   // No sourcemaps in the production build: making them for the server bundle (with its large
   // dependencies) ran the build out of memory on the deploy server.
   sourcemap: { server: false, client: false },
@@ -130,7 +119,7 @@ export default defineNuxtConfig({
   nitro: {
     experimental: { tasks: true },
     scheduledTasks: {
-      '7 * * * *': ['live:mocks', 'reminders:marking'],
+      '7 * * * *': ['live:mocks', 'reminders:marking', 'reminders:work'],
       // Online classes starting soon.
       '*/5 * * * *': ['lessons:remind'],
       // 09:41 in Tashkent
@@ -169,6 +158,17 @@ export default defineNuxtConfig({
     ],
     detectBrowserLanguage: { useCookie: true, cookieKey: 'lang', fallbackLocale: 'en' },
     vueI18n: './i18n.config.ts'
+  },
+
+  // Only the Lucide set goes into the server bundle: bundling every installed collection (Logos,
+  // Simple Icons, and Carbon, Remix and Tabler that other packages pull in) took the production build
+  // past 8 GB of memory. The few brand icons the app shows are in the client bundle.
+  icon: {
+    serverBundle: { collections: ['lucide'] },
+    clientBundle: {
+      scan: true,
+      icons: ['logos:google-meet', 'logos:google-icon', 'logos:telegram', 'simple-icons:google', 'simple-icons:telegram', 'simple-icons:youtube']
+    }
   },
 
   sitemap: {

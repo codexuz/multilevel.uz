@@ -1,7 +1,7 @@
 import type { H3Event } from 'h3'
 import { randomBytes } from 'node:crypto'
-import { and, desc, eq, gte, inArray, isNull, sql } from 'drizzle-orm'
-import { attempts, classGroups, classMembers, tests, users } from '../database/schema'
+import { and, desc, eq, gt, gte, inArray, isNull, lt, sql } from 'drizzle-orm'
+import { assignments, attempts, classGroups, classMembers, tests, users } from '../database/schema'
 
 /**
  * Teachers' classes: a teacher makes a class (/teach, /classes) and shares its join link; students
@@ -180,4 +180,33 @@ export async function assignmentView(a: Assignment & { note: string | null, dueA
     exam, done: done.size, of: memberIds.length,
     average: mean == null ? null : ielts ? Math.round(mean * 10) / 10 : Math.round(mean)
   }
+}
+
+/**
+ * Every hour: class work due within the next day (and more than an hour away) gets one Telegram
+ * reminder to each student of the class who has not handed it in. Work set less than six hours ago
+ * is left alone (its "new work" message is still fresh).
+ */
+export async function sendWorkDueReminders(now = new Date()) {
+  const db = useDb()
+  const due = await db.select({ a: assignments, group: classGroups.name }).from(assignments)
+    .innerJoin(classGroups, eq(classGroups.id, assignments.groupId))
+    .where(and(isNull(assignments.dueRemindedAt), eq(classGroups.archived, false),
+      gt(assignments.dueAt, new Date(now.getTime() + 3_600_000)), lt(assignments.dueAt, new Date(now.getTime() + 86_400_000)),
+      lt(assignments.createdAt, new Date(now.getTime() - 6 * 3_600_000))))
+    .limit(200)
+  let sent = 0
+  for (const { a, group } of due) {
+    await db.update(assignments).set({ dueRemindedAt: now }).where(eq(assignments.id, a.id))
+    const members = (await db.select({ id: classMembers.userId }).from(classMembers).where(eq(classMembers.groupId, a.groupId))).map(m => m.id)
+    if (!members.length) continue
+    const done = await assignmentHandIns(a, members)
+    const [t] = await db.select({ slug: tests.slug, title: tests.title }).from(tests).where(eq(tests.id, a.testId)).limit(1)
+    if (!t) continue
+    const path = `/tests/${t.slug}/${a.skill.toLowerCase()}${a.partNumber ? `?part=${a.partNumber}` : ''}`
+    for (const id of members.filter(m => !done.has(m))) {
+      if (await notifyTelegram(id, l => ({ text: MSG.workDue(l, group, MSG.workWhat(l, a.skill, a.partNumber, t.title), a.dueAt!), path, button: MSG.start[l] })).catch(() => false)) sent++
+    }
+  }
+  return { assignments: due.length, sent }
 }

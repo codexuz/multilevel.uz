@@ -202,6 +202,24 @@ export const MSG = {
     return ({ en: `${s} of ${escapeHtml(test)}`, uz: `${escapeHtml(test)}: ${s}`, ru: `${escapeHtml(test)}: ${s}` })[l]
   },
   start: { en: 'Start', uz: 'Boshlash', ru: 'Начать' },
+  /** Class work due within a day that the student has not handed in. */
+  workDue: (l: Locale, group: string, what: string, due: Date) => ({
+    en: `⏰ <b>Due soon: ${what}</b>
+From ${escapeHtml(group)}. Hand it in by ${dayText(l, due, true)}.`,
+    uz: `⏰ <b>Muddat yaqin: ${what}</b>
+${escapeHtml(group)} guruhidan. ${dayText(l, due, true)} gacha topshiring.`,
+    ru: `⏰ <b>Скоро срок: ${what}</b>
+От группы ${escapeHtml(group)}. Сдайте до ${dayText(l, due, true)}.`
+  })[l],
+  /** A teacher marked a written response in a course quiz. */
+  writtenMarked: (l: Locale, quiz: string, score: number) => ({
+    en: `✅ <b>Your teacher marked your written answer</b>
+${escapeHtml(quiz)}: <b>${score}/100</b>. See the comments.`,
+    uz: `✅ <b>O‘qituvchingiz yozma javobingizni baholadi</b>
+${escapeHtml(quiz)}: <b>${score}/100</b>. Izohlarni ko‘ring.`,
+    ru: `✅ <b>Учитель оценил ваш письменный ответ</b>
+${escapeHtml(quiz)}: <b>${score}/100</b>. Посмотрите комментарии.`
+  })[l],
   /** An online class (Google Meet) was set for a class or a course the student is in. */
   lessonScheduled: (l: Locale, title: string, where: string, at: Date) => ({
     en: `📹 <b>Online class: ${escapeHtml(title)}</b>\n${escapeHtml(where)} · ${dayText(l, at, true)} (Tashkent time), on Google Meet.`,
