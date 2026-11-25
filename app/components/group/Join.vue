@@ -19,6 +19,7 @@ function join() {
     <UInput
       v-model="code"
       :placeholder="t('groups.codePlaceholder')"
+      autofocus
       icon="i-lucide-key-round"
       :ui="{ base: 'uppercase font-mono' }"
       class="flex-1"

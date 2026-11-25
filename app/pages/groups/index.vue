@@ -1,8 +1,9 @@
 <script setup lang="ts">
-/** My groups: the classes I am in, each with what is waiting there, and joining one with a code. */
+/** My groups: the classes I am in, each with what is waiting there; "Join a group" (top) asks for a code. */
 const { t } = useI18n()
 useSeoMeta({ title: () => t('groups.title'), robots: 'noindex' })
 const { data, status } = await useMyGroups()
+const joinOpen = ref(false)
 </script>
 
 <template>
@@ -10,6 +11,15 @@ const { data, status } = await useMyGroups()
     :title="t('groups.title')"
     icon="i-lucide-users"
   >
+    <template #actions>
+      <UButton
+        :label="t('groups.joinTitle')"
+        icon="i-lucide-user-plus"
+        data-testid="open-join"
+        @click="joinOpen = true"
+      />
+    </template>
+
     <div class="flex flex-col gap-5 max-w-4xl w-full">
       <USkeleton
         v-if="status === 'pending' && !data.groups.length"
@@ -31,19 +41,18 @@ const { data, status } = await useMyGroups()
         icon="i-lucide-users"
         :title="t('groups.noneTitle')"
         :description="t('groups.noneText')"
+        :actions="[{ label: t('groups.joinTitle'), icon: 'i-lucide-user-plus', onClick: () => { joinOpen = true } }]"
       />
-
-      <UCard>
-        <template #header>
-          <p class="font-extrabold text-highlighted">
-            {{ t('groups.joinTitle') }}
-          </p>
-          <p class="text-sm text-muted mt-0.5">
-            {{ t('groups.joinText') }}
-          </p>
-        </template>
-        <GroupJoin />
-      </UCard>
     </div>
+
+    <UModal
+      v-model:open="joinOpen"
+      :title="t('groups.joinTitle')"
+      :description="t('groups.joinText')"
+    >
+      <template #body>
+        <GroupJoin />
+      </template>
+    </UModal>
   </AppPage>
 </template>

@@ -2420,7 +2420,7 @@
     "allDone": "Hammasi bajarildi",
     "decks": "{n} to‘plam | {n} to‘plam",
     "noneTitle": "Hali guruhda emassiz",
-    "noneText": "O‘qituvchingizdan guruh kodi yoki havolasini so‘rang va pastda qo‘shiling. Topshiriqlar, onlayn darslar va so‘z to‘plamlari shu yerda chiqadi.",
+    "noneText": "O‘qituvchingizdan guruh kodi yoki havolasini so‘rang va «Guruhga qo‘shilish» tugmasini bosing. Topshiriqlar, onlayn darslar va so‘z to‘plamlari shu yerda chiqadi.",
     "joinTitle": "Guruhga qo‘shilish",
     "joinText": "O‘qituvchingiz bergan kodni kiriting yoki havolani joylang.",
     "notFound": "Guruh topilmadi",

@@ -2420,7 +2420,7 @@
     "allDone": "All done",
     "decks": "{n} deck | {n} decks",
     "noneTitle": "You are not in a group yet",
-    "noneText": "Ask your teacher for the class code or link, then join below. The work they set, online classes and word decks show up here.",
+    "noneText": "Ask your teacher for the class code or link, then tap “Join a group”. The work they set, online classes and word decks show up here.",
     "joinTitle": "Join a group",
     "joinText": "Enter the code or paste the link your teacher gave you.",
     "notFound": "Group not found",
