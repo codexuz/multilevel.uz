@@ -1153,3 +1153,25 @@ export const courseSpeakingComments = pgTable('course_speaking_comments', {
   createdAt: created(),
   updatedAt: updated()
 }, t => [index('course_speaking_comments_rec_idx').on(t.recordingId, t.createdAt)])
+
+// ---------- Support: user bug reports, feature requests, and general feedback ----------
+export const supportFeedback = pgTable('support_feedback', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  /** bug | feedback | feature | question */
+  kind: text('kind').notNull().default('feedback'),
+  subject: text('subject').notNull(),
+  message: text('message').notNull(),
+  pageUrl: text('page_url'),
+  contact: text('contact'),
+  /** open | in_progress | resolved | closed */
+  status: text('status').notNull().default('open'),
+  adminNote: text('admin_note'),
+  resolvedById: uuid('resolved_by_id').references(() => users.id, { onDelete: 'set null' }),
+  resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+  createdAt: created(),
+  updatedAt: updated()
+}, t => [
+  index('support_feedback_user_idx').on(t.userId, t.createdAt),
+  index('support_feedback_status_idx').on(t.status, t.createdAt)
+])

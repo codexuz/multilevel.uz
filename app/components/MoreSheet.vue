@@ -21,7 +21,8 @@ const links = computed<MoreLink[]>(() => [
   { label: t('nav.live'), icon: 'i-lucide-trophy', to: '/live', badge: live.value ? t('nav.liveBadge') : undefined },
   { label: t('nav.earn'), icon: 'i-lucide-gift', to: '/earn', badge: rewardCredits.value ? String(rewardCredits.value) : undefined },
   { label: t('nav.profile'), icon: 'i-lucide-user', to: '/profile' },
-  { label: t('nav.settings'), icon: 'i-lucide-settings', to: '/settings' }
+  { label: t('nav.settings'), icon: 'i-lucide-settings', to: '/settings' },
+  { label: t('nav.support'), icon: 'i-lucide-life-buoy', to: '/support' }
 ])
 const isHere = (to: string) => route.path === to || route.path.startsWith(`${to}/`)
 watch(() => route.fullPath, () => (open.value = false))
@@ -113,6 +114,18 @@ async function logout() {
           @click="colorMode.preference = dark ? 'light' : 'dark'"
         />
       </div>
+
+      <UButton
+        to="https://t.me/javlon_developer"
+        target="_blank"
+        rel="noopener"
+        :label="t('nav.telegramSupport')"
+        icon="i-simple-icons-telegram"
+        trailing-icon="i-lucide-external-link"
+        color="primary"
+        variant="soft"
+        block
+      />
 
       <UButton
         :label="t('nav.logOut')"

@@ -126,6 +126,13 @@ export default defineNuxtConfig({
   // Times are UTC (Tashkent is UTC+5).
   nitro: {
     experimental: { tasks: true },
+    hooks: {
+      // Nitropack's recursive MatchedRoutes<R> conditional type hits TS2589 once InternalApi
+      // exceeds ~224 routes; $fetch/useFetch calls in this app specify their own response types.
+      'types:extend'(types) {
+        types.routes = {}
+      }
+    },
     scheduledTasks: {
       '7 * * * *': ['live:mocks', 'reminders:marking', 'reminders:work'],
       // Online classes starting soon.

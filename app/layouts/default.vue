@@ -28,11 +28,30 @@ const nearestTo = computed(() => mainNav.value
   .map(i => String(i.to))
   .filter(to => route.path === to || (to !== '/' && route.path.startsWith(`${to}/`)))
   .sort((a, b) => b.length - a.length)[0])
-const mark = (items: NavigationMenuItem[]) => items.map(i => ({ ...i, active: String(i.to) === nearestTo.value }))
+const mark = (items: NavigationMenuItem[]) => items.map((i) => {
+  if (i.children?.length) {
+    const children = i.children.map(c => ({ ...c, active: typeof c.to === 'string' && route.path === c.to }))
+    const anyActive = children.some(c => c.active)
+    return { ...i, defaultOpen: anyActive || i.defaultOpen, active: anyActive, children }
+  }
+  return { ...i, active: String(i.to) === nearestTo.value || route.path === String(i.to) }
+})
 
-const bottomLinks = computed<NavigationMenuItem[]>(() => loggedIn.value
-  ? [{ label: t('nav.profile'), icon: 'i-lucide-user', to: '/profile' }, { label: t('nav.settings'), icon: 'i-lucide-settings', to: '/settings' }]
-  : [])
+const supportItem = computed<NavigationMenuItem>(() => ({
+  label: t('nav.support'),
+  icon: 'i-lucide-life-buoy',
+  children: [
+    { label: t('nav.reportFeedback'), icon: 'i-lucide-message-square-warning', to: '/support' },
+    { label: t('nav.telegramSupport'), icon: 'i-simple-icons-telegram', to: 'https://t.me/javlon_developer', target: '_blank' }
+  ]
+}))
+
+const bottomLinks = computed<NavigationMenuItem[]>(() => [
+  supportItem.value,
+  ...(loggedIn.value
+    ? [{ label: t('nav.profile'), icon: 'i-lucide-user', to: '/profile' }, { label: t('nav.settings'), icon: 'i-lucide-settings', to: '/settings' }]
+    : [])
+])
 
 // Phone bottom tab bar: focused strictly on learner flows.
 const tabBar = computed(() => [
@@ -113,6 +132,7 @@ const userMenu = computed<DropdownMenuItem[][]>(() => [
           :items="mark(bottomLinks)"
           orientation="vertical"
           tooltip
+          popover
           class="mt-auto"
         />
       </template>

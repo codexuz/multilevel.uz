@@ -108,9 +108,22 @@ const userMenu = computed<DropdownMenuItem[][]>(() => [
 
         <UNavigationMenu
           :collapsed="collapsed"
-          :items="[{ label: t('nav.settings'), icon: 'i-lucide-settings', to: '/settings', active: route.path === '/settings' }]"
+          :items="[
+            {
+              label: t('nav.support'),
+              icon: 'i-lucide-life-buoy',
+              defaultOpen: route.path === '/support',
+              active: route.path === '/support',
+              children: [
+                { label: t('nav.reportFeedback'), icon: 'i-lucide-message-square-warning', to: '/support', active: route.path === '/support' },
+                { label: t('nav.telegramSupport'), icon: 'i-simple-icons-telegram', to: 'https://t.me/javlon_developer', target: '_blank' }
+              ]
+            },
+            { label: t('nav.settings'), icon: 'i-lucide-settings', to: '/settings', active: route.path === '/settings' }
+          ]"
           orientation="vertical"
           tooltip
+          popover
           class="mt-auto"
         />
       </template>
