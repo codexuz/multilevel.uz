@@ -38,6 +38,7 @@ const navItems = computed<NavigationMenuItem[]>(() => [
       { label: t('panel.orders'), to: '/admin/orders' }
     ]
   },
+  { label: t('panel.feedback'), icon: 'i-lucide-inbox', to: '/admin/feedback' },
   { label: t('panel.platform'), icon: 'i-lucide-sliders-horizontal', to: '/admin/settings' }
 ])
 </script>

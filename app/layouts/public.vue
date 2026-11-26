@@ -273,12 +273,18 @@ const year = new Date().getFullYear()
               >{{ t('nav.signIn') }}</NuxtLink>
             </li>
             <li>
+              <NuxtLink
+                to="/support"
+                class="hover:text-white"
+              >{{ t('nav.reportFeedback') }}</NuxtLink>
+            </li>
+            <li>
               <a
-                :href="social.telegramUrl"
+                href="https://t.me/javlon_developer"
                 target="_blank"
                 rel="noopener"
                 class="hover:text-white"
-              >{{ t('pub.contact') }}</a>
+              >{{ t('nav.telegramSupport') }}</a>
             </li>
           </ul>
         </div>
