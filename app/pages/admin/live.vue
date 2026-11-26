@@ -26,7 +26,7 @@ interface Mock {
   channelIds: string[]
   test: { title: string | null, status: string | null }
 }
-interface Channel { id: string, chat: string, title: string, url: string | null, exam: Exam | null, locale: string, builtIn: boolean }
+interface Channel { id: string, chat: string, title: string, url: string | null, exam: Exam | null, locale: string, builtIn: boolean, envKey?: string }
 
 const toast = useToast()
 const { data, refresh } = await useFetch<{ channels: Channel[], mocks: Mock[] }>('/api/admin/live', { default: () => ({ channels: [], mocks: [] }) })
@@ -242,7 +242,7 @@ const when = (d: string) => localeDate(d, 'en-GB', { weekday: 'short', day: 'num
                 v-else
                 class="font-medium text-highlighted truncate block"
               >{{ c.title }}</span>
-              <span class="text-xs text-muted">{{ c.chat }}<template v-if="c.builtIn"> · TELEGRAM_CHANNEL (its exam and language are set on the server)</template></span>
+              <span class="text-xs text-muted">{{ c.chat }}<template v-if="c.builtIn"> · {{ c.envKey || 'TELEGRAM_CHANNEL' }} (its exam and language are set on the server)</template></span>
             </div>
             <template v-if="c.builtIn">
               <UBadge

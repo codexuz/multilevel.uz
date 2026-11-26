@@ -1,13 +1,13 @@
 import { asc, eq, sql } from 'drizzle-orm'
 import { liveMocks, telegramChannels } from '../database/schema'
 import { asLocale, type Locale } from './messages'
-import { telegramChannel } from './rewards'
+import { telegramChannel, telegramIeltsChannel } from './rewards'
 import { telegramApi, telegramBotId } from './telegram'
 
 /**
- * The Telegram channels live mocks are posted to. TELEGRAM_CHANNEL (the one joined for credits) is
- * always one, for the exam TELEGRAM_CHANNEL_EXAM names (MULTILEVEL by default; BOTH for both); admins
- * add more on Live mocks, say one for IELTS. Each mock is posted to the channels picked for it, by
+ * The Telegram channels live mocks are posted to. TELEGRAM_CHANNEL (Multilevel by default) and
+ * TELEGRAM_CHANNEL_IELTS (IELTS) are built-in when configured in the environment; admins can also
+ * add extra channels on Admin → Live mocks. Each mock is posted to the channels picked for it, by
  * default those of its exam, each in the channel's own language.
  */
 export interface PostChannel {
@@ -18,31 +18,50 @@ export interface PostChannel {
   /** The exam its readers sit; null: both. */
   exam: Exam | null
   locale: Locale
-  /** TELEGRAM_CHANNEL, set on the server rather than here. */
+  /** Built-in env channel (TELEGRAM_CHANNEL or TELEGRAM_CHANNEL_IELTS), set on the server. */
   builtIn: boolean
+  /** Name of the environment variable backing a built-in channel. */
+  envKey?: string
 }
 
 export const DEFAULT_CHANNEL = 'default'
+export const IELTS_CHANNEL = 'default_ielts'
 
 export const asChannelExam = (e?: string | null): Exam | null => (e === 'IELTS' || e === 'MULTILEVEL' ? e : null)
 
 export async function postChannels(): Promise<PostChannel[]> {
-  const env = telegramChannel()
+  const envMain = telegramChannel()
+  const envIelts = telegramIeltsChannel()
   const rows = await useDb().select().from(telegramChannels).orderBy(asc(telegramChannels.createdAt))
-  const builtIn: PostChannel[] = env
-    ? [{
-        id: DEFAULT_CHANNEL,
-        chat: env.chat,
-        title: env.chat,
-        url: env.url,
-        exam: asChannelExam(process.env.TELEGRAM_CHANNEL_EXAM ?? 'MULTILEVEL'),
-        locale: asLocale(process.env.TELEGRAM_CHANNEL_LOCALE || 'uz'),
-        builtIn: true
-      }]
-    : []
+  const builtIn: PostChannel[] = []
+  if (envMain) {
+    builtIn.push({
+      id: DEFAULT_CHANNEL,
+      chat: envMain.chat,
+      title: envMain.chat,
+      url: envMain.url,
+      exam: asChannelExam(process.env.TELEGRAM_CHANNEL_EXAM ?? 'MULTILEVEL'),
+      locale: asLocale(process.env.TELEGRAM_CHANNEL_LOCALE || 'uz'),
+      builtIn: true,
+      envKey: 'TELEGRAM_CHANNEL'
+    })
+  }
+  if (envIelts && envIelts.chat !== envMain?.chat) {
+    builtIn.push({
+      id: IELTS_CHANNEL,
+      chat: envIelts.chat,
+      title: envIelts.chat,
+      url: envIelts.url,
+      exam: 'IELTS',
+      locale: asLocale(process.env.TELEGRAM_CHANNEL_IELTS_LOCALE || 'en'),
+      builtIn: true,
+      envKey: 'TELEGRAM_CHANNEL_IELTS'
+    })
+  }
+  const builtInChats = new Set(builtIn.map(c => c.chat))
   return [
     ...builtIn,
-    ...rows.filter(r => r.chat !== env?.chat).map(r => ({
+    ...rows.filter(r => !builtInChats.has(r.chat)).map(r => ({
       id: r.id, chat: r.chat, title: r.title, url: r.url, exam: asChannelExam(r.exam), locale: asLocale(r.locale), builtIn: false
     }))
   ]
@@ -95,6 +114,7 @@ export async function addChannel(input: string, exam: Exam | null, locale: Local
     locale
   }
   if (row.chat === telegramChannel()?.chat) throw createError({ statusCode: 409, message: 'That is TELEGRAM_CHANNEL, already on the list' })
+  if (row.chat === telegramIeltsChannel()?.chat) throw createError({ statusCode: 409, message: 'That is TELEGRAM_CHANNEL_IELTS, already on the list' })
   const [made] = await useDb().insert(telegramChannels).values(row).onConflictDoNothing().returning()
   if (!made) throw createError({ statusCode: 409, message: `${row.title} is already on the list` })
   return made

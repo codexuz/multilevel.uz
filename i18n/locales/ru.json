@@ -912,9 +912,10 @@
     "reason": {
       "REFERRAL": "Приглашённый друг прошёл тест",
       "WELCOME": "Подарок за регистрацию по приглашению",
-      "TELEGRAM_CHANNEL": "Подписка на Telegram-канал",
+      "TELEGRAM_CHANNEL": "Подписка на Multilevel Telegram-канал",
       "UNLOCK": "Открыт тест",
-      "GRANT": "От Mockmee"
+      "GRANT": "От Mockmee",
+      "TELEGRAM_CHANNEL_IELTS": "Подписка на IELTS Telegram-канал"
     },
     "title": "Зарабатывайте {accent}",
     "titleAccent": "бесплатные кредиты",
@@ -939,7 +940,12 @@
     "step1": "1. Подписаться на канал",
     "step2": "2. Я подписался: проверить",
     "step2Connect": "2. Подключите Telegram для проверки",
-    "history": "История"
+    "history": "История",
+    "channelIelts": "Подпишитесь на наш IELTS Telegram-канал",
+    "channelIeltsText": "Пробные тесты IELTS, советы и новости экзамена. Подпишитесь и получите {credits} один раз.",
+    "channelMultilevel": "Подпишитесь на наш Multilevel Telegram-канал",
+    "channelMultilevelText": "Пробные тесты Multilevel (CEFR), советы и новости. Подпишитесь и получите {credits} один раз.",
+    "yourExam": "Ваш экзамен"
   },
   "payment": {
     "title": "Оплата",

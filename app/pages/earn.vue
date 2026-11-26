@@ -7,11 +7,22 @@ definePageMeta({ guestLayout: true })
  * finish their first test, they get a welcome credit), and join the Telegram channel. A guest
  * sees how it works and signs in for their link.
  */
+interface JoinChannel {
+  exam: 'MULTILEVEL' | 'IELTS'
+  chat: string
+  title: string
+  url: string
+  telegramLinked: boolean
+  claimed: boolean
+  recommended: boolean
+}
+
 interface Rewards {
   credits: number
   rules: { referrer: number, referred: number, channel: number, unlockCost: number }
   referral: { code: string, link: string, invited: number, rewarded: number, earned: number }
-  channel: { url: string, telegramLinked: boolean, claimed: boolean } | null
+  channel: JoinChannel | null
+  channels: JoinChannel[]
   history: { id: string, delta: number, reason: string, createdAt: string, test: { slug: string, title: string } | null }[]
 }
 
@@ -46,24 +57,33 @@ async function shareLink() {
   await navigator.share({ title: t('earn.shareTitle'), text: shareText.value, url: data.value.referral.link }).catch(() => {})
 }
 
-// The Telegram channel: link Telegram if needed, join, then let the bot check.
+// The Telegram channels (IELTS & Multilevel): link Telegram if needed, join, then let the bot check.
 const telegram = useTelegramLogin()
-const checking = ref(false)
+const checkingExam = ref<'MULTILEVEL' | 'IELTS' | null>(null)
 async function connectTelegram() {
   if (await telegram.start()) await Promise.all([refresh(), refreshMe()])
 }
-async function checkChannel() {
-  checking.value = true
+async function checkChannel(exam: 'MULTILEVEL' | 'IELTS') {
+  checkingExam.value = exam
   try {
-    const res = await $fetch<{ credited: number, credits: number }>('/api/rewards/telegram-channel', { method: 'POST' })
+    const res = await $fetch<{ exam: string, credited: number, credits: number }>('/api/rewards/telegram-channel', {
+      method: 'POST',
+      body: { exam }
+    })
     await Promise.all([refresh(), refreshMe()])
     toast.add({ title: res.credited ? `+${plural(res.credited)}` : t('earn.already'), description: res.credited ? t('earn.thanks') : t('earn.alreadyText'), color: 'success' })
   } catch (e: any) {
     toast.add({ title: t('common.notYet'), description: e?.data?.message || t('test.tryAgain'), color: 'warning' })
   } finally {
-    checking.value = false
+    checkingExam.value = null
   }
 }
+
+const joinChannels = computed<JoinChannel[]>(() => {
+  if (!data.value) return []
+  if (data.value.channels?.length) return data.value.channels
+  return data.value.channel ? [data.value.channel] : []
+})
 
 const reason = (r: string) => t(`earn.reason.${r}`)
 </script>
@@ -232,78 +252,111 @@ const reason = (r: string) => t(`earn.reason.${r}`)
           </dl>
         </UCard>
 
-        <!-- Telegram channel -->
-        <UCard v-if="data.channel">
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex items-start gap-3">
-              <UIcon
-                name="i-logos-telegram"
-                class="size-9 shrink-0"
-              />
-              <div>
-                <h2 class="font-semibold text-highlighted">
-                  {{ t('earn.channel') }}
-                </h2>
-                <p class="text-sm text-muted text-pretty">
-                  {{ t('earn.channelText', { credits: plural(rules.channel) }) }}
-                </p>
+        <!-- Telegram channels (IELTS & Multilevel) -->
+        <UPageList
+          v-if="joinChannels.length"
+          class="gap-4"
+          data-testid="earn-channels"
+        >
+          <UCard
+            v-for="ch in joinChannels"
+            :key="ch.exam"
+            :data-testid="`earn-channel-${ch.exam.toLowerCase()}`"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-start gap-3 min-w-0">
+                <UIcon
+                  name="i-logos-telegram"
+                  class="size-9 shrink-0"
+                />
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <h2 class="font-semibold text-highlighted">
+                      {{ ch.exam === 'IELTS' ? t('earn.channelIelts') : t('earn.channelMultilevel') }}
+                    </h2>
+                    <UBadge
+                      :label="ch.exam === 'IELTS' ? 'IELTS' : 'Multilevel'"
+                      :color="ch.exam === 'IELTS' ? 'info' : 'primary'"
+                      variant="subtle"
+                      size="xs"
+                    />
+                    <UBadge
+                      v-if="ch.recommended"
+                      :label="t('earn.yourExam')"
+                      color="success"
+                      variant="soft"
+                      size="xs"
+                    />
+                  </div>
+                  <p class="text-sm text-muted text-pretty mt-0.5">
+                    {{ ch.exam === 'IELTS' ? t('earn.channelIeltsText', { credits: plural(rules.channel) }) : t('earn.channelMultilevelText', { credits: plural(rules.channel) }) }}
+                  </p>
+                  <p
+                    v-if="ch.chat"
+                    class="text-xs text-dimmed mt-1 truncate"
+                  >
+                    {{ ch.title && ch.title !== ch.chat ? `${ch.title} · ${ch.chat}` : ch.chat }}
+                  </p>
+                </div>
               </div>
+              <UBadge
+                v-if="ch.claimed"
+                :label="t('common.done')"
+                color="success"
+                variant="subtle"
+                icon="i-lucide-check"
+                class="shrink-0"
+              />
+              <UBadge
+                v-else
+                :label="`+${rules.channel}`"
+                color="primary"
+                variant="subtle"
+                icon="i-lucide-gift"
+                class="shrink-0"
+              />
             </div>
-            <UBadge
-              v-if="data.channel.claimed"
-              :label="t('common.done')"
-              color="success"
-              variant="subtle"
-              icon="i-lucide-check"
-            />
-            <UBadge
-              v-else
-              :label="`+${rules.channel}`"
-              color="primary"
-              variant="subtle"
-              icon="i-lucide-gift"
-            />
-          </div>
-          <div
-            v-if="!data.channel.claimed"
-            class="mt-4 grid gap-2 sm:flex"
-          >
-            <UButton
-              :to="data.channel.url"
-              target="_blank"
-              external
-              :label="t('earn.step1')"
-              icon="i-lucide-external-link"
-              color="neutral"
-              variant="soft"
-              class="justify-center"
-            />
-            <UButton
-              v-if="data.channel.telegramLinked"
-              :label="t('earn.step2')"
-              icon="i-lucide-badge-check"
-              :loading="checking"
-              class="justify-center"
-              @click="checkChannel"
-            />
-            <UButton
-              v-else-if="telegram.available.value"
-              :label="t('earn.step2Connect')"
-              icon="i-logos-telegram"
-              color="neutral"
-              variant="outline"
-              :loading="telegram.busy.value"
-              class="justify-center"
-              @click="connectTelegram"
-            />
-          </div>
-          <p
-            v-if="telegram.error.value"
-            class="mt-3 text-sm text-error"
-          >
-            {{ telegram.error.value }}
-          </p>
-        </UCard>
+            <div
+              v-if="!ch.claimed"
+              class="mt-4 grid gap-2 sm:flex"
+            >
+              <UButton
+                :to="ch.url"
+                target="_blank"
+                external
+                :label="t('earn.step1')"
+                icon="i-lucide-external-link"
+                color="neutral"
+                variant="soft"
+                class="justify-center"
+              />
+              <UButton
+                v-if="ch.telegramLinked"
+                :label="t('earn.step2')"
+                icon="i-lucide-badge-check"
+                :loading="checkingExam === ch.exam"
+                class="justify-center"
+                @click="checkChannel(ch.exam)"
+              />
+              <UButton
+                v-else-if="telegram.available.value"
+                :label="t('earn.step2Connect')"
+                icon="i-logos-telegram"
+                color="neutral"
+                variant="outline"
+                :loading="telegram.busy.value"
+                class="justify-center"
+                @click="connectTelegram"
+              />
+            </div>
+            <p
+              v-if="telegram.error.value"
+              class="mt-3 text-sm text-error"
+            >
+              {{ telegram.error.value }}
+            </p>
+          </UCard>
+        </UPageList>
 
         <!-- History -->
         <UCard v-if="data.history.length">

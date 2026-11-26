@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import type { H3Event } from 'h3'
-import { and, eq, gt, sql } from 'drizzle-orm'
-import { partUnlocks, rewardTransactions, testUnlocks, users } from '../database/schema'
+import { and, asc, eq, gt, sql } from 'drizzle-orm'
+import { partUnlocks, rewardTransactions, telegramChannels, testUnlocks, users } from '../database/schema'
 import { paymentRequired } from './billing'
 import { telegramApi, telegramBotToken } from './telegram'
 import { notifyInviteReward } from './notify'
@@ -141,23 +141,121 @@ export async function unlockTest(userId: string, testId: string): Promise<number
   })
 }
 
-// ---------- Telegram channel ----------
+// ---------- Telegram channels (Multilevel & IELTS) ----------
 
-/** The channel to join: TELEGRAM_CHANNEL is its @username (or numeric id, with TELEGRAM_CHANNEL_URL). */
-export function telegramChannel(): { chat: string, url: string } | null {
-  const chat = (process.env.TELEGRAM_CHANNEL || '').trim()
+export type JoinChannelExam = 'MULTILEVEL' | 'IELTS'
+
+export interface JoinTelegramChannel {
+  exam: JoinChannelExam
+  chat: string
+  title: string
+  url: string
+  reason: 'TELEGRAM_CHANNEL' | 'TELEGRAM_CHANNEL_IELTS'
+}
+
+function parseEnvChannel(rawChat?: string, rawUrl?: string): { chat: string, url: string } | null {
+  const chat = (rawChat || '').trim()
   if (!chat || !telegramBotToken()) return null
-  const handle = chat.replace(/^https?:\/\/t\.me\//, '@').replace(/^(?!@|-?\d)/, '@')
-  const url = process.env.TELEGRAM_CHANNEL_URL || (handle.startsWith('@') ? `https://t.me/${handle.slice(1)}` : '')
+  const handle = chat.replace(/^https?:\/\/(www\.)?t(elegram)?\.me\//i, '@').replace(/\/$/, '').replace(/^(?!@|-?\d)/, '@')
+  const url = (rawUrl || '').trim() || (handle.startsWith('@') ? `https://t.me/${handle.slice(1)}` : '')
   return url ? { chat: handle, url } : null
 }
 
-/** Whether this Telegram user is in the channel now. The bot must be an admin of the channel. */
-export async function isChannelMember(telegramId: string): Promise<boolean> {
-  const channel = telegramChannel()
+/** The Multilevel channel to join: TELEGRAM_CHANNEL (or TELEGRAM_CHANNEL_MULTILEVEL) + optional URL. */
+export function telegramChannel(): { chat: string, url: string } | null {
+  return parseEnvChannel(
+    process.env.TELEGRAM_CHANNEL || process.env.TELEGRAM_CHANNEL_MULTILEVEL,
+    process.env.TELEGRAM_CHANNEL_URL || process.env.TELEGRAM_CHANNEL_MULTILEVEL_URL
+  )
+}
+
+/** The IELTS channel to join: TELEGRAM_CHANNEL_IELTS + optional TELEGRAM_CHANNEL_IELTS_URL. */
+export function telegramIeltsChannel(): { chat: string, url: string } | null {
+  return parseEnvChannel(
+    process.env.TELEGRAM_CHANNEL_IELTS,
+    process.env.TELEGRAM_CHANNEL_IELTS_URL
+  )
+}
+
+/**
+ * Both exam channels users can join for free credits (Multilevel + IELTS).
+ * Reads TELEGRAM_CHANNEL / TELEGRAM_CHANNEL_IELTS first, and falls back to matching
+ * channels configured in Admin → Live mocks (`telegram_channels`) when an env var is unset.
+ */
+export async function joinableTelegramChannels(): Promise<JoinTelegramChannel[]> {
+  if (!telegramBotToken()) return []
+
+  const envMulti = telegramChannel()
+  const envIelts = telegramIeltsChannel()
+
+  let dbRows: { chat: string, title: string, url: string | null, exam: string | null }[] = []
+  if (!envMulti || !envIelts) {
+    dbRows = await useDb()
+      .select({ chat: telegramChannels.chat, title: telegramChannels.title, url: telegramChannels.url, exam: telegramChannels.exam })
+      .from(telegramChannels)
+      .orderBy(asc(telegramChannels.createdAt))
+  }
+
+  const out: JoinTelegramChannel[] = []
+  const seenChats = new Set<string>()
+
+  const pushUnique = (entry: JoinTelegramChannel) => {
+    if (seenChats.has(entry.chat)) return
+    seenChats.add(entry.chat)
+    out.push(entry)
+  }
+
+  if (envMulti) {
+    pushUnique({
+      exam: 'MULTILEVEL',
+      chat: envMulti.chat,
+      title: envMulti.chat,
+      url: envMulti.url,
+      reason: 'TELEGRAM_CHANNEL'
+    })
+  } else {
+    const row = dbRows.find(r => r.exam === 'MULTILEVEL' && r.url)
+    if (row?.url) {
+      pushUnique({
+        exam: 'MULTILEVEL',
+        chat: row.chat,
+        title: row.title || row.chat,
+        url: row.url,
+        reason: 'TELEGRAM_CHANNEL'
+      })
+    }
+  }
+
+  if (envIelts) {
+    pushUnique({
+      exam: 'IELTS',
+      chat: envIelts.chat,
+      title: envIelts.chat,
+      url: envIelts.url,
+      reason: 'TELEGRAM_CHANNEL_IELTS'
+    })
+  } else {
+    const row = dbRows.find(r => r.exam === 'IELTS' && r.url && !seenChats.has(r.chat))
+    if (row?.url) {
+      pushUnique({
+        exam: 'IELTS',
+        chat: row.chat,
+        title: row.title || row.chat,
+        url: row.url,
+        reason: 'TELEGRAM_CHANNEL_IELTS'
+      })
+    }
+  }
+
+  return out
+}
+
+/** Whether this Telegram user is in the given channel now. The bot must be an admin of the channel. */
+export async function isChannelMember(telegramId: string, chat?: string): Promise<boolean> {
+  const targetChat = chat || telegramChannel()?.chat
   const token = telegramBotToken()
-  if (!channel || !token) return false
-  const res = await telegramApi<{ status: string, is_member?: boolean }>('getChatMember', { chat_id: channel.chat, user_id: telegramId }).catch((e) => {
+  if (!targetChat || !token) return false
+  const res = await telegramApi<{ status: string, is_member?: boolean }>('getChatMember', { chat_id: targetChat, user_id: telegramId }).catch((e) => {
     console.error('[rewards] getChatMember failed:', e?.data?.description || e?.message)
     throw createError({ statusCode: 502, message: 'Telegram did not answer. Please try again in a minute.' })
   })
