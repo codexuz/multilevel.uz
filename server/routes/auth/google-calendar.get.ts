@@ -29,8 +29,8 @@ export default defineEventHandler(async (event) => {
   if (query.error) return sendRedirect(event, back(next, 'cancelled'))
   if (query.code && (!query.state || query.state !== getCookie(event, STATE_COOKIE))) return sendRedirect(event, back(next, 'failed'))
 
-  const site = String(useRuntimeConfig().public.siteUrl || getRequestURL(event).origin).replace(/\/$/, '')
-  return defineOAuthGoogleEventHandler({
+  const site = String(useRuntimeConfig(event).public.siteUrl || getRequestURL(event).origin).replace(/\/$/, '')
+  const handler = defineOAuthGoogleEventHandler({
     config: {
       scope: ['openid', 'email', CALENDAR_SCOPE],
       authorizationParams: { access_type: 'offline', prompt: 'consent', include_granted_scopes: 'true' },
@@ -53,5 +53,13 @@ export default defineEventHandler(async (event) => {
       console.error('[google-calendar] OAuth error:', error)
       return sendRedirect(ev, back(next, 'failed'))
     }
-  })(event)
+  })
+
+  try {
+    return await handler(event)
+  } catch (e: any) {
+    const oauthErr = e?.data?.error || e?.cause?.data?.error
+    console.warn('[google-calendar] token exchange failed:', oauthErr || e?.message || e)
+    return sendRedirect(event, back(next, 'failed'))
+  }
 })
