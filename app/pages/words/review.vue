@@ -57,7 +57,8 @@ const hints = computed(() => {
 })
 
 const canSpeak = ref(false)
-onMounted(() => (canSpeak.value = 'speechSynthesis' in window))
+onMounted(() => (canSpeak.value = canSpeakWords()))
+onBeforeUnmount(stopSpeaking)
 
 function flip() {
   if (!card.value) return

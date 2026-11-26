@@ -98,13 +98,7 @@ async function removeDeck() {
     toast.add({ title: t('vocab.notRemoved'), description: errorMessage(e), color: 'error' })
   }
 }
-const say = (text: string) => {
-  if (!import.meta.client || !('speechSynthesis' in window)) return
-  speechSynthesis.cancel()
-  const u = new SpeechSynthesisUtterance(text)
-  u.lang = 'en-GB'
-  speechSynthesis.speak(u)
-}
+const say = (text: string) => speakWord(text)
 </script>
 
 <template>

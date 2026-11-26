@@ -125,10 +125,13 @@ function onKey(e: KeyboardEvent) {
   }
 }
 onMounted(() => window.addEventListener('keydown', onKey))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKey)
+  stopSpeaking()
+})
 
 const canSpeak = ref(false)
-onMounted(() => (canSpeak.value = 'speechSynthesis' in window))
+onMounted(() => (canSpeak.value = canSpeakWords()))
 
 /** The word a result was about, for the list of missed ones. */
 const wordOf = (question: QuizQuestion) => (question.kind === 'gap' ? question.answer : question.word)

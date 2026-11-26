@@ -9,7 +9,7 @@ const { t } = useI18n()
 const head = computed(() => props.word.lemma && props.word.lemma !== props.word.term ? props.word.lemma : props.word.word)
 const parts = computed(() => (props.word.sentence ? splitSentence(props.word.sentence, props.word.word) : null))
 const canSpeak = ref(false)
-onMounted(() => (canSpeak.value = 'speechSynthesis' in window))
+onMounted(() => (canSpeak.value = canSpeakWords()))
 </script>
 
 <template>

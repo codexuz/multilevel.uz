@@ -122,13 +122,9 @@ async function copyResult() {
 }
 
 function speakEnglish() {
-  if (!import.meta.client || !('speechSynthesis' in window)) return
   const phrase = sourceLang.value === 'eng_Latn' ? inputText.value.trim() : targetLang.value === 'eng_Latn' ? resultText.value.trim() : ''
   if (!phrase) return
-  window.speechSynthesis.cancel()
-  const u = new SpeechSynthesisUtterance(phrase)
-  u.lang = 'en-GB'
-  window.speechSynthesis.speak(u)
+  speakWord(phrase)
 }
 
 async function saveToMyWords() {

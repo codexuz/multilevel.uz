@@ -51,6 +51,10 @@ export default defineNuxtConfig({
     tilmochApiKey: process.env.TILMOCH_API_KEY,
     tilmochApiUrl: process.env.TILMOCH_API_URL || 'https://websocket.tahrirchi.uz/translate-v2',
     tilmochModel: process.env.TILMOCH_MODEL || 'sayqalchi',
+    // Speechify TTS API (vocabulary pronunciation, cached in S3)
+    speechifyApiKey: process.env.SPEECHIFY_API_KEY,
+    speechifyModel: process.env.SPEECHIFY_MODEL || 'simba-3.5',
+    speechifyVoiceId: process.env.SPEECHIFY_VOICE_ID || 'geffen_32',
     // Click.uz merchant (SHOP API). Without these, plans are sold privately on Telegram.
     clickServiceId: process.env.CLICK_SERVICE_ID,
     clickMerchantId: process.env.CLICK_MERCHANT_ID,

@@ -11,7 +11,7 @@ const head = computed(() => props.word.lemma && props.word.lemma !== props.word.
 const parts = computed(() => (props.word.sentence ? splitSentence(props.word.sentence, props.word.word) : null))
 const due = computed(() => wordDueLabel(props.word.dueAt, t))
 const canSpeak = ref(false)
-onMounted(() => (canSpeak.value = 'speechSynthesis' in window))
+onMounted(() => (canSpeak.value = canSpeakWords()))
 </script>
 
 <template>
