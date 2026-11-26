@@ -522,7 +522,7 @@ export const rewardTransactions = pgTable('reward_transactions', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   delta: integer('delta').notNull(),
-  reason: text('reason').notNull(), // REFERRAL | WELCOME | TELEGRAM_CHANNEL | UNLOCK | GRANT
+  reason: text('reason').notNull(), // REFERRAL | WELCOME | TELEGRAM_CHANNEL | TELEGRAM_CHANNEL_IELTS | UNLOCK | GRANT
   /** REFERRAL: the friend whose first test earned it. */
   referredUserId: uuid('referred_user_id').references(() => users.id, { onDelete: 'set null' }),
   /** UNLOCK: the test it opened. */
@@ -530,9 +530,9 @@ export const rewardTransactions = pgTable('reward_transactions', {
   createdAt: created()
 }, t => [
   index('reward_transactions_user_idx').on(t.userId),
-  // Each friend earns their inviter once; the welcome and the channel are once per user.
+  // Each friend earns their inviter once; the welcome and each Telegram channel are once per user.
   uniqueIndex('reward_transactions_referral_uq').on(t.referredUserId).where(sql`reason = 'REFERRAL'`),
-  uniqueIndex('reward_transactions_once_uq').on(t.userId, t.reason).where(sql`reason in ('WELCOME', 'TELEGRAM_CHANNEL')`)
+  uniqueIndex('reward_transactions_once_uq').on(t.userId, t.reason).where(sql`reason in ('WELCOME', 'TELEGRAM_CHANNEL', 'TELEGRAM_CHANNEL_IELTS')`)
 ])
 
 // ---------- AI feedback on Writing ----------

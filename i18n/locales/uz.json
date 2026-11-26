@@ -912,9 +912,10 @@
     "reason": {
       "REFERRAL": "Taklif qilgan do‘stingiz test tugatdi",
       "WELCOME": "Taklif orqali qo‘shilganingiz uchun sovg‘a",
-      "TELEGRAM_CHANNEL": "Telegram kanalga qo‘shildingiz",
+      "TELEGRAM_CHANNEL": "Multilevel Telegram kanaliga qo‘shildingiz",
       "UNLOCK": "Ochildi",
-      "GRANT": "Mockmee’dan"
+      "GRANT": "Mockmee’dan",
+      "TELEGRAM_CHANNEL_IELTS": "IELTS Telegram kanaliga qo‘shildingiz"
     },
     "title": "{accent} ishlang",
     "titleAccent": "Bepul kredit",
@@ -939,7 +940,12 @@
     "step1": "1. Kanalga qo‘shilish",
     "step2": "2. Qo‘shildim: tekshirish",
     "step2Connect": "2. Tekshirish uchun Telegramni ulash",
-    "history": "Tarix"
+    "history": "Tarix",
+    "channelIelts": "IELTS Telegram kanalimizga qo‘shiling",
+    "channelIeltsText": "IELTS mock testlari, foydali maslahatlar va yangiliklar. Qo‘shiling va bir marta {credits} oling.",
+    "channelMultilevel": "Multilevel Telegram kanalimizga qo‘shiling",
+    "channelMultilevelText": "Multilevel (CEFR) mock testlari, maslahatlar va yangiliklar. Qo‘shiling va bir marta {credits} oling.",
+    "yourExam": "Sizning imtihoningiz"
   },
   "payment": {
     "title": "To‘lov",

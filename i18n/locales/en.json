@@ -912,9 +912,10 @@
     "reason": {
       "REFERRAL": "A friend you invited finished a test",
       "WELCOME": "Welcome gift for joining by invite",
-      "TELEGRAM_CHANNEL": "Joined the Telegram channel",
+      "TELEGRAM_CHANNEL": "Joined the Multilevel Telegram channel",
       "UNLOCK": "Opened",
-      "GRANT": "From Mockmee"
+      "GRANT": "From Mockmee",
+      "TELEGRAM_CHANNEL_IELTS": "Joined the IELTS Telegram channel"
     },
     "title": "Earn {accent}",
     "titleAccent": "free credits",
@@ -939,7 +940,12 @@
     "step1": "1. Join the channel",
     "step2": "2. I've joined: check",
     "step2Connect": "2. Connect Telegram to check",
-    "history": "History"
+    "history": "History",
+    "channelIelts": "Join our IELTS Telegram channel",
+    "channelIeltsText": "IELTS mock tests, band 8+ tips and announcements. Join and get {credits}, once.",
+    "channelMultilevel": "Join our Multilevel Telegram channel",
+    "channelMultilevelText": "Multilevel (CEFR) mock tests, exam tips and updates. Join and get {credits}, once.",
+    "yourExam": "Your exam"
   },
   "payment": {
     "title": "Payment",

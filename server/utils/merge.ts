@@ -86,8 +86,8 @@ export async function mergeAccounts(keepId: string, otherId: string) {
     for (const table of [attempts, orders, subscriptions, creditTransactions, aiReviews] as const) {
       await tx.update(table).set({ userId: keepId } as any).where(eq(table.userId, otherId))
     }
-    // Credits earned once per person (the welcome gift, the channel): keep one.
-    await tx.execute(sql`delete from reward_transactions where user_id = ${otherId} and reason in ('WELCOME', 'TELEGRAM_CHANNEL')
+    // Credits earned once per person (the welcome gift, each Telegram channel): keep one.
+    await tx.execute(sql`delete from reward_transactions where user_id = ${otherId} and reason in ('WELCOME', 'TELEGRAM_CHANNEL', 'TELEGRAM_CHANNEL_IELTS')
       and exists (select 1 from reward_transactions r where r.user_id = ${keepId} and r.reason = reward_transactions.reason)`)
     await tx.update(rewardTransactions).set({ userId: keepId }).where(eq(rewardTransactions.userId, otherId))
     // An inviter is paid once per friend: the other account's invite reward moves over unless the
