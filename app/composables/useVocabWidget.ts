@@ -20,6 +20,7 @@ const MAX_HISTORY = 8
  */
 export function useVocabWidget() {
   const route = useRoute()
+  const { loggedIn } = useMe()
   const enabled = useState<boolean>('vocab-widget-enabled', () => true)
   const initialized = useState<boolean>('vocab-widget-init', () => false)
   const sourceLang = useState<TilmochLang>('vocab-widget-src', () => 'eng_Latn')
@@ -110,7 +111,18 @@ export function useVocabWidget() {
     return false
   })
 
-  const visible = computed(() => enabled.value && !isExamPage.value)
+  /** True on public, guest, auth, and onboarding pages where the in-app translator is hidden. */
+  const isPublicPage = computed(() => {
+    if (!loggedIn.value) return true
+    const layout = route.meta.layout
+    if (layout === 'public' || layout === 'onboarding' || layout === false) return true
+    const p = route.path
+    if (p === '/' || p === '/login' || p === '/onboarding' || p === '/teach') return true
+    if (p.startsWith('/share/') || p.startsWith('/join/') || p.startsWith('/report/')) return true
+    return false
+  })
+
+  const visible = computed(() => enabled.value && !isExamPage.value && !isPublicPage.value)
 
   return {
     enabled,
@@ -118,6 +130,7 @@ export function useVocabWidget() {
     targetLang,
     history,
     isExamPage,
+    isPublicPage,
     visible,
     setEnabled,
     setLangPair,

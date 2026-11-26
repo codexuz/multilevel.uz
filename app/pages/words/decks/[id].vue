@@ -201,30 +201,28 @@ onBeforeUnmount(() => {
     icon="i-lucide-layers"
     wide
   >
-    <template #actions>
-      <UButton
-        v-if="data?.stats.total"
-        :to="playPath"
-        :label="t('deckStudy.startPlaying')"
-        icon="i-lucide-play"
-        size="sm"
-        data-testid="deck-start-play-top"
-      />
-    </template>
-
-    <UContainer class="max-w-4xl px-0 flex flex-col gap-5">
+    <UContainer class="max-w-4xl px-0 pb-16 lg:pb-0 flex flex-col gap-4 sm:gap-5 min-w-0">
       <USkeleton
         v-if="status === 'pending' && !data"
         class="h-48 w-full rounded-2xl"
       />
 
       <template v-else-if="data">
-        <UBreadcrumb :items="breadcrumbs" />
+        <UBreadcrumb
+          :items="breadcrumbs"
+          class="max-sm:hidden"
+        />
 
         <UPageHeader
           :title="data.deck.title"
           :description="data.deck.description || t('deckStudy.guidebookHint')"
-          :ui="{ root: 'border-0 py-0', title: 'text-2xl sm:text-3xl', description: 'text-sm mt-1.5' }"
+          :ui="{
+            root: 'border-0 py-0',
+            wrapper: 'min-w-0',
+            title: 'text-xl sm:text-3xl break-words',
+            description: 'text-sm mt-1.5',
+            links: 'w-full sm:w-auto'
+          }"
         >
           <template #headline>
             <UPageList class="flex-row flex-wrap items-center gap-1.5">
@@ -266,13 +264,14 @@ onBeforeUnmount(() => {
               :label="t('deckStudy.startPlaying')"
               icon="i-lucide-gamepad-2"
               size="md"
+              class="w-full sm:w-auto justify-center"
               data-testid="deck-start-play"
             />
           </template>
         </UPageHeader>
 
         <!-- Mastery Progress & Stat Tiles -->
-        <UPageGrid class="grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3">
+        <UPageGrid class="grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-2.5 sm:gap-3">
           <StatTile
             :label="t('words.statTotal')"
             :value="data.stats.total"
@@ -345,13 +344,14 @@ onBeforeUnmount(() => {
             :items="modeTabs"
             variant="pill"
             :content="false"
+            class="w-full sm:w-fit"
           />
 
           <!-- TAB 1: Word List for Memorizing -->
           <template v-if="mode === 'list'">
             <UCard
               variant="subtle"
-              :ui="{ body: 'p-3.5 flex flex-col gap-3' }"
+              :ui="{ body: 'p-3 sm:p-3.5 flex flex-col gap-3' }"
             >
               <UPageList class="flex-row flex-wrap items-center justify-between gap-3">
                 <UInput
@@ -366,7 +366,7 @@ onBeforeUnmount(() => {
                 />
               </UPageList>
 
-              <UFieldGroup>
+              <UPageList class="flex-row flex-wrap items-center gap-1.5">
                 <UButton
                   :label="`${t('words.showAll')} (${data.stats.total})`"
                   :color="filter === 'all' ? 'primary' : 'neutral'"
@@ -402,7 +402,7 @@ onBeforeUnmount(() => {
                   size="xs"
                   @click="filter = 'known'"
                 />
-              </UFieldGroup>
+              </UPageList>
             </UCard>
 
             <UPageList
@@ -415,8 +415,8 @@ onBeforeUnmount(() => {
                 :key="card.id"
                 variant="outline"
                 :ui="{
-                  header: 'flex flex-wrap items-center justify-between gap-2',
-                  body: 'flex flex-col gap-2.5'
+                  header: 'flex items-start justify-between gap-2 p-3.5 sm:p-4',
+                  body: 'flex flex-col gap-2.5 p-3.5 sm:p-4'
                 }"
               >
                 <template #header>
@@ -432,8 +432,10 @@ onBeforeUnmount(() => {
                           : { root: 'bg-info/15', icon: 'text-info' }
                     }"
                     size="sm"
+                    class="min-w-0 flex-1"
+                    :ui="{ wrapper: 'min-w-0', name: 'break-words', description: 'break-words' }"
                   />
-                  <UPageList class="flex-row flex-wrap items-center gap-1.5">
+                  <UPageList class="flex-row items-center gap-1.5 shrink-0">
                     <UButton
                       v-if="canSpeak"
                       icon="i-lucide-volume-2"
@@ -469,11 +471,12 @@ onBeforeUnmount(() => {
                     color="primary"
                     variant="subtle"
                     size="md"
-                    class="self-start"
+                    class="self-start max-w-full"
+                    :ui="{ label: 'whitespace-normal text-start' }"
                   />
                   <UPageHeader
                     :description="card.definition"
-                    :ui="{ root: 'border-0 py-0', description: 'text-sm text-highlighted mt-0' }"
+                    :ui="{ root: 'border-0 py-0', description: 'text-sm text-highlighted mt-0 break-words' }"
                   />
                   <UAlert
                     v-if="card.example"
@@ -510,7 +513,7 @@ onBeforeUnmount(() => {
           <template v-else-if="activeCard">
             <UCard
               variant="subtle"
-              :ui="{ body: 'flex flex-col gap-2.5' }"
+              :ui="{ body: 'p-3.5 sm:p-4 flex flex-col gap-2.5' }"
             >
               <UPageList class="flex-row flex-wrap items-center justify-between gap-2">
                 <UBadge
@@ -549,13 +552,13 @@ onBeforeUnmount(() => {
             <UCard
               variant="outline"
               :ui="{
-                header: 'flex items-center justify-between gap-2',
-                body: 'py-10 px-6 flex flex-col items-center text-center gap-4 min-h-64 justify-center',
-                footer: 'flex flex-wrap items-center justify-between gap-2'
+                header: 'flex items-center justify-between gap-2 p-3.5 sm:p-4',
+                body: 'py-7 px-4 sm:py-10 sm:px-6 flex flex-col items-center text-center gap-4 min-h-56 sm:min-h-64 justify-center',
+                footer: 'grid grid-cols-2 sm:flex sm:items-center sm:justify-between gap-2 p-3.5 sm:p-4'
               }"
             >
               <template #header>
-                <UPageList class="flex-row items-center gap-1.5">
+                <UPageList class="flex-row flex-wrap items-center gap-1.5 min-w-0">
                   <UBadge
                     v-if="activeCard.partOfSpeech"
                     :label="activeCard.partOfSpeech"
@@ -578,6 +581,7 @@ onBeforeUnmount(() => {
                   variant="ghost"
                   size="sm"
                   square
+                  class="shrink-0"
                   @click="speak(activeCard.term)"
                 />
               </template>
@@ -585,7 +589,13 @@ onBeforeUnmount(() => {
               <UPageHeader
                 :title="activeCard.term"
                 :description="activeCard.ipa || undefined"
-                :ui="{ root: 'border-0 py-0 text-center', container: 'items-center', title: 'text-3xl sm:text-4xl', description: 'text-sm mt-1' }"
+                :ui="{
+                  root: 'border-0 py-0 text-center w-full',
+                  container: 'items-center',
+                  wrapper: 'min-w-0 w-full',
+                  title: 'text-2xl sm:text-4xl break-words',
+                  description: 'text-sm mt-1 break-words'
+                }"
               />
 
               <template v-if="flashFlipped">
@@ -596,10 +606,17 @@ onBeforeUnmount(() => {
                   color="primary"
                   variant="soft"
                   size="lg"
+                  class="max-w-full"
+                  :ui="{ label: 'whitespace-normal text-center' }"
                 />
                 <UPageHeader
                   :description="activeCard.definition"
-                  :ui="{ root: 'border-0 py-0 text-center max-w-xl', container: 'items-center', description: 'text-base text-highlighted mt-0' }"
+                  :ui="{
+                    root: 'border-0 py-0 text-center w-full max-w-xl',
+                    container: 'items-center',
+                    wrapper: 'min-w-0 w-full',
+                    description: 'text-sm sm:text-base text-highlighted mt-0 break-words'
+                  }"
                 />
                 <UAlert
                   v-if="activeCard.example"
@@ -607,7 +624,7 @@ onBeforeUnmount(() => {
                   variant="soft"
                   icon="i-lucide-quote"
                   :description="activeCard.example"
-                  class="max-w-xl text-start"
+                  class="w-full max-w-xl text-start"
                 />
               </template>
 
@@ -618,62 +635,52 @@ onBeforeUnmount(() => {
                 color="primary"
                 variant="soft"
                 size="md"
+                class="max-w-full"
+                :ui="{ base: 'h-auto py-2.5 px-4', label: 'whitespace-normal text-center leading-snug' }"
                 @click="flashFlipped = true"
               />
 
               <template #footer>
                 <UButton
-                  :label="t('deckStudy.prev')"
-                  icon="i-lucide-arrow-left"
-                  color="neutral"
-                  variant="ghost"
-                  :disabled="flashIndex === 0"
-                  @click="prevCard"
-                />
-                <UButton
                   :label="t('deckStudy.flip')"
                   icon="i-lucide-rotate-cw"
                   color="neutral"
                   variant="outline"
+                  class="col-span-2 sm:col-span-1 sm:order-2 justify-center"
                   @click="flashFlipped = !flashFlipped"
                 />
                 <UButton
-                  v-if="flashIndex < flashOrder.length - 1"
+                  :label="t('deckStudy.prev')"
+                  icon="i-lucide-arrow-left"
+                  color="neutral"
+                  variant="ghost"
+                  class="sm:order-1 justify-center"
+                  :disabled="flashIndex === 0"
+                  @click="prevCard"
+                />
+                <UButton
                   :label="t('deckStudy.next')"
                   trailing-icon="i-lucide-arrow-right"
                   color="primary"
+                  class="sm:order-3 justify-center"
+                  :disabled="flashIndex >= flashOrder.length - 1"
                   @click="nextCard"
-                />
-                <UButton
-                  v-else
-                  :to="playPath"
-                  :label="t('deckStudy.readyPlay')"
-                  icon="i-lucide-gamepad-2"
-                  color="success"
                 />
               </template>
             </UCard>
           </template>
         </template>
 
-        <!-- Bottom Action Bar -->
+        <!-- Bottom Back Link -->
         <USeparator />
 
-        <UPageList class="flex-row flex-wrap items-center justify-between gap-2">
+        <UPageList class="flex-row items-center">
           <UButton
             to="/words?tab=decks"
             :label="t('deckStudy.backToDecks')"
             icon="i-lucide-arrow-left"
             color="neutral"
             variant="ghost"
-          />
-          <UButton
-            v-if="data.stats.total"
-            :to="playPath"
-            :label="t('deckStudy.startPlaying')"
-            icon="i-lucide-gamepad-2"
-            trailing-icon="i-lucide-arrow-right"
-            size="lg"
           />
         </UPageList>
       </template>

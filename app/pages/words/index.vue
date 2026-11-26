@@ -85,7 +85,7 @@ async function remove(word: SavedWord) {
     :title="t('words.myWords')"
     icon="i-lucide-book-open-text"
   >
-    <div class="flex flex-col gap-4 max-w-3xl w-full">
+    <div class="flex flex-col gap-4 max-w-3xl w-full pb-16 lg:pb-0">
       <UTabs
         v-model="area"
         :items="areaTabs"
@@ -372,7 +372,7 @@ async function remove(word: SavedWord) {
                 />
               </div>
             </div>
-            <UPageList class="flex-row items-center gap-2 mt-auto">
+            <UPageList class="flex-row flex-wrap items-center gap-2 mt-auto">
               <UButton
                 :to="`/words/decks/${d.id}`"
                 :label="t('deckStudy.studyWords')"
@@ -380,7 +380,7 @@ async function remove(word: SavedWord) {
                 :color="d.toPlay ? 'primary' : 'neutral'"
                 :variant="d.toPlay ? 'solid' : 'outline'"
                 :disabled="!d.cards"
-                class="flex-1 justify-center"
+                class="flex-1 justify-center min-w-36"
               />
               <UButton
                 :to="`/words/play?deck=${d.id}`"
@@ -389,6 +389,7 @@ async function remove(word: SavedWord) {
                 color="neutral"
                 variant="outline"
                 :disabled="!d.cards"
+                class="justify-center"
               />
             </UPageList>
           </UCard>
