@@ -230,7 +230,7 @@ export async function studentDecks(userId: string) {
   }).sort((a, b) => b.toPlay - a.toPlay || a.title.localeCompare(b.title))
 }
 
-/** Whether a student may study a deck (it is set to one of their classes). */
+/** Whether a student may study a deck (it is set to one of their classes, or they own it). */
 export async function requireStudentDeck(userId: string, deckId: string) {
   if (!/^[0-9a-f-]{36}$/i.test(deckId)) throw createError({ statusCode: 404, message: 'Deck not found' })
   const db = useDb()
@@ -238,8 +238,71 @@ export async function requireStudentDeck(userId: string, deckId: string) {
     .innerJoin(classMembers, and(eq(classMembers.groupId, vocabDeckGroups.groupId), eq(classMembers.userId, userId)))
     .innerJoin(vocabDecks, eq(vocabDecks.id, vocabDeckGroups.deckId))
     .where(eq(vocabDeckGroups.deckId, deckId)).limit(1)
-  if (!row) throw createError({ statusCode: 404, message: 'Deck not found' })
-  return row.deck
+  if (row) return row.deck
+  const [owned] = await db.select().from(vocabDecks)
+    .where(and(eq(vocabDecks.id, deckId), eq(vocabDecks.teacherId, userId))).limit(1)
+  if (owned) return owned
+  throw createError({ statusCode: 404, message: 'Deck not found' })
+}
+
+/** Full deck word list with this student's Leitner mastery status per card, for memorizing before playing. */
+export async function studentDeckDetail(userId: string, deck: Deck) {
+  const db = useDb()
+  const [[teacher], cards] = await Promise.all([
+    db.select({ name: users.name, telegramUsername: users.telegramUsername, email: users.email })
+      .from(users).where(eq(users.id, deck.teacherId)).limit(1),
+    db.select().from(vocabCards).where(eq(vocabCards.deckId, deck.id)).orderBy(asc(vocabCards.position), asc(vocabCards.createdAt))
+  ])
+  const prog = cards.length
+    ? await db.select().from(vocabProgress).where(and(eq(vocabProgress.userId, userId), inArray(vocabProgress.cardId, cards.map(c => c.id))))
+    : []
+  const byCard = new Map(prog.map(p => [p.cardId, p]))
+  const now = Date.now()
+
+  const items = cards.map((c) => {
+    const p = byCard.get(c.id)
+    const box = p?.box ?? 0
+    const status: 'new' | 'learning' | 'known' = !p ? 'new' : box >= KNOWN_BOX ? 'known' : 'learning'
+    const due = !p || p.dueAt.getTime() <= now
+    return {
+      id: c.id,
+      position: c.position,
+      term: c.term,
+      partOfSpeech: c.partOfSpeech,
+      ipa: c.ipa,
+      definition: c.definition,
+      example: c.example,
+      translationUz: c.translationUz,
+      translationRu: c.translationRu,
+      box,
+      status,
+      due,
+      correct: p?.correct ?? 0,
+      wrong: p?.wrong ?? 0
+    }
+  })
+
+  const stats = {
+    total: items.length,
+    newCount: items.filter(i => i.status === 'new').length,
+    learning: items.filter(i => i.status === 'learning').length,
+    known: items.filter(i => i.status === 'known').length,
+    due: items.filter(i => i.due).length
+  }
+
+  return {
+    deck: {
+      id: deck.id,
+      title: deck.title,
+      description: deck.description,
+      category: deck.category,
+      topic: deck.topic,
+      level: deck.level,
+      teacher: teacher ? nameOf(teacher) : null
+    },
+    stats,
+    cards: items
+  }
 }
 
 /** A round to play: the cards due first, then new ones, up to `size`; and all the deck's cards for wrong options. */

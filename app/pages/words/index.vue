@@ -372,16 +372,25 @@ async function remove(word: SavedWord) {
                 />
               </div>
             </div>
-            <UButton
-              :to="`/words/play?deck=${d.id}`"
-              :label="d.toPlay ? t('words.play') : t('words.playAgain')"
-              :icon="d.toPlay ? 'i-lucide-play' : 'i-lucide-rotate-ccw'"
-              :color="d.toPlay ? 'primary' : 'neutral'"
-              :variant="d.toPlay ? 'solid' : 'outline'"
-              :disabled="!d.cards"
-              block
-              class="mt-auto"
-            />
+            <UPageList class="flex-row items-center gap-2 mt-auto">
+              <UButton
+                :to="`/words/decks/${d.id}`"
+                :label="t('deckStudy.studyWords')"
+                icon="i-lucide-book-open"
+                :color="d.toPlay ? 'primary' : 'neutral'"
+                :variant="d.toPlay ? 'solid' : 'outline'"
+                :disabled="!d.cards"
+                class="flex-1 justify-center"
+              />
+              <UButton
+                :to="`/words/play?deck=${d.id}`"
+                :label="d.toPlay ? t('words.play') : t('words.playAgain')"
+                :icon="d.toPlay ? 'i-lucide-play' : 'i-lucide-rotate-ccw'"
+                color="neutral"
+                variant="outline"
+                :disabled="!d.cards"
+              />
+            </UPageList>
           </UCard>
         </div>
         <UEmpty
