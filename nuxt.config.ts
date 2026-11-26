@@ -47,6 +47,10 @@ export default defineNuxtConfig({
     s3SecretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
     // AssemblyAI (Listening part audio -> WebVTT transcription)
     assemblyaiApiKey: process.env.ASSEMBLYAI_API_KEY,
+    // Tilmoch / Tahrirchi translate-v2 API (floating vocabulary widget)
+    tilmochApiKey: process.env.TILMOCH_API_KEY,
+    tilmochApiUrl: process.env.TILMOCH_API_URL || 'https://websocket.tahrirchi.uz/translate-v2',
+    tilmochModel: process.env.TILMOCH_MODEL || 'sayqalchi',
     // Click.uz merchant (SHOP API). Without these, plans are sold privately on Telegram.
     clickServiceId: process.env.CLICK_SERVICE_ID,
     clickMerchantId: process.env.CLICK_MERCHANT_ID,

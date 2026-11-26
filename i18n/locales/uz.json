@@ -2671,5 +2671,32 @@
     "recordingDeleted": "Ovozli javob o‘chirildi",
     "commentDeleted": "Izoh o‘chirildi",
     "pageSummary": "{total} tadan {from}–{to} ko‘rsatilmoqda"
+  },
+  "vocabWidget": {
+    "title": "Lug‘at tarjimoni",
+    "subtitle": "Tilmoch asosida",
+    "openLabel": "Tarjima",
+    "settingTitle": "Suzuvchi lug‘at vidjeti",
+    "settingText": "O‘qish sahifalarida tezkor Tilmoch tarjimon tugmasini ko‘rsatish (imtihon sahifalarida avtomatik yashiriladi).",
+    "placeholder": "Tarjima qilish uchun so‘z yoki ibora yozing…",
+    "translate": "Tarjima qilish",
+    "swap": "Tillarni almashtirish",
+    "copy": "Nusxalash",
+    "copied": "Nusxalandi",
+    "listen": "Tinglash",
+    "saveWord": "So‘zlarimga saqlash",
+    "savedWord": "So‘zlarimga saqlandi",
+    "alreadySaved": "Allaqachon saqlangan",
+    "recent": "Oxirgi tarjimalar",
+    "clearHistory": "Tozalash",
+    "myWords": "So‘zlarim",
+    "hide": "Vidjetni yashirish",
+    "hiddenToast": "Lug‘at vidjeti yashirildi",
+    "hiddenHint": "Istalgan vaqtda Sozlamalardan qayta yoqishingiz mumkin.",
+    "langEn": "Inglizcha",
+    "langUz": "O‘zbekcha",
+    "langRu": "Ruscha",
+    "hintShortcut": "Tarjima uchun Enter bosing",
+    "errorTitle": "Tarjima xatoligi"
   }
 }

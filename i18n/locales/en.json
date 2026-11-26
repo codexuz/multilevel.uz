@@ -2671,5 +2671,32 @@
     "recordingDeleted": "Recording deleted",
     "commentDeleted": "Comment deleted",
     "pageSummary": "Showing {from}–{to} of {total}"
+  },
+  "vocabWidget": {
+    "title": "Vocabulary Translator",
+    "subtitle": "Powered by Tilmoch",
+    "openLabel": "Translate",
+    "settingTitle": "Floating vocabulary widget",
+    "settingText": "Show a quick Tilmoch translator button on study pages (hidden automatically on exam pages).",
+    "placeholder": "Type a word or phrase to translate…",
+    "translate": "Translate",
+    "swap": "Swap languages",
+    "copy": "Copy",
+    "copied": "Copied",
+    "listen": "Listen",
+    "saveWord": "Save to My Words",
+    "savedWord": "Saved to My Words",
+    "alreadySaved": "Already in My Words",
+    "recent": "Recent lookups",
+    "clearHistory": "Clear",
+    "myWords": "My Words",
+    "hide": "Hide widget",
+    "hiddenToast": "Vocabulary widget hidden",
+    "hiddenHint": "You can turn it back on anytime in Settings.",
+    "langEn": "English",
+    "langUz": "O‘zbekcha",
+    "langRu": "Русский",
+    "hintShortcut": "Press Enter to translate",
+    "errorTitle": "Translation error"
   }
 }

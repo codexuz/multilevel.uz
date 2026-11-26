@@ -7,6 +7,11 @@ useSeoMeta({ title: () => t('nav.settings'), robots: 'noindex' })
 const { data: sessions, refresh } = await useFetch<DeviceSessionDto[]>('/api/auth/sessions')
 const toast = useToast()
 const { confirm } = useDialogs()
+const { enabled: vocabWidgetEnabled, setEnabled: setVocabWidgetEnabled } = useVocabWidget()
+const vocabToggle = computed({
+  get: () => vocabWidgetEnabled.value,
+  set: (v: boolean) => setVocabWidgetEnabled(v)
+})
 async function revoke(id: string) {
   if (!await confirm({ title: t('settings.signOutDevice'), confirmLabel: t('settings.signOut'), color: 'error' })) return
   await $fetch(`/api/auth/sessions/${id}`, { method: 'DELETE' })
@@ -43,6 +48,20 @@ async function revoke(id: string) {
           </p>
         </div>
         <LanguageSwitcher />
+      </UCard>
+      <UCard :ui="{ body: 'flex items-center justify-between gap-3' }">
+        <div>
+          <p class="font-medium">
+            {{ t('vocabWidget.settingTitle') }}
+          </p>
+          <p class="text-sm text-muted">
+            {{ t('vocabWidget.settingText') }}
+          </p>
+        </div>
+        <USwitch
+          v-model="vocabToggle"
+          data-testid="vocab-widget-toggle"
+        />
       </UCard>
       <TelegramNotifySettings />
       <p class="text-muted">

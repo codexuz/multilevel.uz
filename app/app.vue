@@ -69,5 +69,8 @@ useSeoMeta({
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
+    <ClientOnly>
+      <WordsFloatingWidget />
+    </ClientOnly>
   </UApp>
 </template>
