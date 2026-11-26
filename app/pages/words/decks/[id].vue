@@ -80,15 +80,10 @@ const statusBadge = (c: DeckWordItem) => {
   return { label: t('words.showNew'), color: 'info' as const, icon: 'i-lucide-sparkles' }
 }
 
-// ---- Pronounce with Web Speech API ----
+// ---- Pronounce with Speechify TTS (browser fallback) ----
 const canSpeak = ref(false)
 function speak(word: string) {
-  if (!import.meta.client || !('speechSynthesis' in window)) return
-  window.speechSynthesis.cancel()
-  const u = new SpeechSynthesisUtterance(word)
-  u.lang = 'en-GB'
-  u.rate = 0.95
-  window.speechSynthesis.speak(u)
+  speakWord(word)
 }
 
 // ---- Study Mode Tabs (Word List vs Flashcards) ----
@@ -190,11 +185,12 @@ function onKeydown(e: KeyboardEvent) {
 }
 
 onMounted(() => {
-  canSpeak.value = 'speechSynthesis' in window
+  canSpeak.value = canSpeakWords()
   window.addEventListener('keydown', onKeydown)
 })
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
+  stopSpeaking()
 })
 </script>
 

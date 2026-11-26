@@ -45,6 +45,7 @@
     "@nuxtjs/tailwindcss": "6.14.0",
     "@peterbud/nuxt-query": "1.8.0",
     "@prisma/nuxt": "0.3.0",
+    "@speechify/api": "^5.0.0",
     "@tiptap/extension-text-align": "^3.32.0",
     "@tiptap/vue-3": "^3.32.0",
     "assemblyai": "^4.41.7",

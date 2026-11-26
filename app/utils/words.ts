@@ -72,17 +72,86 @@ export function selectedWord(range: Range | null): { word: string, sentence: str
   return { word, sentence: sentence.length > 400 ? `${sentence.slice(0, 397)}…` : sentence }
 }
 
-/** Says a word aloud with the browser's English voice (British, where there is one). */
-export function speakWord(text: string) {
+let activeAudio: HTMLAudioElement | null = null
+let speakToken = 0
+let serverVoiceWorks: boolean | null = null
+
+/** True on clients that can play audio clips or browser speech synthesis. */
+export function canSpeakWords(): boolean {
+  return typeof window !== 'undefined' && (typeof Audio !== 'undefined' || 'speechSynthesis' in window)
+}
+
+/** Stops any currently playing vocabulary pronunciation audio or browser speech. */
+export function stopSpeaking() {
+  speakToken++
+  if (activeAudio) {
+    activeAudio.onerror = null
+    activeAudio.onended = null
+    activeAudio.onplaying = null
+    activeAudio.pause()
+    activeAudio.currentTime = 0
+    activeAudio = null
+  }
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    window.speechSynthesis.cancel()
+  }
+}
+
+function speakWithBrowser(text: string, opts?: { slow?: boolean, rate?: number }) {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return false
   const say = new SpeechSynthesisUtterance(text)
   const voices = window.speechSynthesis.getVoices()
   say.voice = voices.find(v => v.lang === 'en-GB') ?? voices.find(v => v.lang.startsWith('en')) ?? null
   say.lang = say.voice?.lang ?? 'en-GB'
-  say.rate = 0.9
+  say.rate = opts?.slow ? 0.6 : (opts?.rate ?? 0.9)
   window.speechSynthesis.cancel()
   window.speechSynthesis.speak(say)
   return true
+}
+
+/**
+ * Says a vocabulary word or short phrase aloud using Speechify TTS (`/api/tts/vocab`, cached in
+ * S3), falling back to the browser's English voice if server TTS is unconfigured or unavailable.
+ */
+export function speakWord(text: string, opts?: { slow?: boolean, rate?: number }): boolean {
+  if (typeof window === 'undefined') return false
+  const clean = text.replace(/\s+/g, ' ').trim()
+  if (!clean) return false
+
+  stopSpeaking()
+  const token = speakToken
+
+  if (typeof Audio !== 'undefined' && serverVoiceWorks !== false) {
+    const audio = new Audio(`/api/tts/vocab?text=${encodeURIComponent(clean)}`)
+    audio.playbackRate = opts?.slow ? 0.72 : (opts?.rate ?? 1)
+    activeAudio = audio
+
+    let fellBack = false
+    const fallback = (disableServer: boolean) => {
+      if (fellBack || token !== speakToken) return
+      fellBack = true
+      if (disableServer && serverVoiceWorks === null) serverVoiceWorks = false
+      if (activeAudio === audio) activeAudio = null
+      speakWithBrowser(clean, opts)
+    }
+
+    audio.onplaying = () => {
+      serverVoiceWorks = true
+    }
+    audio.onended = () => {
+      if (activeAudio === audio) activeAudio = null
+    }
+    audio.onerror = () => fallback(true)
+
+    audio.play().catch((err: unknown) => {
+      const name = err instanceof Error ? err.name : ''
+      if (token !== speakToken || name === 'AbortError') return
+      fallback(name !== 'NotAllowedError')
+    })
+    return true
+  }
+
+  return speakWithBrowser(clean, opts)
 }
 
 /** The sentence with the saved words in it set apart, as [before, words, after]. */

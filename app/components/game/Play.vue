@@ -86,7 +86,7 @@ const combo = ref(0)
 const bestCombo = ref(0)
 const startedAt = ref(Date.now())
 onMounted(() => {
-  canSpeak.value = 'speechSynthesis' in window
+  canSpeak.value = canSpeakWords()
   steps.value = build()
   startedAt.value = Date.now()
 })
@@ -200,7 +200,7 @@ function onKey(e: KeyboardEvent) {
 onMounted(() => window.addEventListener('keydown', onKey))
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKey)
-  if (canSpeak.value) window.speechSynthesis.cancel()
+  stopSpeaking()
 })
 
 // ---- matching pairs ----
@@ -231,11 +231,7 @@ function pickRight(card: GameCard) {
 // ---- sound ----
 function speak(text: string, slow = false) {
   if (!canSpeak.value) return
-  const u = new SpeechSynthesisUtterance(text)
-  u.lang = 'en-GB'
-  u.rate = slow ? 0.6 : 0.95
-  window.speechSynthesis.cancel()
-  window.speechSynthesis.speak(u)
+  speakWord(text, { slow })
 }
 
 // ---- the end ----
