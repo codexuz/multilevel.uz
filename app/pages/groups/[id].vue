@@ -379,15 +379,25 @@ const menu = computed(() => [[{ label: t('groups.leave'), icon: 'i-lucide-log-ou
                 :style="{ width: `${d.cards ? Math.round(d.known / d.cards * 100) : 0}%` }"
               />
             </div>
-            <UButton
-              :to="`/words/play?deck=${d.id}`"
-              :label="d.toPlay ? t('words.play') : t('words.playAgain')"
-              :icon="d.toPlay ? 'i-lucide-play' : 'i-lucide-rotate-ccw'"
-              :color="d.toPlay ? 'primary' : 'neutral'"
-              :variant="d.toPlay ? 'solid' : 'outline'"
-              :disabled="!d.cards"
-              block
-            />
+            <UPageList class="flex-row items-center gap-2">
+              <UButton
+                :to="`/words/decks/${d.id}`"
+                :label="t('deckStudy.studyWords')"
+                icon="i-lucide-book-open"
+                :color="d.toPlay ? 'primary' : 'neutral'"
+                :variant="d.toPlay ? 'solid' : 'outline'"
+                :disabled="!d.cards"
+                class="flex-1 justify-center"
+              />
+              <UButton
+                :to="`/words/play?deck=${d.id}`"
+                :label="d.toPlay ? t('words.play') : t('words.playAgain')"
+                :icon="d.toPlay ? 'i-lucide-play' : 'i-lucide-rotate-ccw'"
+                color="neutral"
+                variant="outline"
+                :disabled="!d.cards"
+              />
+            </UPageList>
           </div>
         </div>
         <UEmpty

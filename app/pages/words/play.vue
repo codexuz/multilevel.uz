@@ -83,7 +83,7 @@ async function onFinish(results: { cardId: string, correct: boolean }[]) {
   }
   refreshXp()
 }
-const closeTo = computed(() => (deckId.value ? '/words?tab=decks' : '/words'))
+const closeTo = computed(() => (deckId.value ? `/words/decks/${deckId.value}` : '/words'))
 </script>
 
 <template>

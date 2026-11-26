@@ -2698,5 +2698,30 @@
     "langRu": "Русский",
     "hintShortcut": "Press Enter to translate",
     "errorTitle": "Translation error"
+  },
+  "deckStudy": {
+    "studyWords": "Study words",
+    "startPlaying": "Start playing",
+    "readyPlay": "Ready? Start playing!",
+    "backToDecks": "Back to decks",
+    "tabList": "Word list",
+    "tabFlashcards": "Flashcards",
+    "searchPlaceholder": "Search words in this deck…",
+    "hideMeanings": "Hide meanings (self-test)",
+    "revealMeaning": "Tap to reveal meaning",
+    "hideMeaning": "Hide",
+    "listen": "Listen",
+    "shuffle": "Shuffle",
+    "flip": "Flip card",
+    "tapToFlip": "Tap or press Space to see the meaning",
+    "cardOf": "{n} of {total}",
+    "prev": "Previous",
+    "next": "Next",
+    "masteryProgress": "{known} of {total} words mastered",
+    "dueBadge": "{n} ready to practice",
+    "noMatching": "No words match your filter",
+    "emptyDeck": "This deck has no words yet",
+    "notFound": "Deck not found",
+    "guidebookHint": "Review the words below or warm up with flashcards, then play a Duolingo-style round to earn XP."
   }
 }

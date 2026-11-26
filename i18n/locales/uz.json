@@ -2698,5 +2698,30 @@
     "langRu": "Ruscha",
     "hintShortcut": "Tarjima uchun Enter bosing",
     "errorTitle": "Tarjima xatoligi"
+  },
+  "deckStudy": {
+    "studyWords": "So‘zlarni o‘rganish",
+    "startPlaying": "O‘yinni boshlash",
+    "readyPlay": "Tayyormisiz? O‘yinni boshlang!",
+    "backToDecks": "To‘plamlarga qaytish",
+    "tabList": "So‘zlar ro‘yxati",
+    "tabFlashcards": "Kartochkalar",
+    "searchPlaceholder": "Bu to‘plamdan so‘z qidirish…",
+    "hideMeanings": "Ma’nolarni yashirish (o‘zini sinash)",
+    "revealMeaning": "Ma’nosini ko‘rish uchun bosing",
+    "hideMeaning": "Yashirish",
+    "listen": "Tinglash",
+    "shuffle": "Aralashtirish",
+    "flip": "Kartochkani aylantirish",
+    "tapToFlip": "Ma’nosini ko‘rish uchun bosing yoki Space bosing",
+    "cardOf": "{total} tadan {n}-so‘z",
+    "prev": "Oldingi",
+    "next": "Keyingi",
+    "masteryProgress": "{total} tadan {known} ta so‘z o‘zlashtirildi",
+    "dueBadge": "{n} ta so‘z mashq uchun tayyor",
+    "noMatching": "Filtrga mos so‘z topilmadi",
+    "emptyDeck": "Bu to‘plamda hali so‘zlar yo‘q",
+    "notFound": "To‘plam topilmadi",
+    "guidebookHint": "Avval quyidagi so‘zlarni yodlang yoki kartochkalar bilan mashq qiling, so‘ng XP yig‘ish uchun o‘yinni boshlang."
   }
 }
