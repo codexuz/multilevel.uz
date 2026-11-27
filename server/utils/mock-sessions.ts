@@ -98,7 +98,7 @@ type SessionBody = { title?: string, testId?: string, opensAt?: string, closesAt
 const int = (v: unknown, min: number, max: number) => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Math.min(max, Math.max(min, Math.round(Number(v)))) : null)
 
 /** The fields of a session as the form sends them; only those given are kept. */
-async function sessionValues(body: SessionBody, partial: boolean) {
+async function sessionValues(body: SessionBody, partial: boolean, user: { id: string, role: string }) {
   const out: Partial<typeof mockSessions.$inferInsert> = {}
   if (body.title !== undefined || !partial) {
     const title = String(body.title ?? '').trim().slice(0, 120)
@@ -106,8 +106,12 @@ async function sessionValues(body: SessionBody, partial: boolean) {
     out.title = title
   }
   if (body.testId !== undefined || !partial) {
-    const [t] = await useDb().select({ id: tests.id, status: tests.status }).from(tests).where(eq(tests.id, String(body.testId ?? ''))).limit(1)
-    if (!t || t.status !== 'PUBLISHED') throw bad('Pick a published test')
+    const [t] = await useDb()
+      .select({ id: tests.id, status: tests.status, visibility: tests.visibility, teacherId: tests.teacherId })
+      .from(tests)
+      .where(eq(tests.id, String(body.testId ?? '')))
+      .limit(1)
+    if (!t || t.status !== 'PUBLISHED' || !(await canViewTest(user, t))) throw bad('Pick a published test')
     if (!(await skillsOfTest(t.id)).some(s => (ONLINE_SKILLS as readonly string[]).includes(s))) throw bad('That test has nothing to sit on screen')
     out.testId = t.id
   }
@@ -139,7 +143,7 @@ export async function createSession(user: { id: string, role: string }, body: Se
   if (scope.credits < 1) {
     throw createError({ statusCode: 402, message: 'No mock credits left: buy credits to make a session', data: { code: 'MOCK_CREDIT_REQUIRED' } })
   }
-  const values = await sessionValues(body, false)
+  const values = await sessionValues(body, false, user)
   const [row] = await useDb().insert(mockSessions).values({ ...values, ownerId: user.id } as typeof mockSessions.$inferInsert).returning()
   return row!
 }
@@ -170,8 +174,8 @@ export async function deleteSession(session: Session, actorId: string) {
   return { deleted: true, refunded: refund }
 }
 
-export async function updateSession(session: Session, body: SessionBody) {
-  const values = await sessionValues(body, true)
+export async function updateSession(session: Session, body: SessionBody, user: { id: string, role: string }) {
+  const values = await sessionValues(body, true, user)
   if (values.testId && values.testId !== session.testId) {
     const [started] = await useDb().select({ id: attempts.id }).from(attempts).innerJoin(mockCandidates, eq(mockCandidates.id, attempts.mockCandidateId))
       .where(eq(mockCandidates.sessionId, session.id)).limit(1)

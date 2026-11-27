@@ -6,7 +6,7 @@ import { libraryAPI } from '~/services/ielts'
  * A Writing task with its word minimum. Multilevel: Task 1.1 (an informal letter), Task 1.2 (a formal
  * letter) or Task 2 (an essay). IELTS: Task 1 (a chart or a letter) or Task 2 (an essay).
  */
-definePageMeta({ middleware: 'admin' })
+definePageMeta({ middleware: 'teacher' })
 
 const route = useRoute()
 const toast = useToast()

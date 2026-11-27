@@ -7,8 +7,11 @@ import { libraryAPI } from '~/services/ielts'
  * and reused; a test is a paper put together from them, section by section. One exam at a time:
  * IELTS and Multilevel number their parts and tasks differently, so each has its own library.
  */
-definePageMeta({ middleware: 'admin' })
-useSeoMeta({ title: 'Test builder', robots: 'noindex' })
+definePageMeta({ middleware: 'teacher' })
+const { t } = useI18n()
+const { me } = useMe()
+const isAdmin = computed(() => me.value?.role === 'admin')
+useSeoMeta({ title: () => (isAdmin.value ? 'Test builder' : t('panel.myTests')), robots: 'noindex' })
 
 const route = useRoute()
 const router = useRouter()
@@ -37,18 +40,26 @@ watch(search, (v) => {
 })
 // 'ALL' rather than empty: a select cannot hold an empty value.
 const testStatus = ref(str(route.query.status, 'ALL'))
+/** Admin owner filter: platform tests/items vs teacher-created private ones. */
+const owner = ref(str(route.query.owner, 'ALL'))
+const ownerItems = computed(() => [
+  { label: t('builder.ownerAll'), value: 'ALL' },
+  { label: t('builder.ownerPlatform'), value: 'platform' },
+  { label: t('builder.ownerTeachers'), value: 'teachers' }
+])
 /** Tests with all four skills (FULL), or not yet (PARTIAL). */
 const completeness = ref(str(route.query.full, 'ALL'))
 const completenessItems = [{ label: 'Full or not', value: 'ALL' }, { label: 'Full tests', value: 'FULL' }, { label: 'Not full', value: 'PARTIAL' }]
 /** Library items placed in a test (IN_TEST), or in none yet (UNUSED). */
 const used = ref(str(route.query.used, 'ALL'))
 const usedItems = [{ label: 'In tests or not', value: 'ALL' }, { label: 'In a test', value: 'IN_TEST' }, { label: 'Not in a test', value: 'UNUSED' }]
-watch([tab, page, q, testStatus, completeness, used], () => router.replace({
+watch([tab, page, q, testStatus, owner, completeness, used], () => router.replace({
   query: {
     tab: tab.value === 'tests' ? undefined : tab.value,
     page: page.value > 1 ? String(page.value) : undefined,
     q: q.value || undefined,
     status: tab.value === 'tests' && testStatus.value !== 'ALL' ? testStatus.value : undefined,
+    owner: isAdmin.value && owner.value !== 'ALL' ? owner.value : undefined,
     full: tab.value === 'tests' && completeness.value !== 'ALL' ? completeness.value : undefined,
     used: tab.value !== 'tests' && used.value !== 'ALL' ? used.value : undefined
   }
@@ -65,6 +76,7 @@ watch(() => route.query, (rq) => {
   if (page.value !== Math.max(1, Number(rq.page) || 1)) page.value = Math.max(1, Number(rq.page) || 1)
   if (q.value !== str(rq.q)) search.value = q.value = str(rq.q)
   if (testStatus.value !== str(rq.status, 'ALL')) testStatus.value = str(rq.status, 'ALL')
+  if (owner.value !== str(rq.owner, 'ALL')) owner.value = str(rq.owner, 'ALL')
   if (completeness.value !== str(rq.full, 'ALL')) completeness.value = str(rq.full, 'ALL')
   if (used.value !== str(rq.used, 'ALL')) used.value = str(rq.used, 'ALL')
 })
@@ -73,10 +85,10 @@ const builderExam = useCookie<string | null>('builder-exam', { maxAge: 60 * 60 *
 const exam = computed<Exam>(() => (isExam(builderExam.value) ? builderExam.value : 'IELTS'))
 const setExam = (next: Exam) => (builderExam.value = next)
 // Another list (or filter) starts on its first page.
-watch([tab, q, testStatus, completeness, used, exam], () => (page.value = 1))
+watch([tab, q, testStatus, owner, completeness, used, exam], () => (page.value = 1))
 // ─── Many at once: pick tests (or library items) on this page, then one action for them all ───
 const picked = ref<string[]>([])
-watch([tab, q, testStatus, completeness, used, exam, page], () => (picked.value = []))
+watch([tab, q, testStatus, owner, completeness, used, exam, page], () => (picked.value = []))
 const pageIds = computed(() => ((data.value?.items ?? []) as { id: string }[]).map(x => x.id))
 const allPicked = computed(() => pageIds.value.length > 0 && pageIds.value.every(id => picked.value.includes(id)))
 const togglePick = (id: string, on: boolean) => (picked.value = on ? [...new Set([...picked.value, id])] : picked.value.filter(x => x !== id))
@@ -141,7 +153,14 @@ const speakingExportPicked = computed(() => `/api/admin/speaking-parts/export?id
 const { data, status, refresh } = useAsyncData(
   'builder:list',
   (): Promise<any> => {
-    const p = { page: page.value, limit: 20, search: q.value || undefined, exam: exam.value, used: used.value === 'ALL' ? undefined : used.value }
+    const p = {
+      page: page.value,
+      limit: 20,
+      search: q.value || undefined,
+      exam: exam.value,
+      used: used.value === 'ALL' ? undefined : used.value,
+      owner: isAdmin.value && owner.value !== 'ALL' ? owner.value : undefined
+    }
     if (tab.value === 'tests') {
       return libraryAPI.tests({
         ...p, status: testStatus.value === 'ALL' ? undefined : testStatus.value,
@@ -153,7 +172,7 @@ const { data, status, refresh } = useAsyncData(
     if (tab.value === 'writing') return libraryAPI.writingTasks(p)
     return libraryAPI.speakingParts(p)
   },
-  { watch: [tab, page, q, testStatus, completeness, used, exam], lazy: true }
+  { watch: [tab, page, q, testStatus, owner, completeness, used, exam], lazy: true }
 )
 
 // ─── Creating ──────────────────────────────────────────────────────────────
@@ -239,7 +258,7 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
 
 <template>
   <AppPage
-    title="Test builder"
+    :title="isAdmin ? 'Test builder' : t('panel.myTests')"
     icon="i-lucide-hammer"
     wide
   >
@@ -305,7 +324,14 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
             :content="false"
             size="sm"
           />
-          <div class="flex items-center gap-2 ml-auto">
+          <div class="flex flex-wrap items-center gap-2 ml-auto">
+            <USelect
+              v-if="isAdmin"
+              v-model="owner"
+              :items="ownerItems"
+              class="w-40"
+              data-testid="owner-filter"
+            />
             <template v-if="tab === 'tests'">
               <USelect
                 v-model="completeness"
@@ -336,6 +362,15 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
         </div>
       </UDashboardToolbar>
     </template>
+
+    <UAlert
+      v-if="!isAdmin"
+      icon="i-lucide-lock"
+      color="neutral"
+      variant="subtle"
+      :title="t('builder.teacherNoticeTitle')"
+      :description="t('builder.teacherNoticeDesc')"
+    />
 
     <UCard :ui="{ body: 'p-0 sm:p-0', header: 'px-4 py-2.5 sm:px-4' }">
       <!-- Pick some on this page, then one action for them all -->
@@ -380,6 +415,7 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
               @click="bulk('ARCHIVE')"
             />
             <UDropdownMenu
+              v-if="isAdmin"
               :items="[[
                 { label: 'Make free', icon: 'i-lucide-gift', onSelect: () => bulk('FREE') },
                 { label: 'Make Premium', icon: 'i-lucide-sparkles', onSelect: () => bulk('PREMIUM') }
@@ -496,32 +532,49 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
 
         <template v-if="tab === 'tests'">
           <li
-            v-for="t in (data?.items ?? []) as TestSummary[]"
-            :key="t.id"
+            v-for="item in (data?.items ?? []) as TestSummary[]"
+            :key="item.id"
             class="px-4 py-3 flex items-center gap-3 hover:bg-elevated/50 cursor-pointer"
-            :class="picked.includes(t.id) ? 'bg-primary/5' : ''"
+            :class="picked.includes(item.id) ? 'bg-primary/5' : ''"
             data-testid="test-row"
-            @click="open(t)"
+            @click="open(item)"
           >
             <UCheckbox
-              :model-value="picked.includes(t.id)"
-              :aria-label="`Select ${t.title}`"
+              :model-value="picked.includes(item.id)"
+              :aria-label="`Select ${item.title}`"
               @click.stop
-              @update:model-value="v => togglePick(t.id, !!v)"
+              @update:model-value="v => togglePick(item.id, !!v)"
             />
             <div class="min-w-0 flex-1">
               <p class="font-medium text-highlighted truncate">
-                {{ t.title }}
+                {{ item.title }}
               </p>
               <p class="text-xs text-muted truncate">
-                {{ examLabel(t.exam, t.module) }} · {{ t.mode === 'MOCK' ? 'Mock' : 'Practice' }}
-                <span v-if="t.category"> · {{ categoryLabel(t.category) }}</span>
-                · {{ t.sections.map(s => SKILL_META[s.skill].label).join(', ') || 'no sections' }}
+                {{ examLabel(item.exam, item.module) }} · {{ item.mode === 'MOCK' ? 'Mock' : 'Practice' }}
+                <span v-if="item.category"> · {{ categoryLabel(item.category) }}</span>
+                <span v-if="isAdmin && item.teacherName"> · {{ t('builder.byTeacher', { name: item.teacherName }) }}</span>
+                · {{ item.sections.map(s => SKILL_META[s.skill].label).join(', ') || 'no sections' }}
               </p>
             </div>
-            <span class="text-xs text-muted tabular-nums max-sm:hidden">{{ t.attempts ?? 0 }} attempts</span>
+            <span class="text-xs text-muted tabular-nums max-sm:hidden">{{ item.attempts ?? 0 }} attempts</span>
             <UBadge
-              v-if="isFull(t)"
+              v-if="item.missingMapImages"
+              :label="item.missingMapImages > 1 ? t('builder.noMapImageCount', { n: item.missingMapImages }) : t('builder.noMapImage')"
+              icon="i-lucide-image-off"
+              color="warning"
+              variant="soft"
+              data-testid="missing-map-image-badge"
+            />
+            <UBadge
+              v-if="item.visibility === 'PRIVATE'"
+              :label="t('builder.private')"
+              icon="i-lucide-lock"
+              color="neutral"
+              variant="soft"
+              class="max-sm:hidden"
+            />
+            <UBadge
+              v-if="isFull(item)"
               label="Full test"
               icon="i-lucide-layers"
               color="success"
@@ -529,15 +582,15 @@ const createLabel = computed(() => ({ tests: exam.value === 'IELTS' ? 'New IELTS
               class="max-sm:hidden"
             />
             <UBadge
-              v-if="t.access === 'PREMIUM'"
+              v-if="item.access === 'PREMIUM'"
               label="Premium"
               icon="i-lucide-sparkles"
               color="primary"
               variant="soft"
             />
             <UBadge
-              :label="STATUS_META[t.status ?? 'DRAFT']!.label"
-              :color="STATUS_META[t.status ?? 'DRAFT']!.color"
+              :label="STATUS_META[item.status ?? 'DRAFT']!.label"
+              :color="STATUS_META[item.status ?? 'DRAFT']!.color"
               variant="subtle"
             />
           </li>

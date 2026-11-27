@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { parts, speakingParts, writingTasks } from '../../../database/schema'
 
 const KINDS = {
@@ -20,7 +20,8 @@ const MAX_EXPLAIN = 20
  * - Writing tasks and Speaking parts: DELETE, unless in a test or answered (essays, recordings).
  */
 export default defineEventHandler(async (event) => {
-  const admin = await requireAdmin(event)
+  const user = await requireTeacher(event)
+  const teacherId = ownerIdFor(user)
   const body = (await readBody<{ kind?: string, ids?: string[], action?: string }>(event)) ?? {}
   const kind = body.kind as Kind
   if (!(kind in KINDS)) throw createError({ statusCode: 400, message: 'Which kind of item?' })
@@ -33,7 +34,8 @@ export default defineEventHandler(async (event) => {
   if (!ids.length) throw createError({ statusCode: 400, message: 'Pick the items' })
 
   const db = useDb()
-  const rows = await db.select({ id: table.id, title: table.title }).from(table).where(inArray(table.id, ids))
+  const where = teacherId ? and(inArray(table.id, ids), eq(table.teacherId, teacherId)) : inArray(table.id, ids)
+  const rows = await db.select({ id: table.id, title: table.title }).from(table).where(where)
   let done = 0
   const archived: string[] = []
   const failed: { id: string, title: string, message: string }[] = []
@@ -45,7 +47,7 @@ export default defineEventHandler(async (event) => {
       } else if (action === 'TRANSCRIBE') {
         await transcribePart(row.id)
       } else if (action === 'EXPLAIN') {
-        await explainPart(row.id, { userId: admin.id })
+        await explainPart(row.id, { userId: user.id })
       } else if (kind === 'PART') {
         // In a test, or answered: kept and made inactive (library.ts).
         if (!(await deletePart(row.id)).deleted) {

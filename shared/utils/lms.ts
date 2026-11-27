@@ -6,7 +6,7 @@
 export const DRIP_MODES = ['ALWAYS_OPEN', 'DATE_RANGE', 'SEQUENTIAL'] as const
 export type DripMode = (typeof DRIP_MODES)[number]
 
-export const EXERCISE_TYPES = ['PRACTICE', 'QUIZ', 'HOMEWORK'] as const
+export const EXERCISE_TYPES = ['PRACTICE', 'QUIZ', 'HOMEWORK', 'SPEAKING'] as const
 export type ExerciseType = (typeof EXERCISE_TYPES)[number]
 
 export const LMS_QUESTION_TYPE_LIST = [

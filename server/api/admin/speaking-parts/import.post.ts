@@ -1,4 +1,4 @@
-import { inArray } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { speakingParts } from '../../../database/schema'
 
 const MAX_PARTS = 300
@@ -11,7 +11,8 @@ const LONG_TURN = (exam: string, n: number) => (exam === 'IELTS' ? n === 2 : n >
  * nothing is saved if anything is wrong; ?dryRun=1 only checks.
  */
 export default defineEventHandler(async (event) => {
-  const user = await requireAdmin(event)
+  const user = await requireTeacher(event)
+  const teacherId = ownerIdFor(user)
   const body = await readBody<any>(event)
   const list: any[] = Array.isArray(body) ? body : Array.isArray(body?.parts) ? body.parts : []
   if (!list.length) throw createError({ statusCode: 400, message: 'The file has no Speaking parts ("parts": [...])' })
@@ -19,7 +20,12 @@ export default defineEventHandler(async (event) => {
   const fallbackExam = body?.exam === 'IELTS' ? 'IELTS' : 'MULTILEVEL'
 
   const ids = list.map(p => p?.id).filter((id): id is string => typeof id === 'string' && /^[0-9a-f-]{36}$/i.test(id))
-  const known = new Map((ids.length ? await useDb().select({ id: speakingParts.id, exam: speakingParts.exam }).from(speakingParts).where(inArray(speakingParts.id, ids)) : []).map(r => [r.id, r.exam]))
+  const knownRows = ids.length
+    ? await useDb().select({ id: speakingParts.id, exam: speakingParts.exam }).from(speakingParts).where(
+        teacherId ? and(inArray(speakingParts.id, ids), eq(speakingParts.teacherId, teacherId)) : inArray(speakingParts.id, ids)
+      )
+    : []
+  const known = new Map(knownRows.map(r => [r.id, r.exam]))
 
   const errors: { index: number, message: string }[] = []
   const plan = list.map((raw, index) => {
@@ -58,6 +64,6 @@ export default defineEventHandler(async (event) => {
   if (errors.length || getQuery(event).dryRun) return { ...summary, saved: false }
 
   const saved: string[] = []
-  for (const p of plan) saved.push((await saveSpeakingPart(p!.id, p!.body, user.id)).id)
+  for (const p of plan) saved.push((await saveSpeakingPart(p!.id, p!.body, user.id, teacherId)).id)
   return { ...summary, saved: true, ids: saved }
 })

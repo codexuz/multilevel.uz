@@ -26,8 +26,6 @@ const slug = String(route.params.slug)
 const { data: c } = await useFetch<Outline>(`/api/courses/${slug}`, { key: `course-outline-${slug}` })
 
 const current = computed(() => String(route.params.lesson ?? ''))
-const onSpeaking = computed(() => route.path === `/courses/${slug}/speaking`)
-const showSpeaking = computed(() => !!c.value && ((c.value.speakingCount ?? 0) > 0 || c.value.access.teaches))
 const done = computed(() => c.value?.lessons.filter(l => l.done).length ?? 0)
 const total = computed(() => c.value?.lessons.length ?? 0)
 const pct = computed(() => (total.value ? Math.round(done.value / total.value * 100) : 0))
@@ -95,29 +93,6 @@ const minutes = (n: number | null) => (n ? (n >= 60 ? t('builder.hoursMinutes', 
               size="xs"
               class="mt-1.5"
             />
-            <UButton
-              v-if="showSpeaking"
-              :to="`/courses/${slug}/speaking`"
-              icon="i-lucide-mic"
-              :label="t('speakingStudio.title')"
-              :color="onSpeaking ? 'primary' : 'neutral'"
-              :variant="onSpeaking ? 'soft' : 'outline'"
-              size="sm"
-              block
-              class="mt-3 justify-between"
-            >
-              <template
-                v-if="c.speakingCount"
-                #trailing
-              >
-                <UBadge
-                  :label="String(c.speakingCount)"
-                  :color="onSpeaking ? 'primary' : 'neutral'"
-                  variant="subtle"
-                  size="xs"
-                />
-              </template>
-            </UButton>
           </div>
 
           <nav

@@ -7,7 +7,7 @@ import { libraryAPI } from '~/services/ielts'
  * in the library, so every test that uses it gets the same questions; answered questions cannot be
  * removed, so results already given stay true.
  */
-definePageMeta({ middleware: 'admin' })
+definePageMeta({ middleware: 'teacher' })
 
 const route = useRoute()
 const toast = useToast()

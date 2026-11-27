@@ -1,4 +1,6 @@
 export default defineEventHandler(async (event) => {
-  const user = await requireAdmin(event)
-  return duplicateTest(getRouterParam(event, 'id')!, user.id)
+  const user = await requireTeacher(event)
+  const id = getRouterParam(event, 'id')!
+  await assertCanManageTest(user, id)
+  return duplicateTest(id, user.id, ownerIdFor(user))
 })

@@ -1,4 +1,6 @@
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
-  return setStatus(getRouterParam(event, 'id')!, 'PUBLISHED')
+  const user = await requireTeacher(event)
+  const id = getRouterParam(event, 'id')!
+  await assertCanManageTest(user, id)
+  return setStatus(id, 'PUBLISHED')
 })

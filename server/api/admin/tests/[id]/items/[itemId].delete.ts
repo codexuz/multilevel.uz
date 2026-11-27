@@ -1,4 +1,6 @@
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
-  return removeItem(getRouterParam(event, 'id')!, getRouterParam(event, 'itemId')!)
+  const user = await requireTeacher(event)
+  const id = getRouterParam(event, 'id')!
+  await assertCanManageTest(user, id)
+  return removeItem(id, getRouterParam(event, 'itemId')!)
 })

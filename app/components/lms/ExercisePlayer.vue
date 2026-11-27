@@ -99,7 +99,7 @@ async function submit() {
 }
 
 function viewAttempt(att: ExerciseAttemptDto) {
-  answers.value = structuredClone(att.answers ?? {})
+  answers.value = JSON.parse(JSON.stringify(att.answers ?? {}))
   activeResult.value = att
 }
 </script>

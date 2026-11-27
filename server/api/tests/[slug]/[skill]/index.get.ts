@@ -6,6 +6,7 @@ export default defineEventHandler(async (event) => {
   const skill = String(getRouterParam(event, 'skill')).toUpperCase()
   if (!isSkill(skill)) throw createError({ statusCode: 404, message: 'Section not found' })
   const test = await loadTest({ slug: getRouterParam(event, 'slug')! }, { publishedOnly: true })
+  await assertCanViewTest(user, test)
   const whole = test.sections.find((s: any) => s.skill === skill)
   if (!whole?.items?.length) throw createError({ statusCode: 404, message: 'Section not found' })
   const partNumber = getQuery(event).part ? Number(getQuery(event).part) : null

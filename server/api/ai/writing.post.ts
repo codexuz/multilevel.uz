@@ -31,6 +31,7 @@ export default defineEventHandler(async (event) => {
     attemptOwner = attempt.userId
   } else {
     const test = await loadTest({ slug: String(body.slug ?? '') }, { publishedOnly: true })
+    await assertCanViewTest(user, test)
     const whole = test.sections.find((s: any) => s.skill === 'WRITING')
     const section = whole && body.part ? pickPart(whole, Number(body.part)) : whole
     if (!section?.items?.length) throw createError({ statusCode: 404, message: 'Writing not found' })

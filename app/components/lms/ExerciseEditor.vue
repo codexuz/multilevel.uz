@@ -3,6 +3,7 @@ import type { ExerciseType, LmsExerciseDto, LmsQuestionDto, LmsQuestionType } fr
 
 interface ExerciseFull extends LmsExerciseDto {
   questions: LmsQuestionDto[]
+  course?: { id: string, slug: string, title: string }
 }
 
 const props = defineProps<{
@@ -15,12 +16,13 @@ const { confirm } = useDialogs()
 const toast = useToast()
 
 const { data: ex, refresh } = await useFetch<ExerciseFull>(() => `/api/course-exercises/${props.exerciseId}`)
+const isSpeaking = computed(() => ex.value?.exerciseType === 'SPEAKING')
 
 const tab = ref<'questions' | 'settings' | 'preview'>('questions')
 const tabs = computed(() => [
-  { label: t('xe.questionsTab', { n: ex.value?.questions?.length ?? 0 }), value: 'questions', icon: 'i-lucide-list-checks' },
+  { label: isSpeaking.value ? t('speakingStudio.promptsTab') : t('xe.questionsTab', { n: ex.value?.questions?.length ?? 0 }), value: 'questions', icon: isSpeaking.value ? 'i-lucide-mic' : 'i-lucide-list-checks' },
   { label: t('xe.settingsTab'), value: 'settings', icon: 'i-lucide-sliders-horizontal' },
-  { label: t('builder.preview'), value: 'preview', icon: 'i-lucide-eye' }
+  ...(!isSpeaking.value ? [{ label: t('builder.preview'), value: 'preview', icon: 'i-lucide-eye' }] : [])
 ])
 
 const settings = reactive({
@@ -44,6 +46,7 @@ watch(ex, (v) => {
   settings.maxAttempts = v.maxAttempts ?? undefined
   settings.shuffleQuestions = v.shuffleQuestions
   settings.requiredForCompletion = v.requiredForCompletion
+  if (v.exerciseType === 'SPEAKING' && tab.value === 'preview') tab.value = 'questions'
 }, { immediate: true })
 
 const savingSettings = ref(false)
@@ -131,7 +134,7 @@ async function deleteQuestion(q: LmsQuestionDto) {
         :content="false"
       />
       <UButton
-        v-if="tab === 'questions'"
+        v-if="tab === 'questions' && !isSpeaking"
         :label="t('xe.addQuestion')"
         icon="i-lucide-plus"
         size="sm"
@@ -139,9 +142,19 @@ async function deleteQuestion(q: LmsQuestionDto) {
       />
     </div>
 
+    <!-- Speaking Studio Exercise Prompts (appended as a widget to the lesson) -->
+    <CourseBuilderSpeaking
+      v-if="tab === 'questions' && isSpeaking && ex.course"
+      :course-id="ex.course.id"
+      :course-slug="ex.course.slug"
+      :exercise-id="ex.id"
+      :lesson-id="ex.lessonId"
+      @changed="emit('updated')"
+    />
+
     <!-- 12-Type Visual Question Picker -->
     <UCard
-      v-if="tab === 'questions' && pickingType"
+      v-if="tab === 'questions' && !isSpeaking && pickingType"
       :ui="{ body: 'p-4 flex flex-col gap-3' }"
     >
       <div class="flex items-center justify-between">
@@ -183,7 +196,7 @@ async function deleteQuestion(q: LmsQuestionDto) {
     </UCard>
 
     <!-- Questions List -->
-    <template v-if="tab === 'questions'">
+    <template v-if="tab === 'questions' && !isSpeaking">
       <ol
         v-if="ex.questions.length"
         class="rounded-xl ring ring-default divide-y divide-default overflow-hidden"
@@ -286,7 +299,10 @@ async function deleteQuestion(q: LmsQuestionDto) {
           class="w-full"
         />
       </UFormField>
-      <div class="grid sm:grid-cols-3 gap-3">
+      <div
+        v-if="settings.exerciseType !== 'SPEAKING'"
+        class="grid sm:grid-cols-3 gap-3"
+      >
         <UFormField :label="t('xe.passScore')">
           <UInputNumber
             v-model="settings.passingScore"
@@ -319,6 +335,7 @@ async function deleteQuestion(q: LmsQuestionDto) {
           :description="t('xe.requiredText')"
         />
         <USwitch
+          v-if="settings.exerciseType !== 'SPEAKING'"
           v-model="settings.shuffleQuestions"
           :label="t('xe.shuffle')"
         />
@@ -334,7 +351,7 @@ async function deleteQuestion(q: LmsQuestionDto) {
 
     <!-- Live Interactive Student Preview -->
     <LmsExercisePlayer
-      v-else-if="tab === 'preview'"
+      v-else-if="tab === 'preview' && !isSpeaking"
       :exercise-id="exerciseId"
     />
 
@@ -346,6 +363,7 @@ async function deleteQuestion(q: LmsQuestionDto) {
     >
       <template #body>
         <LmsQuestionEditor
+          v-if="questionModalOpen"
           :key="editingQuestion?.id ?? newQuestionType"
           :exercise-id="exerciseId"
           :question="editingQuestion"

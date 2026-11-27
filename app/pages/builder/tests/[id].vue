@@ -6,11 +6,14 @@ import { libraryAPI } from '~/services/ielts'
  * A test, put together from the library section by section. The server says what stops it being
  * published (errors) and where it departs from the official format (warnings); a mock must follow it.
  */
-definePageMeta({ middleware: 'admin' })
+definePageMeta({ middleware: 'teacher' })
 // Back to the list as it was left (its exam, tab, page and filters).
 const lastList = useBuilderList()
 const backToList = computed(() => lastList.value ?? '/builder')
 
+const { t } = useI18n()
+const { me } = useMe()
+const isAdmin = computed(() => me.value?.role === 'admin')
 const route = useRoute()
 const toast = useToast()
 const { confirm } = useDialogs()
@@ -19,14 +22,81 @@ const id = computed(() => String(route.params.id))
 const { data: test, status, error } = useAsyncData<Test>(() => `test:${id.value}`, () => libraryAPI.test(id.value), { watch: [id] })
 useSeoMeta({ title: () => `${test.value?.title ?? 'Test'} — Builder`, robots: 'noindex' })
 
-// ─── Details ───────────────────────────────────────────────────────────────
-const meta = reactive({ title: '', slug: '', description: '', mode: 'PRACTICE', access: 'FREE', category: null as string | null, source: '', module: 'MULTILEVEL' })
-watch(test, (t) => {
-  if (!t) return
-  Object.assign(meta, { title: t.title, slug: t.slug ?? '', description: t.description ?? '', mode: t.mode, access: t.access ?? 'FREE', category: t.category ?? null, source: t.source ?? '', module: t.module ?? 'MULTILEVEL' })
+const isPrivate = computed(() => test.value?.visibility === 'PRIVATE' || !!test.value?.teacherId)
+const canEditAudience = computed(() => !isAdmin.value || !test.value?.teacherId || test.value.teacherId === me.value?.id)
+
+// ─── Audience (who can see a private test) ─────────────────────────────────
+interface RosterResponse {
+  groups: { id: string, name: string, level?: string | null }[]
+  students: { id: string, name: string, email?: string | null, telegramUsername?: string | null }[]
+}
+const { data: roster } = useFetch<RosterResponse>('/api/teacher/students', {
+  lazy: true,
+  default: () => ({ groups: [], students: [] })
+})
+const groupItems = computed(() => (roster.value?.groups ?? []).map(g => ({
+  label: g.level ? `${g.name} (${g.level})` : g.name,
+  value: g.id
+})))
+const studentItems = computed(() => (roster.value?.students ?? []).map(s => ({
+  label: s.telegramUsername ? `${s.name} (@${s.telegramUsername})` : s.name,
+  value: s.id
+})))
+const audienceGroups = ref<string[]>([])
+const audienceStudents = ref<string[]>([])
+const savingAudience = ref(false)
+watch(() => test.value?.audience, (a) => {
+  audienceGroups.value = [...(a?.groupIds ?? [])]
+  audienceStudents.value = [...(a?.studentIds ?? [])]
 }, { immediate: true })
-const detailsDirty = computed(() => !!test.value && (meta.title !== test.value.title || meta.slug !== (test.value.slug ?? '') || meta.description !== (test.value.description ?? '') || meta.mode !== test.value.mode || meta.access !== (test.value.access ?? 'FREE')
-  || meta.category !== (test.value.category ?? null) || meta.source !== (test.value.source ?? '') || meta.module !== (test.value.module ?? 'MULTILEVEL')))
+const sameIds = (a: string[], b: string[]) => a.length === b.length && [...a].sort().every((v, i) => v === [...b].sort()[i])
+const audienceDirty = computed(() => !!test.value && (
+  !sameIds(audienceGroups.value, test.value.audience?.groupIds ?? [])
+  || !sameIds(audienceStudents.value, test.value.audience?.studentIds ?? [])
+))
+async function saveAudience() {
+  savingAudience.value = true
+  try {
+    const saved = await libraryAPI.setAudience(id.value, {
+      groupIds: audienceGroups.value,
+      studentIds: audienceStudents.value
+    })
+    if (test.value) test.value = { ...test.value, audience: saved }
+    toast.add({ title: t('builder.audienceSaved'), color: 'success' })
+  } catch (e: any) {
+    toast.add({ title: 'Not saved', description: errorMessage(e), color: 'error' })
+  } finally {
+    savingAudience.value = false
+  }
+}
+
+// ─── Details ───────────────────────────────────────────────────────────────
+const meta = reactive({ title: '', slug: '', description: '', mode: 'PRACTICE', access: 'FREE', visibility: 'PUBLIC', category: null as string | null, source: '', module: 'MULTILEVEL' })
+watch(test, (val) => {
+  if (!val) return
+  Object.assign(meta, {
+    title: val.title,
+    slug: val.slug ?? '',
+    description: val.description ?? '',
+    mode: val.mode,
+    access: val.access ?? 'FREE',
+    visibility: val.visibility ?? 'PUBLIC',
+    category: val.category ?? null,
+    source: val.source ?? '',
+    module: val.module ?? 'MULTILEVEL'
+  })
+}, { immediate: true })
+const detailsDirty = computed(() => !!test.value && (
+  meta.title !== test.value.title
+  || meta.slug !== (test.value.slug ?? '')
+  || meta.description !== (test.value.description ?? '')
+  || meta.mode !== test.value.mode
+  || (isAdmin.value && meta.access !== (test.value.access ?? 'FREE'))
+  || (isAdmin.value && meta.visibility !== (test.value.visibility ?? 'PUBLIC'))
+  || meta.category !== (test.value.category ?? null)
+  || meta.source !== (test.value.source ?? '')
+  || meta.module !== (test.value.module ?? 'MULTILEVEL')
+))
 /** The test's exam: its parts are numbered and scored for it, and only its library can go in. */
 const exam = computed(() => examOfModule(test.value?.module))
 // Academic and General Training swap freely; the other exam only while the test is empty.
@@ -45,7 +115,14 @@ async function run(action: () => Promise<Test>, done?: string) {
   }
 }
 const saveDetails = () => run(() => libraryAPI.updateTest(id.value, {
-  title: meta.title.trim(), slug: meta.slug.trim() || undefined, description: meta.description.trim() || null, mode: meta.mode, access: meta.access, category: meta.category, source: meta.source.trim() || null, module: meta.module
+  title: meta.title.trim(),
+  slug: meta.slug.trim() || undefined,
+  description: meta.description.trim() || null,
+  mode: meta.mode,
+  ...(isAdmin.value ? { access: meta.access, visibility: meta.visibility } : {}),
+  category: meta.category,
+  source: meta.source.trim() || null,
+  module: meta.module
 }), 'Saved')
 
 // ─── Sections ──────────────────────────────────────────────────────────────
@@ -148,7 +225,10 @@ async function createAndOpen(skill: Skill) {
 }
 
 // ─── Publishing and the rest ───────────────────────────────────────────────
-const publish = () => run(() => libraryAPI.publish(id.value), 'Published — anyone can take it, and search engines can find it')
+const publish = () => run(
+  () => libraryAPI.publish(id.value),
+  isPrivate.value ? t('builder.publishedPrivate') : 'Published — anyone can take it, and search engines can find it'
+)
 const unpublish = () => run(() => libraryAPI.unpublish(id.value), 'Back to draft')
 const archive = () => run(() => libraryAPI.archive(id.value), 'Archived')
 async function duplicate() {
@@ -183,7 +263,7 @@ async function remove() {
 }
 const menu = computed(() => [
   [
-    ...(test.value?.status === 'PUBLISHED' && test.value.slug ? [{ label: 'Open public page', icon: 'i-lucide-external-link', to: `/tests/${test.value.slug}`, target: '_blank' }] : []),
+    ...(test.value?.status === 'PUBLISHED' && test.value.slug ? [{ label: isPrivate.value ? t('builder.previewTestPage') : 'Open public page', icon: 'i-lucide-external-link', to: `/tests/${test.value.slug}`, target: '_blank' }] : []),
     { label: 'Duplicate', icon: 'i-lucide-copy', onSelect: duplicate },
     { label: 'Export', icon: 'i-lucide-file-up', onSelect: exportJson }
   ],
@@ -203,6 +283,21 @@ const readiness = computed(() => test.value?.readiness ?? { errors: [], warnings
     wide
   >
     <template #actions>
+      <UBadge
+        v-if="test && isPrivate"
+        :label="t('builder.private')"
+        icon="i-lucide-lock"
+        color="neutral"
+        variant="soft"
+      />
+      <UBadge
+        v-if="test && isAdmin && test.teacherName"
+        :label="t('builder.byTeacher', { name: test.teacherName })"
+        icon="i-lucide-user-round"
+        color="neutral"
+        variant="outline"
+        class="max-sm:hidden"
+      />
       <UBadge
         v-if="test"
         :label="STATUS_META[test.status]!.label"
@@ -408,6 +503,70 @@ const readiness = computed(() => test.value?.readiness ?? { errors: [], warnings
           </ul>
         </UCard>
 
+        <UCard v-if="isPrivate || !isAdmin">
+          <template #header>
+            <div class="flex items-center gap-2">
+              <UIcon
+                name="i-lucide-lock"
+                class="size-4 text-muted"
+              />
+              <p class="font-semibold text-highlighted">
+                {{ t('builder.audienceTitle') }}
+              </p>
+            </div>
+          </template>
+          <div
+            v-if="canEditAudience"
+            class="grid gap-3"
+          >
+            <p class="text-xs text-muted">
+              {{ t('builder.audienceHint') }}
+            </p>
+            <UFormField :label="t('builder.audienceClasses')">
+              <USelectMenu
+                v-model="audienceGroups"
+                :items="groupItems"
+                value-key="value"
+                multiple
+                :placeholder="t('builder.audienceClassesPlaceholder')"
+                class="w-full"
+                data-testid="audience-groups"
+              />
+            </UFormField>
+            <UFormField :label="t('builder.audienceStudents')">
+              <USelectMenu
+                v-model="audienceStudents"
+                :items="studentItems"
+                value-key="value"
+                multiple
+                :placeholder="t('builder.audienceStudentsPlaceholder')"
+                class="w-full"
+                data-testid="audience-students"
+              />
+            </UFormField>
+            <UButton
+              :label="t('builder.saveAudience')"
+              icon="i-lucide-check"
+              :loading="savingAudience"
+              :disabled="!audienceDirty"
+              block
+              data-testid="save-audience"
+              @click="saveAudience"
+            />
+          </div>
+          <div
+            v-else
+            class="grid gap-1.5 text-sm text-muted"
+          >
+            <p v-if="test.teacherName">
+              {{ t('builder.byTeacher', { name: test.teacherName }) }}
+            </p>
+            <p>
+              {{ t('builder.audienceSummary', { groups: test.audience?.groupIds?.length ?? 0, students: test.audience?.studentIds?.length ?? 0 }) }}
+            </p>
+          </div>
+        </UCard>
+
         <UCard>
           <template #header>
             <p class="font-semibold text-highlighted">
@@ -426,7 +585,7 @@ const readiness = computed(() => test.value?.readiness ?? { errors: [], warnings
             </UFormField>
             <UFormField
               label="Description"
-              :help="`Shown in Google results. ${meta.description.length}/160`"
+              :help="isPrivate ? t('builder.privateDescHelp') : `Shown in Google results. ${meta.description.length}/160`"
             >
               <UTextarea
                 v-model="meta.description"
@@ -475,6 +634,18 @@ const readiness = computed(() => test.value?.readiness ?? { errors: [], warnings
               </UFormField>
             </div>
             <UFormField
+              v-if="isAdmin"
+              :label="t('builder.visibilityLabel')"
+              :help="t('builder.visibilityHelp')"
+            >
+              <USelect
+                v-model="meta.visibility"
+                :items="[{ label: t('builder.visibilityPublic'), value: 'PUBLIC' }, { label: t('builder.visibilityPrivate'), value: 'PRIVATE' }]"
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField
+              v-if="isAdmin"
               label="Access"
               help="Premium tests keep a public page; sitting them needs Premium."
             >

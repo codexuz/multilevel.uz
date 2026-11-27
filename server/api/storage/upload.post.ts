@@ -70,11 +70,9 @@ export default defineEventHandler(async (event) => {
   if (!filePart) throw createError({ statusCode: 400, message: 'file is required' })
   if (!purpose || !PREFIX[purpose]) throw createError({ statusCode: 400, message: 'Invalid purpose' })
 
-  if (STAFF_PURPOSES.includes(purpose) && user.role !== 'admin') {
-    throw createError({ statusCode: 403, message: 'Forbidden' })
+  if (STAFF_PURPOSES.includes(purpose) || TEACHER_PURPOSES.includes(purpose)) {
+    await requireTeacher(event)
   }
-  // Course assets: teachers and admins only (checked against the account, as the token's role may lag).
-  if (TEACHER_PURPOSES.includes(purpose)) await requireTeacher(event)
 
   const contentType = filePart.type || 'application/octet-stream'
   if (!ALLOWED[purpose](baseType(contentType))) {
@@ -84,7 +82,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 413, message: 'File too large' })
   }
 
-  const scope = purpose === 'avatar' || purpose === 'recording' || TEACHER_PURPOSES.includes(purpose) ? user.id : 'shared'
+  const scope = purpose === 'avatar' || purpose === 'recording' || TEACHER_PURPOSES.includes(purpose) || user.role !== 'admin' ? user.id : 'shared'
   const key = `${PREFIX[purpose]}/${scope}/${randomUUID()}.${extFromType(contentType, filePart.filename)}`
 
   const client = useS3Client()

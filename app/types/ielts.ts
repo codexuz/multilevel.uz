@@ -174,6 +174,13 @@ export interface Section {
   items: SectionItem[]
 }
 
+export type TestVisibility = 'PUBLIC' | 'PRIVATE'
+
+export interface TestAudience {
+  groupIds: string[]
+  studentIds: string[]
+}
+
 export interface Test {
   id: string
   slug?: string
@@ -181,6 +188,10 @@ export interface Test {
   description?: string | null
   mode: TestMode
   access?: 'FREE' | 'PREMIUM'
+  visibility?: TestVisibility
+  teacherId?: string | null
+  teacherName?: string | null
+  audience?: TestAudience
   status: TestStatus
   category?: string | null
   module: IeltsModule
@@ -202,6 +213,10 @@ export interface TestSummary {
   description?: string | null
   mode: TestMode
   access?: 'FREE' | 'PREMIUM'
+  visibility?: TestVisibility
+  teacherId?: string | null
+  teacherName?: string | null
+  sharedGroups?: string[]
   status?: TestStatus
   category?: string | null
   module: IeltsModule
@@ -212,6 +227,7 @@ export interface TestSummary {
   updatedAt?: string
   sections: { skill: Skill, items: number, durationSeconds?: number | null }[]
   attempts?: number
+  missingMapImages?: number
   mocks?: number
   lastAttempt?: AttemptBrief | null
 }

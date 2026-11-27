@@ -110,6 +110,11 @@ const query = computed(() => ({
 }))
 const { data, status } = await useFetch<Paged<any> & { fullTests?: number, categories?: string[] }>(() => (view.value === 'parts' ? '/api/practice/parts' : '/api/tests'), { query })
 const { data: packs } = await useFetch<Pack[]>('/api/packs', { query: computed(() => ({ exam: exam.value })), default: () => [] })
+const { data: teacherTests } = useAsyncData(
+  'student:teacher-tests',
+  () => (loggedIn.value ? $fetch<{ items: any[] }>('/api/me/teacher-tests', { query: { exam: exam.value } }).catch(() => ({ items: [] })) : Promise.resolve({ items: [] })),
+  { watch: [exam, loggedIn], default: () => ({ items: [] }) }
+)
 const moduleItems = computed(() => [
   { label: t('exam.allModules'), value: ALL },
   { label: t('exam.academic'), value: 'ACADEMIC' },
@@ -193,6 +198,62 @@ useSeoMeta({
       <ExamSwitch v-if="!loggedIn" />
 
       <LiveMockBanner :exam="exam" />
+
+      <UCard
+        v-if="loggedIn && teacherTests?.items?.length"
+        data-testid="teacher-tests-section"
+      >
+        <template #header>
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <UIcon
+                name="i-lucide-lock"
+                class="size-4 text-primary"
+              />
+              <h2 class="font-semibold text-highlighted">
+                {{ t('tests.fromMyTeachers') }}
+              </h2>
+              <UBadge
+                :label="String(teacherTests.items.length)"
+                color="primary"
+                variant="subtle"
+                size="sm"
+              />
+            </div>
+            <p class="text-xs text-muted">
+              {{ t('tests.fromMyTeachersHint') }}
+            </p>
+          </div>
+        </template>
+        <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div
+            v-for="test in teacherTests.items"
+            :key="test.id"
+            class="flex flex-col gap-1.5"
+          >
+            <TestCard :test="test" />
+            <div class="flex flex-wrap items-center gap-1.5 px-1 text-xs text-muted">
+              <UBadge
+                v-if="test.teacherName"
+                :label="test.teacherName"
+                icon="i-lucide-user-round"
+                color="neutral"
+                variant="subtle"
+                size="sm"
+              />
+              <UBadge
+                v-for="groupName in (test.sharedGroups ?? [])"
+                :key="groupName"
+                :label="groupName"
+                icon="i-lucide-users"
+                color="primary"
+                variant="soft"
+                size="sm"
+              />
+            </div>
+          </div>
+        </div>
+      </UCard>
 
       <UTabs
         v-model="view"

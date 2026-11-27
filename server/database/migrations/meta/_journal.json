@@ -281,6 +281,20 @@
       "when": 1795711200000,
       "tag": "0039_telegram_channel_ielts",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1795770000000,
+      "tag": "0040_teacher_isolated_tests",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1795780000000,
+      "tag": "0041_speaking_exercises_and_social",
+      "breakpoints": true
     }
   ]
 }

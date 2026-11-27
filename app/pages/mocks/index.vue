@@ -13,8 +13,11 @@ interface Row { id: string, title: string, opensAt: string, closesAt: string, ro
 const { data, refresh } = await useFetch<{ scopes: Scope[], sessions: Row[] }>('/api/mocks', { default: () => ({ scopes: [], sessions: [] }) })
 const scopeName = (_s: Scope) => t('mocks.own')
 
-const { data: testData } = await useFetch<{ items: { id: string, title: string, module: string }[] }>('/api/tests', { query: { limit: 60 }, default: () => ({ items: [] }) })
-const testItems = computed(() => testData.value.items.map(x => ({ label: `${examLabel(examOfModule(x.module))} · ${x.title}`, value: x.id })))
+const { data: testData } = await useFetch<{ items: { id: string, title: string, module: string, visibility?: string }[] }>('/api/tests', { query: { limit: 60, includeOwn: '1' }, default: () => ({ items: [] }) })
+const testItems = computed(() => testData.value.items.map(x => ({
+  label: `${examLabel(examOfModule(x.module))} · ${x.title}${x.visibility === 'PRIVATE' ? ` (${t('builder.private')})` : ''}`,
+  value: x.id
+})))
 
 /** Today at 10:00 to 14:00, as datetime-input values. */
 function today() {

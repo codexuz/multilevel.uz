@@ -41,7 +41,7 @@ const esTokens = computed(() => tokenizeErrorSentence(context.value))
 // MCQ & SINGLE_CHOICE
 const options = ref<LmsOptionItem[]>(
   initCfg.options?.length
-    ? structuredClone(initCfg.options)
+    ? initCfg.options.map(o => ({ key: String(o.key).toUpperCase(), text: String(o.text ?? '') }))
     : [{ key: 'A', text: '' }, { key: 'B', text: '' }, { key: 'C', text: '' }, { key: 'D', text: '' }]
 )
 const selectedCorrectKeys = ref<string[]>(Array.isArray(initAcc) ? initAcc.map(x => String(x).toUpperCase()) : ['A'])
@@ -67,7 +67,7 @@ const gapAnswers = ref<Record<string, string>>(
 )
 const wordBank = ref<LmsOptionItem[]>(
   initCfg.wordBank?.length
-    ? structuredClone(initCfg.wordBank)
+    ? initCfg.wordBank.map(w => ({ key: String(w.key), text: String(w.text ?? '') }))
     : [{ key: 'A', text: '' }, { key: 'B', text: '' }, { key: 'C', text: '' }, { key: 'D', text: '' }]
 )
 const reuseWords = ref(!!initCfg.reuseWords)
@@ -75,7 +75,7 @@ const reuseWords = ref(!!initCfg.reuseWords)
 // ORDER
 const orderItems = ref<LmsOrderItem[]>(
   initCfg.items?.length
-    ? structuredClone(initCfg.items)
+    ? initCfg.items.map(i => ({ id: String(i.id), text: String(i.text ?? '') }))
     : [{ id: 'step-1', text: '' }, { id: 'step-2', text: '' }, { id: 'step-3', text: '' }]
 )
 
@@ -210,16 +210,16 @@ function switchType(nextType: LmsQuestionType) {
     esRequireCorrection.value = !!c.requireCorrection
     esCorrections.value = Array.isArray(a) ? a.join(' / ') : ''
   } else if (nextType === 'MCQ' || nextType === 'SINGLE_CHOICE') {
-    options.value = structuredClone(c.options ?? [])
+    options.value = (c.options ?? []).map(o => ({ ...o }))
     selectedCorrectKeys.value = Array.isArray(a) ? [...a] : ['A']
   } else if (nextType === 'NOTE_COMPLETION' || nextType === 'SUMMARY_COMPLETION' || nextType === 'SUMMARY_DRAG_DROP') {
     gapAnswers.value = a && !Array.isArray(a) ? Object.fromEntries(Object.entries(a).map(([k, v]) => [k, v.join(' / ')])) : {}
-    if (c.wordBank) wordBank.value = structuredClone(c.wordBank)
+    if (c.wordBank) wordBank.value = c.wordBank.map(w => ({ ...w }))
   } else if (nextType === 'TRUE_FALSE') {
     allowNotGiven.value = !!c.allowNotGiven
     tfAnswer.value = Array.isArray(a) ? (a[0] ?? 'TRUE') : 'TRUE'
   } else if (nextType === 'ORDER') {
-    orderItems.value = structuredClone(c.items ?? [])
+    orderItems.value = (c.items ?? []).map(i => ({ ...i }))
   } else if (nextType === 'TRANSLATION' || nextType === 'SHORT_ANSWER') {
     textAnswers.value = Array.isArray(a) ? a.join('\n') : ''
     sourceLang.value = c.sourceLang ?? 'UZ'
@@ -233,8 +233,10 @@ function switchType(nextType: LmsQuestionType) {
 }
 
 function addOption() {
-  const nextChar = String.fromCharCode(65 + options.value.length)
-  options.value.push({ key: nextChar, text: '' })
+  const used = new Set(options.value.map(o => o.key))
+  let code = 65
+  while (used.has(String.fromCharCode(code))) code++
+  options.value.push({ key: String.fromCharCode(code), text: '' })
 }
 function removeOption(idx: number) {
   const removed = options.value.splice(idx, 1)[0]

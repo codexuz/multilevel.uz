@@ -2,6 +2,7 @@ import type { H3Event } from 'h3'
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
 import {
   courseLessons,
+  courseSpeakingQuestions,
   courses,
   exerciseAttempts,
   exerciseQuestions,
@@ -60,7 +61,7 @@ export function exerciseValues(body: Record<string, unknown>, partial: boolean) 
   if (body.instructions !== undefined) out.instructions = text(body.instructions, 2000) || null
   if (body.exerciseType !== undefined) {
     const et = String(body.exerciseType).toUpperCase()
-    if (!['PRACTICE', 'QUIZ', 'HOMEWORK'].includes(et)) throw createError({ statusCode: 400, message: 'Invalid exercise type' })
+    if (!['PRACTICE', 'QUIZ', 'HOMEWORK', 'SPEAKING'].includes(et)) throw createError({ statusCode: 400, message: 'Invalid exercise type' })
     out.exerciseType = et
   }
   if (body.passingScore !== undefined) {
@@ -120,6 +121,9 @@ export async function moveExercise(exercise: Exercise, courseId: string, toLesso
     const into = (await order(target.id)).filter(id => id !== exercise.id)
     into.splice(Math.max(0, Math.min(Math.round(index) || 0, into.length)), 0, exercise.id)
     await tx.update(lessonExercises).set({ lessonId: target.id, updatedAt: new Date() }).where(eq(lessonExercises.id, exercise.id))
+    if (exercise.lessonId !== target.id) {
+      await tx.update(courseSpeakingQuestions).set({ lessonId: target.id, updatedAt: new Date() }).where(eq(courseSpeakingQuestions.exerciseId, exercise.id))
+    }
     for (const [i, id] of into.entries()) await tx.update(lessonExercises).set({ position: i + 1 }).where(eq(lessonExercises.id, id))
     if (exercise.lessonId !== target.id) {
       for (const [i, id] of (await order(exercise.lessonId)).entries()) await tx.update(lessonExercises).set({ position: i + 1 }).where(eq(lessonExercises.id, id))

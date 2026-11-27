@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { packs, tests } from '../../database/schema'
 
 // Every published test's page, every pack on sale, the public answer and Writing task pages, and public courses, for the
@@ -8,7 +8,7 @@ export default defineSitemapEventHandler(async () => {
   const [rows, packRows, answerUrls, courseRows] = await Promise.all([
     db.select({ slug: tests.slug, updatedAt: tests.updatedAt, publishedAt: tests.publishedAt })
       .from(tests)
-      .where(eq(tests.status, 'PUBLISHED'))
+      .where(and(eq(tests.status, 'PUBLISHED'), eq(tests.visibility, 'PUBLIC')))
       .orderBy(desc(tests.publishedAt)),
     db.select({ slug: packs.slug, updatedAt: packs.updatedAt }).from(packs).where(eq(packs.active, true)),
     publicAnswerUrls(),

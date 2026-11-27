@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { tests } from '../../../database/schema'
 
 const ACTIONS = ['PUBLISH', 'DRAFT', 'ARCHIVE', 'DELETE', 'FREE', 'PREMIUM'] as const
@@ -10,14 +10,19 @@ type Action = (typeof ACTIONS)[number]
  * are named with why, and the rest still go through.
  */
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+  const user = await requireTeacher(event)
   const body = (await readBody<{ ids?: string[], action?: string }>(event)) ?? {}
   const action = body.action as Action
   if (!ACTIONS.includes(action)) throw createError({ statusCode: 400, message: 'Pick what to do' })
+  if ((action === 'FREE' || action === 'PREMIUM') && !isAdminUser(user)) {
+    throw createError({ statusCode: 403, message: 'Only admins can change test pricing' })
+  }
   const ids = [...new Set((Array.isArray(body.ids) ? body.ids : []).map(String))].filter(id => /^[0-9a-f-]{36}$/i.test(id)).slice(0, 200)
   if (!ids.length) throw createError({ statusCode: 400, message: 'Pick the tests' })
   const db = useDb()
-  const titles = new Map((await db.select({ id: tests.id, title: tests.title }).from(tests).where(inArray(tests.id, ids))).map(t => [t.id, t.title]))
+  const teacherId = ownerIdFor(user)
+  const where = teacherId ? and(inArray(tests.id, ids), eq(tests.teacherId, teacherId)) : inArray(tests.id, ids)
+  const titles = new Map((await db.select({ id: tests.id, title: tests.title }).from(tests).where(where)).map(t => [t.id, t.title]))
   let done = 0
   const failed: { id: string, title: string, message: string }[] = []
   for (const id of ids) {

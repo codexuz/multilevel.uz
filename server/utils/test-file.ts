@@ -95,7 +95,7 @@ export function exportTest(test: any) {
 const SKILL_SET = new Set(['LISTENING', 'READING', 'WRITING', 'SPEAKING'])
 
 /** Creates the test a file describes, as a draft. Returns its id. */
-export async function importTest(payload: any, userId: string | null) {
+export async function importTest(payload: any, userId: string | null, opts: { teacherId?: string | null } = {}) {
   if (payload?.format !== TEST_FILE_FORMAT || !payload.test?.title) throw createError({ statusCode: 400, message: 'This is not a test file (format "erp-lms/ielts-test")' })
   const source = await keepEmbeddedMedia(structuredClone(payload.test))
   for (const section of source.sections ?? []) {
@@ -105,12 +105,15 @@ export async function importTest(payload: any, userId: string | null) {
   // An erp-lms IELTS file says ACADEMIC or GENERAL_TRAINING: it comes in as an IELTS test.
   const module = isIeltsModule(source.module) ? source.module : 'MULTILEVEL'
   const exam = examOfModule(module)
+  const ownerTeacherId = opts.teacherId ?? null
   const db = useDb()
   return db.transaction(async (tx) => {
     const [test] = await tx.insert(tests).values({
       slug, title: String(source.title).slice(0, 300), description: source.description ?? null,
       mode: ['PRACTICE', 'MOCK'].includes(source.mode) ? source.mode : 'PRACTICE',
-      access: source.access === 'PREMIUM' ? 'PREMIUM' : 'FREE',
+      access: ownerTeacherId ? 'FREE' : (source.access === 'PREMIUM' ? 'PREMIUM' : 'FREE'),
+      visibility: ownerTeacherId ? 'PRIVATE' : 'PUBLIC',
+      teacherId: ownerTeacherId,
       category: ['AUTHENTIC', 'CAMBRIDGE', 'OFFICIAL', 'BOOK', 'PRE_TEST', 'CUSTOM'].includes(source.category) ? source.category : null,
       module, source: source.source ?? null, createdById: userId
     }).returning({ id: tests.id })
@@ -125,7 +128,7 @@ export async function importTest(payload: any, userId: string | null) {
           const [part] = await tx.insert(parts).values({
             exam, skill: section.skill, partNumber: Number(item.part.partNumber) || index + 1, title: item.part.title ?? null, passage: item.part.passage ?? null,
             audioRef: item.part.audioRef ?? null, transcriptRef: item.part.transcriptRef ?? null, difficulty: item.part.difficulty ?? null,
-            timeLimitMinutes: item.part.timeLimitMinutes ?? null, createdById: userId
+            timeLimitMinutes: item.part.timeLimitMinutes ?? null, teacherId: ownerTeacherId, createdById: userId
           }).returning({ id: parts.id })
           for (const [g, group] of (item.part.groups ?? []).entries()) {
             const [createdGroup] = await tx.insert(questionGroups).values({
@@ -143,7 +146,7 @@ export async function importTest(payload: any, userId: string | null) {
           const [task] = await tx.insert(writingTasks).values({
             exam, taskNumber: Number(item.writingTask.taskNumber) || index + 1, module: item.writingTask.module ?? null, title: item.writingTask.title ?? null,
             prompt: item.writingTask.prompt ?? '', imageRef: item.writingTask.imageRef ?? null, minWords: item.writingTask.minWords ?? null,
-            suggestedMinutes: item.writingTask.suggestedMinutes ?? null, createdById: userId
+            suggestedMinutes: item.writingTask.suggestedMinutes ?? null, teacherId: ownerTeacherId, createdById: userId
           }).returning({ id: writingTasks.id })
           link.writingTaskId = task!.id
         } else if (item.speakingPart) {
@@ -151,7 +154,7 @@ export async function importTest(payload: any, userId: string | null) {
           const [part] = await tx.insert(speakingParts).values({
             exam, partNumber: Number(item.speakingPart.partNumber) || index + 1, title: item.speakingPart.title ?? null, cueCard: item.speakingPart.cueCard ?? null,
             imageRef: item.speakingPart.imageRef ?? null, prepSeconds: item.speakingPart.prepSeconds ?? null, speakSeconds: item.speakingPart.speakSeconds ?? null,
-            ...partExtrasOf(item.speakingPart, where), createdById: userId
+            ...partExtrasOf(item.speakingPart, where), teacherId: ownerTeacherId, createdById: userId
           }).returning({ id: speakingParts.id })
           // Each question is text, or text with its audio and a sample answer.
           const questions = speakingQuestionsOf(item.speakingPart.questions, where).map((q, i) => ({ partId: part!.id, ...q, position: i + 1 }))
