@@ -20,7 +20,10 @@ interface SubmitBody {
 export default defineEventHandler(async (event) => {
   const skill = String(getRouterParam(event, 'skill')).toUpperCase()
   if (!isSkill(skill)) throw createError({ statusCode: 404, message: 'Section not found' })
+  // Only a signed-in candidate sits a test (guests may look at tests, not take them).
+  const user = await requireUser(event)
   const test = await loadTest({ slug: getRouterParam(event, 'slug')! }, { publishedOnly: true })
+  await assertCanViewTest(user, test)
   const whole = test.sections.find((s: any) => s.skill === skill)
   if (!whole?.items?.length) throw createError({ statusCode: 404, message: 'Section not found' })
   // ?part=N: one part practised on its own, marked and saved as that part.
@@ -30,8 +33,6 @@ export default defineEventHandler(async (event) => {
   if (partNumber) requireStandalonePart(whole, partNumber, test.slug)
 
   const body = (await readBody<SubmitBody>(event)) ?? {}
-  // Only a signed-in candidate sits a test (guests may look at tests, not take them).
-  const user = await requireUser(event)
   const access = await accessOf(user)
   // At a mock session's seat: the section the invigilator opened, paid for by the session.
   const seat = await seatGate(user.id, test.id, skill, partNumber)

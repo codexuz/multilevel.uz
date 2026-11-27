@@ -1,8 +1,8 @@
 import type { SQLWrapper } from 'drizzle-orm'
-import { and, count, desc, eq, ilike, inArray, max, ne, or, sql } from 'drizzle-orm'
+import { and, count, desc, eq, ilike, inArray, isNotNull, isNull, max, ne, or, sql } from 'drizzle-orm'
 import {
   answers, attempts, essays, parts, questionGroups, questionItems, sectionItems, sections,
-  speakingParts, speakingQuestions, speakingResponses, tests, writingTasks
+  speakingParts, speakingQuestions, speakingResponses, tests, users, writingTasks
 } from '../database/schema'
 
 /**
@@ -30,6 +30,13 @@ const notFound = (message: string) => createError({ statusCode: 404, message })
 const examFrom = (value: unknown): Exam => (isExam(value) ? value : 'MULTILEVEL')
 /** A filter on an item's exam, when one is asked for. */
 const examFilter = (column: any, value: unknown) => (isExam(value) ? eq(column, value) : undefined)
+/** Ownership scope: teachers strictly see only their own rows; admins can filter platform vs teachers. */
+const ownerFilter = (column: any, teacherId?: string | null, ownerMode?: unknown) => {
+  if (teacherId) return eq(column, teacherId)
+  if (ownerMode === 'platform') return isNull(column)
+  if (ownerMode === 'teachers') return isNotNull(column)
+  return undefined
+}
 /** ?used=IN_TEST: placed in at least one test; ?used=UNUSED: in none yet (the library's spare items). */
 const usedFilter = (link: 'part_id' | 'writing_task_id' | 'speaking_part_id', id: any, value: unknown) => {
   const placed = sql`exists (select 1 from ${sectionItems} si where si.${sql.raw(link)} = ${id})`
@@ -61,10 +68,11 @@ const testExamFilter = (value: unknown) => value === 'IELTS'
 
 // ─── Parts ───────────────────────────────────────────────────────────────────────────────
 
-export async function listParts(query: Body) {
+export async function listParts(query: Body, opts: { teacherId?: string | null } = {}) {
   const db = useDb()
   const { page, limit, offset } = paging(query)
   const where = and(
+    ownerFilter(parts.teacherId, opts.teacherId, query.owner),
     examFilter(parts.exam, query.exam),
     query.skill ? eq(parts.skill, String(query.skill)) : undefined,
     query.partNumber ? eq(parts.partNumber, Number(query.partNumber)) : undefined,
@@ -120,7 +128,7 @@ function checkPartNumber(skill: string, partNumber: number, exam: Exam) {
   if (!Number.isInteger(partNumber) || partNumber < 1 || partNumber > limit) throw bad(`${exam === 'IELTS' ? 'IELTS' : 'Multilevel'} ${skill === 'READING' ? 'Reading' : 'Listening'} has parts 1–${limit}`)
 }
 
-export async function createPart(body: Body, userId: string) {
+export async function createPart(body: Body, userId: string, teacherId: string | null = null) {
   if (body.skill !== 'LISTENING' && body.skill !== 'READING') throw bad('A part is Listening or Reading')
   const exam = examFrom(body.exam)
   checkPartNumber(body.skill, Number(body.partNumber), exam)
@@ -130,7 +138,8 @@ export async function createPart(body: Body, userId: string) {
     passage: body.skill === 'READING' ? body.passage ?? null : null,
     audioRef: body.skill === 'LISTENING' ? body.audioRef ?? null : null,
     transcriptRef: body.skill === 'LISTENING' ? body.transcriptRef ?? null : null,
-    difficulty: body.difficulty ?? null, timeLimitMinutes: body.timeLimitMinutes ?? null, isActive: body.isActive ?? true, createdById: userId
+    difficulty: body.difficulty ?? null, timeLimitMinutes: body.timeLimitMinutes ?? null, isActive: body.isActive ?? true,
+    teacherId, createdById: userId
   }).returning({ id: parts.id })
   return getPart(part!.id)
 }
@@ -295,11 +304,12 @@ export async function reorderGroups(partId: string, ids: string[]) {
 
 // ─── Writing tasks ───────────────────────────────────────────────────────────────────────
 
-export async function listWritingTasks(query: Body) {
+export async function listWritingTasks(query: Body, opts: { teacherId?: string | null } = {}) {
   const db = useDb()
   const { page, limit, offset } = paging(query)
   const search = query.search?.trim()
   const where = and(
+    ownerFilter(writingTasks.teacherId, opts.teacherId, query.owner),
     examFilter(writingTasks.exam, query.exam),
     query.taskNumber ? eq(writingTasks.taskNumber, Number(query.taskNumber)) : undefined,
     search ? or(ilike(writingTasks.title, `%${search}%`), ilike(writingTasks.prompt, `%${search}%`)) : undefined,
@@ -332,14 +342,15 @@ function checkTaskNumber(n: number, exam: Exam) {
   if (!numbers.includes(n)) throw bad(`Writing tasks are ${numbers.map(x => `${x} (${taskName(exam, x)})`).join(', ')}`)
 }
 
-export async function createWritingTask(body: Body, userId: string) {
+export async function createWritingTask(body: Body, userId: string, teacherId: string | null = null) {
   const exam = examFrom(body.exam)
   checkTaskNumber(Number(body.taskNumber), exam)
   if (!text(body.prompt)) throw bad('The task needs its question')
   const db = useDb()
   const [task] = await db.insert(writingTasks).values({
     exam, taskNumber: Number(body.taskNumber), module: body.module ?? null, title: text(body.title), prompt: body.prompt,
-    imageRef: body.imageRef ?? null, minWords: body.minWords ?? null, suggestedMinutes: body.suggestedMinutes ?? null, createdById: userId
+    imageRef: body.imageRef ?? null, minWords: body.minWords ?? null, suggestedMinutes: body.suggestedMinutes ?? null,
+    teacherId, createdById: userId
   }).returning({ id: writingTasks.id })
   return getWritingTask(task!.id)
 }
@@ -372,11 +383,12 @@ export async function deleteWritingTask(id: string) {
 
 // ─── Speaking parts ──────────────────────────────────────────────────────────────────────
 
-export async function listSpeakingParts(query: Body) {
+export async function listSpeakingParts(query: Body, opts: { teacherId?: string | null } = {}) {
   const db = useDb()
   const { page, limit, offset } = paging(query)
   const search = query.search?.trim()
   const where = and(
+    ownerFilter(speakingParts.teacherId, opts.teacherId, query.owner),
     examFilter(speakingParts.exam, query.exam),
     query.partNumber ? eq(speakingParts.partNumber, Number(query.partNumber)) : undefined,
     search ? or(ilike(speakingParts.title, `%${search}%`), ilike(speakingParts.cueCard, `%${search}%`)) : undefined,
@@ -401,7 +413,7 @@ export async function getSpeakingPart(id: string) {
   return speakingPartView(part, true)
 }
 
-export async function saveSpeakingPart(id: string | null, body: Body, userId: string) {
+export async function saveSpeakingPart(id: string | null, body: Body, userId: string, teacherId: string | null = null) {
   const partNumber = Number(body.partNumber)
   // A part keeps the exam it was written for; a new one takes the one asked for.
   const exam = id ? examFrom((await getSpeakingPart(id)).exam) : examFrom(body.exam)
@@ -425,7 +437,7 @@ export async function saveSpeakingPart(id: string | null, body: Body, userId: st
       if (questions.length) await tx.insert(speakingQuestions).values(rowsOf(id))
       return id
     }
-    const [part] = await tx.insert(speakingParts).values({ ...values, exam, createdById: userId }).returning({ id: speakingParts.id })
+    const [part] = await tx.insert(speakingParts).values({ ...values, exam, teacherId, createdById: userId }).returning({ id: speakingParts.id })
     if (questions.length) await tx.insert(speakingQuestions).values(rowsOf(part!.id))
     return part!.id
   })
@@ -494,6 +506,7 @@ export async function listPracticeParts(query: Body) {
   const itemNo = sql<number>`coalesce(${parts.partNumber}, ${writingTasks.taskNumber}, ${speakingParts.partNumber})`
   const where = and(
     eq(tests.status, 'PUBLISHED'),
+    eq(tests.visibility, 'PUBLIC'),
     testExamFilter(query.exam),
     skill ? eq(sections.skill, skill) : undefined,
     number ? sql`${itemNo} = ${number}` : undefined,
@@ -543,12 +556,20 @@ export async function listPracticeParts(query: Body) {
   return paged(items, total?.n ?? 0, page, limit)
 }
 
-export async function listTests(query: Body, opts: { publishedOnly?: boolean } = {}) {
+export async function listTests(query: Body, opts: { publishedOnly?: boolean, teacherId?: string | null, includeOwnTeacherId?: string | null, includeAllVisibility?: boolean } = {}) {
   const db = useDb()
   const { page, limit, offset } = paging(query, opts.publishedOnly ? 60 : 100)
   const search = query.search?.trim()
+  const visibilityCond = opts.publishedOnly
+    ? opts.includeAllVisibility
+      ? undefined
+      : opts.includeOwnTeacherId
+        ? or(eq(tests.visibility, 'PUBLIC'), eq(tests.teacherId, opts.includeOwnTeacherId))
+        : eq(tests.visibility, 'PUBLIC')
+    : ownerFilter(tests.teacherId, opts.teacherId, query.owner)
   const others = and(
     opts.publishedOnly ? eq(tests.status, 'PUBLISHED') : query.status ? eq(tests.status, String(query.status)) : ne(tests.status, 'ARCHIVED'),
+    visibilityCond,
     query.mode ? eq(tests.mode, String(query.mode)) : undefined,
     query.category ? eq(tests.category, String(query.category)) : undefined,
     search ? or(ilike(tests.title, `%${search}%`), ilike(tests.description, `%${search}%`)) : undefined,
@@ -567,14 +588,45 @@ export async function listTests(query: Body, opts: { publishedOnly?: boolean } =
     // The categories the exam's published tests come in, for the catalogue's filter.
     opts.publishedOnly
       ? db.selectDistinct({ c: tests.category }).from(tests)
-          .where(and(eq(tests.status, 'PUBLISHED'), testExamFilter(query.exam), isIeltsModule(query.module) ? eq(tests.module, String(query.module)) : undefined, sql`${tests.category} is not null`))
+          .where(and(eq(tests.status, 'PUBLISHED'), visibilityCond, testExamFilter(query.exam), isIeltsModule(query.module) ? eq(tests.module, String(query.module)) : undefined, sql`${tests.category} is not null`))
       : Promise.resolve([])
   ])
   const counts = !opts.publishedOnly && rows.length
     ? new Map((await db.select({ testId: attempts.testId, n: count() }).from(attempts).where(inArray(attempts.testId, rows.map(r => r.id))).groupBy(attempts.testId)).map(r => [r.testId, r.n]))
     : new Map()
+  const teacherIds = !opts.publishedOnly
+    ? [...new Set(rows.map(r => r.teacherId).filter((id): id is string => !!id))]
+    : []
+  const teacherMap = teacherIds.length
+    ? new Map((await db.select({ id: users.id, name: users.name, email: users.email }).from(users).where(inArray(users.id, teacherIds))).map(u => [u.id, u.name || u.email || 'Teacher']))
+    : new Map<string, string>()
+  const missingMapImagesOf = (row: any) => {
+    let n = 0
+    for (const s of row.sections ?? []) {
+      for (const item of s.items ?? []) {
+        for (const g of item.part?.groups ?? []) {
+          if (g.type !== 'PLAN_MAP_LABELLING') continue
+          const c = (g.content ?? {}) as Record<string, unknown>
+          const hasImg = (typeof c.image === 'string' && c.image.trim().length > 0)
+            || (typeof c.imageUrl === 'string' && c.imageUrl.trim().length > 0)
+            || /<img[^>]+src=["'][^"']+["']/i.test(String(g.context ?? ''))
+          if (!hasImg) n++
+        }
+      }
+    }
+    return n
+  }
   return {
-    ...paged(rows.map(row => ({ ...testSummary(row), ...(opts.publishedOnly ? {} : { attempts: counts.get(row.id) ?? 0 }) })), total?.n ?? 0, page, limit),
+    ...paged(rows.map(row => ({
+      ...testSummary(row),
+      ...(opts.publishedOnly
+        ? {}
+        : {
+            attempts: counts.get(row.id) ?? 0,
+            teacherName: row.teacherId ? (teacherMap.get(row.teacherId) ?? 'Teacher') : null,
+            missingMapImages: missingMapImagesOf(row)
+          })
+    })), total?.n ?? 0, page, limit),
     fullTests: full?.n ?? 0,
     ...(opts.publishedOnly ? { categories: CATEGORIES.filter(c => categories.some(r => r.c === c)) } : {})
   }
@@ -584,8 +636,15 @@ export async function listTests(query: Body, opts: { publishedOnly?: boolean } =
 export async function getTest(id: string) {
   const db = useDb()
   const test = await loadTest({ id })
-  const [row] = await db.select({ n: count() }).from(attempts).where(eq(attempts.testId, id))
-  return { ...testView(test, true), attempts: row?.n ?? 0, readiness: readiness(test) }
+  const [[row], audience, teacherRows] = await Promise.all([
+    db.select({ n: count() }).from(attempts).where(eq(attempts.testId, id)),
+    testAudienceOf(id),
+    test.teacherId
+      ? db.select({ name: users.name, email: users.email }).from(users).where(eq(users.id, test.teacherId)).limit(1)
+      : Promise.resolve([])
+  ])
+  const teacherName = test.teacherId ? (teacherRows[0]?.name || teacherRows[0]?.email || 'Teacher') : null
+  return { ...testView(test, true), attempts: row?.n ?? 0, readiness: readiness(test), audience, teacherName }
 }
 
 const MODES = ['PRACTICE', 'MOCK']
@@ -594,20 +653,26 @@ const CATEGORIES = ['AUTHENTIC', 'CAMBRIDGE', 'OFFICIAL', 'BOOK', 'PRE_TEST', 'C
 /** MULTILEVEL, or an IELTS module (ACADEMIC, GENERAL_TRAINING). */
 const moduleFrom = (value: unknown) => (isIeltsModule(value) ? value : 'MULTILEVEL')
 
-export async function createTest(body: Body, userId: string) {
+export async function createTest(body: Body, userId: string, teacherId: string | null = null) {
   const title = text(body.title)
   if (!title) throw bad('The test needs a title')
   const db = useDb()
+  const visibility = teacherId ? 'PRIVATE' : (body.visibility === 'PRIVATE' ? 'PRIVATE' : 'PUBLIC')
+  const access = teacherId ? 'FREE' : (body.access === 'PREMIUM' ? 'PREMIUM' : 'FREE')
   const [test] = await db.insert(tests).values({
     module: moduleFrom(body.module),
     slug: await uniqueSlug(title), title, description: text(body.description),
-    mode: MODES.includes(body.mode) ? body.mode : 'PRACTICE', category: CATEGORIES.includes(body.category) ? body.category : null,
+    mode: MODES.includes(body.mode) ? body.mode : 'PRACTICE',
+    access,
+    visibility,
+    teacherId,
+    category: CATEGORIES.includes(body.category) ? body.category : null,
     source: text(body.source), createdById: userId
   }).returning({ id: tests.id })
   return getTest(test!.id)
 }
 
-export async function updateTest(id: string, body: Body) {
+export async function updateTest(id: string, body: Body, opts: { isAdmin?: boolean } = {}) {
   const test = await loadTest({ id })
   const db = useDb()
   const title = body.title !== undefined ? text(body.title) : test.title
@@ -623,11 +688,16 @@ export async function updateTest(id: string, body: Body) {
   if (examOfModule(module) !== examOfModule(test.module) && test.sections.some((s: any) => s.items?.length)) {
     throw bad('Empty the test first: its parts are written for the other exam')
   }
+  // Only admins may change access (FREE/PREMIUM) or visibility (PUBLIC/PRIVATE).
+  const isAdmin = opts.isAdmin ?? false
+  const access = isAdmin && (body.access === 'PREMIUM' || body.access === 'FREE') ? body.access : test.access
+  const visibility = isAdmin && (body.visibility === 'PUBLIC' || body.visibility === 'PRIVATE') ? body.visibility : test.visibility
   await db.update(tests).set({
     title, slug, module,
     description: body.description !== undefined ? text(body.description) : test.description,
     mode: MODES.includes(body.mode) ? body.mode : test.mode,
-    access: body.access === 'PREMIUM' || body.access === 'FREE' ? body.access : test.access,
+    access,
+    visibility,
     category: body.category === null ? null : CATEGORIES.includes(body.category) ? body.category : test.category,
     source: body.source !== undefined ? text(body.source) : test.source
   }).where(eq(tests.id, id))
@@ -663,13 +733,17 @@ export async function deleteTest(id: string) {
 }
 
 /** A copy to change freely: the same library items, in new sections, as a draft. */
-export async function duplicateTest(id: string, userId: string) {
+export async function duplicateTest(id: string, userId: string, teacherId: string | null = null) {
   const source = await loadTest({ id })
   const title = `${source.title} (copy)`.slice(0, 300)
   const db = useDb()
+  const ownerId = teacherId ?? source.teacherId ?? null
+  const visibility = teacherId ? 'PRIVATE' : (source.visibility ?? 'PUBLIC')
+  const access = teacherId ? 'FREE' : source.access
   const copyId = await db.transaction(async (tx) => {
     const [test] = await tx.insert(tests).values({
-      slug: await uniqueSlug(title), title, description: source.description, mode: source.mode, access: source.access,
+      slug: await uniqueSlug(title), title, description: source.description, mode: source.mode, access,
+      visibility, teacherId: ownerId,
       category: source.category, module: source.module, source: source.source, createdById: userId
     }).returning({ id: tests.id })
     for (const section of source.sections) {
@@ -730,7 +804,7 @@ export async function removeSection(testId: string, skillName: string) {
 }
 
 /** Places a library item in a section, creating the section when it is the first. */
-export async function addItem(testId: string, skillName: string, body: Body) {
+export async function addItem(testId: string, skillName: string, body: Body, opts: { teacherId?: string | null } = {}) {
   const skill = checkSkill(skillName)
   const given = [body.partId, body.writingTaskId, body.speakingPartId].filter(Boolean)
   if (given.length !== 1) throw bad('Choose one part, writing task or speaking part')
@@ -739,16 +813,21 @@ export async function addItem(testId: string, skillName: string, body: Body) {
   let itemExam: string = exam
   if (body.partId) {
     const part = await partRow(body.partId)
+    if (opts.teacherId && part.teacherId !== opts.teacherId) throw createError({ statusCode: 403, message: 'You can only attach your own parts' })
     if (part.skill !== skill) throw bad(`This is not a ${skill.toLowerCase()} part`)
     itemExam = part.exam
   }
   if (body.writingTaskId) {
     if (skill !== 'WRITING') throw bad('A writing task goes in the Writing section')
-    itemExam = (await writingTaskRow(body.writingTaskId)).exam
+    const task = await writingTaskRow(body.writingTaskId)
+    if (opts.teacherId && task.teacherId !== opts.teacherId) throw createError({ statusCode: 403, message: 'You can only attach your own writing tasks' })
+    itemExam = task.exam
   }
   if (body.speakingPartId) {
     if (skill !== 'SPEAKING') throw bad('A speaking part goes in the Speaking section')
-    itemExam = (await getSpeakingPart(body.speakingPartId)).exam
+    const sp = await getSpeakingPart(body.speakingPartId)
+    if (opts.teacherId && sp.teacherId !== opts.teacherId) throw createError({ statusCode: 403, message: 'You can only attach your own speaking parts' })
+    itemExam = sp.exam
   }
   if (itemExam !== exam) throw bad(`This is written for ${itemExam === 'IELTS' ? 'IELTS' : 'Multilevel'}; the test is ${exam === 'IELTS' ? 'IELTS' : 'Multilevel'}`)
   const sectionId = await upsertSection(testId, skill)

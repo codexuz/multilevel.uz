@@ -15,6 +15,7 @@ const navItems = computed<NavigationMenuItem[]>(() => [
     label: t('panel.tests'),
     icon: 'i-lucide-clipboard-list',
     children: [
+      { label: t('panel.myTests'), to: '/builder' },
       { label: t('panel.testLibrary'), to: '/tests' },
       { label: t('panel.mockSessions'), to: '/mocks' },
       { label: t('panel.marking'), to: '/marking' }

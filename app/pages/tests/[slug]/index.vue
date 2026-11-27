@@ -13,8 +13,9 @@ const { data: test, error } = await useFetch<any>(`/api/tests/${slug}`)
 if (error.value || !test.value) throw createError({ statusCode: 404, statusMessage: 'Test not found', fatal: true })
 
 const t = test.value
-/** A premium test this user has not opened: no Premium, not unlocked with credits. */
-const locked = computed(() => !canOpen(t))
+const isPrivate = t.visibility === 'PRIVATE'
+/** A premium test this user has not opened: no Premium, not unlocked with credits. Private teacher tests are always open once authorized. */
+const locked = computed(() => !isPrivate && !canOpen(t))
 const cost = computed(() => me.value?.unlockCost ?? 1)
 const unlocking = ref(false)
 async function unlock() {
@@ -52,6 +53,7 @@ const sitTo = (path: string) => (loggedIn.value ? path : `/login?next=${encodeUR
 useSeoMeta({
   title: t.title,
   description: () => description.value,
+  robots: isPrivate ? 'noindex, nofollow' : undefined,
   ogTitle: t.title,
   ogDescription: () => description.value,
   ogUrl: url,
@@ -59,43 +61,45 @@ useSeoMeta({
   twitterTitle: t.title,
   twitterDescription: () => description.value
 })
-useHead({
-  link: [{ rel: 'canonical', href: url }],
-  script: [{
-    type: 'application/ld+json',
-    innerHTML: JSON.stringify([
-      {
-        '@context': 'https://schema.org',
-        '@type': 'Quiz',
-        'name': t.title,
-        'description': description.value,
-        'url': url,
-        'inLanguage': 'en',
-        'educationalLevel': ielts ? 'IELTS band 4–9' : 'CEFR B1–C1',
-        'assesses': `English language proficiency (${examLabel(t.exam, t.module)})`,
-        'learningResourceType': 'Practice test',
-        'isAccessibleForFree': t.access !== 'PREMIUM',
-        'datePublished': t.publishedAt ?? undefined,
-        'dateModified': t.updatedAt ?? undefined,
-        'about': { '@type': 'Thing', 'name': ielts ? 'IELTS' : 'Multilevel English exam' },
-        'hasPart': skills.value.map((s: any) => ({
+if (!isPrivate) {
+  useHead({
+    link: [{ rel: 'canonical', href: url }],
+    script: [{
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify([
+        {
+          '@context': 'https://schema.org',
           '@type': 'Quiz',
-          'name': `${t.title} — ${SKILL_META[s.skill as keyof typeof SKILL_META].label}`,
-          'url': `${url}/${String(s.skill).toLowerCase()}`,
-          'timeRequired': minutes(s.durationSeconds) ? `PT${minutes(s.durationSeconds)}M` : undefined
-        }))
-      },
-      {
-        '@context': 'https://schema.org',
-        '@type': 'BreadcrumbList',
-        'itemListElement': [
-          { '@type': 'ListItem', 'position': 1, 'name': 'Tests', 'item': `${siteUrl}/tests` },
-          { '@type': 'ListItem', 'position': 2, 'name': t.title, 'item': url }
-        ]
-      }
-    ])
-  }]
-})
+          'name': t.title,
+          'description': description.value,
+          'url': url,
+          'inLanguage': 'en',
+          'educationalLevel': ielts ? 'IELTS band 4–9' : 'CEFR B1–C1',
+          'assesses': `English language proficiency (${examLabel(t.exam, t.module)})`,
+          'learningResourceType': 'Practice test',
+          'isAccessibleForFree': t.access !== 'PREMIUM',
+          'datePublished': t.publishedAt ?? undefined,
+          'dateModified': t.updatedAt ?? undefined,
+          'about': { '@type': 'Thing', 'name': ielts ? 'IELTS' : 'Multilevel English exam' },
+          'hasPart': skills.value.map((s: any) => ({
+            '@type': 'Quiz',
+            'name': `${t.title} — ${SKILL_META[s.skill as keyof typeof SKILL_META].label}`,
+            'url': `${url}/${String(s.skill).toLowerCase()}`,
+            'timeRequired': minutes(s.durationSeconds) ? `PT${minutes(s.durationSeconds)}M` : undefined
+          }))
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          'itemListElement': [
+            { '@type': 'ListItem', 'position': 1, 'name': 'Tests', 'item': `${siteUrl}/tests` },
+            { '@type': 'ListItem', 'position': 2, 'name': t.title, 'item': url }
+          ]
+        }
+      ])
+    }]
+  })
+}
 </script>
 
 <template>

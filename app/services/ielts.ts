@@ -49,7 +49,9 @@ export const libraryAPI = {
   addItem: (testId: string, skill: Skill, data: { partId?: string, writingTaskId?: string, speakingPartId?: string }) =>
     send<Test>(`/admin/tests/${testId}/sections/${skill}/items`, 'POST', data),
   removeItem: (testId: string, itemId: string) => send<Test>(`/admin/tests/${testId}/items/${itemId}`, 'DELETE'),
-  reorderItems: (testId: string, skill: Skill, ids: string[]) => send<Test>(`/admin/tests/${testId}/sections/${skill}/order`, 'PUT', { ids })
+  reorderItems: (testId: string, skill: Skill, ids: string[]) => send<Test>(`/admin/tests/${testId}/sections/${skill}/order`, 'PUT', { ids }),
+  setAudience: (testId: string, data: { groupIds: string[], studentIds: string[] }) =>
+    send<{ groupIds: string[], studentIds: string[] }>(`/admin/tests/${testId}/audience`, 'POST', data)
 }
 
 export type { QuestionGroup }

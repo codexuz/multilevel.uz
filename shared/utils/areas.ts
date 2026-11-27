@@ -21,8 +21,8 @@ const under = (path: string, base: string) => path === base || path.startsWith(`
 
 /** Which part a page belongs to, or 'shared' for pages every part may open. */
 export function areaOfPath(path: string): Area | 'staff' | 'shared' {
-  if (under(path, '/admin') || under(path, '/builder')) return 'admin'
-  if (under(path, '/marking')) return 'staff'
+  if (under(path, '/admin')) return 'admin'
+  if (under(path, '/marking') || under(path, '/builder')) return 'staff'
   if (under(path, '/teacher') || under(path, '/classes') || under(path, '/mocks') || under(path, '/courses/manage')) return 'teacher'
   // The list of results is the student's; a single result (and its review) is shared, as teachers and admins open their students'.
   if (path === '/dashboard' || path === '/results' || under(path, '/words') || path === '/online' || path === '/earn'

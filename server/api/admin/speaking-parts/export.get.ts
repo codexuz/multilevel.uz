@@ -7,11 +7,13 @@ import { speakingParts } from '../../../database/schema'
  * updates the same parts.
  */
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+  const user = await requireTeacher(event)
+  const teacherId = ownerIdFor(user)
   const query = getQuery(event)
   const ids = String(query.ids ?? '').split(',').filter(id => /^[0-9a-f-]{36}$/i.test(id))
   const rows = await useDb().query.speakingParts.findMany({
     where: and(
+      teacherId ? eq(speakingParts.teacherId, teacherId) : undefined,
       query.exam === 'IELTS' || query.exam === 'MULTILEVEL' ? eq(speakingParts.exam, query.exam) : undefined,
       query.partNumber ? eq(speakingParts.partNumber, Number(query.partNumber)) : undefined,
       ids.length ? inArray(speakingParts.id, ids) : undefined

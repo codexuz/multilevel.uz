@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
   const skill = String(body.skill ?? '').toUpperCase()
   if (!SKILL_WORD[skill]) throw createError({ statusCode: 400, message: 'Pick a skill' })
   const test = await loadTest({ id: String(body.testId ?? '') }, { publishedOnly: true }).catch(() => null)
-  if (!test) throw createError({ statusCode: 400, message: 'Pick a published test' })
+  if (!test || !(await canViewTest(user, test))) throw createError({ statusCode: 400, message: 'Pick a published test' })
   const groupExam = group.exam === 'IELTS' ? 'IELTS' : 'MULTILEVEL'
   if (examOfTest(test) !== groupExam) {
     throw createError({ statusCode: 400, message: `This group is for ${groupExam === 'IELTS' ? 'IELTS' : 'CEFR'} tests only` })

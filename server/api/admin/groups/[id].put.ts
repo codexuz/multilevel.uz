@@ -1,4 +1,6 @@
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
-  return updateGroup(getRouterParam(event, 'id')!, await readBody(event))
+  const user = await requireTeacher(event)
+  const id = getRouterParam(event, 'id')!
+  await assertCanManageGroup(user, id)
+  return updateGroup(id, await readBody(event))
 })

@@ -1,4 +1,4 @@
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
-  return listWritingTasks(getQuery(event))
+  const user = await requireTeacher(event)
+  return listWritingTasks(getQuery(event), { teacherId: ownerIdFor(user) })
 })

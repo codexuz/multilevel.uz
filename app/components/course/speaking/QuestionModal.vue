@@ -13,6 +13,8 @@ export interface SpeakingQuestionItem {
 
 const props = defineProps<{
   courseId: string
+  exerciseId?: string | null
+  lessonId?: string | null
   question?: SpeakingQuestionItem | null
 }>()
 
@@ -61,7 +63,9 @@ async function save() {
       prompt: form.prompt.trim(),
       partLabel: form.partLabel.trim() || null,
       suggestedSeconds: form.suggestedSeconds || null,
-      tips: form.tips.trim() || null
+      tips: form.tips.trim() || null,
+      ...(!props.question && props.exerciseId ? { exerciseId: props.exerciseId } : {}),
+      ...(!props.question && props.lessonId ? { lessonId: props.lessonId } : {})
     }
     if (props.question) {
       await $fetch(`/api/courses/${props.courseId}/speaking/questions/${props.question.id}`, { method: 'PATCH', body })

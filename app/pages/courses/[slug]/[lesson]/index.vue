@@ -28,6 +28,7 @@ interface LessonExerciseSummary {
   lastScore: number | null
   lastSubmittedAt: string | null
   reviewStatus: string | null
+  speakingQuestions?: any[]
 }
 
 interface LessonView {
@@ -101,6 +102,9 @@ const quizStatusBadge = (ex: LessonExerciseSummary) => {
   if (ex.attemptsUsed > 0) return { label: t('quiz.notPassedBadge'), icon: 'i-lucide-target', color: 'warning' as const }
   return { label: t('quiz.notStarted'), icon: 'i-lucide-circle-dashed', color: 'neutral' as const }
 }
+
+const speakingExercises = computed(() => (l.value?.exercises ?? []).filter(e => e.exerciseType === 'SPEAKING'))
+const quizExercises = computed(() => (l.value?.exercises ?? []).filter(e => e.exerciseType !== 'SPEAKING'))
 
 const busy = ref(false)
 async function toggleDone() {
@@ -202,18 +206,36 @@ async function toggleDone() {
         v-html="l.body"
       />
 
+      <!-- Embedded WordPress-style Speaking Widgets appended directly to the lesson -->
+      <template v-if="speakingExercises.length">
+        <USeparator />
+
+        <div class="flex flex-col gap-5">
+          <CourseSpeakingWidget
+            v-for="ex in speakingExercises"
+            :key="ex.id"
+            :course-id="l.course.id"
+            :course-slug="l.course.slug"
+            :lesson-id="l.id"
+            :exercise="ex"
+            :teaches="l.course.teaches"
+            @changed="refresh"
+          />
+        </div>
+      </template>
+
       <!-- Quizzes Overview Section (name, instructions, details -> links to dedicated Quiz & Result pages) -->
-      <template v-if="l.exercises.length">
+      <template v-if="quizExercises.length">
         <USeparator />
 
         <UPageHeader
-          :title="`${t('builder.quizzes')} (${l.exercises.length})`"
+          :title="`${t('builder.quizzes')} (${quizExercises.length})`"
           :ui="{ root: 'border-0 py-0', title: 'text-lg sm:text-xl' }"
         />
 
         <UPageList class="gap-4">
           <UCard
-            v-for="ex in l.exercises"
+            v-for="ex in quizExercises"
             :key="ex.id"
             variant="outline"
             :ui="{

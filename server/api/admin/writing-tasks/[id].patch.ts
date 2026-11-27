@@ -1,4 +1,6 @@
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
-  return updateWritingTask(getRouterParam(event, 'id')!, await readBody(event))
+  const user = await requireTeacher(event)
+  const id = getRouterParam(event, 'id')!
+  await assertCanManageWritingTask(user, id)
+  return updateWritingTask(id, await readBody(event))
 })

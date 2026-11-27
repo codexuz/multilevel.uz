@@ -391,3 +391,97 @@ export async function assessSpeaking(input: unknown, userId: string, locale: str
     input: heard
   }
 }
+
+export interface CourseSpeakingAiReview {
+  overall: number
+  fluency: number
+  vocabulary: number
+  grammar: number
+  pronunciation: number
+  transcript: string
+  summary: string
+  strengths: string[]
+  improvements: string[]
+  assessedAt: string
+}
+
+const ClipAssessmentSchema = z.object({
+  overall: z.number().int().min(0).max(9),
+  fluency: z.number().int().min(0).max(9),
+  vocabulary: z.number().int().min(0).max(9),
+  grammar: z.number().int().min(0).max(9),
+  pronunciation: z.number().int().min(0).max(9),
+  summary: z.string(),
+  strengths: z.array(z.string()).max(3),
+  improvements: z.array(z.string()).max(3)
+})
+
+/** Transcribes and assesses a single course speaking recording on a 0–9 IELTS band scale. */
+export async function assessSingleSpeakingClip(input: {
+  audioRef: string
+  questionTitle: string
+  questionPrompt: string
+  articleContext?: string | null
+  durationSeconds?: number | null
+  userId?: string
+}): Promise<CourseSpeakingAiReview> {
+  if (!speakingAiEnabled()) {
+    throw createError({ statusCode: 503, message: 'AI speaking assessment is not configured on this server' })
+  }
+  const { transcript, metrics } = await hear({
+    position: 0,
+    question: input.questionPrompt,
+    audioRef: input.audioRef,
+    durationSeconds: input.durationSeconds ?? null,
+    allowedSeconds: 180
+  })
+
+  if (!transcript || transcript.split(/\s+/).filter(Boolean).length < 2) {
+    return {
+      overall: 0,
+      fluency: 0,
+      vocabulary: 0,
+      grammar: 0,
+      pronunciation: 0,
+      transcript: transcript || '',
+      summary: 'No clear speech was detected in this recording. Please record your answer again in a quiet environment.',
+      strengths: [],
+      improvements: ['Speak clearly close to the microphone and answer the question directly.'],
+      assessedAt: new Date().toISOString()
+    }
+  }
+
+  const contextLines = [
+    `Question title: ${input.questionTitle}`,
+    `Question prompt: ${input.questionPrompt}`,
+    input.articleContext ? `Related lesson article excerpt:\n${stripHtml(input.articleContext).slice(0, 1500)}` : null,
+    `Speech metrics: ${metrics.words} words, ${metrics.wpm ?? 0} WPM, ${metrics.pauses} pauses, ${metrics.fillers} fillers, clarity ${Math.round((metrics.avgConfidence ?? 1) * 100)}%`,
+    `Student transcript:\n${transcript}`
+  ].filter(Boolean).join('\n\n')
+
+  const response = await openaiClient().responses.parse({
+    model: AI_MODEL(),
+    ...(aiEffort() ? { reasoning: { effort: aiEffort()! } } : {}),
+    instructions: 'You are an expert IELTS Speaking examiner assessing a student voice response to a lesson speaking question. Score overall, fluency, vocabulary, grammar, and pronunciation as integers from 0 to 9 (IELTS band scale). Be fair, constructive, and concise. Give a 2-sentence summary, up to 3 concrete strengths, and up to 3 specific improvements.',
+    input: contextLines,
+    text: { format: zodTextFormat(ClipAssessmentSchema, 'course_speaking_assessment') },
+    user: input.userId
+  })
+
+  const parsed = response.output_parsed
+  if (!parsed) throw createError({ statusCode: 502, message: 'AI assessment returned an empty result' })
+
+  const clamp = (n: number) => Math.max(0, Math.min(9, Math.round(n)))
+  return {
+    overall: clamp(parsed.overall),
+    fluency: clamp(parsed.fluency),
+    vocabulary: clamp(parsed.vocabulary),
+    grammar: clamp(parsed.grammar),
+    pronunciation: clamp(parsed.pronunciation),
+    transcript,
+    summary: parsed.summary,
+    strengths: parsed.strengths.slice(0, 3),
+    improvements: parsed.improvements.slice(0, 3),
+    assessedAt: new Date().toISOString()
+  }
+}

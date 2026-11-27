@@ -1,17 +1,19 @@
 // A published test's public page: what it is and what is in each section (no questions, no keys).
 export default defineEventHandler(async (event) => {
   const test = await loadTest({ slug: getRouterParam(event, 'slug')! }, { publishedOnly: true })
-  const summary = testSummary(test)
   const user = await optionalUser(event)
+  await assertCanViewTest(user, test)
+  const summary = testSummary(test)
   return {
     /** The packs it is sold in. */
-    packs: await packsOfTest(test.id, user?.id),
+    packs: test.visibility === 'PRIVATE' ? [] : await packsOfTest(test.id, user?.id),
     id: test.id,
     slug: test.slug,
     title: test.title,
     description: test.description,
     mode: test.mode,
     access: test.access,
+    visibility: test.visibility,
     category: test.category,
     module: test.module,
     exam: examOfTest(test),

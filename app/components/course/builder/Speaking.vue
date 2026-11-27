@@ -9,14 +9,22 @@ interface StudioOverview {
   myRecordings: number
 }
 
-const props = defineProps<{ courseId: string, courseSlug: string }>()
+const props = defineProps<{
+  courseId: string
+  courseSlug: string
+  exerciseId?: string | null
+  lessonId?: string | null
+}>()
 const emit = defineEmits<{ changed: [] }>()
 
 const { t } = useI18n()
 const toast = useToast()
 const { confirm } = useDialogs()
 
-const { data, status, refresh } = await useFetch<StudioOverview>(() => `/api/courses/${props.courseId}/speaking`)
+const { data, status, refresh } = await useFetch<StudioOverview>(
+  () => `/api/courses/${props.courseId}/speaking`,
+  { query: computed(() => (props.exerciseId ? { exerciseId: props.exerciseId } : {})) }
+)
 
 const modalOpen = ref(false)
 const editing = ref<SpeakingQuestionItem | null>(null)
@@ -61,13 +69,15 @@ const fmtTime = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).pad
   <UPageList class="gap-4">
     <UPageHeader
       :title="t('speakingStudio.title')"
-      :description="t('speakingStudio.subtitle')"
-      :ui="{ root: 'border-0 py-0', title: 'text-lg sm:text-xl', description: 'text-sm mt-1' }"
+      :description="t('speakingStudio.widgetBuilderHint')"
+      :ui="{ root: 'border-0 py-0', title: 'text-base sm:text-lg', description: 'text-sm mt-1' }"
     >
       <template #links>
         <UButton
-          :to="`/courses/${courseSlug}/speaking`"
-          :label="t('speakingStudio.openStudio')"
+          v-if="lessonId"
+          :to="`/courses/${courseSlug}/${lessonId}`"
+          target="_blank"
+          :label="t('builder.preview')"
           icon="i-lucide-external-link"
           color="neutral"
           variant="outline"
@@ -171,6 +181,8 @@ const fmtTime = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).pad
     <CourseSpeakingQuestionModal
       v-model:open="modalOpen"
       :course-id="courseId"
+      :exercise-id="exerciseId"
+      :lesson-id="lessonId"
       :question="editing"
       @saved="onSaved"
     />

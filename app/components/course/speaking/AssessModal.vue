@@ -14,11 +14,16 @@ export interface SpeakingAssessmentSummary {
   avgVocabulary: number | null
   avgGrammar: number | null
   avgPronunciation: number | null
+  teacherCount?: number
+  teacherAvgOverall?: number | null
+  peerCount?: number
+  peerAvgOverall?: number | null
 }
 
 const props = defineProps<{
   recordingId: string | null
   speakerName?: string
+  isTeacher?: boolean
   initial?: SpeakingAssessmentValues | null
 }>()
 
@@ -28,8 +33,10 @@ const emit = defineEmits<{ saved: [{ recordingId: string, assessmentSummary: Spe
 const { t } = useI18n()
 const toast = useToast()
 
+const BANDS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] as const
+
 const form = reactive<SpeakingAssessmentValues>({
-  overall: 4,
+  overall: 6,
   fluency: null,
   vocabulary: null,
   grammar: null,
@@ -48,7 +55,7 @@ watch([open, () => props.initial], ([isOpen, init]) => {
     })
   } else {
     Object.assign(form, {
-      overall: 4,
+      overall: 6,
       fluency: null,
       vocabulary: null,
       grammar: null,
@@ -69,9 +76,12 @@ async function submit() {
   if (!props.recordingId) return
   saving.value = true
   try {
+    const body = props.isTeacher
+      ? form
+      : { overall: form.overall }
     const res = await $fetch<{ assessmentSummary: SpeakingAssessmentSummary, myAssessment: SpeakingAssessmentValues }>(
       `/api/speaking-recordings/${props.recordingId}/assess`,
-      { method: 'POST', body: form }
+      { method: 'POST', body }
     )
     toast.add({ title: t('speakingStudio.assessSaved'), color: 'success' })
     open.value = false
@@ -91,48 +101,60 @@ function toggleCriterion(key: 'fluency' | 'vocabulary' | 'grammar' | 'pronunciat
 <template>
   <UModal
     v-model:open="open"
-    :title="speakerName ? `${t('speakingStudio.assessModalTitle')} · ${speakerName}` : t('speakingStudio.assessModalTitle')"
-    :ui="{ content: 'sm:max-w-md' }"
+    :title="speakerName ? `${isTeacher ? t('speakingStudio.assessModalTitle') : t('speakingStudio.peerRateTitle')} · ${speakerName}` : (isTeacher ? t('speakingStudio.assessModalTitle') : t('speakingStudio.peerRateTitle'))"
+    :ui="{ content: 'sm:max-w-lg' }"
   >
     <template #body>
       <UPageList class="gap-4">
+        <UAlert
+          v-if="!isTeacher"
+          icon="i-lucide-info"
+          color="neutral"
+          variant="soft"
+          :description="t('speakingStudio.peerRateHint')"
+        />
+
         <UFormField
-          :label="t('speakingStudio.critOverall')"
+          :label="`${t('speakingStudio.critOverall')} (0–9)`"
           required
         >
-          <UFieldGroup>
+          <div class="grid grid-cols-5 sm:grid-cols-10 gap-1.5">
             <UButton
-              v-for="n in 5"
+              v-for="n in BANDS"
               :key="n"
               :label="String(n)"
-              icon="i-lucide-star"
-              :color="form.overall >= n ? 'warning' : 'neutral'"
-              :variant="form.overall >= n ? 'soft' : 'outline'"
+              :color="form.overall === n ? 'primary' : 'neutral'"
+              :variant="form.overall === n ? 'solid' : 'outline'"
               size="sm"
+              class="justify-center tabular-nums"
+              :data-testid="`rate-overall-${n}`"
               @click="form.overall = n"
             />
-          </UFieldGroup>
+          </div>
         </UFormField>
 
-        <USeparator :label="t('speakingStudio.optionalCriteria')" />
+        <template v-if="isTeacher">
+          <USeparator :label="`${t('speakingStudio.optionalCriteria')} (0–9)`" />
 
-        <UFormField
-          v-for="c in criteria"
-          :key="c.key"
-          :label="c.label"
-        >
-          <UFieldGroup>
-            <UButton
-              v-for="n in 5"
-              :key="n"
-              :label="String(n)"
-              :color="(form[c.key] ?? 0) >= n ? 'primary' : 'neutral'"
-              :variant="(form[c.key] ?? 0) >= n ? 'soft' : 'outline'"
-              size="xs"
-              @click="toggleCriterion(c.key, n)"
-            />
-          </UFieldGroup>
-        </UFormField>
+          <UFormField
+            v-for="c in criteria"
+            :key="c.key"
+            :label="c.label"
+          >
+            <div class="grid grid-cols-5 sm:grid-cols-10 gap-1">
+              <UButton
+                v-for="n in BANDS"
+                :key="n"
+                :label="String(n)"
+                :color="form[c.key] === n ? 'primary' : 'neutral'"
+                :variant="form[c.key] === n ? 'solid' : 'outline'"
+                size="xs"
+                class="justify-center tabular-nums"
+                @click="toggleCriterion(c.key, n)"
+              />
+            </div>
+          </UFormField>
+        </template>
 
         <UPageList class="flex-row items-center justify-end gap-2">
           <UButton
@@ -145,6 +167,7 @@ function toggleCriterion(key: 'fluency' | 'vocabulary' | 'grammar' | 'pronunciat
             :label="t('common.save')"
             icon="i-lucide-check"
             :loading="saving"
+            data-testid="save-rating"
             @click="submit"
           />
         </UPageList>

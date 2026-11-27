@@ -43,7 +43,7 @@ async function publishedParts(skill: Skill, opts: { exam?: Exam, prefix?: string
     join section_items si on si.part_id = p.id
     join sections s on s.id = si.section_id
     join tests t on t.id = s.test_id
-    where t.status = 'PUBLISHED' and p.skill = ${skill}
+    where t.status = 'PUBLISHED' and t.visibility = 'PUBLIC' and p.skill = ${skill}
       ${opts.exam ? sql`and p.exam = ${opts.exam}` : sql``}
       ${opts.prefix ? sql`and p.id::text like ${`${opts.prefix}%`}` : sql``}
     order by p.id, t.published_at asc nulls last`) as unknown as {
@@ -149,7 +149,7 @@ async function publishedTasks(opts: { exam?: Exam, task?: number, prefix?: strin
     join section_items si on si.writing_task_id = w.id
     join sections s on s.id = si.section_id
     join tests t on t.id = s.test_id
-    where t.status = 'PUBLISHED'
+    where t.status = 'PUBLISHED' and t.visibility = 'PUBLIC'
       ${opts.exam ? sql`and w.exam = ${opts.exam}` : sql``}
       ${opts.task ? sql`and w.task_number = ${opts.task}` : sql``}
       ${opts.prefix ? sql`and w.id::text like ${`${opts.prefix}%`}` : sql``}

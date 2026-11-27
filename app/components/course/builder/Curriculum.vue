@@ -553,7 +553,7 @@ const topicNumber = (g: Group) => props.topics.findIndex(m => m.id === g.id) + 1
                   />
                 </span>
                 <UIcon
-                  name="i-lucide-list-checks"
+                  :name="x.exerciseType === 'SPEAKING' ? 'i-lucide-mic' : 'i-lucide-list-checks'"
                   class="size-4 text-primary shrink-0"
                 />
                 <button

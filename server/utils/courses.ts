@@ -9,6 +9,7 @@ import {
   courseLessons,
   courseModules,
   courseSpeakingQuestions,
+  courseSpeakingRecordings,
   courses,
   exerciseAttempts,
   exerciseQuestions,
@@ -299,7 +300,7 @@ export async function lessonValues(body: Record<string, unknown>, partial: boole
       const skill = String(task.skill ?? '').toUpperCase()
       if (!SKILLS.includes(skill)) throw createError({ statusCode: 400, message: 'Pick the task\'s skill' })
       const test = await loadTest({ id: String(task.testId) }, { publishedOnly: true }).catch(() => null)
-      if (!test) throw createError({ statusCode: 400, message: 'Pick a published test' })
+      if (!test || test.visibility !== 'PUBLIC') throw createError({ statusCode: 400, message: 'Pick a published test' })
       const section = test.sections.find((s: any) => s.skill === skill && s.items?.length)
       if (!section) throw createError({ statusCode: 400, message: 'That test has no such section' })
       const part = task.partNumber ? Math.round(Number(task.partNumber)) : null
@@ -585,7 +586,8 @@ export async function lessonView(viewer: Viewer, lesson: Lesson) {
   const live = liveRow[0]
 
   const exIds = exRows.map(e => e.id)
-  const [qStats, myExAttempts] = await Promise.all([
+  const speakingExIds = exRows.filter(e => e.exerciseType === 'SPEAKING').map(e => e.id)
+  const [qStats, myExAttempts, speakingQs] = await Promise.all([
     exIds.length
       ? db.select({
           exerciseId: exerciseQuestions.exerciseId,
@@ -593,10 +595,57 @@ export async function lessonView(viewer: Viewer, lesson: Lesson) {
           points: sql<number>`coalesce(sum(${exerciseQuestions.points}), 0)::int`
         }).from(exerciseQuestions).where(inArray(exerciseQuestions.exerciseId, exIds)).groupBy(exerciseQuestions.exerciseId)
       : [],
-    viewer && exIds.length ? db.select().from(exerciseAttempts).where(and(eq(exerciseAttempts.userId, viewer.id), inArray(exerciseAttempts.exerciseId, exIds))).orderBy(desc(exerciseAttempts.submittedAt)) : []
+    viewer && exIds.length ? db.select().from(exerciseAttempts).where(and(eq(exerciseAttempts.userId, viewer.id), inArray(exerciseAttempts.exerciseId, exIds))).orderBy(desc(exerciseAttempts.submittedAt)) : [],
+    speakingExIds.length
+      ? db.select().from(courseSpeakingQuestions).where(inArray(courseSpeakingQuestions.exerciseId, speakingExIds)).orderBy(asc(courseSpeakingQuestions.position), asc(courseSpeakingQuestions.createdAt))
+      : []
   ])
 
+  const speakingQIds = speakingQs.map(q => q.id)
+  const [spRecCounts, mySpRecCounts] = speakingQIds.length
+    ? await Promise.all([
+        db.select({ questionId: courseSpeakingRecordings.questionId, n: count() }).from(courseSpeakingRecordings).where(inArray(courseSpeakingRecordings.questionId, speakingQIds)).groupBy(courseSpeakingRecordings.questionId),
+        viewer
+          ? db.select({ questionId: courseSpeakingRecordings.questionId, n: count() }).from(courseSpeakingRecordings).where(and(inArray(courseSpeakingRecordings.questionId, speakingQIds), eq(courseSpeakingRecordings.userId, viewer.id))).groupBy(courseSpeakingRecordings.questionId)
+          : Promise.resolve([])
+      ])
+    : [[], []]
+  const spRecMap = new Map(spRecCounts.map(r => [r.questionId, Number(r.n)]))
+  const mySpRecMap = new Map(mySpRecCounts.map(r => [r.questionId, Number(r.n)]))
+
   const exercises = exRows.map((e) => {
+    const isSpeaking = e.exerciseType === 'SPEAKING'
+    if (isSpeaking) {
+      const qs = speakingQs.filter(q => q.exerciseId === e.id).map(q => ({
+        ...q,
+        recordingsCount: spRecMap.get(q.id) ?? 0,
+        myRecordingsCount: mySpRecMap.get(q.id) ?? 0
+      }))
+      const myRecs = qs.reduce((s, q) => s + q.myRecordingsCount, 0)
+      return {
+        id: e.id,
+        position: e.position,
+        title: e.title,
+        instructions: e.instructions,
+        exerciseType: e.exerciseType,
+        passingScore: e.passingScore,
+        timeLimitSeconds: e.timeLimitSeconds,
+        maxAttempts: e.maxAttempts,
+        shuffleQuestions: e.shuffleQuestions,
+        showFeedback: e.showFeedback,
+        requiredForCompletion: e.requiredForCompletion,
+        questionCount: qs.length,
+        totalPoints: qs.length,
+        attemptsUsed: myRecs,
+        bestScore: null,
+        passed: myRecs > 0,
+        lastAttemptId: null,
+        lastScore: null,
+        lastSubmittedAt: null,
+        reviewStatus: null,
+        speakingQuestions: qs
+      }
+    }
     const mine = myExAttempts.filter(a => a.exerciseId === e.id)
     const best = mine.reduce<number | null>((acc, a) => (acc == null ? a.score : Math.max(acc, a.score)), null)
     const passed = mine.some(a => a.passed)
@@ -698,8 +747,9 @@ export async function manageView(course: Course) {
   ])
 
   const exIds = exRows.map(e => e.id)
-  const [qCounts, learners, progress, exAttempts] = await Promise.all([
+  const [qCounts, spCounts, learners, progress, exAttempts] = await Promise.all([
     exIds.length ? db.select({ exerciseId: exerciseQuestions.exerciseId, n: count() }).from(exerciseQuestions).where(inArray(exerciseQuestions.exerciseId, exIds)).groupBy(exerciseQuestions.exerciseId) : [],
+    exIds.length ? db.select({ exerciseId: courseSpeakingQuestions.exerciseId, n: count() }).from(courseSpeakingQuestions).where(inArray(courseSpeakingQuestions.exerciseId, exIds)).groupBy(courseSpeakingQuestions.exerciseId) : [],
     learnerIds.length ? db.select({ id: users.id, name: users.name, telegramUsername: users.telegramUsername, avatarUrl: users.avatarUrl }).from(users).where(inArray(users.id, learnerIds)) : [],
     learnerIds.length && lessonIds.length
       ? db.select({ userId: lessonProgress.userId, n: count() }).from(lessonProgress)
@@ -731,7 +781,9 @@ export async function manageView(course: Course) {
       shuffleQuestions: e.shuffleQuestions,
       showFeedback: e.showFeedback,
       requiredForCompletion: e.requiredForCompletion,
-      questionCount: qCounts.find(q => q.exerciseId === e.id)?.n ?? 0
+      questionCount: e.exerciseType === 'SPEAKING'
+        ? (spCounts.find(q => q.exerciseId === e.id)?.n ?? 0)
+        : (qCounts.find(q => q.exerciseId === e.id)?.n ?? 0)
     }))
     return {
       id: l.id,

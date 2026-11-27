@@ -83,12 +83,15 @@ async function removeStudent(s: Student) {
   }
 }
 
-// ---- new assignment (fetches ONLY tests matching this group's exam type: IELTS or CEFR) ----
-const testQuery = computed(() => ({ limit: 100, exam: groupExam.value }))
-const { data: testList } = await useFetch<{ items: { id: string, title: string, sections: { skill: string, items: number, silentParts?: number[] }[] }[] }>('/api/tests', { query: testQuery, lazy: true })
+// ---- new assignment (fetches ONLY tests matching this group's exam type: IELTS or CEFR, plus teacher's own private tests) ----
+const testQuery = computed(() => ({ limit: 100, exam: groupExam.value, includeOwn: '1' }))
+const { data: testList } = await useFetch<{ items: { id: string, title: string, visibility?: string, sections: { skill: string, items: number, silentParts?: number[] }[] }[] }>('/api/tests', { query: testQuery, lazy: true })
 const form = ref<{ testId: string | undefined, skill: string, part: number | 0, dueAt: string, note: string } | null>(null)
 const saving = ref(false)
-const testItems = computed(() => (testList.value?.items ?? []).map(t => ({ label: t.title, value: t.id })))
+const testItems = computed(() => (testList.value?.items ?? []).map(item => ({
+  label: item.visibility === 'PRIVATE' ? `${item.title} (${t('builder.private')})` : item.title,
+  value: item.id
+})))
 const skillItems = computed(() => {
   const t = testList.value?.items.find(x => x.id === form.value?.testId)
   return SKILLS.filter(s => !t || t.sections.some(x => x.skill === s && x.items)).map(s => ({ label: skillLabel(s), value: s }))

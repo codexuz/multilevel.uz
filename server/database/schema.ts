@@ -94,11 +94,19 @@ export const tests = pgTable('tests', {
   source: text('source'),
   /** FREE: anyone can sit it. PREMIUM: its page is public, sitting it needs an active plan. */
   access: text('access').notNull().default('FREE'),
+  /** PUBLIC: platform catalogue & SEO. PRIVATE: isolated to teacherId, selected classes/students, and admins. */
+  visibility: text('visibility').notNull().default('PUBLIC'),
+  /** Owning teacher for private teacher-created tests (null = platform test). */
+  teacherId: uuid('teacher_id').references(() => users.id, { onDelete: 'cascade' }),
   createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
   publishedAt: timestamp('published_at', { withTimezone: true }),
   createdAt: created(),
   updatedAt: updated()
-}, t => [index('tests_status_idx').on(t.status)])
+}, t => [
+  index('tests_status_idx').on(t.status),
+  index('tests_teacher_idx').on(t.teacherId),
+  index('tests_visibility_status_idx').on(t.visibility, t.status)
+])
 
 export const sections = pgTable('sections', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -128,10 +136,12 @@ export const parts = pgTable('parts', {
   difficulty: text('difficulty'),
   timeLimitMinutes: integer('time_limit_minutes'),
   isActive: boolean('is_active').notNull().default(true),
+  /** Owning teacher for private teacher-created parts (null = platform library). */
+  teacherId: uuid('teacher_id').references(() => users.id, { onDelete: 'cascade' }),
   createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: created(),
   updatedAt: updated()
-})
+}, t => [index('parts_teacher_idx').on(t.teacherId)])
 
 export const questionGroups = pgTable('question_groups', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -175,10 +185,12 @@ export const writingTasks = pgTable('writing_tasks', {
   imageRef: text('image_ref'),
   minWords: integer('min_words'),
   suggestedMinutes: integer('suggested_minutes'),
+  /** Owning teacher for private teacher-created tasks (null = platform library). */
+  teacherId: uuid('teacher_id').references(() => users.id, { onDelete: 'cascade' }),
   createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: created(),
   updatedAt: updated()
-})
+}, t => [index('writing_tasks_teacher_idx').on(t.teacherId)])
 
 export const speakingParts = pgTable('speaking_parts', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -195,10 +207,12 @@ export const speakingParts = pgTable('speaking_parts', {
   sampleAnswer: text('sample_answer'),
   prepSeconds: integer('prep_seconds'),
   speakSeconds: integer('speak_seconds'),
+  /** Owning teacher for private teacher-created speaking parts (null = platform library). */
+  teacherId: uuid('teacher_id').references(() => users.id, { onDelete: 'cascade' }),
   createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: created(),
   updatedAt: updated()
-})
+}, t => [index('speaking_parts_teacher_idx').on(t.teacherId)])
 
 export const speakingQuestions = pgTable('speaking_questions', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -392,6 +406,20 @@ export const classMembers = pgTable('class_members', {
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow()
 }, t => [primaryKey({ columns: [t.groupId, t.userId] }), index('class_members_user_idx').on(t.userId)])
+
+/** Private teacher tests shared with specific class groups. */
+export const testGroups = pgTable('test_groups', {
+  testId: uuid('test_id').notNull().references(() => tests.id, { onDelete: 'cascade' }),
+  groupId: uuid('group_id').notNull().references(() => classGroups.id, { onDelete: 'cascade' }),
+  assignedAt: timestamp('assigned_at', { withTimezone: true }).defaultNow().notNull()
+}, t => [primaryKey({ columns: [t.testId, t.groupId] }), index('test_groups_group_idx').on(t.groupId)])
+
+/** Private teacher tests shared directly with individual students. */
+export const testStudents = pgTable('test_students', {
+  testId: uuid('test_id').notNull().references(() => tests.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  assignedAt: timestamp('assigned_at', { withTimezone: true }).defaultNow().notNull()
+}, t => [primaryKey({ columns: [t.testId, t.userId] }), index('test_students_user_idx').on(t.userId)])
 
 /** A section of a test (or one part of it) a group is asked to sit; done once a member hands it in after it was set. */
 export const assignments = pgTable('assignments', {
@@ -1090,11 +1118,15 @@ export const vocabProgress = pgTable('vocab_progress', {
   lastAt: timestamp('last_at', { withTimezone: true }).notNull().defaultNow()
 }, t => [primaryKey({ columns: [t.userId, t.cardId] }), index('vocab_progress_user_idx').on(t.userId, t.dueAt)])
 
-// ---------- course speaking studio: prompts, voice answers, peer assessments & comments ----------
-/** A speaking prompt added by a course teacher for enrolled students to record voice answers. */
+// ---------- course speaking studio: prompts (as lesson exercises or course-wide), voice answers, AI/teacher/peer 0-9 ratings, likes & comments ----------
+/** A speaking prompt added inside a lesson's SPEAKING exercise (or legacy course-wide) for enrolled students to record voice answers. */
 export const courseSpeakingQuestions = pgTable('course_speaking_questions', {
   id: uuid('id').primaryKey().defaultRandom(),
   courseId: uuid('course_id').notNull().references(() => courses.id, { onDelete: 'cascade' }),
+  /** Lesson exercise this speaking prompt belongs to (null for legacy course-wide prompts). */
+  exerciseId: uuid('exercise_id').references(() => lessonExercises.id, { onDelete: 'cascade' }),
+  /** Lesson this speaking prompt is attached to (mirrors exercise.lessonId for fast lesson loading). */
+  lessonId: uuid('lesson_id').references(() => courseLessons.id, { onDelete: 'cascade' }),
   position: integer('position').notNull().default(1),
   title: text('title').notNull(),
   prompt: text('prompt').notNull(),
@@ -1106,7 +1138,11 @@ export const courseSpeakingQuestions = pgTable('course_speaking_questions', {
   createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: created(),
   updatedAt: updated()
-}, t => [index('course_speaking_questions_course_idx').on(t.courseId, t.position)])
+}, t => [
+  index('course_speaking_questions_course_idx').on(t.courseId, t.position),
+  index('course_speaking_questions_exercise_idx').on(t.exerciseId, t.position),
+  index('course_speaking_questions_lesson_idx').on(t.lessonId, t.position)
+])
 
 /** A voice recording submitted by an enrolled student (or teacher) answering a speaking studio question. */
 export const courseSpeakingRecordings = pgTable('course_speaking_recordings', {
@@ -1117,6 +1153,8 @@ export const courseSpeakingRecordings = pgTable('course_speaking_recordings', {
   audioUrl: text('audio_url').notNull(),
   durationSeconds: integer('duration_seconds'),
   note: text('note'),
+  /** Optional AI speaking assessment (0-9 band scale, transcript, strengths & improvements). */
+  aiReview: jsonb('ai_review'),
   createdAt: created(),
   updatedAt: updated()
 }, t => [
@@ -1125,14 +1163,14 @@ export const courseSpeakingRecordings = pgTable('course_speaking_recordings', {
   index('course_speaking_rec_user_idx').on(t.userId, t.createdAt)
 ])
 
-/** Peer/teacher structured assessment (1–5) on a speaking studio recording; one per reviewer per recording. */
+/** Peer (overall 0-9 only) and teacher (0-9 + criteria) assessment on a speaking recording; one per reviewer per recording. */
 export const courseSpeakingAssessments = pgTable('course_speaking_assessments', {
   id: uuid('id').primaryKey().defaultRandom(),
   recordingId: uuid('recording_id').notNull().references(() => courseSpeakingRecordings.id, { onDelete: 'cascade' }),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  /** Overall rating 1..5 */
+  /** Overall rating 0..9 */
   overall: integer('overall').notNull(),
-  /** Optional IELTS/CEFR speaking criteria 1..5 */
+  /** Optional teacher speaking criteria 0..9 */
   fluency: integer('fluency'),
   vocabulary: integer('vocabulary'),
   grammar: integer('grammar'),
@@ -1142,6 +1180,16 @@ export const courseSpeakingAssessments = pgTable('course_speaking_assessments', 
 }, t => [
   uniqueIndex('course_speaking_assess_rec_user_uq').on(t.recordingId, t.userId),
   index('course_speaking_assess_rec_idx').on(t.recordingId)
+])
+
+/** Likes on a speaking recording (Facebook/Instagram-style reactions). */
+export const courseSpeakingLikes = pgTable('course_speaking_likes', {
+  recordingId: uuid('recording_id').notNull().references(() => courseSpeakingRecordings.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: created()
+}, t => [
+  primaryKey({ columns: [t.recordingId, t.userId] }),
+  index('course_speaking_likes_rec_idx').on(t.recordingId)
 ])
 
 /** Comments / peer feedback left on a speaking studio recording. */

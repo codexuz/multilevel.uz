@@ -57,8 +57,8 @@ export async function unlockedPartIds(userId: string) {
  * it is free, they have Premium, they unlocked it, they bought that part in a pack, or it is a live
  * mock now.
  */
-export async function canOpenTest(user: { id: string } | null, test: { id: string, access: string }, premium: boolean, partId?: string | null) {
-  if (test.access !== 'PREMIUM' || premium) return true
+export async function canOpenTest(user: { id: string } | null, test: { id: string, access: string, visibility?: string | null }, premium: boolean, partId?: string | null) {
+  if (test.visibility === 'PRIVATE' || test.access !== 'PREMIUM' || premium) return true
   if (!user) return false
   // A live mock is open to everyone signed in while it runs.
   if (await openMockOfTest(test.id)) return true
